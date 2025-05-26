@@ -1,0 +1,234 @@
+/* Calendar Container */
+.calendar-container {
+    height: 84vh;
+    background: #fff;
+    display: flex;
+    padding-left: 10px ;
+    padding-right: 10px;
+    padding-top: 15px;
+    flex-direction: column;
+  }
+  
+  /* Calendar Header */
+  .calendar-title {
+    font-size: 18px;
+    font-weight: bold;
+    width: 170px;
+    /* border: 1px solid; */
+    text-align: center;
+  }
+  
+  /* Legend Styles */
+  .calendar-legend {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    padding-right: 15px;
+    z-index: 20px;
+    margin-bottom: -30px;
+  }
+  
+  .legend-item {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  
+  .legend-color {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    margin-right: 5px;
+  }
+  
+  /* Colors for Legend */
+  .legend-new { background-color: #50B4E9; }
+  .legend-on-track { background-color: #46C97E; }
+  .legend-critical { background-color: #EE020E; }
+  .legend-completed { background-color: #1A1A38; }
+  
+  /* Calendar Grid */
+  .rbc-calendar {
+    /* font-family: "Inter", sans-serif; */
+    width: 100%;
+    border: none;
+  }
+  
+  /* Calendar Header Row */
+  .rbc-header {
+    background: #ffffff;
+    color: #333;
+    font-weight: bold;
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #ddd;
+  }
+  
+  /* Calendar Day Cells */
+  .rbc-day-bg {
+    border: 1.5px solid #ffffff;
+  }
+  
+  .rbc-off-range {
+    color: #b0b0b0;
+  }
+  
+  /* Today's Date */
+  .rbc-today {
+    background: rgba(79, 142, 247, 0.2) !important;
+  }
+  
+  /* Event Styles */
+  .rbc-event {
+    background-color: white;
+    border-radius: 0px;
+    font-size: 14px;
+    text-align: left;
+    font-weight: bold;
+  }
+  
+  /* Event Colors */
+  .event-new {color: #50B4E9 !important; border-left: 2px solid #50B4E9;  }
+  .event-on-track {color: #46C97E !important; border-left: 2px solid #46C97E;  }
+  .event-critical {color: #EE020E !important; border-left: 2px solid #EE020E;  }
+  .event-completed {color: #1A1A38 !important; border-left: 2px solid #1A1A38;  }
+  
+  /* More Events */
+  .rbc-show-more {
+    background: #914169;
+    color: white;
+    border-radius: 10px;
+    padding: 3px 6px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  
+  /* Toolbar Buttons */
+  .rbc-toolbar {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+  }
+  
+  .rbc-toolbar button {
+    background: #4f8ef7;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    margin: 5px;
+    border-radius: 5px;
+    font-weight: bold;
+  }
+  
+  .rbc-toolbar button:hover {
+    background: #3a6ac8;
+  }
+  
+  .calendar-custom-toolbar {
+    display: flex;
+    /* justify-content: center; */
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    /* border: 1px solid; */
+    width: 290px
+}
+
+.calendar-custom-toolbar button {
+  background-color: transparent;
+  color: #c2185b;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.calendar-custom-toolbar button:hover {
+  background-color: #ffcde1;
+}
+
+.calendar-title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+/* Skeleton Loading Styles */
+.calendar-skeleton {
+  height: 84vh;
+  padding: 15px 10px;
+  background: #fff;
+}
+
+.skeleton-toolbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.skeleton-button {
+  width: 40px;
+  height: 40px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-title {
+  width: 150px;
+  height: 24px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-header {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.skeleton-header-cell {
+  flex: 1;
+  height: 30px;
+  background: #f0f0f0;
+  margin: 0 2px;
+  border-radius: 4px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-week {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.skeleton-day {
+  flex: 1;
+  height: 100px;
+  margin: 0 2px;
+  padding: 5px;
+  background: #fafafa;
+  border-radius: 4px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-event {
+  height: 16px;
+  margin-bottom: 4px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-event:nth-child(2) {
+  width: 80%;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}

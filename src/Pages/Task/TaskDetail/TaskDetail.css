@@ -1,0 +1,119 @@
+.detail_container {
+  height: auto; /* allow it to grow based on content */
+  display: flex;
+  flex-wrap: wrap; /* allow wrapping */
+  width: 100%;
+  gap: 35px;
+}
+
+
+.Section {
+  flex: 1 1 300px; /* grow, shrink, base width */
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+
+.form-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  
+  .input-box {
+    display: flex;
+    align-items: center;
+    border: 1px solid #8b6f6f;
+    border-radius: 10px;
+    padding: 8px;
+    gap: 5px;
+    height: 25px;
+    margin-top: 10px;
+  }
+  
+  .input-box input {
+    border: none;
+    outline: none;
+    font-size: 16px;
+    background: transparent;
+    width: 200px;
+    text-align: end ;
+    height: 20px;
+  }
+  
+/* Chrome, Safari, Edge, Opera */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+
+
+  .icon {
+    font-size: 18px;
+    color: #8b6f6f;
+    margin-right: 50px;
+  }
+  
+  .number-input input{
+    text-align: center;
+    width: 20px;
+  }
+
+  .checkList {
+    height: 100%;
+    margin-top: 10px;
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .input-group label {
+    font-size: 14px;
+    margin-bottom: 4px;
+    color: #333;
+  }
+  
+  .custom-select {
+    border: none;
+    border-style: none;
+    width: 230px;
+    text-align: end;
+    -webkit-appearance: none;
+    font-size: 16px;
+    outline: none;
+    direction: ltr; /* Add this line */
+  }
+  
+  /* For the dropdown options */
+  .custom-select option {
+    direction: rlt; /* Keep options left-aligned in dropdown */
+    text-align: left; /* Align text to right in dropdown */
+  }
+
+  @media (max-width: 600px) {
+    .input-box input,
+    .custom-select {
+      width: 100%;
+      font-size: 14px;
+    }
+  
+    .input-box {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+  
+    .form-container {
+      flex-direction: column;
+    }
+  }
+  

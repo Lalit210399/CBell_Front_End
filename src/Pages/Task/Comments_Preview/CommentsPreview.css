@@ -1,0 +1,33 @@
+.CommentsPreview_Container {
+    height: 400px;
+    display: flex;
+    width: 100%;
+    transition: all 0.3s ease-in-out;
+}
+
+.section {
+    transition: width 0.3s ease-in-out;
+    padding: 10px;
+    box-sizing: border-box;
+    height: 100%;              /* Ensure sections take full height */
+    overflow-y: auto; 
+}
+
+/* Default: both sections 50% */
+.Left_Section {
+    width: 50%;
+}
+
+.Right_Section {
+    width: 50%;
+}
+
+/* Collapsed state for Left */
+.Left_Section.collapsed {
+    width: 60px;
+}
+
+/* Expanded state for Right when Left is collapsed */
+.Right_Section.expanded {
+    width: calc(100% - 60px);
+}

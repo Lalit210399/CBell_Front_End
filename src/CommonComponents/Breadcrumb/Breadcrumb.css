@@ -1,0 +1,85 @@
+.breadcrumb-container {
+  display: flex;
+  align-items: center;
+  background: var(--colourBg);
+  padding: 8px 16px;
+  border-radius: 20px;
+  flex-wrap: wrap;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+  position: relative;
+  margin: 2px 0;
+}
+
+.breadcrumb-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--textDark);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+
+.breadcrumb-link:hover {
+  color: var(--primary);
+}
+
+.breadcrumb-icon {
+  margin-right: 5px;
+  min-width: 18px;
+}
+
+.separator {
+  margin: 0 6px;
+  color: var(--midGray);
+  font-size: 14px;
+}
+
+.last-item {
+  color: var(--primary);
+  font-weight: bold;
+}
+
+/* Dropdown Menu */
+.dropdown {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border-radius: 5px;
+  min-width: 160px;
+  z-index: 10;
+  margin-top: 5px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: var(--textDark);
+  font-size: 13px;
+}
+
+.dropdown-item:hover {
+  background: #f0f0f0;
+  color: var(--primary);
+}

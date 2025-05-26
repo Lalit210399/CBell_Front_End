@@ -1,0 +1,123 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Mirza:wght@400;700&display=swap');
+
+/* Base container styles */
+.text-editor-container {
+  padding: 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #fff;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  /* width: 100%; */
+  margin-bottom: 20px;
+}
+
+/* Container width variations */
+.text-editor-container:not(.full-width) {
+  max-width: 700px;
+}
+
+/* Label styling */
+.text-editor-label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* Quill-specific styles */
+.ql-toolbar {
+  border: 1px solid #ddd !important;
+  border-radius: 8px 8px 0 0 !important;
+  background-color: #f5f5f5 !important;
+  padding: 8px !important;
+}
+
+.ql-container {
+  border: 1px solid #ddd !important;
+  border-radius: 0 0 8px 8px !important;
+  border-top: none !important;
+  font-size: 16px;
+  min-height: 200px;
+}
+
+.ql-editor {
+  min-height: 200px;
+  padding: 12px 15px !important;
+  font-family: Arial, sans-serif;
+}
+
+/* Font classes for Quill */
+.ql-font-arial {
+  font-family: Arial, sans-serif;
+}
+
+.ql-font-roboto {
+  font-family: 'Roboto', sans-serif;
+}
+
+.ql-font-mirza {
+  font-family: 'Mirza', cursive;
+}
+
+.ql-font-georgia {
+  font-family: Georgia, serif;
+}
+
+.ql-font-times-new-roman {
+  font-family: 'Times New Roman', serif;
+}
+
+.ql-font-courier-new {
+  font-family: 'Courier New', monospace;
+}
+
+/* Toolbar button styles */
+.ql-toolbar button {
+  width: 28px;
+  height: 28px;
+  padding: 3px !important;
+  margin: 2px 3px !important;
+  border-radius: 4px !important;
+  transition: background-color 0.2s;
+}
+
+.ql-toolbar button:hover {
+  background-color: #e0e0e0 !important;
+}
+
+.ql-toolbar button.ql-active {
+  background-color: #d0d0d0 !important;
+}
+
+/* Dropdown styles */
+.ql-toolbar .ql-picker-label {
+  padding: 2px 8px !important;
+}
+
+.ql-toolbar .ql-picker-options {
+  padding: 8px !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Color picker styles */
+.ql-color-picker .ql-picker-item {
+  width: 20px !important;
+  height: 20px !important;
+  margin: 2px !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .ql-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 4px !important;
+  }
+  
+  .ql-toolbar .ql-formats {
+    margin-bottom: 4px !important;
+  }
+}

@@ -1,0 +1,97 @@
+.dropdown {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .dropdown-toggle {
+    background-color: white;
+    border: none;
+    /* margin-top: 10px; */
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 150px;
+    border-radius: 4px;
+  }
+  
+  .arrow {
+    margin-left: 8px;
+  }
+  
+  .dropdown-menu {
+    position: absolute;
+    background-color: white;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    margin-top: 8px;
+    width: 100%;
+    z-index: 1;
+    border-radius: 4px;
+    padding: 8px 0;
+  }
+/*   
+  .dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+  } */
+  
+  .dropdown-item:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .dot {
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+  }
+
+  .dropdown.disabled .dropdown-toggle {
+    color: #000000;
+    cursor: not-allowed; /* Change cursor to indicate it's disabled */
+  }
+  
+  .dropdown.disabled .dropdown-menu {
+    pointer-events: none; /* Prevent interaction with menu items when disabled */
+  }
+  
+  .dropdown.disabled .dropdown-item {
+    color: #5c5c5c; 
+  }
+
+  .dropdown-item.selected {
+    background-color: #f0f0f0;
+  }
+  
+  .dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.dropdown-item input[type="checkbox"] {
+    margin-right: 8px; /* Add spacing between the checkbox and the dot */
+    margin-left: 0; /* Ensure the checkbox is aligned to the left */
+}
+
+.dropdown-item .dot {
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px; /* Add spacing between the dot and the label */
+}
+
+.dropdown-item .label {
+    flex-grow: 1; /* Ensure the label takes up remaining space */
+}
+
+.dropdown-item.selected {
+    background-color: #f0f0f0;
+}

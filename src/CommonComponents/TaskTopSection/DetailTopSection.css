@@ -1,0 +1,299 @@
+.detail-header-container {
+    height: auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    border-radius: var(--radius-lg);
+    padding: 15px 10px;
+    border: 1px solid var(--colourBorder);
+    background: var(--white);
+    padding: 10px;
+    flex-wrap: wrap;
+    margin: 10px;
+}
+
+.header-left-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.top-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.back-button {
+    width: 32px;
+    height: 32px;
+    border-radius: 24px;
+    background: var(--primaryDark);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin-right: 10px;
+}
+
+.back-button svg {
+    color: var(--white);
+    width: 24px;
+    height: 24px;
+}
+
+.back-button:hover {
+    background: #9a254e; /* NOT IN THEME YET */
+}
+
+.back-button:active {
+    transform: scale(0.95);
+}
+
+.header-titles,
+.header_title {
+    font-weight: 500;
+    font-size: 22px;
+    text-align: center;
+    background: var(--white);
+    color: var(--textLight);
+    padding: 5px 10px;
+    margin: 0;
+}
+
+.header-subtitle {
+    font-size: 14px;
+    color: var(--textLight);
+}
+
+.avatar-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    border: 1px solid var(--colourBorder);
+    border-radius: 16px;
+    background: var(--white);
+    color: #555; /* Consider adding to theme */
+    justify-content: space-between;
+}
+
+.popup-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 10;
+    background-color: var(--white);
+    border: 1px solid var(--grayLine);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 2px 8px var(--backgroundDark);
+    width: 200px;
+    padding: 8px 0;
+}
+
+.avatar-add-button {
+    color: #990099; /* NOT IN THEME */
+    border: 1px dotted #990099;
+    border-radius: 50%;
+    background: transparent;
+}
+
+.add-avatar {
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+.avatar-dropdown-container {
+    display: flex;
+    align-items: center;
+}
+
+.right-section {
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+    gap: 10px;
+}
+
+.date-creator-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.date-section {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--textDark);
+}
+
+.creator-section {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #555;
+    border: 1px solid;
+    border-radius: 20px;
+    padding-left: 5px;
+}
+
+.action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.new-task-btn {
+    background: var(--white);
+    color: var(--primaryDark);
+    margin-top: 18px;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--colourBorder);
+}
+
+.new-task-btn:hover {
+    background: #9a254e; /* NOT IN THEME */
+    color: var(--white);
+}
+
+.save-btn {
+    background: var(--white);
+    color: #555;
+    margin-top: 17px;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid var(--colourBorder);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.save-btn:hover {
+    background: var(--lightGray);
+}
+
+.editable-title-input,
+.editable-date-input {
+  border: 1px solid var(--grayLine);
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+  font-size: 16px;
+  color: var(--textDark);
+  background: var(--white);
+  outline: none;
+  width: 100%;
+}
+
+.editable-title-input::placeholder,
+.editable-date-input::placeholder {
+  color: #aaa;
+  font-style: italic;
+}
+
+
+/* 📱 Responsive Design */
+@media (max-width: 1024px) {
+    .header-container {
+        width: 100%;
+        height: auto;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 12px 8px;
+    }
+
+    .left-section {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .right-section {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .header-title {
+        font-size: 20px;
+        width: auto;
+    }
+
+    .avatar-group {
+        width: 100px;
+        height: 30px;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-container {
+        padding: 10px 6px;
+    }
+
+    .header-title {
+        font-size: 18px;
+    }
+
+    .avatar-group {
+        width: 90px;
+        height: 28px;
+        gap: 8px;
+    }
+
+    .avatar,
+    .avatar-count,
+    .add-avatar {
+        width: 22px;
+        height: 22px;
+    }
+
+    .right-section {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-container {
+        padding: 8px 5px;
+    }
+
+    .header-title {
+        font-size: 16px;
+        width: auto;
+    }
+
+    .avatar-group {
+        width: 80px;
+        height: 26px;
+        gap: 6px;
+    }
+
+    .avatar,
+    .avatar-count,
+    .add-avatar {
+        width: 20px;
+        height: 20px;
+    }
+
+    .right-section {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+

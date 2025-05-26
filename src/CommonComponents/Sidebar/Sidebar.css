@@ -1,0 +1,88 @@
+/* Sidebar.css */
+
+.sidebar {
+  width: var(--sidebarWidth);
+  height: 100vh;
+  background-color: var(--primary); /* Sidebar background */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 20px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+}
+
+.logo {
+  color: var(--white);
+  font-size: 22px;
+  font-weight: bold;
+  font-family: 'Pacifico', cursive;
+  margin-bottom: 20px;
+}
+
+.menu {
+  list-style: none;
+  padding: 0px 20px 0 0;
+  margin: 0;
+}
+
+.menu li {
+  width: 100%;
+  text-align: center;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 10px;
+  color: var(--white);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+}
+
+/* Hover state */
+.menu-item:hover {
+  background-color: var(--hover);
+}
+
+/* Active state */
+.menu-item.active {
+  background-color: var(--primaryDark);
+  color: #f0f0f0;
+  border-radius: var(--radius-md);
+}
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: -45px;
+  left: 10px;
+  transform: translateX(-50%);
+  background-color: var(--tooltipBg);
+  color: var(--tooltipText);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  font-size: 12px;
+  margin-bottom: 8px;
+  z-index: 10;
+}
+
+.tooltip:hover::after {
+  opacity: 1;
+}

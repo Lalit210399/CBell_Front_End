@@ -1,0 +1,37 @@
+.avatar-list {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 100%; /* Ensure it doesn't overflow the parent */
+  overflow: hidden; /* Prevents content from going outside */
+  /* margin-bottom: 20px; */
+}
+
+.avatar-list .avatar {
+  border: 2px solid #FFFAF0;
+  position: relative;
+  /* z-index: 1; */
+  flex-shrink: 0; /* Prevents resizing */
+}
+
+.avatar-list .avatar:nth-child(2) {
+  margin-left: -10px; /* Controls overlapping */
+  /* z-index: 2; */
+}
+
+.avatar-list .avatar-count {
+  border: 2px solid #FFFAF0;
+  position: relative;
+  z-index: 3;
+  margin-left: -10px; /* Ensures alignment */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #392B58;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 16px;
+  color: #fff;
+  flex-shrink: 0; /* Prevents it from shrinking */
+}

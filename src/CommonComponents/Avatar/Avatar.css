@@ -1,0 +1,18 @@
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ccc;
+  color: white;
+  font-weight: bold;
+  overflow: hidden;
+  border-radius: 50%; /* Ensures circular shape */
+  position: relative;
+}
+
+.avatar-image {
+  width: 100%; /* Image fills the avatar container */
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}

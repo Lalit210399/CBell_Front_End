@@ -1,0 +1,329 @@
+/* 🌟 Outer Container */
+.header-wrapper {
+    height: auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    border-radius: var(--radius-md);
+    padding: 15px 10px;
+    border: 1px solid var(--colourBorder);
+    background: var(--white);
+    padding: 10px;
+    flex-wrap: wrap;
+    margin: 10px;
+}
+
+/* 📌 Left Section (Back Button + Title Next to Each Other) */
+.header-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.header-top-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* 🔙 Back Button */
+.header-back-button {
+    width: 32px;
+    height: 32px;
+    border-radius: 24px;
+    background: var(--primaryDark);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin-right: 10px;
+}
+
+.header-back-button svg {
+    color: var(--white);
+    width: 24px;
+    height: 24px;
+}
+
+.header-back-button:hover {
+    background: var(--darkHover);
+}
+
+.header-back-button:active {
+    transform: scale(0.95);
+}
+
+/* 🏆 Title: "Synapse Competition 2025" (Next to Back Button) */
+.header-title-container {
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+    border-radius: var(--radius-sm);
+}
+
+.header-title {
+    font-weight: 500;
+    font-size: 22px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    text-align: center;
+    background: var(--white);
+    color: var(--midGray);
+    padding: 5px 10px;
+    margin: 0;
+}
+
+.header-title-input {
+    border: 1px solid var(--grayBorder);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    font-size: 16px;
+    color: var(--textDark);
+    background: var(--white);
+    outline: none;
+    width: 100%;
+}
+.header-title-input[placeholder]:empty:before {
+  content: attr(placeholder);
+  color: #999;
+  pointer-events: none;
+  display: block; /* For Firefox */
+}
+
+.header-title-input:focus {
+  outline: none;
+  border-bottom: 1px solid #ccc;
+}
+/* 👤 Avatar Container */
+.header-avatar-group {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    border: 1px solid var(--grayBorder);
+    border-radius: 16px;
+    padding: 0 12px 0 0;
+    background: var(--white);
+    color: var(--midGray);
+    justify-content: space-between;
+}
+
+.avatar-add-button {
+    background-color: var(--lightGray);
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+.add-participant-section {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+}
+
+.inline-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 6px;
+    z-index: 1000;
+    background-color: var(--white);
+    border: 1px solid var(--grayBorder);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    width: 160px;
+    height: 24px;
+    padding: 8px 0;
+}
+
+.avatar-add-button {
+    background-color: var(--lightGray);
+    border: none;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.header-avatar {
+    margin-right: 5px;
+}
+
+.header-participant-names {
+    margin-left: 5px;
+}
+
+.header-dropdown-container {
+    margin-top: 9px;
+    margin-left: 5px;
+    border: 1px solid var(--grayBorder);
+    border-radius: 5px;
+}
+
+.header-avatar-dropdown {
+    display: flex;
+    align-items: center;
+}
+
+/* 📅 Right Section (Date + Created By + Buttons) */
+.header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+    gap: 10px;
+}
+
+/* 📆 Date Section */
+.header-date-creator {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.header-date {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--textDark);
+    font-size: 14px;
+    font-weight: 500;
+    width: 150px;
+}
+
+.header-date input {
+    width: 100%;
+    padding: 6px 12px;
+    border-radius: var(--radius-md);
+}
+
+/* 📝 Created By Section */
+.header-creator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--midGray);
+    border: 1px solid var(--grayBorder);
+    border-radius: 20px;
+    padding: 0 2px 0 2px;
+}
+
+/* 🎯 Buttons (New Task & Save) */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.header-new-task {
+    background: var(--white);
+    color: var(--primaryDark);
+    margin-top: 18px;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--grayBorder);
+}
+
+.header-new-task:hover {
+    background: var(--darkHover);
+    color: var(--white);
+}
+
+.header-save {
+    background: var(--white);
+    color: var(--midGray);
+    margin-top: 17px;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid var(--grayBorder);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.3s, color 0.3s;
+}
+
+/* Hover state for the save button */
+.header-save:hover {
+    background: var(--lightGray);
+}
+
+/* Disabled state for the save button */
+.header-save:disabled {
+    background: var(--lightGray);
+    color: var(--placeholderGray);
+    border: 1px solid var(--grayLine);
+    cursor: not-allowed;
+}
+
+/* 📱 Responsive Design */
+@media (max-width: 1024px) {
+    .header-wrapper {
+        width: 100%;
+        height: auto;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 12px 8px;
+    }
+
+    .header-left {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .header-right {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .header-title {
+        font-size: 20px;
+        width: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-wrapper {
+        padding: 10px 6px;
+    }
+
+    .header-title {
+        font-size: 18px;
+    }
+
+    .header-right {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-wrapper {
+        padding: 8px 5px;
+    }
+
+    .header-title {
+        font-size: 16px;
+        width: auto;
+    }
+
+    .header-right {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

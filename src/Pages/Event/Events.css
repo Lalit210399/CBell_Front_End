@@ -1,0 +1,76 @@
+.Events {
+  padding: 20px;
+}
+.Table_Container {
+    height: 100%;
+    width: 100%;
+    /* max-width: 1169px; */
+    /* box-sizing: border-box; */
+    /* border: 1px solid  red; */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .Welcome-to-AISSMS-IOIT-College {
+    width: 415px;
+    height: 40px;
+    flex-grow: 0;
+    /* font-family: Jost; */
+    font-size: 28px;
+    font-weight: 500;
+    font-stretch: normal;
+    font-style: normal;
+    line-height: normal;
+    letter-spacing: normal;
+    text-align: center;
+    color: #505050;
+  }
+  
+  /* .Welcome-to-AISSMS-IOIT-College .text-style-1 {
+    font-style: italic;
+  } */
+
+  /* Loading overlay for table */
+.Table_Container.loading {
+  position: relative;
+}
+
+.Table_Container.loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.7);
+  z-index: 5;
+}
+
+/* Error state styling */
+.error-state {
+  text-align: center;
+  padding: 20px;
+  color: #e74c3c;
+}
+
+.retry-button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.retry-button:hover {
+  background: #2980b9;
+}
+
+/* Disabled state for header during loading */
+.table-header.disabled {
+  opacity: 0.6;
+  pointer-events: none
+}

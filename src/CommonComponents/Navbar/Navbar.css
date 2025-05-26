@@ -1,0 +1,127 @@
+/* Navbar.css */
+
+.navbar {
+  width: calc(100% - 154px);
+  /* Adjusted to fit after Sidebar */
+  height: var(--navbarHeight);
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  z-index: 1000; /* add this */
+  position: fixed;
+  left: 86px;
+  /* Start after Sidebar */
+  border-radius: var(--radius-lg);
+  margin: 24px 0px 24px 10px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 24px;
+  border: solid 1px #eaeaea;
+  background-color: var(--colourBg);
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+}
+
+.nav-links {
+  display: flex;
+  gap: 36px;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: var(--navText);
+  font-size: 18px;
+  font-weight: 500;
+  width: 87px;
+  height: 26px;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: normal;
+  letter-spacing: normal;
+  text-align: center;
+}
+
+.nav-links a.active {
+  border-bottom: 2px solid var(--navText);
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.bell-icon {
+  color: var(--primary);
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 24px;
+  padding: 4px;
+  border-radius: 24px;
+  background-color: var(--lightPink);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--primary);
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-weight: bold;
+  color: var(--textDark);
+}
+
+.user-role {
+  font-size: 12px;
+  color: var(--textLight);
+}
+
+.avatar-dropdown-wrapper {
+  position: relative;
+  cursor: pointer;
+}
+
+.logout_dropdown {
+  position: absolute;
+  top: 55px;
+  right: -24px;
+  background-color: var(--white);
+  border: 1px solid #ddd;
+  border-radius: var(--radius-sm);
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  /* padding: 0.5rem; */
+  z-index: 1100;
+}
+
+.logout_dropdown button {
+  background: none;
+  border: none;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+}
+
+.logout_dropdown button:hover {
+  background-color: #f0f0f0;
+}

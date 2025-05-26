@@ -1,0 +1,26 @@
+.layout-container {
+  display: flex;
+  height: 100vh;
+}
+
+.main-content-container {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  margin-left: 80px; /* Adjust based on sidebar width */
+}
+
+.main-content {
+  flex-grow: 1;
+  /* padding: 20px; Adjust padding as needed */
+  overflow-y: auto;
+  margin-top: 80px; /* Adjust based on navbar height */
+}
+
+.layout-container.no-nav-sidebar .main-content-container {
+  margin-left: 0;
+}
+
+.layout-container.no-nav-sidebar .main-content {
+  margin-top: 0;
+}

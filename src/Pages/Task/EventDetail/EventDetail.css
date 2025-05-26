@@ -1,0 +1,67 @@
+.detail_container {
+    /* border: #c2a7a7 solid 1px;    */
+    height: 100%; 
+    display: flex;
+    width: 100%;
+    gap: 10px;
+}
+
+.Section {
+    /* border: red solid 1px; */
+    width: 50%;
+}
+
+/* Container for input fields to align them side by side */
+.form-row {
+    display: flex;
+    gap: 10px; /* Space between input fields */
+    margin-bottom: 10px; /* Space below the row */
+}
+
+.form-row label {
+    flex: 1; /* Make input fields take equal space */
+}
+
+.guest-input[type="text"] {
+    width: 100%; /* Ensure inputs fill their container */
+    padding: 10px;
+    margin: 0; /* Remove default margin */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease;
+}
+
+.guest-input[type="text"]:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+/* Style for buttons */
+.guest-button {
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+.guest-button:hover {
+    background-color: #0056b3;
+}
+
+.guest-button:active {
+    background-color: #003f7f;
+}
+
+.editable-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 10px 0 10px 0; /* Space below each entry */
+    gap: 10px;
+}

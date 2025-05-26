@@ -1,0 +1,37 @@
+
+  .dashboard-container {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    max-width: 1440px;
+    margin: auto;
+  }
+  
+  .status-cards {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 16px;
+  }
+  
+  .event-section {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  
+  .event-section > div {
+    flex: 1;
+    min-width: 300px;
+  }
+  
+  @media (max-width: 768px) {
+    .status-cards, .event-section {
+      flex-direction: column;
+    }
+  
+    .status-cards > div, .event-section > div {
+      width: 100%;
+    }
+  }
+  
