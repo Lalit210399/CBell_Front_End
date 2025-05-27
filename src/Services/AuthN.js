@@ -25,18 +25,31 @@ export const signin = async (credentials) => {
   try {
     const response = await fetch('/apis/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json' // Explicitly ask for JSON
+      },
       body: JSON.stringify(credentials),
       credentials: 'include',
     });
 
-    if (!response.ok) {
-      throw new Error('Signin failed');
+    // First check content type
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const errorText = await response.text();
+      throw new Error(`Server returned ${response.status}: ${errorText}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || `Login failed with status ${response.status}`);
+    }
+
+    return data;
   } catch (error) {
-    throw error.message || 'Signin failed';
+    console.error("Signin error:", error);
+    throw error;
   }
 };
 

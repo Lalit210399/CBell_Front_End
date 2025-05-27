@@ -5,7 +5,7 @@ module.exports = function (app) {
   app.use(
     '/apis',
     createProxyMiddleware({
-      target: 'http://192.168.1.25:5000',
+      target: 'https://sincere-starfish-mutually.ngrok-free.app',
       changeOrigin: true,
       pathRewrite: { '^/apis': '' },
     })

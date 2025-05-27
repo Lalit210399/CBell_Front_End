@@ -55,32 +55,45 @@ const Login = () => {
 
     try {
       const response = await signin(formData);
+      console.log('Login API Response:', response); // Debug log
 
-      const loggedInUser = {
-        email: response.email,
-        firstName: response.firstName,
-        lastName: response.lastName,
-        organizationId: response.organizationId,
-        userID: response.userId,
-      };
+      if (response.message === "Login successful") {
+        const loggedInUser = {
+          email: response.email,
+          firstName: response.firstName,
+          lastName: response.lastName,
+          organizationId: response.organizationId,
+          userID: response.userId,
+          roleIds: response.roleids // Added roleIds from response
+        };
 
-      localStorage.setItem("user", JSON.stringify(loggedInUser));
-      setUser(loggedInUser);
+        // Store user data
+        localStorage.setItem("user", JSON.stringify(loggedInUser));
+        setUser(loggedInUser);
 
-      const permissionResponse = await getPermissions();
-      localStorage.setItem("permissions", JSON.stringify(permissionResponse));
-      setPermissions(permissionResponse);
+        // Fetch and store permissions
+        try {
+          const permissionResponse = await getPermissions();
+          localStorage.setItem("permissions", JSON.stringify(permissionResponse));
+          setPermissions(permissionResponse);
 
-      setMessage(response.message || ERROR_MESSAGES.auth.loginSuccess);
-      navigate("/dashboard");
+          // Navigate only after all data is loaded
+          navigate("/dashboard");
+        } catch (permissionError) {
+          console.error("Permission fetch failed:", permissionError);
+          setMessage("Login successful, but couldn't load permissions");
+          navigate("/dashboard"); // Still navigate but show message
+        }
+      } else {
+        throw new Error(response.message || "Unexpected response from server");
+      }
     } catch (error) {
       console.error("Login failed:", error);
-      setMessage(ERROR_MESSAGES.auth.loginFailed);
+      setMessage(error.message || ERROR_MESSAGES.auth.loginFailed);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
-
   return (
     <div className="auth-container">
       <div className="left-right-section">
