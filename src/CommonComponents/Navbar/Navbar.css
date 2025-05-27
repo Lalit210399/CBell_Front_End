@@ -5,8 +5,8 @@
   /* Adjusted to fit after Sidebar */
   height: var(--navbarHeight);
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
-  z-index: 1000; /* add this */
   position: fixed;
+  /* z-index: 10; add this */
   left: 86px;
   /* Start after Sidebar */
   border-radius: var(--radius-lg);
