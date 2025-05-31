@@ -2,23 +2,24 @@ import React from 'react';
 import Avatar from './Avatar';
 import './AvatarList.css';
 
-const AvatarList = ({ avatars }) => {
-  const maxVisibleAvatars = 4; // You can adjust this number
+const AvatarList = ({ avatars, stack = true, maxVisible = 4, showTooltip = false }) => {
+  const visibleAvatars = avatars.slice(0, maxVisible);
 
   return (
-    <div className="avatar-list">
-      {avatars.slice(0, maxVisibleAvatars).map((avatar, index) => (
+    <div className={`avatar-list ${stack ? 'stacked' : ''}`}>
+      {visibleAvatars.map((avatar, index) => (
         <Avatar
-          key={index}
+          key={`${avatar.name}-${index}`}
           src={avatar.src}
-          name={avatar.name} // Pass name for initials
-          size={avatar.size}
-          shape={avatar.shape}
+          alt={avatar.name}
+          name={avatar.name}
+          size={avatar.size || "32px"}
+          shape={avatar.shape || "circle"}
         />
       ))}
-      {avatars.length > maxVisibleAvatars && (
-        <div className="avatar-count">
-          +{avatars.length - maxVisibleAvatars}
+      {avatars.length > maxVisible && (
+        <div className="avatar-count" title={`${avatars.length - maxVisible} more`}>
+          +{avatars.length - maxVisible}
         </div>
       )}
     </div>

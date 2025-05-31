@@ -1,5 +1,4 @@
-// Context/UserContext.js
-
+// UserContext.js
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 const UserContext = createContext();
@@ -20,16 +19,8 @@ export const UserProvider = ({ children }) => {
     }
   }, []);
 
-  const hasPermission = (module, managementArea, action) => {
-    try {
-      return permissions?.[module]?.[managementArea]?.includes(action) ?? false;
-    } catch {
-      return false;
-    }
-  };
-
   return (
-    <UserContext.Provider value={{ user, setUser, permissions, setPermissions, hasPermission }}>
+    <UserContext.Provider value={{ user, setUser, permissions, setPermissions }}>
       {children}
     </UserContext.Provider>
   );

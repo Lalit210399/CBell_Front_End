@@ -6,19 +6,21 @@ import TasksFiles from "./TaskFiles/TaskFiles";
 import TaskDetail from "./TaskDetail/TaskDetail";
 import TopSection from "../../CommonComponents/TaskTopSection/EditTopSection";
 import Breadcrumb from "../../CommonComponents/Breadcrumb/Breadcrumb";
+import { useUser } from "../../Context/UserContext";
 import { Building, Calendar, Pencil } from "lucide-react";
 import "./Tasks.css";
 
 const TaskDetailPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { taskId, mode: initialMode = "view", eventId, organizationId } = location.state || {}; 
+  const { taskId, mode: initialMode = "view", eventId, organizationId } = location.state || {};
   const [taskTitle, setTaskTitle] = useState("");
   const [taskStatus, setTaskStatus] = useState({
     label: "New",
     value: "1",
     color: "gray",
   });
+  const { user, permissions: userPermissions } = useUser();
   const [activeTab, setActiveTab] = useState("Details");
   const [conversationFiles, setConversationFiles] = useState({
     files: [],
@@ -26,17 +28,19 @@ const TaskDetailPage = () => {
   });
   const [fileData, setFileData] = useState({ links: [], uploadedFiles: [] });
   const [mode, setMode] = useState(initialMode);
-  const [createdBy, setCreatedBy] = useState("User 3");
+  const [createdBy, setCreatedBy] = useState(
+    user ? `${user.firstName} ${user.lastName}` : "User"
+  );
   const [usersList, setUsersList] = useState([]);
   const [selectedParticipantIds, setSelectedParticipantIds] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Permissions configuration
   const permissions = {
-    canEdit: true,
-    canSave: true,
-    canChangeStatus: true,
-    canAssignUsers: true,
+    canEdit: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Update") ?? false,
+    canSave: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Update") ?? false,
+    canChangeStatus: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Update") ?? false,
+    canAssignUsers: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Update") ?? false,
   };
 
   const [taskData, setTaskData] = useState({
@@ -95,7 +99,14 @@ const TaskDetailPage = () => {
         const data = await res.json();
 
         setTaskTitle(data.taskTitle || "");
-        setCreatedBy(`User ${data.createdBy}` || "User 3");
+        // setCreatedBy(`User ${data.createdBy}` || "User 3");
+        if (data.createdBy) {
+          // If you want to show the creator's name from the task data
+          setCreatedBy(`User ${data.createdBy}`);
+        } else {
+          // Otherwise show current user's name
+          setCreatedBy(user ? `${user.firstName} ${user.lastName}` : "User");
+        }
 
         const apiStatusValue = data.taskStatus || "1";
         const matchedStatus = statusOptions.find(
@@ -106,12 +117,12 @@ const TaskDetailPage = () => {
         setTaskStatus(matchedStatus);
 
         // Format checklist data safely
-        const formattedChecklist = Array.isArray(data.checklistDetails) 
+        const formattedChecklist = Array.isArray(data.checklistDetails)
           ? data.checklistDetails.map(item => ({
-              text: item?.text?.toString() || "",
-              checked: Boolean(item?.checked),
-              isPlaceholder: Boolean(item?.isPlaceholder)
-            }))
+            text: item?.text?.toString() || "",
+            checked: Boolean(item?.checked),
+            isPlaceholder: Boolean(item?.isPlaceholder)
+          }))
           : [{ text: "", checked: false, isPlaceholder: false }];
 
         setTaskData({
@@ -156,11 +167,11 @@ const TaskDetailPage = () => {
           taskData.assignedTo.includes(`${user.firstName} ${user.lastName}`)
         )
         .map((user) => user.id);
-  
+
       const isSame =
         participantIds.length === selectedParticipantIds.length &&
         participantIds.every((id) => selectedParticipantIds.includes(id));
-  
+
       if (!isSame) {
         setSelectedParticipantIds(participantIds);
       }
@@ -197,10 +208,10 @@ const TaskDetailPage = () => {
       // Format checklist items safely
       const formattedChecklist = Array.isArray(taskData.checklist)
         ? taskData.checklist.map(item => ({
-            text: item?.text?.toString().trim() || "",
-            checked: Boolean(item?.checked),
-            isPlaceholder: Boolean(item?.isPlaceholder)
-          })).filter(item => item.text) // Remove empty items
+          text: item?.text?.toString().trim() || "",
+          checked: Boolean(item?.checked),
+          isPlaceholder: Boolean(item?.isPlaceholder)
+        })).filter(item => item.text) // Remove empty items
         : [];
 
       const payload = {
@@ -208,8 +219,8 @@ const TaskDetailPage = () => {
         TaskTitle: taskTitle,
         TaskStatus: taskStatus.value,
         AssignedTo: selectedParticipantIds,
-        CreatedBy: 3,
-        UpdatedBy: mode === "edit" ? 4 : 3,
+        CreatedBy: user?.id || 0,  // Use current user's ID
+        UpdatedBy: user?.id || 0,  // Use current user's ID
         CreativeType: taskData.type,
         DueDate: new Date(taskData.date).toISOString(),
         CreativeNumbers: taskData.quantity,
@@ -311,7 +322,7 @@ const TaskDetailPage = () => {
   };
 
   // Filter tabs based on mode
-  const filteredTabs = mode === "create" 
+  const filteredTabs = mode === "create"
     ? tabs.filter(tab => tab.label === "Details")
     : tabs;
 

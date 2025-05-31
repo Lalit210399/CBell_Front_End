@@ -33,7 +33,7 @@
     width: 32px;
     height: 32px;
     border-radius: 24px;
-    background: var(--primaryDark);
+    background: var(--primary);
     border: none;
     display: flex;
     align-items: center;
@@ -50,7 +50,7 @@
 }
 
 .header-back-button:hover {
-    background: var(--darkHover);
+    background-color: var(--primaryDark);
 }
 
 .header-back-button:active {
@@ -259,7 +259,8 @@
 
 /* Hover state for the save button */
 .header-save:hover {
-    background: var(--lightGray);
+    background: var(--primary);
+    color: var(--white);
 }
 
 /* Disabled state for the save button */

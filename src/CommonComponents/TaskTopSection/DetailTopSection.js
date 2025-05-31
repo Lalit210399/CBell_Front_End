@@ -96,7 +96,7 @@ const DetailTopSection = ({
         <div className="avatar-dropdown-container">
           <div className="avatar-group">
             <AvatarList avatars={participants} />
-            {(mode === "edit" || mode === "create") && (
+            {/* {(mode === "edit" || mode === "create") && (
               <>
                 <button
                   className="avatar-add-button"
@@ -117,7 +117,7 @@ const DetailTopSection = ({
                   </div>
                 )}
               </>
-            )}
+            )} */}
           </div>
         </div>
       </div>
@@ -140,7 +140,7 @@ const DetailTopSection = ({
           </div>
 
           <div className="creator-section">
-            <span>Created By</span>
+            <span>{creatorAvatar.name}</span>
             <div className="creator-avatar">
               <AvatarList avatars={[creatorAvatar]} />
             </div>

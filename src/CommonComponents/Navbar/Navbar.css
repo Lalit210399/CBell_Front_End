@@ -17,7 +17,7 @@
   align-items: center;
   padding: 8px 24px;
   border: solid 1px #eaeaea;
-  background-color: var(--colourBg);
+  background-color: var(--white);
   font-family: var(--font-family);
   font-size: var(--font-size);
 }

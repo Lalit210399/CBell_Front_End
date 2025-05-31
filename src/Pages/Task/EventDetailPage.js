@@ -22,11 +22,12 @@ const EventDetail = () => {
   const detailSaveRef = useRef(null);
   const { user } = useUser();
   const { addMessage } = useMessages();
+  const { permissions: userPermissions } = useUser();
 
   const permissions = {
-    canEdit: true,      // Allow editing event details
-    canCreateTask: true, // Allow creating new tasks
-    canSave: true,      // Allow saving event
+    canEdit: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,      // Allow editing event details
+    canCreateTask: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Create")?? false, // Allow creating new tasks
+    canSave: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,      // Allow saving event
     // Add more as needed
   };
 
@@ -256,14 +257,14 @@ const EventDetail = () => {
     {
       id: 1,
       name: "Alice Johnson",
-      src: "https://i.pravatar.cc/40",
+      // src: "https://i.pravatar.cc/40",
       size: "24px",
       shape: "circle",
     },
     {
       id: 2,
       name: "Bob Smith",
-      src: "https://i.pravatar.cc/41",
+      // src: "https://i.pravatar.cc/41",
       size: "24px",
       shape: "circle",
     },
@@ -292,13 +293,14 @@ const EventDetail = () => {
         : `User ID ${fetchedEvent?.createdBy || ""}`,
     creatorAvatar: {
       id: 0,
-      name: "Creator",
-      src: "https://i.pravatar.cc/40",
+      name: user?.firstName || "User",
+      // src: "https://i.pravatar.cc/40",
       size: "24px",
       shape: "circle",
     },
     participants,
   };
+  console.log(topSectionData.creatorAvatar);
 
   const guestsData =
     mode === "create"
@@ -309,6 +311,8 @@ const EventDetail = () => {
         title: "Guest",
       })) || [];
 
+      console.log("Guests Data:", guestsData);
+
   const organizersData =
     mode === "create"
       ? []
@@ -317,6 +321,7 @@ const EventDetail = () => {
         name,
         title: "Coordinator",
       })) || [];
+      console.log("Organizers Data:", organizersData);
 
   const tabs = [
     {

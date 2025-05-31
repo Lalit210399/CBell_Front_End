@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useEffect } from 'react';
-import { pinkTheme } from '../theme';
+import { greenTheme } from '../theme';
 
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  const theme = pinkTheme;
+  const theme = greenTheme; // Use the green theme or any other theme you define
 
   useEffect(() => {
     const root = document.documentElement;

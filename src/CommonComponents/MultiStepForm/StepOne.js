@@ -97,7 +97,7 @@ const StepOne = ({ nextStep, setFormData, formData }) => {
       </div>
       <div className="bottom-section">
         <Button onClick={() => navigate(-1)} className="btn-secondary">Back</Button>
-        <Button onClick={nextStep} className="btn-primary">Next</Button>
+        {/* <Button onClick={nextStep} className="btn-primary">Next</Button> */}
       </div>
     </div>
   );

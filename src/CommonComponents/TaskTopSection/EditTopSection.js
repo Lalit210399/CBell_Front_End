@@ -24,9 +24,9 @@ const TopSection = ({
   const dropdownRef = useRef(null);
   const titleRef = useRef(null); // Add a ref for the title element
 
-  const getDummyAvatar = (name) => {
-    return `https://i.pravatar.cc/400?u=${name}`;
-  };
+  // const getDummyAvatar = (name) => {
+  //   return `https://i.pravatar.cc/400?u=${name}`;
+  // };
 
   const creatorUser = users.find(user =>
     `${user.firstName} ${user.lastName}` === createdBy
@@ -35,7 +35,7 @@ const TopSection = ({
   const creatorAvatar = {
     id: 'creator',
     name: createdBy,
-    src: creatorUser.avatar || getDummyAvatar(createdBy),
+    // src: creatorUser.avatar || (createdBy),
     fallback: creatorUser.firstName?.charAt(0).toUpperCase() || "U",
     size: "24px",
     shape: "circle",
@@ -70,7 +70,7 @@ const TopSection = ({
       return {
         id: user.id,
         name: fullName,
-        src: user.avatar || getDummyAvatar(fullName),
+        src: user.avatar || (fullName),
         fallback: user.firstName?.charAt(0).toUpperCase() || "?",
         size: "20px",
         shape: "circle",

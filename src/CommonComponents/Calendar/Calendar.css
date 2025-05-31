@@ -138,7 +138,7 @@
 
 .calendar-custom-toolbar button {
   background-color: transparent;
-  color: #c2185b;
+  color: var(--primary);
   border: none;
   padding: 6px 12px;
   border-radius: 4px;
@@ -147,7 +147,7 @@
 }
 
 .calendar-custom-toolbar button:hover {
-  background-color: #ffcde1;
+  background-color: #5b9b6959;
 }
 
 .calendar-title {

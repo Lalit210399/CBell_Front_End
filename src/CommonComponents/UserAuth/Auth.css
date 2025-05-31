@@ -4,7 +4,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: var(--authContainerBg);
+  background-color: var(--white);
 }
 
 .left-right-section {
@@ -22,6 +22,8 @@
   background-color: var(--leftSectionBg);
   border-top-left-radius: 12px;
   border-bottom-left-radius: 12px;
+  box-shadow: 0px 0px 4px 0px #00000026;
+
 }
 /*  */
 .auth-image {
@@ -63,6 +65,8 @@
   background-color: var(--white);
   border-top-right-radius: 12px;
   border-bottom-right-radius: 12px;
+  box-shadow: 0px 0px 4px 0px #00000026;
+
 }
 
 .auth-title {

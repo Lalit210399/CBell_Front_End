@@ -1,3 +1,4 @@
+// EventTable.js
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Events.css";
@@ -5,6 +6,7 @@ import TableHeader from "../../CommonComponents/TableHeader/TableHeader";
 import Table from "../../CommonComponents/Table/Table";
 import AvatarList from "../../CommonComponents/Avatar/AvatarList";
 import { useMessages } from "../../Context/MessageContext";
+import { useUser } from "../../Context/UserContext";
 
 const EventTable = () => {
   const [events, setEvents] = useState([]);
@@ -13,55 +15,23 @@ const EventTable = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { addMessage } = useMessages();
+  const { permissions: userPermissions } = useUser();
 
-  const users = {
-    "permissions": {
-      "Events": {
-        "EventManagement": [
-          "Update",
-          "Read",
-          "Delete",
-          "Create"
-        ]
-      },
-      "Tasks": {
-        "Task Management": [
-          "Update",
-          "Read",
-          "Delete",
-          "Create"
-        ]
-      },
-      "Thread": {
-        "Thread Management": [
-          "Update",
-          "Read",
-          "Delete",
-          "Create"
-        ]
-      }
-    }
-  }
+  console.log("User Permissions:", userPermissions);
 
-  // Sample permissions (replace with real user permissions)
+  // Directly check permissions from the userPermissions object
   const permissions = {
-    // canCreate: users.permissions.Events.EventManagement.includes("Create"),
-    // canRead: users.permissions.Events.EventManagement.includes("Read"),
-    // canUpdate: users.permissions.Events.EventManagement.includes("Update"),
-    // canDelete: users.permissions.Events.EventManagement.includes("Update"),
-    // canArchive: users.permissions.Events.EventManagement.includes("Update"),
-    // canDuplicate: users.permissions.Events.EventManagement.includes("Update"),
-    canCreate:true, 
-    canRead:true, 
-    canUpdate:true, 
-    canDelete:true, 
-    canArchive:true, 
-    canDuplicate:true, 
+    canCreate: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Create") ?? false,
+    canRead: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false,
+    canUpdate: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
+    canDelete: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Delete") ?? false,
+    canArchive: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
+    canDuplicate: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
   };
 
-  const getRandomAvatar = (name) => {
-    return `https://i.pravatar.cc/400?u=${encodeURIComponent(name)}`;
-  };
+  // const getRandomAvatar = (name) => {
+  //   return `https://i.pravatar.cc/400?u=${encodeURIComponent(name)}`;
+  // };
 
   const fetchEvents = async () => {
     try {
@@ -83,7 +53,7 @@ const EventTable = () => {
         ({ id, eventName, eventDate, coordinators = [], specialGuests = [] }) => {
           const allParticipants = [...coordinators, ...specialGuests].map((name) => ({
             name,
-            src: getRandomAvatar(name),
+            src: (name),
             fallback: name.charAt(0).toUpperCase(),
             size: "32px",
             shape: "circle",

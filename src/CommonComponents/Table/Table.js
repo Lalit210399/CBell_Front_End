@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./Table.css";
 
 const Table = ({
@@ -35,6 +35,22 @@ const Table = ({
     setSortConfig({ key, direction });
     onSort?.(key, direction);
   };
+
+  const menuRef = useRef(null);
+
+useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (menuRef.current && !menuRef.current.contains(event.target)) {
+      setMenuOpenIndex(null);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
+
 
   return (
     <div className="table-container">
@@ -106,7 +122,7 @@ const Table = ({
                         ⋮
                       </button>
                       {menuOpenIndex === index && (
-                        <div className="dropdown_menu">
+                        <div className="dropdown_menu" ref={menuRef}>
                           {onDuplicate && (
                             <button
                               className="dropdown_item"

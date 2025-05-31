@@ -1,39 +1,53 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { BellRing } from "lucide-react";
-import { useUser } from "../../Context/UserContext"; // Import the UserContext
-import { logout } from "../../Services/AuthN"; // Adjust the path based on your file structure
-
+import { useUser } from "../../Context/UserContext";
+import { logout } from "../../Services/AuthN";
 import "./Navbar.css";
 
 function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useUser(); // Access the user from context
+  const {user, permissions: userPermissions } = useUser();
   const [dropdownVisible, setDropdownVisible] = useState(false);
 
   const handleLogout = async () => {
-  try {
-    await logout(); // call the actual API
-    // Reset context (if using UserContext for auth)
-    // Example: setUser(null) if you have setUser in your context
-    navigate("/"); // Redirect to home/login page
-  } catch (error) {
-    console.error("Logout failed:", error);
-    navigate("/");
-  }
-};
+    try {
+      await logout();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      navigate("/");
+    }
+  };
 
   const toggleDropdown = () => {
     setDropdownVisible((prev) => !prev);
   };
 
+  // Check permissions for each tab
+  const hasDashboardPermission = userPermissions?.permissions?.Dashboard?.["Dashboard Management"]?.includes("Read") ?? false;
+  const hasEventsPermission = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
+  const hasSchedulePermission = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
+
   return (
     <nav className="navbar">
       <div className="nav-links">
-        <Link to="/dashboard" className={location.pathname === "/dashboard" ? "active" : ""}>Dashboard</Link>
-        <Link to="/events" className={location.pathname.startsWith("/events") ? "active" : ""}>Events</Link>
-        <Link to="/schedule" className={location.pathname === "/schedule" ? "active" : ""}>Schedule</Link>
+        {hasDashboardPermission && (
+          <Link to="/dashboard" className={location.pathname === "/dashboard" ? "active" : ""}>
+            Dashboard
+          </Link>
+        )}
+        {hasEventsPermission && (
+          <Link to="/events" className={location.pathname.startsWith("/events") ? "active" : ""}>
+            Events
+          </Link>
+        )}
+        {hasSchedulePermission && (
+          <Link to="/schedule" className={location.pathname === "/schedule" ? "active" : ""}>
+            Schedule
+          </Link>
+        )}
       </div>
       <div className="nav-right">
         <BellRing size={22} className="bell-icon" />

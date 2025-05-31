@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Table from "../../../CommonComponents/Table/Table";
+import { useUser } from "../../../Context/UserContext";
 import "../Tasks.css";
 
 const columns = [
@@ -17,6 +18,16 @@ const Task = ({ tasksData, eventId }) => {
   const [tasks, setTasks] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const navigate = useNavigate();
+  const { permissions: userPermissions } = useUser();
+
+  const permissions = {
+    canCreate: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Create") ?? false,
+    canRead: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Read") ?? false,
+    canUpdate: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Update") ?? false,
+    canDelete: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Delete") ?? false,
+    canArchive: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Update") ?? false,
+    canDuplicate: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Update") ?? false,
+  };
 
   useEffect(() => {
     setTasks(tasksData || []);
@@ -60,10 +71,13 @@ const Task = ({ tasksData, eventId }) => {
         data={tasks}
         onSort={handleSort}
         sortableColumns={["creative_name", "creative_type", "assigned_to", "due_date", "status"]}
-        showActions={false}
+        // showActions={false}
         noDataText="No Tasks Scheduled at this time"
         addEventText="Click here to add a New Task"
         onRowClick={handleRowClick}
+        onDelete={permissions.canDelete ? () => alert("Delete Press") : undefined}
+          onArchive={permissions.canArchive ? () => alert("Archive pressed") : undefined}
+          onDuplicate={permissions.canDuplicate ? () => alert("Duplicate pressed") : undefined}
       />
 
     </div>

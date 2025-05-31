@@ -30,7 +30,7 @@
     width: 32px;
     height: 32px;
     border-radius: 24px;
-    background: var(--primaryDark);
+    background: var(--primary);
     border: none;
     display: flex;
     align-items: center;
@@ -47,7 +47,7 @@
 }
 
 .back-button:hover {
-    background: #9a254e; /* NOT IN THEME YET */
+    background-color: #282d28; /* NOT IN THEME YET */
 }
 
 .back-button:active {
@@ -155,7 +155,7 @@
 
 .new-task-btn {
     background: var(--white);
-    color: var(--primaryDark);
+    color: var(--black);
     margin-top: 18px;
     padding: 6px 12px;
     border-radius: 16px;
@@ -166,7 +166,7 @@
 }
 
 .new-task-btn:hover {
-    background: #9a254e; /* NOT IN THEME */
+    background: var(--primary); /* NOT IN THEME */
     color: var(--white);
 }
 

@@ -10,7 +10,13 @@ const List = ({ title, guests }) => {
         <div className="guests-list">
           {guests.map((guest, index) => (
             <div key={index} className="guest-card">
-              <Avatar src={guest.image} alt={guest.name} className="guest-image" size="24px" />
+              <Avatar 
+                src={guest.image} 
+                alt={guest.name} 
+                name={guest.name} // Pass the name for fallback initials
+                className="guest-image" 
+                size="24px" 
+              />
               <div className="guest-info">
                 <p className="guest-name">{guest.name}</p>
                 <p className="guest-title">{guest.title}</p>
