@@ -96,6 +96,11 @@ const Login = () => {
   };
   return (
     <div className="auth-container">
+      <div className="circle-bg circle-1"></div>
+      <div className="circle-bg circle-2"></div>
+      <div className="circle-bg circle-3"></div>
+      <div className="circle-bg circle-4"></div>
+      <div className="circle-bg circle-5"></div>
       <div className="left-right-section">
         {/* Left Section */}
         <div className="left-section">

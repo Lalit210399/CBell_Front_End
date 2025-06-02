@@ -269,3 +269,65 @@
   visibility: visible;
   opacity: 1;
 }
+
+/* Background circles */
+.auth-container {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(124.77deg, #FFFFFF 55.38%, #A4E1B1 152.49%);
+}
+
+.circle-bg {
+    position: absolute;
+    border-radius: 50%;
+    /* filter: blur(60px); */
+    /* opacity: 0.15; */
+    z-index: 0;
+}
+
+.circle-1 {
+  width: 85px;
+  height: 85px;
+  background: #96DDA5;
+  bottom: -7%;
+  right: 26%;
+}
+
+.circle-2 {
+    width: 200px;
+    height: 200px;
+    background: #96DDA5;
+    top: -75px;
+    left: -84px;
+}
+
+.circle-3 {
+    width: 38px;
+    height: 38px;
+    background: #02968A;
+    top: 3%;
+    left: 12%;
+
+}
+
+.circle-4 {
+  width: 212px;
+  height: 212px;
+  background: #02968A;
+  bottom: -4%;
+  right: 1%;
+}
+
+.circle-5 {
+    width: 127px;
+    height: 127px;
+    background: #00C7B7;
+    top: 63%;
+    left: 71%;
+}
+
+/* Make sure content stays above circles */
+.left-right-section {
+  position: relative;
+  z-index: 1;
+}
