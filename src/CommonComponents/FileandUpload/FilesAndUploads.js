@@ -104,7 +104,7 @@ const FilesUploads = ({
     if (!window.confirm('Are you sure you want to delete this file?')) return;
     
     try {
-      const response = await fetch(`apis/document/delete/${fileId}`, {
+      const response = await fetch(`/apis/document/delete/${fileId}`, {
         method: 'DELETE',
         headers: { 'ngrok-skip-browser-warning': '1' }
       });
