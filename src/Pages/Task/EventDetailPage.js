@@ -18,17 +18,16 @@ const EventDetail = () => {
   const [tasksData, setTasksData] = useState([]);
   const [activeTab, setActiveTab] = useState("Details");
   const [mode, setMode] = useState("view");
-  const [users, setUsers] = useState([]); // State to store the list of users
+  const [users, setUsers] = useState([]);
   const detailSaveRef = useRef(null);
   const { user } = useUser();
   const { addMessage } = useMessages();
   const { permissions: userPermissions } = useUser();
 
   const permissions = {
-    canEdit: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,      // Allow editing event details
-    canCreateTask: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Create")?? false, // Allow creating new tasks
-    canSave: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,      // Allow saving event
-    // Add more as needed
+    canEdit: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
+    canCreateTask: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Create") ?? false,
+    canSave: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
   };
 
   const navigate = useNavigate();
@@ -43,7 +42,6 @@ const EventDetail = () => {
   const selectedDate = location.state?.selectedDate
     ? new Date(location.state.selectedDate)
     : null;
-  console.log("Event ID:", eventId);
 
   useEffect(() => {
     if (initialMode) {
@@ -51,25 +49,21 @@ const EventDetail = () => {
     }
   }, [initialMode]);
 
-  // Fetch users when mode is "edit" or "create"
   useEffect(() => {
     if (mode === "edit" || mode === "create") {
       const fetchUsers = async () => {
         try {
-          const response = await fetch(
-            "/auth/api/auth/users",
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-                "ngrok-skip-browser-warning": "1",
-              },
-            }
-          );
+          const response = await fetch("/auth/api/auth/users", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              "ngrok-skip-browser-warning": "1",
+            },
+          });
           if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
           const data = await response.json();
-          setUsers(data); // Store the fetched users in state
+          setUsers(data);
         } catch (error) {
           console.error("Error fetching users:", error);
           addMessage({
@@ -87,17 +81,14 @@ const EventDetail = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const response = await fetch(
-          `/apis/task/by-event/${eventId}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-              "ngrok-skip-browser-warning": "1",
-            },
-          }
-        );
+        const response = await fetch(`/apis/task/by-event/${eventId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "ngrok-skip-browser-warning": "1",
+          },
+        });
         if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
         const data = await response.json();
 
@@ -128,7 +119,6 @@ const EventDetail = () => {
 
   useEffect(() => {
     if (mode === "create") {
-      // Initialize with empty data in create mode
       setFetchedEvent({
         eventName: "",
         eventDate: selectedDate
@@ -145,17 +135,14 @@ const EventDetail = () => {
     const fetchEvent = async () => {
       if (!eventId) return;
       try {
-        const response = await fetch(
-          `/apis/event/get_event/${eventId}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-              "ngrok-skip-browser-warning": "1",
-            },
-          }
-        );
+        const response = await fetch(`/apis/event/get_event/${eventId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "ngrok-skip-browser-warning": "1",
+          },
+        });
         if (!response.ok)
           throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
@@ -248,27 +235,10 @@ const EventDetail = () => {
 
   const handleTabChange = (tab) => {
     if (mode === "edit") {
-      setMode("view"); // Reset to view mode when changing tabs
+      setMode("view");
     }
     setActiveTab(tab);
   };
-
-  const participants = [
-    {
-      id: 1,
-      name: "Alice Johnson",
-      // src: "https://i.pravatar.cc/40",
-      size: "24px",
-      shape: "circle",
-    },
-    {
-      id: 2,
-      name: "Bob Smith",
-      // src: "https://i.pravatar.cc/41",
-      size: "24px",
-      shape: "circle",
-    },
-  ];
 
   const formatDateForInput = (dateString) => {
     if (!dateString) return "";
@@ -276,52 +246,57 @@ const EventDetail = () => {
     return date.toISOString().split("T")[0];
   };
 
+  // Create participants array from coordinators and special guests
+  const participants = [
+    ...(fetchedEvent?.coordinators?.map((name, index) => ({
+      id: `coordinator-${index}`,
+      name,
+      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
+    })) || []),
+    ...(fetchedEvent?.specialGuests?.map((name, index) => ({
+      id: `guest-${index}`,
+      name,
+      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
+    })) || []),
+  ];
+
+
   const topSectionData = {
-    title:
-      mode === "create" ? "" : fetchedEvent?.eventName || "",
-    date:
-      mode === "create"
-        ? selectedDate
-          ? formatDateForInput(selectedDate)
-          : formatDateForInput(new Date())
-        : fetchedEvent?.eventDate
-          ? formatDateForInput(fetchedEvent.eventDate)
-          : formatDateForInput(new Date()),
-    createdBy:
-      mode === "create"
-        ? "User ID 0"
-        : `User ID ${fetchedEvent?.createdBy || ""}`,
+    title: mode === "create" ? "" : fetchedEvent?.eventName || "",
+    date: mode === "create"
+      ? selectedDate
+        ? formatDateForInput(selectedDate)
+        : formatDateForInput(new Date())
+      : fetchedEvent?.eventDate
+        ? formatDateForInput(fetchedEvent.eventDate)
+        : formatDateForInput(new Date()),
+    createdBy: mode === "create"
+      ? "User ID 0"
+      : `User ID ${fetchedEvent?.createdBy || ""}`,
     creatorAvatar: {
       id: 0,
       name: user?.firstName || "User",
-      // src: "https://i.pravatar.cc/40",
       size: "24px",
       shape: "circle",
     },
     participants,
   };
-  console.log(topSectionData.creatorAvatar);
 
-  const guestsData =
-    mode === "create"
-      ? []
-      : fetchedEvent?.specialGuests?.map((name, index) => ({
-        id: index,
-        name,
-        title: "Guest",
-      })) || [];
+  const guestsData = mode === "create"
+    ? []
+    : fetchedEvent?.specialGuests?.map((name, index) => ({
+      id: index,
+      name,
+      title: "Guest",
+    })) || [];
 
-      console.log("Guests Data:", guestsData);
-
-  const organizersData =
-    mode === "create"
-      ? []
-      : fetchedEvent?.coordinators?.map((name, index) => ({
-        id: index + 100,
-        name,
-        title: "Coordinator",
-      })) || [];
-      console.log("Organizers Data:", organizersData);
+  const organizersData = mode === "create"
+    ? []
+    : fetchedEvent?.coordinators?.map((name, index) => ({
+      id: index + 100,
+      name,
+      title: "Coordinator",
+    })) || [];
 
   const tabs = [
     {
@@ -362,8 +337,7 @@ const EventDetail = () => {
     },
   ];
 
-  // Filter tabs when in create mode to show only Details
-  const filteredTabs = mode === "create" 
+  const filteredTabs = mode === "create"
     ? tabs.filter(tab => tab.label === "Details")
     : tabs;
 
@@ -393,19 +367,20 @@ const EventDetail = () => {
       <div className="Top-Section">
         <TopSection
           mode={mode}
-          data={topSectionData}
-          participants={topSectionData.participants}
-          users={users}
           onBackClick={handleBackClick}
           onNewTaskClick={handleNewTaskClick}
-          onSaveClick={(updatedData) => {
-            if (detailSaveRef.current) {
-              const detailData = detailSaveRef.current();
-              handleSaveEvent(updatedData, detailData);
-            }
+          onSaveClick={(topData) => handleSaveEvent(topData, detailSaveRef.current)}
+          data={{
+            title: fetchedEvent?.eventName,
+            date: formatDateForInput(fetchedEvent?.eventDate),
+            createdBy: user?.name || "Admin",
+            creatorAvatar: { name: user?.name || "Admin" },
           }}
+          participants={participants}
+          users={users}
           permissions={permissions}
         />
+
       </div>
       <div className="Inner-Content">
         <TabMenu

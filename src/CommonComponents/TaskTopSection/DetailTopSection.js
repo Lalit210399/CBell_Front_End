@@ -9,13 +9,18 @@ const DetailTopSection = ({
   onBackClick,
   onNewTaskClick,
   onSaveClick,
-  data,
+  data = {},
   participants = [],
   users = [],
   permissions = {},
+  initialDate = ""
 }) => {
-  const [editableTitle, setEditableTitle] = useState(data?.title || "");
-  const [editableDate, setEditableDate] = useState(data?.date || "");
+  const [editableTitle, setEditableTitle] = useState(
+    mode === "create" ? "" : data?.title || ""
+  );
+  const [editableDate, setEditableDate] = useState(
+    mode === "create" ? initialDate : data?.date || ""
+  );
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState([]);
 
@@ -24,19 +29,13 @@ const DetailTopSection = ({
   useEffect(() => {
     if (mode === "create") {
       setEditableTitle("");
-      setEditableDate("");
+      setEditableDate(initialDate || "");
       setSelectedUserIds([]);
     } else {
       setEditableTitle(data?.title || "");
       setEditableDate(data?.date || "");
     }
-  }, [data, mode]);
-
-
-  useEffect(() => {
-    setEditableTitle(data?.title || "");
-    setEditableDate(data?.date || "");
-  }, [data]);
+  }, [data, mode, initialDate]);
 
   const handleTitleChange = (e) => {
     setEditableTitle(e.target.value);
@@ -52,23 +51,19 @@ const DetailTopSection = ({
 
   const handleUserSelect = (selectedUser) => {
     if (Array.isArray(selectedUser)) {
-      // Handle multi-select
-      const selectedIds = selectedUser.map((user) => user.value); // Extract IDs
+      const selectedIds = selectedUser.map((user) => user.value);
       setSelectedUserIds(selectedIds);
     } else {
-      // Handle single-select (if needed)
       setSelectedUserIds([selectedUser.value]);
     }
-    console.log("Selected User IDs:", selectedUserIds); // Log selected IDs
   };
 
   const handleSaveClick = () => {
     const payload = {
       title: editableTitle,
       date: editableDate,
-      userIds: selectedUserIds, // Include selected user IDs in the payload
+      userIds: selectedUserIds,
     };
-    console.log("Payload:", payload); // Debugging payload
     onSaveClick(payload);
   };
 
@@ -95,8 +90,8 @@ const DetailTopSection = ({
         </div>
         <div className="avatar-dropdown-container">
           <div className="avatar-group">
-            <AvatarList avatars={participants} />
-            {/* {(mode === "edit" || mode === "create") && (
+            <AvatarList avatars={participants} maxVisible={2} />
+            {(mode === "edit" || mode === "create") && (
               <>
                 <button
                   className="avatar-add-button"
@@ -112,12 +107,12 @@ const DetailTopSection = ({
                         label: `${user.firstName} ${user.lastName}`,
                       }))}
                       onSelect={handleUserSelect}
-                      multiSelect={true} // Allow multiple selections
+                      multiSelect={true}
                     />
                   </div>
                 )}
               </>
-            )} */}
+            )}
           </div>
         </div>
       </div>
@@ -140,7 +135,7 @@ const DetailTopSection = ({
           </div>
 
           <div className="creator-section">
-            <span>{creatorAvatar.name}</span>
+            <span>{creatorAvatar?.name}</span>
             <div className="creator-avatar">
               <AvatarList avatars={[creatorAvatar]} />
             </div>
@@ -148,13 +143,13 @@ const DetailTopSection = ({
         </div>
 
         <div className="action-buttons">
-          {(mode === "view" || mode === "edit") && permissions.canCreateTask && (
+          {(mode === "view" || mode === "edit") && permissions?.canCreateTask && (
             <button className="new-task-btn" onClick={onNewTaskClick}>
               New Task
             </button>
           )}
 
-          {(mode === "edit" || mode === "create") && permissions.canSave && (
+          {(mode === "edit" || mode === "create") && permissions?.canSave && (
             <button className="save-btn" onClick={handleSaveClick}>
               <Save size={16} />
               Save

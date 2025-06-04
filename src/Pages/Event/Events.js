@@ -183,7 +183,7 @@ const EventTable = () => {
               <AvatarList
                 avatars={item.participants}
                 stack={true}
-                maxVisible={4}
+                maxVisible={2}
                 showTooltip={true}
               />
             ) : (

@@ -147,7 +147,7 @@ const TopSection = ({
         {/* Rest of your component remains the same */}
         <div className="header-avatar-dropdown">
           <div className="header-avatar-group">
-            <AvatarList avatars={selectedParticipants} />
+            <AvatarList avatars={selectedParticipants} maxVisible={2} />
 
             {(mode === "edit" || mode === "create") && (
               <div className="add-participant-section">
@@ -191,12 +191,12 @@ const TopSection = ({
       <div className="header-right">
         <div className="header-date-creator">
           <div className="header-creator">
+            <span>{createdBy}</span>
             <AvatarList
               avatars={[creatorAvatar]}
               showTooltip={false}
               stack={false}
             />
-            <span>{createdBy}</span>
           </div>
         </div>
 
