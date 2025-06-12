@@ -41,57 +41,65 @@ const CommentsPreview = ({ onFilesChange, taskId, eventId, isActive, organizatio
     if (isActive && !shouldLoadConversation) {
       setShouldLoadConversation(true);
     }
-  }, [isActive]);
+  }, [isActive, shouldLoadConversation]);
 
-  useEffect(() => {
-    const fetchLatestDocument = async () => {
-      if (!taskId) return;
-      setFileLoading(true); // Start loading
+// ...existing code...
+useEffect(() => {
+  const fetchLatestDocument = async () => {
+    if (!taskId) return;
+    setFileLoading(true); // Start loading
 
-      try {
-        const res = await fetch(`/apis/document-details/task/${taskId}`, {
-          headers: { 'ngrok-skip-browser-warning': '1' }
-        });
-        const data = await res.json();
-        if (!data?.length) return;
+    try {
+      const res = await fetch(`/apis/document-details/task/${taskId}`, {
+        headers: { 'ngrok-skip-browser-warning': '1' }
+      });
+      const data = await res.json();
+      if (!data?.length) return;
 
-        const lastDoc = data[data.length - 1];
-        const type = getFileTypeFromMime(lastDoc.contentType);
+      // Always reverse so newest files are first everywhere
+      const reversedData = [...data].reverse();
 
-        const fileData = {
-          name: lastDoc.filename,
-          type: type,
-          documentId: lastDoc.documentId,
-          description: lastDoc.description,
-          url: `/apis/document/view/${lastDoc.documentId}`,
-        };
-
-        if (type.startsWith('image/')) {
-          try {
-            const imageRes = await fetch(fileData.url, {
-              headers: { 'ngrok-skip-browser-warning': '1' }
-            });
-            const blob = await imageRes.blob();
-            fileData.previewUrl = URL.createObjectURL(blob);
-          } catch (err) {
-            console.error("Error creating image preview:", err);
+      // Prepare all files for preview strip and main viewer
+      const files = await Promise.all(
+        reversedData.map(async (doc) => {
+          const type = getFileTypeFromMime(doc.contentType);
+          const fileData = {
+            name: doc.filename,
+            type: type,
+            documentId: doc.documentId,
+            description: doc.description,
+            url: `/apis/document/view/${doc.documentId}`,
+          };
+          if (type.startsWith('image/')) {
+            try {
+              const imageRes = await fetch(fileData.url, {
+                headers: { 'ngrok-skip-browser-warning': '1' }
+              });
+              const blob = await imageRes.blob();
+              fileData.previewUrl = URL.createObjectURL(blob);
+            } catch (err) {
+              console.error("Error creating image preview:", err);
+            }
           }
-        }
+          return fileData;
+        })
+      );
 
-        setLatestFile([fileData]);
-        onFilesChange({
-          files: [fileData],
-          description: `${lastDoc.filename} (${type})`,
-        });
-      } catch (err) {
-        console.error("Error fetching latest document:", err);
-      } finally {
-        setFileLoading(false); // End loading
-      }
-    };
+      setLatestFile(files); // All files, newest first
+      onFilesChange({
+        files: files,
+        description: `${files[0]?.filename || ""} (${files[0]?.type || ""})`,
+      });
+    } catch (err) {
+      console.error("Error fetching latest document:", err);
+    } finally {
+      setFileLoading(false); // End loading
+    }
+  };
 
-    fetchLatestDocument();
-  }, [taskId]);
+  fetchLatestDocument();
+}, [taskId, onFilesChange]);
+// ...existing code...
 
   const handleToggleCollapse = (collapsed) => {
     setIsCollapsed(collapsed);
