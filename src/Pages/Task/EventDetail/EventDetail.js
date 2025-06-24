@@ -7,29 +7,31 @@ const Detail = ({
   guestsData = [],
   organizersData = [],
   mode,
-    onSave,
+  onSave,
   initialDescription = "",
 }) => {
   const [guests, setGuests] = useState([]);
   const [organizers, setOrganizers] = useState([]);
-  const [guestForm, setGuestForm] = useState({ name: "", designation: "" });
-  const [organizerForm, setOrganizerForm] = useState({
-    name: "",
-    designation: "",
-  });
+  const [guestForm, setGuestForm] = useState({ name: "", title: "" });
+  const [organizerForm, setOrganizerForm] = useState({ name: "", title: "" });
   const editorRef = useRef(initialDescription);
 
   useEffect(() => {
     if (mode === "view" || mode === "edit") {
-      setGuests(
-        guestsData.map((g) => ({ name: g.name, designation: g.title }))
-      );
-      setOrganizers(
-        organizersData.map((o) => ({ name: o.name, designation: o.title }))
-      );
+      // Only update if values are different to avoid infinite loop
+      if (
+        JSON.stringify(guests) !== JSON.stringify(guestsData)
+      ) {
+        setGuests(guestsData);
+      }
+      if (
+        JSON.stringify(organizers) !== JSON.stringify(organizersData)
+      ) {
+        setOrganizers(organizersData);
+      }
     } else if (mode === "create") {
-      setGuests([]);
-      setOrganizers([]);
+      if (guests.length !== 0) setGuests([]);
+      if (organizers.length !== 0) setOrganizers([]);
     }
   }, [mode, guestsData, organizersData]);
 
@@ -44,16 +46,16 @@ const Detail = ({
   };
 
   const handleAddGuest = () => {
-    if (guestForm.name && guestForm.designation) {
+    if (guestForm.name && guestForm.title) {
       setGuests((prev) => [...prev, guestForm]);
-      setGuestForm({ name: "", designation: "" });
+      setGuestForm({ name: "", title: "" });
     }
   };
 
   const handleAddOrganizer = () => {
-    if (organizerForm.name && organizerForm.designation) {
+    if (organizerForm.name && organizerForm.title) {
       setOrganizers((prev) => [...prev, organizerForm]);
-      setOrganizerForm({ name: "", designation: "" });
+      setOrganizerForm({ name: "", title: "" });
     }
   };
 
@@ -73,17 +75,17 @@ const Detail = ({
     );
   };
 
-  // Notify parent of Save
+  // Set up the save handler
   useEffect(() => {
     if (onSave) {
-      onSave.current = () => ({
-        description: editorRef.current,
-        guests: guests.map((g) => ({ name: g.name, title: g.designation })),
-        organizers: organizers.map((o) => ({
-          name: o.name,
-          title: o.designation,
-        })),
-      });
+      onSave.current = () => {
+        return {
+          description: editorRef.current,
+          location: "Pune",
+          guests: [...guests].filter(g => g.name && g.title),
+          organizers: [...organizers].filter(o => o.name && o.title),
+        };
+      };
     }
   }, [guests, organizers, onSave]);
 
@@ -92,7 +94,9 @@ const Detail = ({
       <div className="Right_Section Section">
         <TextEditor
           initialContent={initialDescription}
-          onContentChange={(val) => (editorRef.current = val)}
+          onContentChange={(val) => {
+            editorRef.current = val;
+          }}
           isFullWidth={true}
           mode={mode}
         />
@@ -115,10 +119,10 @@ const Detail = ({
                   <input
                     className="guest-input"
                     type="text"
-                    name="designation"
-                    value={guestForm.designation}
+                    name="title"
+                    value={guestForm.title}
                     onChange={handleGuestChange}
-                    placeholder="Designation"
+                    placeholder="Title"
                   />
                 </div>
                 <button
@@ -144,11 +148,11 @@ const Detail = ({
                   <input
                     className="guest-input"
                     type="text"
-                    value={guest.designation}
+                    value={guest.title}
                     onChange={(e) =>
-                      handleGuestEdit(index, "designation", e.target.value)
+                      handleGuestEdit(index, "title", e.target.value)
                     }
-                    placeholder="Designation"
+                    placeholder="Title"
                   />
                 </div>
               ))}
@@ -169,10 +173,10 @@ const Detail = ({
                   <input
                     className="guest-input"
                     type="text"
-                    name="designation"
-                    value={organizerForm.designation}
+                    name="title"
+                    value={organizerForm.title}
                     onChange={handleOrganizerChange}
-                    placeholder="Designation"
+                    placeholder="Title"
                   />
                 </div>
                 <button
@@ -198,11 +202,11 @@ const Detail = ({
                   <input
                     className="guest-input"
                     type="text"
-                    value={org.designation}
+                    value={org.title}
                     onChange={(e) =>
-                      handleOrganizerEdit(index, "designation", e.target.value)
+                      handleOrganizerEdit(index, "title", e.target.value)
                     }
-                    placeholder="Designation"
+                    placeholder="Title"
                   />
                 </div>
               ))}

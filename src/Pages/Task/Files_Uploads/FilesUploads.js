@@ -92,12 +92,12 @@ const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
         content={
           loading
             ? <SkeletonCards />
-            : <FilesandUploads files={fetchedEventFiles} eventId={eventId} organizationId={organizationId} />
+            : <FilesandUploads files={fetchedEventFiles}  enableSelectionCheckbox={false}  eventId={eventId} organizationId={organizationId} />
         } 
       />
       <Accordion 
         title="Tasks File" 
-        content={<FilesandUploads files={filesFromTasks} eventId={eventId} organizationId={organizationId} />} 
+        content={<FilesandUploads files={filesFromTasks}  enableSelectionCheckbox={false}  eventId={eventId} organizationId={organizationId} />} 
       />
     </div>
   );

@@ -5,7 +5,7 @@ module.exports = function (app) {
   app.use(
     '/apis',
     createProxyMiddleware({
-      target: 'https://cbell.ai/api',
+      target: 'https://sincere-starfish-mutually.ngrok-free.app',
       changeOrigin: true,
       pathRewrite: { '^/apis': '' },
     })

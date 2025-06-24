@@ -16,17 +16,14 @@ const TopSection = ({
   onSaveClick,
   users = [],
   assignedTo = [],
-  onParticipantsChange = () => {},
+  onParticipantsChange,
+  permissions = {},
 }) => {
-  const [editableTitle, setEditableTitle] = useState(title || ""); // Initialize with empty string if title is undefined
+  const [editableTitle, setEditableTitle] = useState(title || "");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState([]);
   const dropdownRef = useRef(null);
-  const titleRef = useRef(null); // Add a ref for the title element
-
-  // const getDummyAvatar = (name) => {
-  //   return `https://i.pravatar.cc/400?u=${name}`;
-  // };
+  const titleRef = useRef(null);
 
   const creatorUser = users.find(user =>
     `${user.firstName} ${user.lastName}` === createdBy
@@ -35,20 +32,30 @@ const TopSection = ({
   const creatorAvatar = {
     id: 'creator',
     name: createdBy,
-    // src: creatorUser.avatar || (createdBy),
     fallback: creatorUser.firstName?.charAt(0).toUpperCase() || "U",
     size: "24px",
     shape: "circle",
   };
 
+  // ✅ Update selected user IDs from assignedTo (assumed to be array of IDs)
   useEffect(() => {
     if (users.length > 0 && assignedTo.length > 0) {
-      const matchedUserIds = users
-        .filter(user => assignedTo.includes(`${user.firstName} ${user.lastName}`))
-        .map(user => user.id);
-      setSelectedUserIds(matchedUserIds);
+      setSelectedUserIds(assignedTo);
     }
   }, [users, assignedTo]);
+
+  // ✅ Notify parent with selected participants as { id, name }
+  useEffect(() => {
+    if (onParticipantsChange) {
+      const selectedUsers = users
+        .filter(user => selectedUserIds.includes(user.id))
+        .map(user => ({
+          id: user.id,
+          name: `${user.firstName} ${user.lastName}`,
+        }));
+      onParticipantsChange(selectedUsers);
+    }
+  }, [selectedUserIds, onParticipantsChange]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -58,39 +65,28 @@ const TopSection = ({
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const selectedParticipants = users
-    .filter((user) => selectedUserIds.includes(user.id))
-    .map((user) => {
-      const fullName = `${user.firstName} ${user.lastName}`;
-      return {
-        id: user.id,
-        name: fullName,
-        src: user.avatar || (fullName),
-        fallback: user.firstName?.charAt(0).toUpperCase() || "?",
-        size: "20px",
-        shape: "circle",
-      };
-    });
-
   useEffect(() => {
-    setEditableTitle(title || ""); // Handle case where title might be undefined
+    setEditableTitle(title || "");
   }, [title]);
 
   useEffect(() => {
     if (mode === "create" && titleRef.current && !title) {
-      // Focus the title input when in create mode and title is empty
       titleRef.current.focus();
     }
   }, [mode, title]);
 
-  useEffect(() => {
-    onParticipantsChange(selectedUserIds);
-  }, [selectedUserIds, onParticipantsChange]);
+  const selectedParticipants = users
+    .filter(user => selectedUserIds.includes(user.id))
+    .map(user => ({
+      id: user.id,
+      name: `${user.firstName} ${user.lastName}`,
+      fallback: user.firstName?.charAt(0).toUpperCase() || "?",
+      size: "20px",
+      shape: "circle",
+    }));
 
   const handleTitleChange = (e) => {
     const newTitle = e.target.innerText;
@@ -99,9 +95,7 @@ const TopSection = ({
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault(); // Prevent line breaks in the title
-    }
+    if (e.key === "Enter") e.preventDefault();
   };
 
   const handleDropdownSelect = (option) => {
@@ -109,12 +103,12 @@ const TopSection = ({
   };
 
   const handleAddButtonClick = () => {
-    setIsDropdownOpen((prev) => !prev);
+    setIsDropdownOpen(prev => !prev);
   };
 
   const handleUserSelect = (selected) => {
     const ids = Array.isArray(selected)
-      ? selected.map((s) => s.value)
+      ? selected.map(s => s.value)
       : [selected.value];
     setSelectedUserIds(ids);
   };
@@ -144,12 +138,11 @@ const TopSection = ({
           </div>
         </div>
 
-        {/* Rest of your component remains the same */}
         <div className="header-avatar-dropdown">
           <div className="header-avatar-group">
             <AvatarList avatars={selectedParticipants} maxVisible={2} />
 
-            {(mode === "edit" || mode === "create") && (
+            {(mode === "edit" || mode === "create") && permissions.canAssignUsers && (
               <div className="add-participant-section">
                 <button 
                   className="avatar-add-button" 
@@ -160,16 +153,19 @@ const TopSection = ({
                 {isDropdownOpen && (
                   <div className="inline-dropdown" ref={dropdownRef}>
                     <Dropdown
-                      options={users.map((user) => ({
+                      options={users.map(user => ({
                         value: user.id,
                         label: `${user.firstName} ${user.lastName}`,
                       }))}
                       onSelect={handleUserSelect}
                       multiSelect={true}
-                      selectedOptions={selectedUserIds.map(id => ({
-                        value: id,
-                        label: `${users.find(u => u.id === id)?.firstName || ''} ${users.find(u => u.id === id)?.lastName || ''}`
-                      }))}
+                      selectedOptions={selectedUserIds.map(id => {
+                        const u = users.find(u => u.id === id);
+                        return {
+                          value: id,
+                          label: `${u?.firstName || ''} ${u?.lastName || ''}`
+                        };
+                      })}
                     />
                   </div>
                 )}
@@ -182,7 +178,7 @@ const TopSection = ({
               options={statusOptions}
               selectedOption={status}
               onSelect={handleDropdownSelect}
-              disabled={mode === "view"}
+              disabled={mode === "view" || !permissions.canChangeStatus}
             />
           </div>
         </div>
@@ -201,7 +197,7 @@ const TopSection = ({
         </div>
 
         <div className="header-actions">
-          {(mode === "edit" || mode === "create") && (
+          {(mode === "edit" || mode === "create") && permissions.canSave && (
             <button
               className="header-save"
               onClick={onSaveClick}

@@ -37,7 +37,7 @@ const StepTwo = ({ prevStep, formData, handleChange }) => {
       if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
 
       const result = await response.json();
-      console.log("Event Created:", result);
+      //console.log("Event Created:", result);
       alert("Event created successfully!");
       navigate("/events"); // Redirect to the events page after successful creation
     } catch (error) {

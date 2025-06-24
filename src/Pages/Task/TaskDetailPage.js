@@ -13,19 +13,17 @@ import "./Tasks.css";
 const TaskDetailPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, permissions: userPermissions } = useUser();
+  
   const { taskId, mode: initialMode = "view", eventId, organizationId } = location.state || {};
+  
   const [taskTitle, setTaskTitle] = useState("");
   const [taskStatus, setTaskStatus] = useState({
     label: "New",
-    value: "1",
+    value: "New",
     color: "gray",
   });
-  const { user, permissions: userPermissions } = useUser();
   const [activeTab, setActiveTab] = useState("Details");
-  const [conversationFiles, setConversationFiles] = useState({
-    files: [],
-    description: "",
-  });
   const [fileData, setFileData] = useState({ links: [], uploadedFiles: [] });
   const [mode, setMode] = useState(initialMode);
   const [createdBy, setCreatedBy] = useState(
@@ -33,9 +31,34 @@ const TaskDetailPage = () => {
   );
   const [usersList, setUsersList] = useState([]);
   const [selectedParticipantIds, setSelectedParticipantIds] = useState([]);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Permissions configuration
+  const [taskData, setTaskData] = useState({
+    id: "",
+    eventId: "",
+    taskTitle: "",
+    taskStatus: "New",
+    assignedTo: [],
+    createdBy: "",
+    updatedBy: "",
+    type: "",
+    date: new Date().toISOString().split("T")[0],
+    quantity: 1,
+    description: "",
+    checklist: [{ text: "", checked: false, isPlaceholder: false }],
+    organizationId: "",
+  });
+
+  const statusOptions = [
+    { label: "New", value: "New", color: "gray" },
+    { label: "Active", value: "Active", color: "blue" },
+    { label: "Under Review", value: "Under Review", color: "orange" },
+    { label: "Approval", value: "Approval", color: "yellow" },
+    { label: "Approved", value: "Approved", color: "green" },
+  ];
+
   const permissions = {
     canEdit: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Update") ?? false,
     canSave: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Update") ?? false,
@@ -43,51 +66,66 @@ const TaskDetailPage = () => {
     canAssignUsers: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Update") ?? false,
   };
 
-  const [taskData, setTaskData] = useState({
-    type: "",
-    date: new Date().toISOString().split("T")[0],
-    quantity: 1,
-    description: "",
-    checklist: [{
-      text: "",
-      checked: false,
-      isPlaceholder: false
-    }],
-  });
-
-  const statusOptions = [
-    { label: "New", value: "1", color: "gray" },
-    { label: "Active", value: "2", color: "blue" },
-    { label: "Under Review", value: "3", color: "orange" },
-    { label: "Approval", value: "4", color: "yellow" },
-    { label: "Approved", value: "5", color: "green" },
-    { label: "Published", value: "6", color: "purple" },
-  ];
+  const initializeCreateMode = () => {
+    setTaskData({
+      id: "",
+      eventId: eventId || "",
+      taskTitle: "",
+      taskStatus: "New",
+      assignedTo: [],
+      createdBy: user ? `${user.firstName} ${user.lastName}` : "User",
+      updatedBy: "",
+      type: "",
+      date: new Date().toISOString().split("T")[0],
+      quantity: 1,
+      description: "",
+      checklist: [{ text: "", checked: false, isPlaceholder: false }],
+      organizationId: organizationId || "",
+    });
+    setTaskTitle("");
+    setTaskStatus(statusOptions[0]);
+    setCreatedBy(user ? `${user.firstName} ${user.lastName}` : "User");
+    setIsLoading(false);
+  };
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const usersResponse = await fetch("/apis/auth/users", {
+        const response = await fetch("/apis/auth/users", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
             "ngrok-skip-browser-warning": "1",
           },
         });
-        if (!usersResponse.ok) throw new Error("Failed to fetch users list");
-        const users = await usersResponse.json();
-        setUsersList(users);
-      } catch (error) {
-        console.error("Error fetching users:", error);
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch users");
+        }
+        
+        const data = await response.json();
+        setUsersList(data);
+        
+        if (mode === "create") {
+          initializeCreateMode();
+        }
+      } catch (err) {
+        console.error("Error fetching users:", err);
+        setError("Failed to load users list");
+        setIsLoading(false);
       }
     };
+
     fetchUsers();
   }, []);
 
   useEffect(() => {
     const fetchTask = async () => {
+      if (!taskId || mode === "create") return;
+      
       try {
-        const res = await fetch(`/apis/task/get_task/${taskId}`, {
+        setIsLoading(true);
+        const response = await fetch(`/apis/task/get_task/${taskId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -95,34 +133,27 @@ const TaskDetailPage = () => {
           },
         });
 
-        if (!res.ok) throw new Error("Failed to fetch task");
-        const data = await res.json();
-
-        setTaskTitle(data.taskTitle || "");
-        // setCreatedBy(`User ${data.createdBy}` || "User 3");
-        if (data.createdBy) {
-          // If you want to show the creator's name from the task data
-          setCreatedBy(`User ${data.createdBy}`);
-        } else {
-          // Otherwise show current user's name
-          setCreatedBy(user ? `${user.firstName} ${user.lastName}` : "User");
+        if (!response.ok) {
+          throw new Error("Failed to fetch task");
         }
 
-        const apiStatusValue = data.taskStatus || "1";
+        const data = await response.json();
+        
+        setTaskTitle(data.taskTitle || "");
+        setCreatedBy(data.createdBy ? `User ${data.createdBy}` : 
+          (user ? `${user.firstName} ${user.lastName}` : "User"));
+        
         const matchedStatus = statusOptions.find(
-          (opt) =>
-            opt.label.toLowerCase() === apiStatusValue.toLowerCase() ||
-            opt.value === apiStatusValue
+          opt => opt.value.toLowerCase() === (data.taskStatus || "New").toLowerCase()
         ) || statusOptions[0];
         setTaskStatus(matchedStatus);
 
-        // Format checklist data safely
-        const formattedChecklist = Array.isArray(data.checklistDetails)
+        const formattedChecklist = Array.isArray(data.checklistDetails) 
           ? data.checklistDetails.map(item => ({
-            text: item?.text?.toString() || "",
-            checked: Boolean(item?.checked),
-            isPlaceholder: Boolean(item?.isPlaceholder)
-          }))
+              text: item?.text?.toString() || "",
+              checked: Boolean(item?.checked),
+              isPlaceholder: Boolean(item?.isPlaceholder)
+            }))
           : [{ text: "", checked: false, isPlaceholder: false }];
 
         setTaskData({
@@ -130,67 +161,58 @@ const TaskDetailPage = () => {
           eventId: data.eventId || "",
           taskTitle: data.taskTitle || "",
           taskStatus: matchedStatus.value,
-          assignedTo: data.assignedTo || [],
+          assignedTo: data.assignedTo?.map(user => user.id) || [],
           createdBy: data.createdBy || "",
           updatedBy: data.updatedBy || "",
           type: data.creativeType || "",
-          date: data.dueDate
-            ? data.dueDate.split("T")[0]
-            : new Date().toISOString().split("T")[0],
-          createdOn: data.createdOn || "",
-          updatedOn: data.updatedOn || "",
+          date: data.dueDate ? data.dueDate.split("T")[0] : new Date().toISOString().split("T")[0],
           quantity: data.creativeNumbers || 1,
           checklist: formattedChecklist,
           description: data.description || "",
-          organizationId: data.organizationId || "",
-          isDeleted: data.isDeleted || false,
-          deletedOn: data.deletedOn || null,
+          organizationId: data.organizationId || organizationId || "",
         });
+
       } catch (err) {
         console.error("Error loading task:", err);
+        setError("Failed to load task details");
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (usersList.length && mode !== "create" && taskId) {
+    if (usersList.length > 0 && mode !== "create") {
       fetchTask();
-    } else if (mode === "create") {
-      setIsLoading(false);
     }
-  }, [usersList, taskId, mode]);
+  }, [taskId, usersList, mode, organizationId, user, eventId]);
 
   useEffect(() => {
     if (usersList.length > 0 && Array.isArray(taskData.assignedTo)) {
       const participantIds = usersList
-        .filter((user) =>
+        .filter(user => 
           taskData.assignedTo.includes(`${user.firstName} ${user.lastName}`)
         )
-        .map((user) => user.id);
-
-      const isSame =
-        participantIds.length === selectedParticipantIds.length &&
-        participantIds.every((id) => selectedParticipantIds.includes(id));
-
-      if (!isSame) {
-        setSelectedParticipantIds(participantIds);
-      }
+        .map(user => user.id);
+      
+      setSelectedParticipantIds(prevIds => 
+        JSON.stringify(prevIds) !== JSON.stringify(participantIds) ? participantIds : prevIds
+      );
     }
   }, [usersList, taskData.assignedTo]);
 
   const updateTaskDetail = (field, value) => {
-    if (field === 'checklist') {
-      setTaskData(prev => ({
-        ...prev,
-        checklist: value.map(item => ({
-          text: item?.text?.toString().trim() || "",
-          checked: Boolean(item?.checked),
-          isPlaceholder: Boolean(item?.isPlaceholder)
-        })).filter(item => item.text) // Remove empty items
-      }));
-    } else {
-      setTaskData(prev => ({ ...prev, [field]: value }));
-    }
+    setTaskData(prev => {
+      if (field === 'checklist') {
+        return {
+          ...prev,
+          checklist: value.map(item => ({
+            text: item?.text?.toString().trim() || "",
+            checked: Boolean(item?.checked),
+            isPlaceholder: Boolean(item?.isPlaceholder)
+          })).filter(item => item.text)
+        };
+      }
+      return { ...prev, [field]: value };
+    });
   };
 
   const handleBackClick = () => {
@@ -205,13 +227,44 @@ const TaskDetailPage = () => {
 
     setIsLoading(true);
     try {
-      // Format checklist items safely
+      // Handle file approvals if files are selected and Files tab is active
+      if (selectedFiles.length > 0 && activeTab === "Files & Uploads") {
+        try {
+          const approvalResults = await Promise.allSettled(
+            selectedFiles.map(async (file) => {
+              const response = await fetch(`/apis/document/approve/${file.documentId}`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "ngrok-skip-browser-warning": "1",
+                },
+              });
+              
+              if (!response.ok) {
+                throw new Error(`Failed to approve file ${file.documentId}`);
+              }
+              return response.json();
+            })
+          );
+          
+          // Log any failed approvals
+          approvalResults.forEach((result, index) => {
+            if (result.status === "rejected") {
+              console.error(`Failed to approve file ${selectedFiles[index].documentId}:`, result.reason);
+            }
+          });
+        } catch (fileError) {
+          console.error("Error in file approval process:", fileError);
+        }
+      }
+
+      // Proceed with task save
       const formattedChecklist = Array.isArray(taskData.checklist)
         ? taskData.checklist.map(item => ({
-          text: item?.text?.toString().trim() || "",
-          checked: Boolean(item?.checked),
-          isPlaceholder: Boolean(item?.isPlaceholder)
-        })).filter(item => item.text) // Remove empty items
+            text: item.text,
+            checked: item.checked,
+            isPlaceholder: item.isPlaceholder
+          }))
         : [];
 
       const payload = {
@@ -219,8 +272,8 @@ const TaskDetailPage = () => {
         TaskTitle: taskTitle,
         TaskStatus: taskStatus.value,
         AssignedTo: selectedParticipantIds,
-        CreatedBy: user?.id || 0,  // Use current user's ID
-        UpdatedBy: user?.id || 0,  // Use current user's ID
+        CreatedBy: user?.id || 0,
+        UpdatedBy: user?.id || 0,
         CreativeType: taskData.type,
         DueDate: new Date(taskData.date).toISOString(),
         CreativeNumbers: taskData.quantity,
@@ -229,12 +282,10 @@ const TaskDetailPage = () => {
         OrganizationId: organizationId || taskData.organizationId
       };
 
-      console.log("Sending payload:", payload); // Debugging
-
-      const url = mode === "edit"
+      const url = mode === "edit" 
         ? `/apis/task/update/${taskId}`
         : `/apis/task/create_task`;
-
+      
       const method = mode === "edit" ? "PUT" : "POST";
 
       const response = await fetch(url, {
@@ -256,7 +307,6 @@ const TaskDetailPage = () => {
       if (mode === "create") {
         setMode("view");
         setTaskData(prev => ({ ...prev, id: result.taskId }));
-        // Update navigation state with new task ID
         navigate(location.pathname, {
           state: { ...location.state, taskId: result.taskId, mode: "view" },
           replace: true
@@ -266,10 +316,25 @@ const TaskDetailPage = () => {
       }
     } catch (error) {
       console.error("Save failed:", error);
-      alert(`Save failed: ${error.message}`);
+      setError(`Save failed: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleTabChange = (tab) => {
+    if (mode === "edit") {
+      setMode("view");
+    }
+    setActiveTab(tab);
+  };
+
+  const handleFileSelect = (file, isSelected) => {
+    setSelectedFiles(prev =>
+      isSelected
+        ? [...prev, file]
+        : prev.filter(f => f.documentId !== file.documentId)
+    );
   };
 
   const tabs = [
@@ -286,9 +351,12 @@ const TaskDetailPage = () => {
     },
     {
       label: "Comments and Preview",
-      component: (
+      component: mode === "create" ? (
+        <div className="create-mode-message">
+          Save the task first to access comments and preview
+        </div>
+      ) : (
         <CommentsPreview
-          onFilesChange={setConversationFiles}
           mode={mode}
           taskId={taskId}
           eventId={eventId}
@@ -296,10 +364,15 @@ const TaskDetailPage = () => {
           permissions={permissions}
         />
       ),
+      disabled: mode === "create",
     },
     {
       label: "Files & Uploads",
-      component: (
+      component: mode === "create" ? (
+        <div className="create-mode-message">
+          Save the task first to upload files
+        </div>
+      ) : (
         <TasksFiles
           files={fileData.uploadedFiles}
           onFilesChange={setFileData}
@@ -307,33 +380,26 @@ const TaskDetailPage = () => {
           taskId={taskId || taskData.id}
           eventId={eventId || taskData.eventId}
           organizationId={organizationId || taskData.organizationId}
-          permissions={permissions}
+          selectedFiles={selectedFiles}
+          onFileSelect={handleFileSelect}
         />
       ),
+      disabled: mode === "create",
     },
   ];
 
-  // Add this handler function
-  const handleTabChange = (tab) => {
-    if (mode === "edit") {
-      setMode("view"); // Reset to view mode when changing tabs
-    }
-    setActiveTab(tab);
-  };
-
-  // Filter tabs based on mode
-  const filteredTabs = mode === "create"
-    ? tabs.filter(tab => tab.label === "Details")
-    : tabs;
-
   const breadcrumbItems = [
     { label: "AISSMS COP", href: "#", icon: Building },
-    { label: "Events", href: "#", icon: Calendar },
+    { label: "Events", href: "/events", icon: Calendar },
     { label: taskTitle || "New Task", href: "#", icon: Pencil },
   ];
 
   if (isLoading) {
     return <div className="loading-container">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="error-container">{error}</div>;
   }
 
   return (
@@ -362,13 +428,14 @@ const TaskDetailPage = () => {
 
       <div className="Inner-Content">
         <TabMenu
-          tabs={filteredTabs}
+          tabs={tabs}
           showEditButton={mode === "view" && permissions.canEdit}
           isEditMode={mode === "edit"}
           onEditClick={() => setMode("edit")}
           onCancelClick={() => setMode("view")}
           activeTab={activeTab}
           setActiveTab={handleTabChange}
+          disabledTabs={mode === "create" ? tabs.filter(t => t.disabled).map(t => t.label) : []}
         />
       </div>
     </div>

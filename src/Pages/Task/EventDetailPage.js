@@ -18,16 +18,15 @@ const EventDetail = () => {
   const [tasksData, setTasksData] = useState([]);
   const [activeTab, setActiveTab] = useState("Details");
   const [mode, setMode] = useState("view");
-  const [users, setUsers] = useState([]);
   const detailSaveRef = useRef(null);
   const { user } = useUser();
   const { addMessage } = useMessages();
   const { permissions: userPermissions } = useUser();
 
   const permissions = {
-    canEdit: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
+    canEdit: mode === "create" ? true : userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
     canCreateTask: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Create") ?? false,
-    canSave: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
+    canSave: mode === "create" ? true : userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
   };
 
   const navigate = useNavigate();
@@ -50,35 +49,6 @@ const EventDetail = () => {
   }, [initialMode]);
 
   useEffect(() => {
-    if (mode === "edit" || mode === "create") {
-      const fetchUsers = async () => {
-        try {
-          const response = await fetch("/auth/api/auth/users", {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-              "ngrok-skip-browser-warning": "1",
-            },
-          });
-          if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-          const data = await response.json();
-          setUsers(data);
-        } catch (error) {
-          console.error("Error fetching users:", error);
-          addMessage({
-            text: "Failed to load users. Please try again.",
-            type: "Error",
-            duration: 3000,
-          });
-        }
-      };
-
-      fetchUsers();
-    }
-  }, [mode]);
-
-  useEffect(() => {
     const fetchTasks = async () => {
       try {
         const response = await fetch(`/apis/task/by-event/${eventId}`, {
@@ -96,10 +66,14 @@ const EventDetail = () => {
           id: task.id,
           creative_name: task.taskTitle,
           creative_type: task.creativeType,
-          assigned_to: `${task.assignedTo}`,
+          assigned_to: task.assignedTo.length > 0
+            ? task.assignedTo.map(user => user.name).join(", ")
+            : "Unassigned",
           due_date: new Date(task.dueDate).toLocaleDateString(),
           status: task.taskStatus,
         }));
+
+        //console.log("Formated Task", formattedTasks);
 
         setTasksData(formattedTasks);
       } catch (error) {
@@ -112,14 +86,14 @@ const EventDetail = () => {
       }
     };
 
-    if (activeTab === "Task") {
+    if (activeTab === "Task" && eventId) {
       fetchTasks();
     }
   }, [activeTab, eventId]);
 
   useEffect(() => {
     if (mode === "create") {
-      setFetchedEvent({
+      const newEvent = {
         eventName: "",
         eventDate: selectedDate
           ? selectedDate.toISOString()
@@ -128,7 +102,11 @@ const EventDetail = () => {
         coordinators: [],
         specialGuests: [],
         organizationId: user?.organizationId || "asbb124",
-      });
+      };
+      // Only update if different to avoid infinite loop
+      if (JSON.stringify(fetchedEvent) !== JSON.stringify(newEvent)) {
+        setFetchedEvent(newEvent);
+      }
       return;
     }
 
@@ -146,7 +124,19 @@ const EventDetail = () => {
         if (!response.ok)
           throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
-        setFetchedEvent(data);
+
+        // Transform coordinators and specialGuests to ensure they have name and title
+        const transformedData = {
+          ...data,
+          coordinators: Array.isArray(data.coordinators)
+            ? data.coordinators.map(coord => typeof coord === 'string' ? { name: coord, title: "Coordinator" } : coord)
+            : [],
+          specialGuests: Array.isArray(data.specialGuests)
+            ? data.specialGuests.map(guest => typeof guest === 'string' ? { name: guest, title: "Guest" } : guest)
+            : []
+        };
+
+        setFetchedEvent(transformedData);
       } catch (error) {
         console.error("Error fetching event:", error);
         addMessage({
@@ -160,26 +150,39 @@ const EventDetail = () => {
     fetchEvent();
   }, [eventId, mode, selectedDate]);
 
-  const handleSaveEvent = async (topSectionData, detailData) => {
+  const handleSaveEvent = async (topSectionData, getDetailData) => {
+    const detailData = getDetailData ? getDetailData() : {
+      description: "",
+      location: "Pune",
+      guests: [],
+      organizers: []
+    };
+
     const payload = {
-      eventName: topSectionData.title,
+      eventName: topSectionData?.title || "",
       OrganizationId: fetchedEvent?.organizationId || "asbb124",
       eventTypeId: eventTypeId || fetchedEvent?.eventTypeId,
       eventTypeDesc: eventTypeDesc || fetchedEvent?.eventTypeDesc,
-      eventDescription: detailData.description,
+      eventDescription: detailData.description || "",
       locationDetails: detailData.location || "Pune",
-      coordinators: detailData.organizers.map((o) => o.name),
-      specialGuests: detailData.guests.map((g) => g.name),
-      eventDate: topSectionData.date,
-      AssignedTo: topSectionData.userIds,
+      coordinators: (detailData.organizers || []).map(org => ({
+        name: org.name,
+        title: org.title || "Coordinator"
+      })),
+      specialGuests: (detailData.guests || []).map(guest => ({
+        name: guest.name,
+        title: guest.title || "Guest"
+      })),
+      eventDate: topSectionData?.date || (selectedDate ? selectedDate.toISOString() : new Date().toISOString()),
+      createdBy: user?.id || 1
     };
 
-    try {
-      const url =
-        mode === "create"
-          ? "/apis/event/create_event"
-          : `/apis/event/update/${eventId}`;
+    //console.log("Sending payload:", payload);
 
+    try {
+      const url = mode === "create"
+        ? "/apis/event/create_event"
+        : `/apis/event/update/${eventId}`;
       const method = mode === "create" ? "POST" : "PUT";
 
       const response = await fetch(url, {
@@ -198,10 +201,7 @@ const EventDetail = () => {
       alert(`Event ${mode === "create" ? "created" : "updated"} successfully!`);
       navigate("/events", { state: { refresh: true } });
     } catch (error) {
-      console.error(
-        `Error ${mode === "create" ? "creating" : "updating"} event:`,
-        error
-      );
+      console.error(`Error ${mode === "create" ? "creating" : "updating"} event:`, error);
       addMessage({
         text: `Failed to ${mode === "create" ? "create" : "update"} event.`,
         type: "Error",
@@ -211,6 +211,7 @@ const EventDetail = () => {
 
     setMode("view");
   };
+
 
   const handleDownload = () => {
     alert("Download functionality not implemented yet.");
@@ -246,20 +247,18 @@ const EventDetail = () => {
     return date.toISOString().split("T")[0];
   };
 
-  // Create participants array from coordinators and special guests
   const participants = [
-    ...(fetchedEvent?.coordinators?.map((name, index) => ({
+    ...(fetchedEvent?.coordinators?.map((coord, index) => ({
       id: `coordinator-${index}`,
-      name,
-      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
+      name: coord?.name || coord,
+      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(coord?.name || coord)}&background=random`,
     })) || []),
-    ...(fetchedEvent?.specialGuests?.map((name, index) => ({
+    ...(fetchedEvent?.specialGuests?.map((guest, index) => ({
       id: `guest-${index}`,
-      name,
-      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
+      name: guest?.name || guest,
+      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(guest?.name || guest)}&background=random`,
     })) || []),
   ];
-
 
   const topSectionData = {
     title: mode === "create" ? "" : fetchedEvent?.eventName || "",
@@ -284,18 +283,18 @@ const EventDetail = () => {
 
   const guestsData = mode === "create"
     ? []
-    : fetchedEvent?.specialGuests?.map((name, index) => ({
+    : fetchedEvent?.specialGuests?.map((guest, index) => ({
       id: index,
-      name,
-      title: "Guest",
+      name: guest?.name || guest,
+      title: guest?.title || "Guest",
     })) || [];
 
   const organizersData = mode === "create"
     ? []
-    : fetchedEvent?.coordinators?.map((name, index) => ({
+    : fetchedEvent?.coordinators?.map((coord, index) => ({
       id: index + 100,
-      name,
-      title: "Coordinator",
+      name: coord?.name || coord,
+      title: coord?.title || "Coordinator",
     })) || [];
 
   const tabs = [
@@ -308,7 +307,7 @@ const EventDetail = () => {
           guestsData={guestsData}
           organizersData={organizersData}
           initialDescription={
-            mode === "create" ? "" : fetchedEvent?.eventDescription
+            mode === "create" ? "" : fetchedEvent?.eventDescription || ""
           }
         />
       ),
@@ -330,6 +329,7 @@ const EventDetail = () => {
       component: (
         <Publish
           publishData={[]}
+          eventId={eventId}
           onDownload={handleDownload}
           onSendMail={handleSendMail}
         />
@@ -369,18 +369,15 @@ const EventDetail = () => {
           mode={mode}
           onBackClick={handleBackClick}
           onNewTaskClick={handleNewTaskClick}
-          onSaveClick={(topData) => handleSaveEvent(topData, detailSaveRef.current)}
-          data={{
-            title: fetchedEvent?.eventName,
-            date: formatDateForInput(fetchedEvent?.eventDate),
-            createdBy: user?.name || "Admin",
-            creatorAvatar: { name: user?.name || "Admin" },
+          onSaveClick={(topData) => {
+            const detailData = detailSaveRef.current ? detailSaveRef.current() : null;
+            handleSaveEvent(topData, () => detailData);
           }}
+          data={topSectionData}
           participants={participants}
-          users={users}
           permissions={permissions}
+          initialDate={selectedDate ? formatDateForInput(selectedDate) : ""}
         />
-
       </div>
       <div className="Inner-Content">
         <TabMenu

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowBigRight, ArrowBigLeft } from "lucide-react";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "./Calendar.css";
+import { useMessages } from "../../Context/MessageContext";
 
 const localizer = momentLocalizer(moment);
 
@@ -16,48 +17,73 @@ const CustomToolbar = ({ label, onNavigate }) => (
   </div>
 );
 
-const CalendarSkeleton = () => {
-  return (
-    <div className="calendar-skeleton">
-      {/* Toolbar Skeleton */}
-      <div className="skeleton-toolbar">
-        <div className="skeleton-button"></div>
-        <div className="skeleton-title"></div>
-        <div className="skeleton-button"></div>
-      </div>
-      
-      {/* Header Skeleton */}
-      <div className="skeleton-header">
-        {[...Array(7)].map((_, i) => (
-          <div key={i} className="skeleton-header-cell"></div>
-        ))}
-      </div>
-      
-      {/* Week Rows Skeleton */}
-      {[...Array(6)].map((_, rowIndex) => (
-        <div key={rowIndex} className="skeleton-week">
-          {[...Array(7)].map((_, cellIndex) => (
-            <div key={cellIndex} className="skeleton-day">
-              <div className="skeleton-event"></div>
-              <div className="skeleton-event"></div>
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-};
-
 const CustomCalendar = ({ events = [], loading = true, error = null }) => {
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const { addMessage } = useMessages();
 
   const handleSelectSlot = ({ start }) => {
+    //console.log("Selected date:", start); // Log the selected date
+    const today = new Date();
+    // Set time to midnight for proper comparison
+    today.setHours(0, 0, 0, 0);
+    const selectedDate = new Date(start);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    if (selectedDate < today) {
+      addMessage({
+        text: "You cannot select a past date.",
+        type: "Warning",
+        duration: 3000,
+      });
+      return;
+    }
     navigate("/schedule/stepForm", {
-      state: { selectedDate: start.toISOString() },
+      state: {
+        selectedDate: start,
+        fromCalendar: true
+      },
     });
+
+    // addMessage({
+    //   text: "This feature is under development. Please check back later.",
+    //   type: "Info",
+    //   duration: 3000,
+    // });
+
   };
 
+  const CalendarSkeleton = () => {
+    return (
+      <div className="calendar-skeleton">
+        {/* Toolbar Skeleton */}
+        <div className="skeleton-toolbar">
+          <div className="skeleton-button"></div>
+          <div className="skeleton-title"></div>
+          <div className="skeleton-button"></div>
+        </div>
+
+        {/* Header Skeleton */}
+        <div className="skeleton-header">
+          {[...Array(7)].map((_, i) => (
+            <div key={i} className="skeleton-header-cell"></div>
+          ))}
+        </div>
+
+        {/* Week Rows Skeleton */}
+        {[...Array(6)].map((_, rowIndex) => (
+          <div key={rowIndex} className="skeleton-week">
+            {[...Array(7)].map((_, cellIndex) => (
+              <div key={cellIndex} className="skeleton-day">
+                <div className="skeleton-event"></div>
+                <div className="skeleton-event"></div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  };
   const eventStyleGetter = (event) => {
     const style = {
       backgroundColor: "",

@@ -17,9 +17,6 @@ const EventTable = () => {
   const { addMessage } = useMessages();
   const { permissions: userPermissions } = useUser();
 
-  console.log("User Permissions:", userPermissions);
-
-  // Directly check permissions from the userPermissions object
   const permissions = {
     canCreate: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Create") ?? false,
     canRead: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false,
@@ -28,10 +25,6 @@ const EventTable = () => {
     canArchive: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
     canDuplicate: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
   };
-
-  // const getRandomAvatar = (name) => {
-  //   return `https://i.pravatar.cc/400?u=${encodeURIComponent(name)}`;
-  // };
 
   const fetchEvents = async () => {
     try {
@@ -46,34 +39,51 @@ const EventTable = () => {
         },
       });
 
-      if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch events: ${res.status}`);
+      }
+
       const data = await res.json();
 
-      const formatted = data.map(
-        ({ id, eventName, eventDate, coordinators = [], specialGuests = [] }) => {
-          const allParticipants = [...coordinators, ...specialGuests].map((name) => ({
-            name,
-            src: (name),
-            fallback: name.charAt(0).toUpperCase(),
+      // Debug: Log the raw API response
+      //console.log("API Response:", data);
+
+      if (!Array.isArray(data)) {
+        throw new Error("Expected an array of events but got something else");
+      }
+
+      const formatted = data.map(event => {
+        // Ensure we have default values for optional fields
+        const coordinators = event.coordinators || [];
+        const specialGuests = event.specialGuests || [];
+
+        const allParticipants = [...coordinators, ...specialGuests].map((person) => {
+          const participantName = typeof person === "string" ? person : person.name || "Unknown";
+          return {
+            name: participantName,
+            src: participantName,
+            fallback: participantName.charAt(0).toUpperCase() || "?",
             size: "32px",
             shape: "circle",
-          }));
-
-          return {
-            id,
-            name: eventName,
-            date: eventDate?.split("T")[0] || "N/A",
-            participants: allParticipants,
           };
-        }
-      );
+        });
+
+
+        return {
+          id: event.id || Date.now().toString(), // fallback ID if not provided
+          name: event.eventName || "Unnamed Event",
+          date: event.eventDate?.split("T")[0] || "N/A",
+          participants: allParticipants,
+        };
+      });
 
       setEvents(formatted);
       setOriginalEvents(formatted);
     } catch (err) {
       console.error("Error fetching events:", err);
+      setError(err.message);
       addMessage({
-        text: "Failed to load events. Please try again.",
+        text: `Failed to load events: ${err.message}`,
         type: "error",
         duration: 5000,
       });
@@ -83,12 +93,18 @@ const EventTable = () => {
   };
 
   useEffect(() => {
-    fetchEvents();
-  }, []);
+    if (permissions.canRead) {
+      fetchEvents();
+    } else {
+      setLoading(false);
+      setError("You don't have permission to view events");
+    }
+  }, [permissions.canRead]);
 
   const handleRetry = () => {
-    setError(null);
-    fetchEvents();
+    if (permissions.canRead) {
+      fetchEvents();
+    }
   };
 
   const handleNewEvent = () => navigate("/events/stepForm");
@@ -96,24 +112,27 @@ const EventTable = () => {
   const handleSort = (key, direction) => {
     const sorted = [...events].sort((a, b) => {
       if (key === "date") {
-        return direction === "asc"
-          ? new Date(a.date) - new Date(b.date)
-          : new Date(b.date) - new Date(a.date);
+        const dateA = a.date === "N/A" ? new Date(0) : new Date(a.date);
+        const dateB = b.date === "N/A" ? new Date(0) : new Date(b.date);
+        return direction === "asc" ? dateA - dateB : dateB - dateA;
       }
       return direction === "asc"
-        ? a[key].localeCompare(b[key])
-        : b[key].localeCompare(a[key]);
+        ? String(a[key]).localeCompare(String(b[key]))
+        : String(b[key]).localeCompare(String(a[key]));
     });
     setEvents(sorted);
   };
 
   const handleSearch = (query) => {
+    if (!query) {
+      setEvents(originalEvents);
+      return;
+    }
+    const lowerQuery = query.toLowerCase();
     setEvents(
-      !query
-        ? originalEvents
-        : originalEvents.filter(({ name }) =>
-          name.toLowerCase().includes(query.toLowerCase())
-        )
+      originalEvents.filter(({ name }) =>
+        String(name).toLowerCase().includes(lowerQuery)
+      )
     );
   };
 
@@ -129,10 +148,10 @@ const EventTable = () => {
         },
       });
 
-      if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+      if (!res.ok) throw new Error(`Failed to delete event: ${res.status}`);
 
-      setEvents((prev) => prev.filter((event) => event.id !== id));
-      setOriginalEvents((prev) => prev.filter((event) => event.id !== id));
+      setEvents(prev => prev.filter(event => event.id !== id));
+      setOriginalEvents(prev => prev.filter(event => event.id !== id));
 
       addMessage({
         text: "Event deleted successfully.",
@@ -142,7 +161,7 @@ const EventTable = () => {
     } catch (err) {
       console.error("Error deleting event:", err);
       addMessage({
-        text: "Failed to delete event!",
+        text: `Failed to delete event: ${err.message}`,
         type: "error",
         duration: 5000,
       });
@@ -165,7 +184,7 @@ const EventTable = () => {
 
       <TableHeader
         onSearch={handleSearch}
-        onNewEventClick={handleNewEvent}
+        onNewEventClick={permissions.canCreate ? handleNewEvent : undefined}
         loading={loading}
         permissions={permissions}
       />
@@ -178,18 +197,19 @@ const EventTable = () => {
           error={error}
           onRetry={handleRetry}
           onSort={handleSort}
-          renderCell={(key, item) =>
-            key === "participants" ? (
-              <AvatarList
-                avatars={item.participants}
-                stack={true}
-                maxVisible={2}
-                showTooltip={true}
-              />
-            ) : (
-              item[key]
-            )
-          }
+          renderCell={(key, item) => {
+            if (key === "participants") {
+              return (
+                <AvatarList
+                  avatars={item.participants}
+                  stack={true}
+                  maxVisible={2}
+                  showTooltip={true}
+                />
+              );
+            }
+            return item[key];
+          }}
           noDataText="No Events Scheduled at this time"
           addEventText="Click here to add a New Event"
           onAddEventClick={permissions.canCreate ? handleNewEvent : undefined}
@@ -198,7 +218,7 @@ const EventTable = () => {
           onArchive={permissions.canArchive ? () => alert("Archive pressed") : undefined}
           onDuplicate={permissions.canDuplicate ? () => alert("Duplicate pressed") : undefined}
           onRowClick={(event) => {
-            if (!loading && !error) {
+            if (!loading && !error && permissions.canRead) {
               navigate("/events/eventDetailPage", {
                 state: {
                   eventId: event.id,
