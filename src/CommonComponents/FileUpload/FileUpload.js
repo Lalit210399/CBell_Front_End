@@ -243,47 +243,65 @@ const FileUpload = ({
               {uploadedFiles.length > 0 && (
                 <>
                   <div className="media-slider">
-                    <button
-                      className="slider-btn left"
-                      onClick={handlePrev}
-                      aria-label="Previous (older)"
-                      type="button"
-                      disabled={uploadedFiles.length < 2}
-                    >
-                      <ChevronLeft size={24} />
-                    </button>
-                    <div className="media-preview-box"
-                      onDoubleClick={() => {
-                        const file = uploadedFiles[currentIndex];
-                        if (file && file.url) {
-                          window.open(file.url, "_blank", "noopener,noreferrer");
-                        }
-                      }}
-                    >
-                      {(() => {
-                        const file = uploadedFiles[currentIndex];
-                        if (!file) return null;
-                        if (file.type.startsWith("image/")) {
-                          return <img src={file.url} alt={file.name} />;
-                        } else if (file.type.startsWith("video/")) {
-                          return <video src={file.url} controls />;
-                        } else if (file.type.startsWith("audio/")) {
-                          return <audio src={file.url} controls />;
-                        } else if (isPdf(file.type)) {
-                          if (file.url && !file.url.startsWith("blob:")) {
-                            return (
-                              <div style={{ position: "relative", height: "100%" }}>
-                                <iframe
-                                  src={file.url}
-                                  title={file.name}
-                                  className="pdf-full-preview"
-                                  style={{
-                                    width: "100%",
-                                    height: "500px",
-                                    border: "none"
-                                  }}
-                                />
-                                <div style={{ marginTop: 8, textAlign: "right" }}>
+                    <div className="media-viewer-square">
+                      <button
+                        className="slider-btn left"
+                        onClick={handlePrev}
+                        aria-label="Previous (older)"
+                        type="button"
+                        disabled={uploadedFiles.length < 2}
+                      >
+                        <ChevronLeft size={24} />
+                      </button>
+                      <div
+                        className="media-preview-box"
+                        style={{ width: "100%", height: "100%" }}
+                        onDoubleClick={() => {
+                          const file = uploadedFiles[currentIndex];
+                          if (file && file.url) {
+                            window.open(file.url, "_blank", "noopener,noreferrer");
+                          }
+                        }}
+                      >
+                        {(() => {
+                          const file = uploadedFiles[currentIndex];
+                          if (!file) return null;
+                          if (file.type.startsWith("image/")) {
+                            return <img src={file.url} alt={file.name} />;
+                          } else if (file.type.startsWith("video/")) {
+                            return <video src={file.url} controls />;
+                          } else if (file.type.startsWith("audio/")) {
+                            return <audio src={file.url} controls />;
+                          } else if (isPdf(file.type)) {
+                            if (file.url && !file.url.startsWith("blob:")) {
+                              return (
+                                <div style={{ position: "relative", height: "100%" }}>
+                                  <iframe
+                                    src={file.url}
+                                    title={file.name}
+                                    className="pdf-full-preview"
+                                    style={{
+                                      width: "100%",
+                                      height: "500px",
+                                      border: "none"
+                                    }}
+                                  />
+                                  <div style={{ marginTop: 8, textAlign: "right" }}>
+                                    <a
+                                      href={file.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="open-pdf-link"
+                                    >
+                                      Open PDF in new tab
+                                    </a>
+                                  </div>
+                                </div>
+                              );
+                            } else {
+                              return (
+                                <div className="pdf-open-link">
+                                  <span className="pdf-thumb-large">PDF</span>
                                   <a
                                     href={file.url}
                                     target="_blank"
@@ -293,88 +311,73 @@ const FileUpload = ({
                                     Open PDF in new tab
                                   </a>
                                 </div>
-                              </div>
-                            );
-                          } else {
+                              );
+                            }
+                          } else if (isOfficeDoc(file.name)) {
                             return (
-                              <div className="pdf-open-link">
-                                <span className="pdf-thumb-large">PDF</span>
-                                <a
-                                  href={file.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="open-pdf-link"
-                                >
-                                  Open PDF in new tab
-                                </a>
-                              </div>
+                              <iframe
+                                src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(file.url)}`}
+                                title={file.name}
+                                className="doc-preview"
+                                sandbox="allow-same-origin allow-scripts"
+                              />
                             );
                           }
-                        } else if (isOfficeDoc(file.name)) {
                           return (
-                            <iframe
-                              src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(file.url)}`}
-                              title={file.name}
-                              className="doc-preview"
-                              sandbox="allow-same-origin allow-scripts"
-                            />
+                            <div className="file-icon-preview">
+                              <span className="file-icon" role="img" aria-label="File">📄</span>
+                              <p className="file-type-label">{getFileTypeLabel(file.name)}</p>
+                              <p className="file-name">{file.name}</p>
+                            </div>
                           );
-                        }
-                        return (
-                          <div className="file-icon-preview">
-                            <span className="file-icon" role="img" aria-label="File">📄</span>
-                            <p className="file-type-label">{getFileTypeLabel(file.name)}</p>
-                            <p className="file-name">{file.name}</p>
-                          </div>
-                        );
-                      })()}
+                        })()}
+                        <button
+                          className="remove-button"
+                          type="button"
+                          onClick={() => {
+                            removeFile(currentIndex);
+                          }}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
                       <button
-                        className="remove-button"
+                        className="slider-btn right"
+                        onClick={handleNext}
+                        aria-label="Next (newer)"
                         type="button"
-                        onClick={() => {
-                          removeFile(currentIndex);
-                        }}
+                        disabled={uploadedFiles.length < 2}
                       >
-                        <X size={16} />
+                        <ChevronRight size={24} />
                       </button>
                     </div>
-                    <button
-                      className="slider-btn right"
-                      onClick={handleNext}
-                      aria-label="Next (newer)"
-                      type="button"
-                      disabled={uploadedFiles.length < 2}
-                    >
-                      <ChevronRight size={24} />
-                    </button>
-                  </div>
-                  {/* Preview strip below the slider - shows newest first */}
-                  <div className="preview-strip">
-                    {uploadedFiles.map((file, idx) => (
-                      <div
-                        key={idx}
-                        className={`preview-thumb${idx === currentIndex ? " active" : ""}`}
-                        onClick={() => setCurrentIndex(idx)}
-                        onDoubleClick={() => {
-                          if (file.url) window.open(file.url, "_blank", "noopener,noreferrer");
-                        }}
-                        title={file.name}
-                      >
-                        {file.type.startsWith("image/") ? (
-                          <img src={file.url} alt={file.name} />
-                        ) : file.type.startsWith("video/") ? (
-                          <video src={file.url} />
-                        ) : file.type.startsWith("audio/") ? (
-                          <span className="audio-thumb">AUDIO</span>
-                        ) : isPdf(file.type) ? (
-                          <span className="pdf-thumb">PDF</span>
-                        ) : isOfficeDoc(file.name) ? (
-                          <span className="office-thumb">{getFileTypeLabel(file.name)}</span>
-                        ) : (
-                          <span className="file-thumb">{getFileTypeLabel(file.name)}</span>
-                        )}
-                      </div>
-                    ))}
+                    <div className="preview-strip">
+                      {uploadedFiles.map((file, idx) => (
+                        <div
+                          key={idx}
+                          className={`preview-thumb${idx === currentIndex ? " active" : ""}`}
+                          onClick={() => setCurrentIndex(idx)}
+                          onDoubleClick={() => {
+                            if (file.url) window.open(file.url, "_blank", "noopener,noreferrer");
+                          }}
+                          title={file.name}
+                        >
+                          {file.type.startsWith("image/") ? (
+                            <img src={file.url} alt={file.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ) : file.type.startsWith("video/") ? (
+                            <video src={file.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ) : file.type.startsWith("audio/") ? (
+                            <span className="audio-thumb">AUDIO</span>
+                          ) : isPdf(file.type) ? (
+                            <span className="pdf-thumb">PDF</span>
+                          ) : isOfficeDoc(file.name) ? (
+                            <span className="office-thumb">{getFileTypeLabel(file.name)}</span>
+                          ) : (
+                            <span className="file-thumb">{getFileTypeLabel(file.name)}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </>
               )}

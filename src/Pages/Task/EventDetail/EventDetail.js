@@ -7,7 +7,7 @@ const Detail = ({
   guestsData = [],
   organizersData = [],
   mode,
-    onSave,
+  onSave,
   initialDescription = "",
 }) => {
   const [guests, setGuests] = useState([]);
@@ -22,10 +22,16 @@ const Detail = ({
   useEffect(() => {
     if (mode === "view" || mode === "edit") {
       setGuests(
-        guestsData.map((g) => ({ name: g.name, designation: g.title }))
+        guestsData.map((g) => ({
+          name: g.name,
+          designation: g.designation || g.title || "",
+        }))
       );
       setOrganizers(
-        organizersData.map((o) => ({ name: o.name, designation: o.title }))
+        organizersData.map((o) => ({
+          name: o.name,
+          designation: o.designation || o.title || "",
+        }))
       );
     } else if (mode === "create") {
       setGuests([]);
@@ -78,10 +84,13 @@ const Detail = ({
     if (onSave) {
       onSave.current = () => ({
         description: editorRef.current,
-        guests: guests.map((g) => ({ name: g.name, title: g.designation })),
+        guests: guests.map((g) => ({
+          name: g.name,
+          designation: g.designation,
+        })),
         organizers: organizers.map((o) => ({
           name: o.name,
-          title: o.designation,
+          designation: o.designation,
         })),
       });
     }
