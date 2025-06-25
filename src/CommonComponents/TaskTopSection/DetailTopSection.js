@@ -1,42 +1,50 @@
 import React, { useState, useEffect } from "react";
 import { ArrowLeft, Save, Calendar } from "lucide-react";
 import AvatarList from "../Avatar/index";
-import Dropdown from "../Dropdown/Dropdown";
 import "./DetailTopSection.css";
+
+function formatDateInput(date) {
+  if (!date) return "";
+  // Always parse as local date to avoid timezone issues
+  const d = typeof date === "string" ? new Date(date + "T00:00:00") : new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 const DetailTopSection = ({
   mode,
   onBackClick,
   onNewTaskClick,
   onSaveClick,
-  data,
+  data = {},
   participants = [],
-  users = [],
   permissions = {},
+  initialDate = ""
 }) => {
-  const [editableTitle, setEditableTitle] = useState(data?.title || "");
-  const [editableDate, setEditableDate] = useState(data?.date || "");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [selectedUserIds, setSelectedUserIds] = useState([]);
+  // Log the initialDate received from parent (EventDetailPage)
+  //console.log("[DetailTopSection] initialDate prop:", initialDate);
+  const [editableTitle, setEditableTitle] = useState(
+    mode === "create" ? "" : data?.title || ""
+  );
+  const [editableDate, setEditableDate] = useState(
+    mode === "create" ? formatDateInput(initialDate) : formatDateInput(data?.date)
+  );
+  // Log the editableDate after formatting
+  //console.log("[DetailTopSection] editableDate state:", editableDate);
 
   const { createdBy, creatorAvatar } = data;
 
   useEffect(() => {
     if (mode === "create") {
-      setEditableTitle("");
-      setEditableDate("");
-      setSelectedUserIds([]);
+      if (editableTitle !== "") setEditableTitle("");
+      if (editableDate !== formatDateInput(initialDate)) setEditableDate(formatDateInput(initialDate));
     } else {
-      setEditableTitle(data?.title || "");
-      setEditableDate(data?.date || "");
+      if (editableTitle !== (data?.title || "")) setEditableTitle(data?.title || "");
+      if (editableDate !== formatDateInput(data?.date)) setEditableDate(formatDateInput(data?.date));
     }
-  }, [data, mode]);
-
-
-  useEffect(() => {
-    setEditableTitle(data?.title || "");
-    setEditableDate(data?.date || "");
-  }, [data]);
+  }, [data?.title, data?.date, mode, initialDate]);
 
   const handleTitleChange = (e) => {
     setEditableTitle(e.target.value);
@@ -46,29 +54,11 @@ const DetailTopSection = ({
     setEditableDate(e.target.value);
   };
 
-  const handleAddButtonClick = () => {
-    setIsDropdownOpen((prev) => !prev);
-  };
-
-  const handleUserSelect = (selectedUser) => {
-    if (Array.isArray(selectedUser)) {
-      // Handle multi-select
-      const selectedIds = selectedUser.map((user) => user.value); // Extract IDs
-      setSelectedUserIds(selectedIds);
-    } else {
-      // Handle single-select (if needed)
-      setSelectedUserIds([selectedUser.value]);
-    }
-    console.log("Selected User IDs:", selectedUserIds); // Log selected IDs
-  };
-
   const handleSaveClick = () => {
     const payload = {
       title: editableTitle,
       date: editableDate,
-      userIds: selectedUserIds, // Include selected user IDs in the payload
     };
-    console.log("Payload:", payload); // Debugging payload
     onSaveClick(payload);
   };
 
@@ -93,33 +83,14 @@ const DetailTopSection = ({
             )}
           </div>
         </div>
-        <div className="avatar-dropdown-container">
-          <div className="avatar-group">
-            <AvatarList avatars={participants} />
-            {/* {(mode === "edit" || mode === "create") && (
-              <>
-                <button
-                  className="avatar-add-button"
-                  onClick={handleAddButtonClick}
-                >
-                  +
-                </button>
-                {isDropdownOpen && (
-                  <div className="popup-dropdown">
-                    <Dropdown
-                      options={users.map((user) => ({
-                        value: user.id,
-                        label: `${user.firstName} ${user.lastName}`,
-                      }))}
-                      onSelect={handleUserSelect}
-                      multiSelect={true} // Allow multiple selections
-                    />
-                  </div>
-                )}
-              </>
-            )} */}
+        {/* Only show participants in view mode */}
+        {mode === "view" && (
+          <div className="avatar-dropdown-container">
+            <div className="avatar-group">
+              <AvatarList avatars={participants} maxVisible={2} />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="right-section">
@@ -140,7 +111,7 @@ const DetailTopSection = ({
           </div>
 
           <div className="creator-section">
-            <span>{creatorAvatar.name}</span>
+            <span>{creatorAvatar?.name}</span>
             <div className="creator-avatar">
               <AvatarList avatars={[creatorAvatar]} />
             </div>
@@ -148,13 +119,13 @@ const DetailTopSection = ({
         </div>
 
         <div className="action-buttons">
-          {(mode === "view" || mode === "edit") && permissions.canCreateTask && (
+          {(mode === "view" || mode === "edit") && permissions?.canCreateTask && (
             <button className="new-task-btn" onClick={onNewTaskClick}>
               New Task
             </button>
           )}
 
-          {(mode === "edit" || mode === "create") && permissions.canSave && (
+          {(mode === "edit" || mode === "create") && permissions?.canSave && (
             <button className="save-btn" onClick={handleSaveClick}>
               <Save size={16} />
               Save

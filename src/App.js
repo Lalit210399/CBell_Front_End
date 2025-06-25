@@ -10,6 +10,7 @@ import Schedule from "./Pages/Schedules/Schedule";
 import StepForm from "./CommonComponents/MultiStepForm";
 import EventDetailPage from "./Pages/Task/EventDetailPage";
 import TasksDetail from "./Pages/Task/TaskDetailPage";
+import Instagram from "./InstagramPost"; // Assuming this is the correct path for Instagram component
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
                 <Route path="/schedule/stepForm" element={<StepForm />} />
                 <Route path="/events/eventDetailPage" element={<EventDetailPage />} />
                 <Route path="/events/eventDetailPage/tasks" element={<TasksDetail />} />
+                <Route path="/instagram" element={< Instagram/>} />
               </Routes>
             </MainLayout>
           }

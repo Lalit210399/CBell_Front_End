@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Upload, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Upload, ChevronLeft, ChevronRight, X, ExternalLink } from "lucide-react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import "./FileUpload.css";
@@ -13,8 +13,8 @@ const isPdf = (type) => type === "application/pdf";
 const getFileTypeLabel = (name) => name.split(".").pop().toUpperCase();
 
 const FileUpload = ({
-  onToggleCollapse,
-  onFilesChange,
+  onToggleCollapse = () => {},
+  onFilesChange = () => {},
   taskId,
   eventId,
   organizationId,
@@ -43,7 +43,6 @@ const FileUpload = ({
     </div>
   );
 
-  // Sort helper for newest first
   const sortByNewest = (arr) =>
     [...arr].sort(
       (a, b) =>
@@ -53,7 +52,6 @@ const FileUpload = ({
 
   useEffect(() => {
     if (Array.isArray(initialFiles)) {
-      // Sort initial files to show latest first (if timestamps exist)
       const enriched = sortByNewest(
         initialFiles.map((file) => ({
           ...file,
@@ -131,7 +129,7 @@ const FileUpload = ({
           type: file.type,
           url: URL.createObjectURL(file),
           documentId,
-          uploadedAt: new Date().toISOString(), // Add timestamp for sorting
+          uploadedAt: new Date().toISOString(),
         };
         processed.push(preview);
       } catch (error) {
@@ -139,12 +137,11 @@ const FileUpload = ({
       }
     }
 
-    // Add new files to the front (latest first), then sort all
     const updated = sortByNewest([...processed, ...uploadedFiles]);
     const newDescription = updated.map((f) => `${f.name} (${f.type})`).join(", ");
     setUploadedFiles(updated);
     onFilesChange({ files: updated, description: newDescription });
-    setCurrentIndex(0); // Show newest file after upload
+    setCurrentIndex(0);
   };
 
   const handleFileChange = (e) => {
@@ -194,9 +191,6 @@ const FileUpload = ({
     });
   };
 
-  // --- SLIDER LOGIC FOR NEWEST-FIRST ORDER ---
-  // Left arrow: previous (older, higher index)
-  // Right arrow: next (newer, lower index)
   const handlePrev = () => {
     setCurrentIndex((prev) =>
       prev === 0 ? uploadedFiles.length - 1 : prev - 1
@@ -208,7 +202,6 @@ const FileUpload = ({
       prev === uploadedFiles.length - 1 ? 0 : prev + 1
     );
   };
-  // --- END SLIDER LOGIC ---
 
   return (
     <div
@@ -243,65 +236,52 @@ const FileUpload = ({
               {uploadedFiles.length > 0 && (
                 <>
                   <div className="media-slider">
-                    <div className="media-viewer-square">
+                    <div className="media-preview-box"
+                      onDoubleClick={() => {
+                        const file = uploadedFiles[currentIndex];
+                        if (file && file.url) {
+                          window.open(file.url, "_blank", "noopener,noreferrer");
+                        }
+                      }}
+                    >
                       <button
-                        className="slider-btn left"
-                        onClick={handlePrev}
-                        aria-label="Previous (older)"
+                        className="expand-button"
                         type="button"
-                        disabled={uploadedFiles.length < 2}
-                      >
-                        <ChevronLeft size={24} />
-                      </button>
-                      <div
-                        className="media-preview-box"
-                        style={{ width: "100%", height: "100%" }}
-                        onDoubleClick={() => {
+                        onClick={() => {
                           const file = uploadedFiles[currentIndex];
                           if (file && file.url) {
                             window.open(file.url, "_blank", "noopener,noreferrer");
                           }
                         }}
+                        title="Open in new tab"
                       >
-                        {(() => {
-                          const file = uploadedFiles[currentIndex];
-                          if (!file) return null;
-                          if (file.type.startsWith("image/")) {
-                            return <img src={file.url} alt={file.name} />;
-                          } else if (file.type.startsWith("video/")) {
-                            return <video src={file.url} controls />;
-                          } else if (file.type.startsWith("audio/")) {
-                            return <audio src={file.url} controls />;
-                          } else if (isPdf(file.type)) {
-                            if (file.url && !file.url.startsWith("blob:")) {
-                              return (
-                                <div style={{ position: "relative", height: "100%" }}>
-                                  <iframe
-                                    src={file.url}
-                                    title={file.name}
-                                    className="pdf-full-preview"
-                                    style={{
-                                      width: "100%",
-                                      height: "500px",
-                                      border: "none"
-                                    }}
-                                  />
-                                  <div style={{ marginTop: 8, textAlign: "right" }}>
-                                    <a
-                                      href={file.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="open-pdf-link"
-                                    >
-                                      Open PDF in new tab
-                                    </a>
-                                  </div>
-                                </div>
-                              );
-                            } else {
-                              return (
-                                <div className="pdf-open-link">
-                                  <span className="pdf-thumb-large">PDF</span>
+                        <ExternalLink size={16} />
+                      </button>
+
+                      {(() => {
+                        const file = uploadedFiles[currentIndex];
+                        if (!file) return null;
+                        if (file.type.startsWith("image/")) {
+                          return <img src={file.url} alt={file.name} />;
+                        } else if (file.type.startsWith("video/")) {
+                          return <video src={file.url} controls />;
+                        } else if (file.type.startsWith("audio/")) {
+                          return <audio src={file.url} controls />;
+                        } else if (isPdf(file.type)) {
+                          if (file.url && !file.url.startsWith("blob:")) {
+                            return (
+                              <div style={{ position: "relative", height: "100%" }}>
+                                <iframe
+                                  src={file.url}
+                                  title={file.name}
+                                  className="pdf-full-preview"
+                                  style={{
+                                    width: "100%",
+                                    height: "500px",
+                                    border: "none"
+                                  }}
+                                />
+                                <div style={{ marginTop: 8, textAlign: "right" }}>
                                   <a
                                     href={file.url}
                                     target="_blank"
@@ -311,73 +291,78 @@ const FileUpload = ({
                                     Open PDF in new tab
                                   </a>
                                 </div>
-                              );
-                            }
-                          } else if (isOfficeDoc(file.name)) {
+                              </div>
+                            );
+                          } else {
                             return (
-                              <iframe
-                                src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(file.url)}`}
-                                title={file.name}
-                                className="doc-preview"
-                                sandbox="allow-same-origin allow-scripts"
-                              />
+                              <div className="pdf-open-link">
+                                <span className="pdf-thumb-large">PDF</span>
+                                <a
+                                  href={file.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="open-pdf-link"
+                                >
+                                  Open PDF in new tab
+                                </a>
+                              </div>
                             );
                           }
+                        } else if (isOfficeDoc(file.name)) {
                           return (
-                            <div className="file-icon-preview">
-                              <span className="file-icon" role="img" aria-label="File">📄</span>
-                              <p className="file-type-label">{getFileTypeLabel(file.name)}</p>
-                              <p className="file-name">{file.name}</p>
-                            </div>
+                            <iframe
+                              src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(file.url)}`}
+                              title={file.name}
+                              className="doc-preview"
+                              sandbox="allow-same-origin allow-scripts"
+                            />
                           );
-                        })()}
-                        <button
-                          className="remove-button"
-                          type="button"
-                          onClick={() => {
-                            removeFile(currentIndex);
-                          }}
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
+                        }
+                        return (
+                          <div className="file-icon-preview">
+                            <span className="file-icon" role="img" aria-label="File">📄</span>
+                            <p className="file-type-label">{getFileTypeLabel(file.name)}</p>
+                            <p className="file-name">{file.name}</p>
+                          </div>
+                        );
+                      })()}
                       <button
-                        className="slider-btn right"
-                        onClick={handleNext}
-                        aria-label="Next (newer)"
+                        className="remove-button"
                         type="button"
-                        disabled={uploadedFiles.length < 2}
+                        onClick={() => {
+                          removeFile(currentIndex);
+                        }}
                       >
-                        <ChevronRight size={24} />
+                        <X size={16} />
                       </button>
                     </div>
-                    <div className="preview-strip">
-                      {uploadedFiles.map((file, idx) => (
-                        <div
-                          key={idx}
-                          className={`preview-thumb${idx === currentIndex ? " active" : ""}`}
-                          onClick={() => setCurrentIndex(idx)}
-                          onDoubleClick={() => {
-                            if (file.url) window.open(file.url, "_blank", "noopener,noreferrer");
-                          }}
-                          title={file.name}
-                        >
-                          {file.type.startsWith("image/") ? (
-                            <img src={file.url} alt={file.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          ) : file.type.startsWith("video/") ? (
-                            <video src={file.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          ) : file.type.startsWith("audio/") ? (
-                            <span className="audio-thumb">AUDIO</span>
-                          ) : isPdf(file.type) ? (
-                            <span className="pdf-thumb">PDF</span>
-                          ) : isOfficeDoc(file.name) ? (
-                            <span className="office-thumb">{getFileTypeLabel(file.name)}</span>
-                          ) : (
-                            <span className="file-thumb">{getFileTypeLabel(file.name)}</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                  </div>
+                  <div className="preview-strip">
+                    {uploadedFiles.map((file, idx) => (
+                      <div
+                        key={idx}
+                        className={`preview-thumb${idx === currentIndex ? " active" : ""}`}
+                        onClick={() => setCurrentIndex(idx)}
+                        onDoubleClick={() => {
+                          if (file.url) window.open(file.url, "_blank", "noopener,noreferrer");
+                        }}
+                        title={file.name}
+                      >
+                        {file.type.startsWith("image/") ? (
+                          <img src={file.url} alt={file.name} />
+                        ) : file.type.startsWith("video/") ? (
+                          <video src={file.url} />
+                        ) : file.type.startsWith("audio/") ? (
+                          <span className="audio-thumb">AUDIO</span>
+                        ) : isPdf(file.type) ? (
+                          <span className="pdf-thumb">PDF</span>
+                        ) : isOfficeDoc(file.name) ? (
+                          <span className="office-thumb">{getFileTypeLabel(file.name)}</span>
+                        ) : (
+                          <span className="file-thumb">{getFileTypeLabel(file.name)}</span>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </>
               )}
@@ -385,9 +370,6 @@ const FileUpload = ({
           )}
         </div>
       )}
-      <button className="side-button" onClick={toggleCollapse}>
-        {isCollapsed ? <ChevronLeft size={24} /> : <ChevronRight size={24} />}
-      </button>
     </div>
   );
 };

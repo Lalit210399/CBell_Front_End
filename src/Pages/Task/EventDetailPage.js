@@ -18,17 +18,15 @@ const EventDetail = () => {
   const [tasksData, setTasksData] = useState([]);
   const [activeTab, setActiveTab] = useState("Details");
   const [mode, setMode] = useState("view");
-  const [users, setUsers] = useState([]); // State to store the list of users
   const detailSaveRef = useRef(null);
   const { user } = useUser();
   const { addMessage } = useMessages();
   const { permissions: userPermissions } = useUser();
 
   const permissions = {
-    canEdit: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,      // Allow editing event details
-    canCreateTask: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Create")?? false, // Allow creating new tasks
-    canSave: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,      // Allow saving event
-    // Add more as needed
+    canEdit: mode === "create" ? true : userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
+    canCreateTask: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Create") ?? false,
+    canSave: mode === "create" ? true : userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
   };
 
   const navigate = useNavigate();
@@ -43,7 +41,6 @@ const EventDetail = () => {
   const selectedDate = location.state?.selectedDate
     ? new Date(location.state.selectedDate)
     : null;
-  console.log("Event ID:", eventId);
 
   useEffect(() => {
     if (initialMode) {
@@ -51,53 +48,17 @@ const EventDetail = () => {
     }
   }, [initialMode]);
 
-  // Fetch users when mode is "edit" or "create"
-  useEffect(() => {
-    if (mode === "edit" || mode === "create") {
-      const fetchUsers = async () => {
-        try {
-          const response = await fetch(
-            "/auth/api/auth/users",
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-                "ngrok-skip-browser-warning": "1",
-              },
-            }
-          );
-          if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-          const data = await response.json();
-          setUsers(data); // Store the fetched users in state
-        } catch (error) {
-          console.error("Error fetching users:", error);
-          addMessage({
-            text: "Failed to load users. Please try again.",
-            type: "Error",
-            duration: 3000,
-          });
-        }
-      };
-
-      fetchUsers();
-    }
-  }, [mode]);
-
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const response = await fetch(
-          `/apis/task/by-event/${eventId}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-              "ngrok-skip-browser-warning": "1",
-            },
-          }
-        );
+        const response = await fetch(`/apis/task/by-event/${eventId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "ngrok-skip-browser-warning": "1",
+          },
+        });
         if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
         const data = await response.json();
 
@@ -105,10 +66,14 @@ const EventDetail = () => {
           id: task.id,
           creative_name: task.taskTitle,
           creative_type: task.creativeType,
-          assigned_to: `${task.assignedTo}`,
+          assigned_to: task.assignedTo.length > 0
+            ? task.assignedTo.map(user => user.name).join(", ")
+            : "Unassigned",
           due_date: new Date(task.dueDate).toLocaleDateString(),
           status: task.taskStatus,
         }));
+
+        //console.log("Formated Task", formattedTasks);
 
         setTasksData(formattedTasks);
       } catch (error) {
@@ -121,15 +86,14 @@ const EventDetail = () => {
       }
     };
 
-    if (activeTab === "Task") {
+    if (activeTab === "Task" && eventId) {
       fetchTasks();
     }
   }, [activeTab, eventId]);
 
   useEffect(() => {
     if (mode === "create") {
-      // Initialize with empty data in create mode
-      setFetchedEvent({
+      const newEvent = {
         eventName: "",
         eventDate: selectedDate
           ? selectedDate.toISOString()
@@ -138,28 +102,41 @@ const EventDetail = () => {
         coordinators: [],
         specialGuests: [],
         organizationId: user?.organizationId || "asbb124",
-      });
+      };
+      // Only update if different to avoid infinite loop
+      if (JSON.stringify(fetchedEvent) !== JSON.stringify(newEvent)) {
+        setFetchedEvent(newEvent);
+      }
       return;
     }
 
     const fetchEvent = async () => {
       if (!eventId) return;
       try {
-        const response = await fetch(
-          `/apis/event/get_event/${eventId}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-              "ngrok-skip-browser-warning": "1",
-            },
-          }
-        );
+        const response = await fetch(`/apis/event/get_event/${eventId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "ngrok-skip-browser-warning": "1",
+          },
+        });
         if (!response.ok)
           throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
-        setFetchedEvent(data);
+
+        // Transform coordinators and specialGuests to ensure they have name and title
+        const transformedData = {
+          ...data,
+          coordinators: Array.isArray(data.coordinators)
+            ? data.coordinators.map(coord => typeof coord === 'string' ? { name: coord, title: "Coordinator" } : coord)
+            : [],
+          specialGuests: Array.isArray(data.specialGuests)
+            ? data.specialGuests.map(guest => typeof guest === 'string' ? { name: guest, title: "Guest" } : guest)
+            : []
+        };
+
+        setFetchedEvent(transformedData);
       } catch (error) {
         console.error("Error fetching event:", error);
         addMessage({
@@ -173,26 +150,39 @@ const EventDetail = () => {
     fetchEvent();
   }, [eventId, mode, selectedDate]);
 
-  const handleSaveEvent = async (topSectionData, detailData) => {
+  const handleSaveEvent = async (topSectionData, getDetailData) => {
+    const detailData = getDetailData ? getDetailData() : {
+      description: "",
+      location: "Pune",
+      guests: [],
+      organizers: []
+    };
+
     const payload = {
-      eventName: topSectionData.title,
+      eventName: topSectionData?.title || "",
       OrganizationId: fetchedEvent?.organizationId || "asbb124",
       eventTypeId: eventTypeId || fetchedEvent?.eventTypeId,
       eventTypeDesc: eventTypeDesc || fetchedEvent?.eventTypeDesc,
-      eventDescription: detailData.description,
+      eventDescription: detailData.description || "",
       locationDetails: detailData.location || "Pune",
-      coordinators: detailData.organizers.map((o) => o.name),
-      specialGuests: detailData.guests.map((g) => g.name),
-      eventDate: topSectionData.date,
-      AssignedTo: topSectionData.userIds,
+      coordinators: (detailData.organizers || []).map(org => ({
+        name: org.name,
+        title: org.title || "Coordinator"
+      })),
+      specialGuests: (detailData.guests || []).map(guest => ({
+        name: guest.name,
+        title: guest.title || "Guest"
+      })),
+      eventDate: topSectionData?.date || (selectedDate ? selectedDate.toISOString() : new Date().toISOString()),
+      createdBy: user?.id || 1
     };
 
-    try {
-      const url =
-        mode === "create"
-          ? "/apis/event/create_event"
-          : `/apis/event/update/${eventId}`;
+    //console.log("Sending payload:", payload);
 
+    try {
+      const url = mode === "create"
+        ? "/apis/event/create_event"
+        : `/apis/event/update/${eventId}`;
       const method = mode === "create" ? "POST" : "PUT";
 
       const response = await fetch(url, {
@@ -211,10 +201,7 @@ const EventDetail = () => {
       alert(`Event ${mode === "create" ? "created" : "updated"} successfully!`);
       navigate("/events", { state: { refresh: true } });
     } catch (error) {
-      console.error(
-        `Error ${mode === "create" ? "creating" : "updating"} event:`,
-        error
-      );
+      console.error(`Error ${mode === "create" ? "creating" : "updating"} event:`, error);
       addMessage({
         text: `Failed to ${mode === "create" ? "create" : "update"} event.`,
         type: "Error",
@@ -224,6 +211,7 @@ const EventDetail = () => {
 
     setMode("view");
   };
+
 
   const handleDownload = () => {
     alert("Download functionality not implemented yet.");
@@ -248,27 +236,10 @@ const EventDetail = () => {
 
   const handleTabChange = (tab) => {
     if (mode === "edit") {
-      setMode("view"); // Reset to view mode when changing tabs
+      setMode("view");
     }
     setActiveTab(tab);
   };
-
-  const participants = [
-    {
-      id: 1,
-      name: "Alice Johnson",
-      // src: "https://i.pravatar.cc/40",
-      size: "24px",
-      shape: "circle",
-    },
-    {
-      id: 2,
-      name: "Bob Smith",
-      // src: "https://i.pravatar.cc/41",
-      size: "24px",
-      shape: "circle",
-    },
-  ];
 
   const formatDateForInput = (dateString) => {
     if (!dateString) return "";
@@ -276,52 +247,55 @@ const EventDetail = () => {
     return date.toISOString().split("T")[0];
   };
 
+  const participants = [
+    ...(fetchedEvent?.coordinators?.map((coord, index) => ({
+      id: `coordinator-${index}`,
+      name: coord?.name || coord,
+      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(coord?.name || coord)}&background=random`,
+    })) || []),
+    ...(fetchedEvent?.specialGuests?.map((guest, index) => ({
+      id: `guest-${index}`,
+      name: guest?.name || guest,
+      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(guest?.name || guest)}&background=random`,
+    })) || []),
+  ];
+
   const topSectionData = {
-    title:
-      mode === "create" ? "" : fetchedEvent?.eventName || "",
-    date:
-      mode === "create"
-        ? selectedDate
-          ? formatDateForInput(selectedDate)
-          : formatDateForInput(new Date())
-        : fetchedEvent?.eventDate
-          ? formatDateForInput(fetchedEvent.eventDate)
-          : formatDateForInput(new Date()),
-    createdBy:
-      mode === "create"
-        ? "User ID 0"
-        : `User ID ${fetchedEvent?.createdBy || ""}`,
+    title: mode === "create" ? "" : fetchedEvent?.eventName || "",
+    date: mode === "create"
+      ? selectedDate
+        ? formatDateForInput(selectedDate)
+        : formatDateForInput(new Date())
+      : fetchedEvent?.eventDate
+        ? formatDateForInput(fetchedEvent.eventDate)
+        : formatDateForInput(new Date()),
+    createdBy: mode === "create"
+      ? "User ID 0"
+      : `User ID ${fetchedEvent?.createdBy || ""}`,
     creatorAvatar: {
       id: 0,
       name: user?.firstName || "User",
-      // src: "https://i.pravatar.cc/40",
       size: "24px",
       shape: "circle",
     },
     participants,
   };
-  console.log(topSectionData.creatorAvatar);
 
-  const guestsData =
-    mode === "create"
-      ? []
-      : fetchedEvent?.specialGuests?.map((name, index) => ({
-        id: index,
-        name,
-        title: "Guest",
-      })) || [];
+  const guestsData = mode === "create"
+    ? []
+    : fetchedEvent?.specialGuests?.map((guest, index) => ({
+      id: index,
+      name: guest?.name || guest,
+      title: guest?.title || "Guest",
+    })) || [];
 
-      console.log("Guests Data:", guestsData);
-
-  const organizersData =
-    mode === "create"
-      ? []
-      : fetchedEvent?.coordinators?.map((name, index) => ({
-        id: index + 100,
-        name,
-        title: "Coordinator",
-      })) || [];
-      console.log("Organizers Data:", organizersData);
+  const organizersData = mode === "create"
+    ? []
+    : fetchedEvent?.coordinators?.map((coord, index) => ({
+      id: index + 100,
+      name: coord?.name || coord,
+      title: coord?.title || "Coordinator",
+    })) || [];
 
   const tabs = [
     {
@@ -333,7 +307,7 @@ const EventDetail = () => {
           guestsData={guestsData}
           organizersData={organizersData}
           initialDescription={
-            mode === "create" ? "" : fetchedEvent?.eventDescription
+            mode === "create" ? "" : fetchedEvent?.eventDescription || ""
           }
         />
       ),
@@ -355,6 +329,7 @@ const EventDetail = () => {
       component: (
         <Publish
           publishData={[]}
+          eventId={eventId}
           onDownload={handleDownload}
           onSendMail={handleSendMail}
         />
@@ -362,8 +337,7 @@ const EventDetail = () => {
     },
   ];
 
-  // Filter tabs when in create mode to show only Details
-  const filteredTabs = mode === "create" 
+  const filteredTabs = mode === "create"
     ? tabs.filter(tab => tab.label === "Details")
     : tabs;
 
@@ -393,18 +367,16 @@ const EventDetail = () => {
       <div className="Top-Section">
         <TopSection
           mode={mode}
-          data={topSectionData}
-          participants={topSectionData.participants}
-          users={users}
           onBackClick={handleBackClick}
           onNewTaskClick={handleNewTaskClick}
-          onSaveClick={(updatedData) => {
-            if (detailSaveRef.current) {
-              const detailData = detailSaveRef.current();
-              handleSaveEvent(updatedData, detailData);
-            }
+          onSaveClick={(topData) => {
+            const detailData = detailSaveRef.current ? detailSaveRef.current() : null;
+            handleSaveEvent(topData, () => detailData);
           }}
+          data={topSectionData}
+          participants={participants}
           permissions={permissions}
+          initialDate={selectedDate ? formatDateForInput(selectedDate) : ""}
         />
       </div>
       <div className="Inner-Content">

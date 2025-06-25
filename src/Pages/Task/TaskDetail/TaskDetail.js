@@ -5,7 +5,7 @@ import Dropdown from "../../../CommonComponents/Dropdown/Dropdown";
 import { Wand } from "lucide-react";
 import "./TaskDetail.css";
 
-const EditDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => {
+const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => {
   const [selectedDate, setSelectedDate] = useState(taskData.date || "");
   const [quantity, setQuantity] = useState(taskData.quantity || 1);
   const [selectedType, setSelectedType] = useState(
@@ -26,32 +26,7 @@ const EditDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
 
   const isDisabled = mode === "view" || !permissions.canEdit;
 
-  useEffect(() => {
-    if (selectedType?.value !== taskData.type) {
-      onUpdate("type", selectedType?.value || "");
-    }
-  }, [selectedType]);
-
-  useEffect(() => {
-    if (selectedDate !== taskData.date) {
-      onUpdate("date", selectedDate);
-    }
-  }, [selectedDate]);
-
-  useEffect(() => {
-    if (quantity !== taskData.quantity) {
-      onUpdate("quantity", quantity);
-    }
-  }, [quantity]);
-
-  useEffect(() => {
-    onUpdate("checklist", checklistData);
-  }, [checklistData]);
-
-  useEffect(() => {
-    onUpdate("description", content);
-  }, [content]);
-
+  // Reset form when switching to view mode or task data changes
   useEffect(() => {
     if (mode === "view") {
       setSelectedDate(taskData.date || "");
@@ -63,6 +38,44 @@ const EditDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
       setContent(taskData.description || "");
     }
   }, [taskData, mode]);
+
+  const handleTypeChange = (option) => {
+    setSelectedType(option);
+    if (option?.value !== taskData.type) {
+      onUpdate("type", option?.value || "");
+    }
+  };
+
+  const handleDateChange = (e) => {
+    const newDate = e.target.value;
+    setSelectedDate(newDate);
+    if (newDate !== taskData.date) {
+      onUpdate("date", newDate);
+    }
+  };
+
+  const handleQuantityChange = (e) => {
+    const val = parseInt(e.target.value, 10);
+    const newQty = isNaN(val) ? 1 : val;
+    setQuantity(newQty);
+    if (newQty !== taskData.quantity) {
+      onUpdate("quantity", newQty);
+    }
+  };
+
+  const handleChecklistChange = (newChecklist) => {
+    setChecklistData(newChecklist);
+    if (JSON.stringify(newChecklist) !== JSON.stringify(taskData.checklist)) {
+      onUpdate("checklist", newChecklist);
+    }
+  };
+
+  const handleContentChange = (newContent) => {
+    setContent(newContent);
+    if (newContent !== taskData.description) {
+      onUpdate("description", newContent);
+    }
+  };
 
   return (
     <div className="detail_container">
@@ -77,7 +90,7 @@ const EditDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
                 name="taskType"
                 options={dropdownOptions}
                 selectedOption={selectedType}
-                onSelect={setSelectedType}
+                onSelect={handleTypeChange}
                 disabled={isDisabled}
               />
             </div>
@@ -91,7 +104,7 @@ const EditDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
                 name="taskDate"
                 type="date"
                 value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
+                onChange={handleDateChange}
                 disabled={isDisabled}
               />
             </div>
@@ -104,12 +117,8 @@ const EditDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
                 id="task-quantity"
                 name="taskQuantity"
                 type="number"
-                min="1"
                 value={quantity}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  setQuantity(isNaN(val) ? 1 : val);
-                }}
+                onChange={handleQuantityChange}
                 className="no-spinner"
                 disabled={isDisabled}
               />
@@ -121,7 +130,7 @@ const EditDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
           <label>Specification</label>
           <CheckList
             initialItems={checklistData}
-            onChecklistChange={setChecklistData}
+            onChecklistChange={handleChecklistChange}
             mode={mode}
             canEdit={permissions.canEdit}
           />
@@ -131,7 +140,7 @@ const EditDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
       <div className="Left_Section Section">
         <TextEditor
           initialContent={content}
-          onContentChange={setContent}
+          onContentChange={handleContentChange}
           isFullWidth={true}
           mode={mode}
           canEdit={permissions.canEdit}
@@ -141,4 +150,4 @@ const EditDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
   );
 };
 
-export default EditDetail;
+export default TaskDetail;

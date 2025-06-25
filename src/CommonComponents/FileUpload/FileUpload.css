@@ -162,46 +162,27 @@
 
 /* --- Media slider styles --- */
 .media-slider {
-  background: #232323;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 340px;
-  min-width: 240px;
-  min-height: 280px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.2);
-  padding: 12px 0 8px 0;
-  box-sizing: border-box;
-}
-
-.media-viewer-square {
-  position: relative;
-  width: 420px;
-  height: 420px;
-  background: #232323;
-  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 10px auto;
-  box-sizing: border-box;
-  overflow: hidden;
-  /* Remove extra margin/padding to fit snugly in the dark grey box */
+  background: #111;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  position: relative;
+  width: 100%;
+  min-height: 240px;
 }
 
 .media-preview-box {
-  width: 100%;
-  height: 100%;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  min-height: 180px;
+  min-width: 220px;
   position: relative;
-  z-index: 1;
-  padding: 0;
-  box-sizing: border-box;
+  overflow: hidden; /* Ensure preview strip stays within bounds */
 }
 
 .media-preview-box img,
@@ -209,30 +190,30 @@
 .media-preview-box audio,
 .media-preview-box iframe {
   max-width: 100%;
-  max-height: 320px;
+  max-height: 220px;
   background: #222;
   border-radius: 4px;
 }
 
 .slider-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(30,30,30,0.7);
+  background: none;
   border: none;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  color: #fff;
+  cursor: pointer;
+  padding: 8px;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  z-index: 2;
-  color: #fff;
-  transition: background 0.2s;
 }
-.slider-btn.left { left: 4px; }
-.slider-btn.right { right: 4px; }
+
+.slider-btn.left {
+  margin-right: 12px;
+}
+
+.slider-btn.right {
+  margin-left: 12px;
+}
 
 .media-preview-box .remove-button {
   position: absolute;
@@ -249,53 +230,116 @@
 
 .media-preview-box .remove-button:hover {
   background: #444;
+
+
 }
 
 .preview-strip {
-  width: 100%;
-  background: transparent;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
-  gap: 6px;
+  gap: 8px;
+  padding: 8px;
   justify-content: center;
-  padding: 4px 0 0 0;
-  border-radius: 0 0 10px 10px;
-  box-sizing: border-box;
+  align-items: center;
+  /* width: 100%; */
+  overflow-x: auto;
+  min-height: 40px;
+  /* background: linear-gradient(to top, rgba(150, 145, 145, 0.8), transparent); */
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+  z-index: 2;
 }
 
+.media-preview-box:hover {
+  opacity: 1;
+}
+
+.preview-strip:hover {
+  opacity: 1;
+}
+
+
 .preview-thumb {
-  width: 36px;
-  height: 36px;
-  background: #444;
-  border-radius: 6px;
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  background: #222;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   border: 2px solid transparent;
-  transition: border 0.2s, box-shadow 0.2s, transform 0.15s;
   overflow: hidden;
+  font-size: 12px;
+  color: #fff;
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 .preview-thumb:hover {
-  border: 2px solid #4fc3f7;
-  box-shadow: 0 0 8px #4fc3f7aa;
-  transform: scale(1.08);
-  background: #222;
+  transform: scale(1.1);
 }
 
 .preview-thumb.active {
   border: 2px solid #fff;
+  background: #333;
 }
+
 .preview-thumb img,
 .preview-thumb video {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-.audio-thumb, .pdf-thumb, .office-thumb, .file-thumb {
+
+.audio-thumb, 
+.pdf-thumb, 
+.office-thumb, 
+.file-thumb {
   font-size: 11px;
   font-weight: bold;
   color: #fff;
   text-align: center;
   width: 100%;
+}
+.expand-button {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background-color: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: white;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.expand-button:hover {
+  background-color: rgba(152, 140, 140, 0.6);
+}
+
+.remove-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: white;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.remove-button:hover {
+  background-color: rgba(152, 140, 140, 0.6);
 }

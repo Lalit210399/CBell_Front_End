@@ -15,7 +15,7 @@ export const UserProvider = ({ children }) => {
     if (savedPermissions) {
       const parsedPermissions = JSON.parse(savedPermissions);
       setPermissions(parsedPermissions);
-      console.log("Loaded permissions:", parsedPermissions);
+      //console.log("Loaded permissions:", parsedPermissions);
     }
   }, []);
 

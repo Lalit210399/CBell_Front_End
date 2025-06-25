@@ -10,6 +10,7 @@ const StepOne = ({ nextStep, setFormData, formData }) => {
   const selectedDate = location.state?.selectedDate
     ? new Date(location.state.selectedDate)
     : null;
+  //console.log("StepOne received selectedDate:", selectedDate);
 
   const [eventTypes, setEventTypes] = useState([]);
 
@@ -69,8 +70,17 @@ const StepOne = ({ nextStep, setFormData, formData }) => {
 
     // Add selectedDate only if it exists
     if (selectedDate) {
-      navigationState.selectedDate = selectedDate.toISOString();
+      const localDateString = selectedDate.getFullYear() + '-' +
+        String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' +
+        String(selectedDate.getDate()).padStart(2, '0');
+      navigationState.selectedDate = localDateString;
+      //console.log("[StepOne] Adding selectedDate to navigationState:", localDateString);
+    } else {
+      //console.log("[StepOne] No selectedDate to add to navigationState");
     }
+
+    // Log the full navigation state before navigating
+    //console.log("[StepOne] navigationState:", navigationState);
 
     // Navigate to EventDetailPage
     navigate("/events/eventDetailPage", { state: navigationState });

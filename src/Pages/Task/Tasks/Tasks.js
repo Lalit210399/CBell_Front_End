@@ -60,7 +60,7 @@ const Task = ({ tasksData, eventId }) => {
 
 
   const handleRowClick = (row) => {
-    console.log("TaskID:", row.id); // Log the task ID
+    //console.log("TaskID:", row.id); // Log the task ID
     navigate('/events/eventDetailPage/tasks', { state: { taskId: row.id, mode: "view", eventId: eventId } });
   };
 

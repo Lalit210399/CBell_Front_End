@@ -1,9 +1,19 @@
 import React, { useEffect, useState } from "react";
 import FilesandUploads from "../../../CommonComponents/FileandUpload/FilesAndUploads";
 
-const TasksFiles = ({ files, onFilesChange, taskId, eventId, organizationId }) => {
+const TasksFiles = ({ 
+  files, 
+  onFilesChange, 
+  taskId, 
+  eventId, 
+  organizationId, 
+  mode = "view",
+  selectedFiles,
+  onFileSelect
+}) => {
   const [fetchedFiles, setFetchedFiles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasApprovedFile, setHasApprovedFile] = useState(false);
 
   useEffect(() => {
     const getFileTypeFromMime = (mime) => {
@@ -22,6 +32,10 @@ const TasksFiles = ({ files, onFilesChange, taskId, eventId, organizationId }) =
           headers: { 'ngrok-skip-browser-warning': '1' }
         });
         const data = await res.json();
+
+        // Check if any file is already approved
+        const approvedExists = data.some(doc => doc.status === 'Approved');
+        setHasApprovedFile(approvedExists);
 
         const filesWithPreview = await Promise.all(
           data.map(async (doc) => {
@@ -43,10 +57,21 @@ const TasksFiles = ({ files, onFilesChange, taskId, eventId, organizationId }) =
               type,
               documentId: doc.documentId,
               description: doc.description,
-              src
+              src,
+              status: doc.status || 'Pending', // Add status field
+              publishedTo: doc.publishedTo || [], // Add publishedTo field
+              isApproved: doc.status === 'Approved' // Calculate isApproved
             };
           })
         );
+
+        // Automatically select approved files
+        const approvedFiles = filesWithPreview.filter(file => file.isApproved);
+        if (approvedFiles.length > 0 && onFileSelect) {
+          approvedFiles.forEach(file => {
+            onFileSelect(file, true);
+          });
+        }
 
         setFetchedFiles(filesWithPreview);
       } catch (error) {
@@ -61,10 +86,24 @@ const TasksFiles = ({ files, onFilesChange, taskId, eventId, organizationId }) =
     }
   }, [taskId]);
 
+  const handleFileSelect = (fileId, isSelected) => {
+    if (hasApprovedFile) {
+      // Don't allow selection changes if there's an approved file
+      return;
+    }
+
+    const selectedFile = fetchedFiles.find(f => f.documentId === fileId);
+    if (selectedFile) {
+      onFileSelect(selectedFile, isSelected);
+    }
+  };
+
   return (
     <div>
       {loading ? (
-        <p>Loading...</p>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+          <p>Loading files...</p>
+        </div>
       ) : (
         <FilesandUploads
           files={fetchedFiles}
@@ -72,7 +111,11 @@ const TasksFiles = ({ files, onFilesChange, taskId, eventId, organizationId }) =
           taskId={taskId}
           eventId={eventId}
           organizationId={organizationId}
-          readOnly={false}  // Will show Upload and Add Link
+          readOnly={hasApprovedFile || mode === 'view'} // Disable editing if approved file exists
+          mode={mode}
+          selectedFiles={selectedFiles.map(f => f.documentId)}
+          onFileSelect={handleFileSelect}
+          hasApprovedFile={hasApprovedFile} // Pass this prop to child
         />
       )}
     </div>
