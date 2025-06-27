@@ -1,0 +1,133 @@
+.share-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.share-popup {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #666;
+}
+
+.close-button:hover {
+  color: #333;
+}
+
+.share-popup h2 {
+  margin-top: 0;
+  color: #333;
+  text-align: center;
+}
+
+.file-input-container {
+  margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.file-upload-label {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: background-color 0.3s;
+}
+
+.file-upload-label:hover {
+  background-color: #45a049;
+}
+
+.file-input {
+  display: none;
+}
+
+.file_name {
+    margin-top: 10px;
+    font-size: 1.2rem;
+    color: #555;
+    width: 300px;
+    text-align: center;
+}
+
+.social-icons {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 20px;
+}
+
+.icon-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    /* padding: 10px; */
+    border-radius: 50%;
+    transition: background-color 0.3s;
+    height: 40px;
+    /* border: 1px solid; */
+    width: 40px;
+    text-align: center;
+}
+
+/* .icon-button:hover {
+  background-color: #f0f0f0;
+} */
+
+.icon-button:hover .icon,
+.icon-button.selected .icon {
+  filter: grayscale(0%);
+  color: inherit;
+}
+
+.icon {
+  font-size: 24px;
+  filter: grayscale(100%);
+  color: #222;
+  transition: filter 0.3s, color 0.3s;
+}
+
+.icon-button:nth-child(1) .icon { 
+    color: #D44638;
+    font-size: 30px;
+     } /* Email */
+.icon-button:nth-child(2) .icon { 
+    color: #3b5998;
+    font-size: 30px;
+     } /* Facebook */
+.icon-button:nth-child(3) .icon { 
+    color: #E1306C;
+    font-size: 30px;
+     } /* Instagram */
+.icon-button:nth-child(4) .icon { 
+    color: #1DA1F2;
+    font-size: 30px;
+     } /* Twitter */
+.icon-button:nth-child(5) .icon { 
+    color: #0077B5;
+    font-size: 30px;
+     } /* LinkedIn */

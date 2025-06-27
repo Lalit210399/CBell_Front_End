@@ -1,3 +1,4 @@
+// CustomCalendar.js
 import React, { useState } from "react";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
@@ -23,9 +24,7 @@ const CustomCalendar = ({ events = [], loading = true, error = null }) => {
   const { addMessage } = useMessages();
 
   const handleSelectSlot = ({ start }) => {
-    //console.log("Selected date:", start); // Log the selected date
     const today = new Date();
-    // Set time to midnight for proper comparison
     today.setHours(0, 0, 0, 0);
     const selectedDate = new Date(start);
     selectedDate.setHours(0, 0, 0, 0);
@@ -33,7 +32,7 @@ const CustomCalendar = ({ events = [], loading = true, error = null }) => {
     if (selectedDate < today) {
       addMessage({
         text: "You cannot select a past date.",
-        type: "Warning",
+        type: "warning",
         duration: 3000,
       });
       return;
@@ -44,33 +43,21 @@ const CustomCalendar = ({ events = [], loading = true, error = null }) => {
         fromCalendar: true
       },
     });
-
-    // addMessage({
-    //   text: "This feature is under development. Please check back later.",
-    //   type: "Info",
-    //   duration: 3000,
-    // });
-
   };
 
   const CalendarSkeleton = () => {
     return (
       <div className="calendar-skeleton">
-        {/* Toolbar Skeleton */}
         <div className="skeleton-toolbar">
           <div className="skeleton-button"></div>
           <div className="skeleton-title"></div>
           <div className="skeleton-button"></div>
         </div>
-
-        {/* Header Skeleton */}
         <div className="skeleton-header">
           {[...Array(7)].map((_, i) => (
             <div key={i} className="skeleton-header-cell"></div>
           ))}
         </div>
-
-        {/* Week Rows Skeleton */}
         {[...Array(6)].map((_, rowIndex) => (
           <div key={rowIndex} className="skeleton-week">
             {[...Array(7)].map((_, cellIndex) => (
@@ -84,6 +71,7 @@ const CustomCalendar = ({ events = [], loading = true, error = null }) => {
       </div>
     );
   };
+
   const eventStyleGetter = (event) => {
     const style = {
       backgroundColor: "",
@@ -120,19 +108,19 @@ const CustomCalendar = ({ events = [], loading = true, error = null }) => {
     <div className="calendar-container">
       <div className="calendar-legend">
         <div className="legend-item">
-          <span className="legend-color" style={{ backgroundColor: "#4CAF50" }}></span>{" "}
+          <span className="legend-color" style={{ backgroundColor: "#4CAF50" }}></span>
           Future Events
         </div>
         <div className="legend-item">
-          <span className="legend-color" style={{ backgroundColor: "#2196F3" }}></span>{" "}
+          <span className="legend-color" style={{ backgroundColor: "#2196F3" }}></span>
           Upcoming
         </div>
         <div className="legend-item">
-          <span className="legend-color" style={{ backgroundColor: "#FF5722" }}></span>{" "}
+          <span className="legend-color" style={{ backgroundColor: "#FF5722" }}></span>
           Critical
         </div>
         <div className="legend-item">
-          <span className="legend-color" style={{ backgroundColor: "#9E9E9E" }}></span>{" "}
+          <span className="legend-color" style={{ backgroundColor: "#9E9E9E" }}></span>
           Completed
         </div>
       </div>
@@ -147,7 +135,7 @@ const CustomCalendar = ({ events = [], loading = true, error = null }) => {
         onNavigate={(date) => setCurrentDate(date)}
         onSelectSlot={handleSelectSlot}
         onSelectEvent={(event) =>
-          navigate("/events/eventDetailPage/", {
+          navigate("/events/eventDetailPage", {
             state: { eventId: event.id, mode: "view" },
           })
         }

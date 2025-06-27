@@ -429,7 +429,7 @@ const TaskDetailPage = () => {
       <div className="Inner-Content">
         <TabMenu
           tabs={tabs}
-          showEditButton={mode === "view" && permissions.canEdit}
+          showEditButton={mode === "view" && permissions.canEdit && taskStatus.value !== "Approved"}
           isEditMode={mode === "edit"}
           onEditClick={() => setMode("edit")}
           onCancelClick={() => setMode("view")}

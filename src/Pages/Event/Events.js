@@ -1,4 +1,3 @@
-// EventTable.js
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Events.css";
@@ -7,6 +6,7 @@ import Table from "../../CommonComponents/Table/Table";
 import AvatarList from "../../CommonComponents/Avatar/AvatarList";
 import { useMessages } from "../../Context/MessageContext";
 import { useUser } from "../../Context/UserContext";
+import { fetchWithRefresh } from "../../Context/RefereshToken";
 
 const EventTable = () => {
   const [events, setEvents] = useState([]);
@@ -15,7 +15,7 @@ const EventTable = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { addMessage } = useMessages();
-  const { permissions: userPermissions } = useUser();
+  const { user, permissions: userPermissions } = useUser();
 
   const permissions = {
     canCreate: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Create") ?? false,
@@ -31,34 +31,31 @@ const EventTable = () => {
       setLoading(true);
       setError(null);
 
-      const res = await fetch("/apis/event/get_all_events", {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "ngrok-skip-browser-warning": "1",
-        },
-      });
+      const res = await fetchWithRefresh(`/apis/event/get_all_events?organizationId=${user?.organizationId}`);
 
       if (!res.ok) {
         throw new Error(`Failed to fetch events: ${res.status}`);
       }
 
-      const data = await res.json();
-
-      // Debug: Log the raw API response
-      //console.log("API Response:", data);
+      const response = await res.json();
+      const data = response.data;
 
       if (!Array.isArray(data)) {
         throw new Error("Expected an array of events but got something else");
       }
 
       const formatted = data.map(event => {
-        // Ensure we have default values for optional fields
         const coordinators = event.coordinators || [];
         const specialGuests = event.specialGuests || [];
 
         const allParticipants = [...coordinators, ...specialGuests].map((person) => {
-          const participantName = typeof person === "string" ? person : person.name || "Unknown";
+          let participantName = "Unknown";
+          if (typeof person === "string") {
+            participantName = person;
+          } else if (person && person.name) {
+            participantName = person.name;
+          }
+
           return {
             name: participantName,
             src: participantName,
@@ -68,12 +65,12 @@ const EventTable = () => {
           };
         });
 
-
         return {
-          id: event.id || Date.now().toString(), // fallback ID if not provided
+          id: event.id || Date.now().toString(),
           name: event.eventName || "Unnamed Event",
-          date: event.eventDate?.split("T")[0] || "N/A",
+          date: event.eventDate ? new Date(event.eventDate).toISOString().split('T')[0] : "N/A",
           participants: allParticipants,
+          rawData: event
         };
       });
 
@@ -140,12 +137,8 @@ const EventTable = () => {
     if (!window.confirm("Are you sure you want to delete this event?")) return;
     try {
       setLoading(true);
-      const res = await fetch(`/apis/event/delete/${id}`, {
+      const res = await fetchWithRefresh(`/apis/event/delete/${id}`, {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
       });
 
       if (!res.ok) throw new Error(`Failed to delete event: ${res.status}`);
@@ -179,7 +172,7 @@ const EventTable = () => {
   return (
     <div className="Events">
       <span className="Welcome-to-AISSMS-IOIT-College">
-        Welcome to <span className="text-style-1">AISSMS IOIT</span> College
+        Welcome to <span className="text-style-1">{user?.organization?.name || "AISSMS IOIT"}</span>
       </span>
 
       <TableHeader
@@ -223,6 +216,7 @@ const EventTable = () => {
                 state: {
                   eventId: event.id,
                   mode: "view",
+                  eventData: event.rawData
                 },
               });
             }

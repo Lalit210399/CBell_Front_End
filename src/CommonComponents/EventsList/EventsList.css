@@ -151,11 +151,36 @@
 
 .due-date {
   flex: 2;
-  text-align: right;
+  /* text-align: right; */
 }
 
 .scrollable-list {
   max-height: 250px;
   overflow-y: auto;
   margin-bottom: 10px;
+}
+
+/* Add these styles to your EventsList.css */
+.column-headers {
+  font-weight: bold;
+  background-color: #f5f5f5;
+  border-bottom: 2px solid #ddd;
+  margin-bottom: 8px;
+  padding: 10px 15px;
+}
+
+.column-headers span {
+  color: #555;
+}
+
+/* Ensure headers align with content */
+.task-item.column-headers span,
+.event-item.column-headers span {
+  display: inline-block;
+  width: 100%;
+}
+
+/* Adjust spacing for headers */
+ul.scrollable-list {
+  padding-top: 0;
 }

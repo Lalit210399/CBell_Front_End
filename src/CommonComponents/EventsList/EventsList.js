@@ -27,9 +27,40 @@ const EventList = ({ title, data = [], type, onSeeAll, icon, loading }) => {
       <span className="task-name">{item.name}</span>
       <span className="event-name">{item.event}</span>
       <span className="org-name">{item.college}</span>
+      <span className={`status-badge ${item.statusClass}`}>{item.status}</span>
       <span className="due-date">{item.date}</span>
     </li>
   );
+
+  const renderEventItem = (item, index) => (
+    <li key={index} className={`event-item ${type === 'upcoming' ? 'upcoming' : ''}`}>
+      <span className="event-name">{item.name}</span>
+      <span className="event-org">{item.college}</span>
+      <span className="event-date">{item.date}</span>
+    </li>
+  );
+
+  const renderColumnHeaders = () => {
+    if (type === 'tasks') {
+      return (
+        <li className="column-headers task-item">
+          <span className="task-name">Task Name</span>
+          <span className="event-name">Event</span>
+          <span className="org-name">College</span>
+          <span className="status-header">Status</span>
+          <span className="due-date">Due Date</span>
+        </li>
+      );
+    } else {
+      return (
+        <li className="column-headers event-item">
+          <span className="event-name">Event Name</span>
+          <span className="event-org">College</span>
+          <span className="event-date">Date</span>
+        </li>
+      );
+    }
+  };
 
   return (
     <div className="event-list">
@@ -39,16 +70,12 @@ const EventList = ({ title, data = [], type, onSeeAll, icon, loading }) => {
       </div>
 
       <ul className={`${type === 'tasks' ? 'task-list-items' : 'event-list-items'} scrollable-list`}>
+        {!loading && data.length > 0 && renderColumnHeaders()}
+        
         {loading
           ? Array.from({ length: 3 }).map((_, index) => renderSkeletonItem(index))
           : data.slice(0, visibleCount).map((item, index) =>
-              type === 'tasks' ? renderTaskColumns(item) : (
-                <li key={index} className={`event-item ${type === 'upcoming' ? 'upcoming' : ''}`}>
-                  <span className="event-name">{item.name}</span>
-                  <span className="event-org">{item.college}</span>
-                  <span className="event-date">{item.date}</span>
-                </li>
-              )
+              type === 'tasks' ? renderTaskColumns(item) : renderEventItem(item, index)
             )}
       </ul>
 

@@ -8,7 +8,7 @@ import { useMessages } from "../../Context/MessageContext";
 import "./Dashboard.css";
 
 const Dashboard = () => {
-  const { user } = useUser(); // Get token from context
+  const { user } = useUser();
   const navigate = useNavigate();
   const { addMessage } = useMessages();
 
@@ -21,7 +21,6 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-
     fetch("/apis/dashboard", {
       method: "GET",
       headers: {
@@ -37,30 +36,44 @@ const Dashboard = () => {
       })
       .then((data) => {
         const currentDate = new Date();
+        
+        // Process events
         const events = data.events.map((event) => ({
+          id: event.id || Math.random().toString(36).substring(2, 9),
           name: event.eventName,
           college: event.organizationName,
           date: new Date(event.eventDate).toLocaleDateString(),
+          rawDate: new Date(event.eventDate)
         }));
 
         const upcoming = events.filter(
-          (event) => new Date(event.date) >= currentDate
+          (event) => event.rawDate >= currentDate
         );
         const past = events.filter(
-          (event) => new Date(event.date) < currentDate
+          (event) => event.rawDate < currentDate
         );
 
+        // Process tasks with status
         const tasks = data.tasks.map((task) => ({
-          id: task.taskTitle,
+          id: task.id || Math.random().toString(36).substring(2, 9),
           name: task.taskTitle,
           event: task.eventName,
           college: task.organizationName,
+          status: task.taskStatus,
           date: new Date(task.dueDate).toLocaleDateString(),
+          rawDate: new Date(task.dueDate),
+          statusClass: getStatusClass(task.taskStatus)
         }));
 
+        // Count pending tasks (status not "Approved")
+        const pendingTasksCount = tasks.filter(
+          task => task.status !== "Approved"
+        ).length;
+
         setActiveEvents(data.activeEventsCount || upcoming.length);
-        setPendingTasks(data.pendingTasksCount || 0);
-        setDeadlines(data.upcomingDeadlinesCount || 0);
+        setPendingTasks(data.pendingTasksCount || pendingTasksCount);
+        setDeadlines(data.upcomingDeadlinesCount || 
+          tasks.filter(task => task.rawDate >= currentDate).length);
         setUpcomingEvents(upcoming);
         setPastEvents(past);
         setTasks(tasks);
@@ -69,19 +82,34 @@ const Dashboard = () => {
         console.error("Error fetching dashboard data:", error);
         addMessage({
           text: "Failed to load dashboard data. Please try again.",
-          type: "Error",
+          type: "error",
           duration: 3000,
         });
       })
       .finally(() => setLoading(false));
-  }, []); 
+  }, []);
+
+  const getStatusClass = (status) => {
+    switch(status?.toLowerCase()) {
+      case 'approved':
+        return 'status-approved';
+      case 'pending':
+        return 'status-pending';
+      case 'rejected':
+        return 'status-rejected';
+      case 'approval':
+        return 'status-approval';
+      default:
+        return 'status-default';
+    }
+  };
 
   const handleAddEventClick = () => {
     navigate("/dashboard/stepForm");
   };
 
   const handleSeeAllClick = (type) => {
-    alert(`See All ${type} clicked!`);
+    navigate(`/dashboard/${type.toLowerCase().replace(' ', '-')}`);
   };
 
   return (
@@ -90,8 +118,18 @@ const Dashboard = () => {
 
       <div className="status-cards">
         <StatusCard title="Active Events" count={activeEvents} loading={loading} />
-        <StatusCard title="Pending Tasks" count={pendingTasks} loading={loading} />
-        <StatusCard title="Upcoming Deadlines" count={deadlines} loading={loading} />
+        <StatusCard 
+          title="Pending Tasks" 
+          count={pendingTasks} 
+          loading={loading} 
+          status="warning"
+        />
+        <StatusCard 
+          title="Upcoming Deadlines" 
+          count={deadlines} 
+          loading={loading} 
+          status="alert"
+        />
       </div>
 
       <div className="event-section">

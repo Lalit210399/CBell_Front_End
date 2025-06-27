@@ -9,6 +9,7 @@ import Dashboard from "./Pages/Dashboard/Dashboard";
 import Schedule from "./Pages/Schedules/Schedule";
 import StepForm from "./CommonComponents/MultiStepForm";
 import EventDetailPage from "./Pages/Task/EventDetailPage";
+import ForgotPassword from "./CommonComponents/UserAuth/ForgotPassword";
 import TasksDetail from "./Pages/Task/TaskDetailPage";
 import Instagram from "./InstagramPost"; // Assuming this is the correct path for Instagram component
 
@@ -20,6 +21,7 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* Routes that use MainLayout */}
         <Route
@@ -37,6 +39,8 @@ function App() {
                 <Route path="/events/eventDetailPage" element={<EventDetailPage />} />
                 <Route path="/events/eventDetailPage/tasks" element={<TasksDetail />} />
                 <Route path="/instagram" element={< Instagram/>} />
+                
+                {/* Add more routes as needed */}
               </Routes>
             </MainLayout>
           }

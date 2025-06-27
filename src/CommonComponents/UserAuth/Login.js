@@ -58,13 +58,17 @@ const Login = () => {
       //console.log('Login API Response:', response); // Debug log
 
       if (response.message === "Login successful") {
+        // Store all relevant user data from the response
         const loggedInUser = {
           email: response.email,
           firstName: response.firstName,
           lastName: response.lastName,
+          organization: response.organization, // full organization object
           organizationId: response.organizationId,
           userID: response.userId,
-          roleIds: response.roleids // Added roleIds from response
+          roleIds: response.roleids,
+          message: response.message,
+          // add any other fields you want to persist
         };
 
         // Store user data
@@ -166,6 +170,11 @@ const Login = () => {
             <img src="/Google_Logo.svg" alt="Google" />
             Login with Google
           </Button>
+          <div className="forgot-password-link">
+            <Link to="/forgot-password" className="forgot-password-text">
+              Forgot Password?
+            </Link>
+          </div>
 
           {message && <p className="auth-message">{message}</p>}
 

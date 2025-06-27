@@ -41,6 +41,7 @@ export const signin = async (credentials) => {
     }
 
     const data = await response.json();
+    console.log("Signin response data:", data);
 
     if (!response.ok) {
       throw new Error(data.message || `Login failed with status ${response.status}`);
@@ -80,8 +81,13 @@ export const getPermissions = async () => {
   try {
     const response = await fetch('/apis/auth/permissions', {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        Accept: "application/json",
+         "ngrok-skip-browser-warning": "1",
+       },
       credentials: 'include',
+      
     });
 
     if (!response.ok) {
@@ -91,5 +97,58 @@ export const getPermissions = async () => {
     return await response.json();
   } catch (error) {
     throw error.message || 'Error fetching permissions';
+  }
+};
+
+// Services/AuthN.js
+
+export const sendOTP = async (email) => {
+  try {
+    const response = await fetch('/apis/auth/request-reset-otp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to send OTP');
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const verifyOTP = async (email, otp) => {
+  try {
+    const response = await fetch('/apis/auth/verify-reset-otp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, otp }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'OTP verification failed');
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const resetPassword = async (email, newPassword, otp) => {
+  try {
+    const response = await fetch('/apis/auth/reset-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, newPassword, otp }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Password reset failed');
+    return data;
+  } catch (error) {
+    throw error;
   }
 };

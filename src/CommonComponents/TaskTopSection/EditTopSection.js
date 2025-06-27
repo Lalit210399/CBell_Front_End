@@ -44,16 +44,10 @@ const TopSection = ({
     }
   }, [users, assignedTo]);
 
-  // ✅ Notify parent with selected participants as { id, name }
+  // ✅ Notify parent with selected participants as array of IDs
   useEffect(() => {
     if (onParticipantsChange) {
-      const selectedUsers = users
-        .filter(user => selectedUserIds.includes(user.id))
-        .map(user => ({
-          id: user.id,
-          name: `${user.firstName} ${user.lastName}`,
-        }));
-      onParticipantsChange(selectedUsers);
+      onParticipantsChange(selectedUserIds);
     }
   }, [selectedUserIds, onParticipantsChange]);
 
