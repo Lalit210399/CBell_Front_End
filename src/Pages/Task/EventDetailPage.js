@@ -38,9 +38,12 @@ const EventDetail = () => {
     eventTypeId,
     eventTypeDesc,
     eventData,
+    formData,
+    selectedDate: locationSelectedDate
   } = location.state || {};
-  const selectedDate = location.state?.selectedDate
-    ? new Date(location.state.selectedDate)
+
+  const selectedDate = locationSelectedDate 
+    ? new Date(locationSelectedDate)
     : null;
 
   useEffect(() => {
@@ -93,23 +96,30 @@ const EventDetail = () => {
   useEffect(() => {
     if (mode === "create") {
       const newEvent = {
-        eventName: "",
+        eventName: formData?.eventName || "",
         eventDate: selectedDate
           ? selectedDate.toISOString()
           : new Date().toISOString(),
-        eventDescription: "",
+        eventDescription: formData?.eventDescription || "",
         coordinators: [],
         specialGuests: [],
         organizationId: user?.organizationId,
+        eventType: eventType || "",
+        eventTypeId: eventTypeId || "",
+        eventTypeDesc: eventTypeDesc || "",
+        location: formData?.location || "",
       };
-      if (JSON.stringify(fetchedEvent) !== JSON.stringify(newEvent)) {
-        setFetchedEvent(newEvent);
-      }
+      setFetchedEvent(newEvent);
       return;
     }
 
     if (eventData) {
-      setFetchedEvent(eventData);
+      setFetchedEvent({
+        ...eventData,
+        eventType: eventType || eventData.eventType,
+        eventTypeId: eventTypeId || eventData.eventTypeId,
+        eventTypeDesc: eventTypeDesc || eventData.eventTypeDesc
+      });
       return;
     }
 
@@ -151,7 +161,7 @@ const EventDetail = () => {
     };
 
     fetchEvent();
-  }, [eventId, mode, selectedDate, eventData, user?.organizationId]);
+  }, [eventId, mode, selectedDate, eventData, user?.organizationId, formData, eventType, eventTypeId, eventTypeDesc]);
 
   const handleSaveEvent = async (topSectionData, getDetailData) => {
     const detailData = getDetailData ? getDetailData() : {
@@ -165,6 +175,7 @@ const EventDetail = () => {
       eventName: topSectionData?.title || "",
       organizationId: user?.organizationId,
       eventTypeId: eventTypeId || fetchedEvent?.eventTypeId,
+      eventType: eventType || fetchedEvent?.eventType,
       eventTypeDesc: eventTypeDesc || fetchedEvent?.eventTypeDesc,
       eventDescription: detailData.description || "",
       locationDetails: detailData.location || "Pune",
@@ -270,7 +281,7 @@ const EventDetail = () => {
   ];
 
   const topSectionData = {
-    title: mode === "create" ? "" : fetchedEvent?.eventName || "",
+    title: mode === "create" ? formData?.eventName || "" : fetchedEvent?.eventName || "",
     date: mode === "create"
       ? selectedDate
         ? formatDateForInput(selectedDate)
@@ -278,6 +289,8 @@ const EventDetail = () => {
       : fetchedEvent?.eventDate
         ? formatDateForInput(fetchedEvent.eventDate)
         : formatDateForInput(new Date()),
+    type: eventType || fetchedEvent?.eventType || "",
+    typeDesc: eventTypeDesc || fetchedEvent?.eventTypeDesc || "", // Added typeDesc
     createdBy: mode === "create"
       ? user?.firstName || "User"
       : `User ID ${fetchedEvent?.createdBy || ""}`,
@@ -289,7 +302,7 @@ const EventDetail = () => {
     },
     participants,
   };
-
+  
   const guestsData = mode === "create"
     ? []
     : fetchedEvent?.specialGuests?.map((guest, index) => ({
@@ -316,7 +329,10 @@ const EventDetail = () => {
           guestsData={guestsData}
           organizersData={organizersData}
           initialDescription={
-            mode === "create" ? "" : fetchedEvent?.eventDescription || ""
+            mode === "create" ? formData?.eventDescription || "" : fetchedEvent?.eventDescription || ""
+          }
+          initialLocation={
+            mode === "create" ? formData?.location || "" : fetchedEvent?.locationDetails || ""
           }
         />
       ),

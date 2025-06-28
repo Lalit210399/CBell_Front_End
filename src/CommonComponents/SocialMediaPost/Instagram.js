@@ -10,57 +10,27 @@ const SocialMediaUploader = ({
   onClose,
   defaultImageUrl = '',
   defaultCaption = '',
-  fileDetail = null, // <-- Accept fileDetail
-  onSuccess, // <-- NEW
+  fileDetail = null,
+  onSuccess,
+  platform: forcedPlatform = null, // 🔐 From FileShareModel
 }) => {
-  // Log all props for debugging
-  console.log('SocialMediaUploader props:', {
-    igUserId,
-    fbPageId,
-    accessToken,
-    open,
-    onClose,
-    defaultImageUrl,
-    defaultCaption,
-    fileDetail,
-    onSuccess
-  });
-
-  // Use fileDetail if available, otherwise fallback to default props
   const fileName = fileDetail?.name || '';
-  const documentId = fileDetail?.url ? fileDetail.url.split('/').pop() : (defaultImageUrl || '');
-
+  const documentId = fileDetail?.url ? fileDetail.url.split('/').pop() : defaultImageUrl || '';
   const [imageUrl, setImageUrl] = useState('');
   const [caption, setCaption] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [platform, setPlatform] = useState('instagram');
+  const [platform, setPlatform] = useState(forcedPlatform || 'instagram');
   const defaultLink = 'https://cbell.ai/apis/document/view/';
-
-  // Helper to extract filename from URL or path
-  const getFileName = (url) => {
-    if (!url) return '';
-    try {
-      // Remove trailing slash if any
-      const cleanUrl = url.replace(/\/$/, '');
-      // If it's a full URL, get the pathname
-      if (cleanUrl.startsWith('http')) {
-        return new URL(cleanUrl).pathname.split('/').pop();
-      }
-      // Otherwise, just get the last segment
-      return cleanUrl.split('/').pop();
-    } catch {
-      return url;
-    }
-  };
 
   useEffect(() => {
     if (open) {
       setImageUrl(documentId);
-      setCaption(''); // Always empty caption on open
+      setCaption('');
       setMessage('');
+      if (forcedPlatform) setPlatform(forcedPlatform);
     }
-  }, [open, documentId]);
+  }, [open, documentId, forcedPlatform]);
 
   if (!open) return null;
 
@@ -70,18 +40,15 @@ const SocialMediaUploader = ({
       setMessage('');
 
       if (platform === 'instagram') {
-        const mediaResponse = await fetch(
-          `https://graph.facebook.com/v19.0/${igUserId}/media`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              image_url: `${defaultLink}${imageUrl}`,
-              caption,
-              access_token: accessToken
-            }),
-          }
-        );
+        const mediaResponse = await fetch(`https://graph.facebook.com/v19.0/${igUserId}/media`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image_url: `${defaultLink}${imageUrl}`,
+            caption,
+            access_token: accessToken,
+          }),
+        });
         const mediaData = await mediaResponse.json();
         if (!mediaResponse.ok) throw new Error(mediaData.error?.message || 'Instagram media creation failed');
 
@@ -92,7 +59,7 @@ const SocialMediaUploader = ({
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               creation_id: mediaData.id,
-              access_token: accessToken
+              access_token: accessToken,
             }),
           }
         );
@@ -100,8 +67,7 @@ const SocialMediaUploader = ({
         if (!publishResponse.ok) throw new Error(publishData.error?.message || 'Instagram publish failed');
 
         setMessage('✅ Instagram post successful!');
-        onSuccess?.('Instagram'); // <-- 🔥 Call success callback
-
+        onSuccess?.('Instagram');
       } else {
         const response = await fetch(`https://graph.facebook.com/v19.0/${fbPageId}/photos`, {
           method: 'POST',
@@ -117,7 +83,7 @@ const SocialMediaUploader = ({
         if (!response.ok) throw new Error(data.error?.message || 'Facebook post failed');
 
         setMessage('✅ Facebook post successful!');
-        onSuccess?.('Facebook'); // <-- 🔥 Call success callback
+        onSuccess?.('Facebook');
       }
     } catch (error) {
       setMessage(`❌ ${platform} error: ${error.message}`);
@@ -132,12 +98,29 @@ const SocialMediaUploader = ({
         <h2>Social Media Uploader</h2>
 
         <div className="platform-selector icons">
-          <button className={platform === 'instagram' ? 'active' : ''} onClick={() => setPlatform('instagram')}>
-            <FaInstagram size={28} />
-          </button>
-          <button className={platform === 'facebook' ? 'active' : ''} onClick={() => setPlatform('facebook')}>
-            <FaFacebook size={28} />
-          </button>
+          {/* Show only Instagram if platform is locked to Instagram */}
+          {(!forcedPlatform || forcedPlatform === 'instagram') && (
+            <button
+              className={platform === 'instagram' ? 'active' : ''}
+              onClick={() => !forcedPlatform && setPlatform('instagram')}
+              disabled={!!forcedPlatform}
+              title="Instagram"
+            >
+              <FaInstagram size={28} />
+            </button>
+          )}
+
+          {/* Show only Facebook if platform is locked to Facebook */}
+          {(!forcedPlatform || forcedPlatform === 'facebook') && (
+            <button
+              className={platform === 'facebook' ? 'active' : ''}
+              onClick={() => !forcedPlatform && setPlatform('facebook')}
+              disabled={!!forcedPlatform}
+              title="Facebook"
+            >
+              <FaFacebook size={28} />
+            </button>
+          )}
         </div>
 
         <div style={{ marginBottom: '1rem' }}>
@@ -155,18 +138,21 @@ const SocialMediaUploader = ({
             <input type="text" placeholder="File Name" value="" readOnly />
           )}
         </div>
+
         <textarea
           className="caption-input"
           placeholder="Caption / Message"
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
         />
+
         <div className="modal-buttons">
           <button onClick={onClose} className="cancel-btn">Cancel</button>
           <button onClick={handleUpload} disabled={loading}>
             {loading ? 'Posting...' : `Post to ${platform}`}
           </button>
         </div>
+
         {message && <p className="status-message">{message}</p>}
       </div>
     </div>

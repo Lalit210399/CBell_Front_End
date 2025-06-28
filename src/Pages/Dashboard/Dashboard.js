@@ -21,7 +21,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/apis/dashboard", {
+    const organizationId = user?.organizationId || "681460dcb8327b2e3417d8b1";
+    fetch(`/apis/dashboard?OrganizationId=${organizationId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

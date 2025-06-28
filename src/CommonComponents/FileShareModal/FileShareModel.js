@@ -4,12 +4,14 @@ import { FaFacebook, FaInstagram, FaTwitter, FaLinkedin, FaEnvelope, FaTimes } f
 import EmailForm from '../EmailSendModal/EmailForm'; 
 import './FileShareModel.css';
 
-const FileShareModel = ({ onClose, fileDetail, documentId, description }) => {
-  const [fileName, setFileName] = useState(fileDetail?.name || 'The Wolf.jpg');
+const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatformPublish }) => {
+  const [fileName, setFileName] = useState(fileDetail?.name);
   const [selectedFile, setSelectedFile] = useState(null);
   const [showInstagramUploader, setShowInstagramUploader] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [platform, setPlatform] = useState(null);
+
+  console.log('FileShareModel fileDetail:', fileDetail);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -17,6 +19,12 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description }) => {
       setSelectedFile(file);
       setFileName(file.name);
     }
+  };
+
+  const handlePlatformSuccess = (platform) => {
+    onPlatformPublish?.(documentId, platform); // Pass to parent (Publish)
+    setShowInstagramUploader(false);
+    setShowEmailForm(false);
   };
 
   const handleShare = (platform) => {
@@ -54,14 +62,16 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description }) => {
           defaultCaption={description}
           fileDetail={fileDetail}
           platform={platform}
+          onSuccess={handlePlatformSuccess}
         />
       ) : showEmailForm ? (
         <EmailForm 
           fileDetail={fileDetail}
           documentId={documentId}
           onClose={() => setShowEmailForm(false)}
-          onEmailSent={() => {
-            // Optional: Add any post-send logic here
+          onEmailSent={(platform) => {
+            if (onPlatformPublish) onPlatformPublish(documentId, platform || 'email');
+            setShowEmailForm(false);
           }}
         />
       ) : (

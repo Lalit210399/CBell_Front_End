@@ -2,10 +2,9 @@ import React, { useEffect, useState } from 'react';
 import Table from "../../../CommonComponents/Table/Table";
 import { Download, Share2 } from "lucide-react";
 import { useUser } from "../../../Context/UserContext";
-import InstagramMediaUploader from '../../../CommonComponents/SocialMediaPost/Instagram';
-// import FileShareModel from '../../../CommonComponents/ShareModal/FileShareModel';
-import FileShareModel from '../../../CommonComponents/FileShareModal/FileShareModel'; // Import the FileShareModel component
-import "../Tasks.css";
+import { FaInstagram, FaFacebook, FaEnvelope } from 'react-icons/fa';
+import FileShareModel from '../../../CommonComponents/FileShareModal/FileShareModel';
+import "./Publish.css";
 
 const columns = [
   { key: 'creative_name', label: 'Creative Name' },
@@ -16,16 +15,30 @@ const columns = [
   { key: 'publish', label: 'Publish' },
 ];
 
+const getPlatformIcon = (platform) => {
+  const size = 14;
+  switch (platform.toLowerCase()) {
+    case 'instagram':
+      return <FaInstagram size={size} color="#E1306C" title="Published on Instagram" />;
+    case 'facebook':
+      return <FaFacebook size={size} color="#4267B2" title="Published on Facebook" />;
+    case 'mail':
+      return <FaEnvelope size={size} color="#0072C6" title="Published via Email" />;
+    default:
+      return null;
+  }
+};
+
 const Publish = ({ eventId }) => {
   const [publishData, setPublishData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
   const [documentId, setDocumentId] = useState('');
   const [description, setDescription] = useState('');
   const [fileDetail, setFileDetail] = useState(null);
-  const [showShareModal, setShowShareModal] = useState(false); // State for FileShareModel
+  const [showShareModal, setShowShareModal] = useState(false);
   const { user } = useUser();
-  console.log('Publish component props:', { eventId, user });
+
+  console.log('fileDetail in Publish' ,fileDetail, );
 
   const handleDownload = (files) => {
     files.forEach(file => {
@@ -39,6 +52,10 @@ const Publish = ({ eventId }) => {
     });
   };
 
+  const handlePlatformPublish = (docId, platform) => {
+    handlePublishRecord(docId, platform);
+  };
+
   const handlePublishRecord = async (docId, platform) => {
     const userId = user?.userID || '';
     const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
@@ -47,7 +64,7 @@ const Publish = ({ eventId }) => {
       userId,
       userName,
     };
-    console.log('Publish record payload:', payload);
+
     try {
       const response = await fetch(`/apis/document/publish-record/${docId}`, {
         method: 'POST',
@@ -58,18 +75,18 @@ const Publish = ({ eventId }) => {
         body: JSON.stringify(payload),
       });
       if (!response.ok) throw new Error('Failed to record publish');
-      console.log(` Publish record for ${platform} saved.`);
+      fetchPublishedTasks(); // Refresh after publish
     } catch (err) {
-      console.error(' Error calling publish-record:', err);
+      console.error('Error calling publish-record:', err);
     }
   };
 
-  const handleShare = async (file) => {
+  const handleShare = (file, fullTask) => {
+    console.log('Publish Share Button Pressed. File data:', file, 'Full Task data:', fullTask);
     setDescription(file.name || '');
     setDocumentId(file.url.split('/').pop());
-    setFileDetail(file); // Store the full file object
-    setShowShareModal(true); // Show the FileShareModel
-    // setOpen(true); // No longer open InstagramMediaUploader
+    setFileDetail({ ...file, fullTask });
+    setShowShareModal(true);
   };
 
   const fetchPublishedTasks = async () => {
@@ -86,11 +103,15 @@ const Publish = ({ eventId }) => {
       if (!response.ok) throw new Error("Failed to fetch published tasks");
 
       const data = await response.json();
+      console.log('Fetched published tasks:', data);
       const formatted = data.map(task => {
         const fileLinks = (task.documents || []).map(doc => ({
           name: doc.filename,
           url: `/apis/task/download_document/${doc.documentId}`,
-          status: doc.status || "Not Published"
+          status: doc.status || "Not Published",
+          publishedTo: doc.publishedTo || [],
+          fullTask: task, // Attach the whole task object here
+          document: doc    // Attach the full document object as well
         }));
 
         return {
@@ -127,9 +148,8 @@ const Publish = ({ eventId }) => {
         <button
           key={idx}
           className="icon-btn"
-          onClick={() => handleShare(file)}
+          onClick={() => handleShare(file, file.fullTask)}
           title="Publish"
-          // disabled={file.status && file.status.toLowerCase() === 'published'}
         >
           <Share2 size={18} />
         </button>
@@ -137,7 +157,7 @@ const Publish = ({ eventId }) => {
     }
     if (key === 'files') {
       return item.files?.map((file, idx) => (
-        <div key={idx}>
+        <div key={idx} className="file-entry">
           <a
             href={file.url.replace('/apis/task/download_document/', '/apis/document/view/')}
             target="_blank"
@@ -145,6 +165,13 @@ const Publish = ({ eventId }) => {
           >
             {file.name}
           </a>
+          <span className="platform-icons">
+            {file.publishedTo?.map((p, i) => (
+              <span key={i} className="platform-icon">
+                {getPlatformIcon(p.platform)}
+              </span>
+            ))}
+          </span>
         </div>
       )) || "No File";
     }
@@ -164,17 +191,16 @@ const Publish = ({ eventId }) => {
         onAddEventClick={() => alert("Add Publish clicked")}
       />
 
-
-      {/* FileShareModel component */}
       {showShareModal && (
         <FileShareModel
           onClose={() => setShowShareModal(false)}
           fileDetail={fileDetail}
           documentId={documentId}
           description={description}
+          onPlatformPublish={handlePlatformPublish}
+          documents={fileDetail && fileDetail.document ? [fileDetail.document] : []}
         />
       )}
-     
     </div>
   );
 };

@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import './EmailForm.css';
 
-const EmailForm = ({ fileDetail, documentId, onClose, onEmailSent }) => {
+const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
   const [formData, setFormData] = useState({
     to: '',
     cc: '',
     bcc: '',
     subject: '',
     message: '',
-    documentId: documentId || ''
+    documentId: documentId || '',
   });
 
   const [isSending, setIsSending] = useState(false);
@@ -17,24 +17,54 @@ const EmailForm = ({ fileDetail, documentId, onClose, onEmailSent }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
-  console.log("EmailForm props:", { fileDetail, documentId, onClose, onEmailSent });
+  const [attachment, setAttachment] = useState(fileDetail);
 
-  // Auto-insert image tag in message if fileDetail is an image with a URL
   useEffect(() => {
-    if (fileDetail?.type?.startsWith('image/') && fileDetail?.url) {
-      const imgHtml = `<p><img src="${fileDetail.url}" alt="Attachment" style="max-width:100%;"/></p>`;
-      setFormData(prev => ({
-        ...prev,
-        message: prev.message.includes(fileDetail.url) ? prev.message : prev.message + '\n' + imgHtml,
-      }));
-    }
-  }, [fileDetail]);
+    const fetchFile = async () => {
+      if (documentId && !fileDetail?.file) {
+        try {
+          const response = await fetch(`/apis/task/download_document/${documentId}`);
+          const blob = await response.blob();
+
+          const filename =
+            fileDetail?.filename || fileDetail?.name || 'attachment';
+          const file = new File([blob], filename, { type: blob.type });
+
+          const url = `/apis/document/view/${documentId}`;
+
+          const updated = {
+            ...fileDetail,
+            file,
+            name: filename,
+            url,
+            type: blob.type,
+          };
+
+          setAttachment(updated);
+
+          if (blob.type.startsWith('image/')) {
+            const imgHtml = `<p><img src="${url}" alt="Attachment" style="max-width:100%;" /></p>`;
+            setFormData((prev) => ({
+              ...prev,
+              message: prev.message.includes(url)
+                ? prev.message
+                : prev.message + '\n' + imgHtml,
+            }));
+          }
+        } catch (error) {
+          console.error('Error fetching file:', error);
+        }
+      }
+    };
+
+    fetchFile();
+  }, [documentId, fileDetail]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -50,11 +80,11 @@ const EmailForm = ({ fileDetail, documentId, onClose, onEmailSent }) => {
       formDataToSend.append('Cc', formData.cc);
       formDataToSend.append('Bcc', formData.bcc);
       formDataToSend.append('Subject', formData.subject);
-      formDataToSend.append('Message', formData.message); // Contains embedded HTML
+      formDataToSend.append('Message', formData.message);
       formDataToSend.append('DocumentId', formData.documentId);
 
-      if (fileDetail?.file) {
-        formDataToSend.append('Attachment', fileDetail.file);
+      if (attachment?.file) {
+        formDataToSend.append('Attachment', attachment.file);
       }
 
       const response = await fetch('/apis/email/send', {
@@ -68,7 +98,7 @@ const EmailForm = ({ fileDetail, documentId, onClose, onEmailSent }) => {
       }
 
       setSuccessMessage('Email sent successfully!');
-      if (onEmailSent) onEmailSent();
+      onEmailSent?.('email');
       setTimeout(() => onClose(), 2000);
     } catch (error) {
       setErrorMessage(error.message || 'Failed to send email. Please try again.');
@@ -103,8 +133,8 @@ const EmailForm = ({ fileDetail, documentId, onClose, onEmailSent }) => {
               className="email-form-input"
               placeholder="Recipients"
             />
-            <button type="button" className="email-form-icon" onClick={() => setShowCc(v => !v)}>Cc</button>
-            <button type="button" className="email-form-icon" onClick={() => setShowBcc(v => !v)}>Bcc</button>
+            <button type="button" className="email-form-icon" onClick={() => setShowCc((v) => !v)}>Cc</button>
+            <button type="button" className="email-form-icon" onClick={() => setShowBcc((v) => !v)}>Bcc</button>
           </div>
 
           {showCc && (
@@ -159,8 +189,29 @@ const EmailForm = ({ fileDetail, documentId, onClose, onEmailSent }) => {
             placeholder="Message (HTML allowed)"
           />
 
-          {fileDetail?.name && (
-            <div className="email-form-attachment">Attachment: {fileDetail.name}</div>
+          {attachment?.name && (
+            <div className="email-form-attachment">
+              Attachment: <strong>{attachment.name}</strong>
+              {attachment?.url && (
+                <>
+                  <a
+                    href={attachment.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ marginLeft: '10px' }}
+                  >
+                    View
+                  </a>
+                  <a
+                    href={`/apis/task/download_document/${documentId}`}
+                    download={attachment.name}
+                    style={{ marginLeft: '10px' }}
+                  >
+                    Download
+                  </a>
+                </>
+              )}
+            </div>
           )}
         </div>
 

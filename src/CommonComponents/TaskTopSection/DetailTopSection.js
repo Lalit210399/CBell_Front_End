@@ -5,7 +5,6 @@ import "./DetailTopSection.css";
 
 function formatDateInput(date) {
   if (!date) return "";
-  // Always parse as local date to avoid timezone issues
   const d = typeof date === "string" ? new Date(date + "T00:00:00") : new Date(date);
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
@@ -23,28 +22,27 @@ const DetailTopSection = ({
   permissions = {},
   initialDate = ""
 }) => {
-  // Log the initialDate received from parent (EventDetailPage)
-  //console.log("[DetailTopSection] initialDate prop:", initialDate);
   const [editableTitle, setEditableTitle] = useState(
     mode === "create" ? "" : data?.title || ""
   );
   const [editableDate, setEditableDate] = useState(
     mode === "create" ? formatDateInput(initialDate) : formatDateInput(data?.date)
   );
-  // Log the editableDate after formatting
-  //console.log("[DetailTopSection] editableDate state:", editableDate);
-
-  const { createdBy, creatorAvatar } = data;
+  const [editableTypeDesc, setEditableTypeDesc] = useState(
+    mode === "create" ? "" : data?.typeDesc || ""
+  );
 
   useEffect(() => {
     if (mode === "create") {
       if (editableTitle !== "") setEditableTitle("");
       if (editableDate !== formatDateInput(initialDate)) setEditableDate(formatDateInput(initialDate));
+      if (editableTypeDesc !== "") setEditableTypeDesc("");
     } else {
       if (editableTitle !== (data?.title || "")) setEditableTitle(data?.title || "");
       if (editableDate !== formatDateInput(data?.date)) setEditableDate(formatDateInput(data?.date));
+      if (editableTypeDesc !== (data?.typeDesc || "")) setEditableTypeDesc(data?.typeDesc || "");
     }
-  }, [data?.title, data?.date, mode, initialDate]);
+  }, [data?.title, data?.date, data?.typeDesc, mode, initialDate]);
 
   const handleTitleChange = (e) => {
     setEditableTitle(e.target.value);
@@ -54,10 +52,15 @@ const DetailTopSection = ({
     setEditableDate(e.target.value);
   };
 
+  const handleTypeDescChange = (e) => {
+    setEditableTypeDesc(e.target.value);
+  };
+
   const handleSaveClick = () => {
     const payload = {
       title: editableTitle,
       date: editableDate,
+      typeDesc: editableTypeDesc,
     };
     onSaveClick(payload);
   };
@@ -71,19 +74,34 @@ const DetailTopSection = ({
           </button>
           <div className="header-titles">
             {(mode === "edit" || mode === "create") ? (
-              <input
-                type="text"
-                className="editable-title-input"
-                value={editableTitle}
-                onChange={handleTitleChange}
-                placeholder={mode === "create" ? "Enter event title" : ""}
-              />
+              <div className="edit-mode-fields">
+                <input
+                  type="text"
+                  className="editable-title-input"
+                  value={editableTitle}
+                  onChange={handleTitleChange}
+                  placeholder={mode === "create" ? "Enter event title" : ""}
+                />
+                <span className="event-type-text">{data?.type || "No type specified"}</span>
+                <textarea
+                  className="editable-desc-input"
+                  value={editableTypeDesc}
+                  onChange={handleTypeDescChange}
+                  placeholder="Enter event type description"
+                  rows={2}
+                />
+              </div>
             ) : (
-              <span className="header_title">{editableTitle}</span>
+              <div className="view-mode-fields">
+                <span className="header_title">{editableTitle}</span>
+                <span className="event-type-text">{data?.type || "No type specified"}</span>
+                {data?.typeDesc && (
+                  <span className="event-type-desc">{data.typeDesc}</span>
+                )}
+              </div>
             )}
           </div>
         </div>
-        {/* Only show participants in view mode */}
         {mode === "view" && (
           <div className="avatar-dropdown-container">
             <div className="avatar-group">
@@ -111,9 +129,9 @@ const DetailTopSection = ({
           </div>
 
           <div className="creator-section">
-            <span>{creatorAvatar?.name}</span>
+            <span>{data.creatorAvatar?.name}</span>
             <div className="creator-avatar">
-              <AvatarList avatars={[creatorAvatar]} />
+              <AvatarList avatars={[data.creatorAvatar]} />
             </div>
           </div>
         </div>

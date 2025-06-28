@@ -107,7 +107,8 @@
   color: #e1306c; /* Instagram */
 }
 
-.platform-selector.icons button.active:nth-child(2) {
+/* Facebook icon color fix: target button for Facebook specifically */
+.platform-selector.icons button.active[title="Facebook"] {
   color: #4267B2; /* Facebook */
 }
 
