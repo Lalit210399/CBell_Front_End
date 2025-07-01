@@ -432,3 +432,15 @@
   .emoji-button:hover {
     transform: scale(1.2);
   }
+/* 
+  .attach-menu {
+    min-width: 140px;
+    background: #232323;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    z-index: 10;
+    padding: 8px 0;
+  }
+  .attach-menu-item:hover {
+    background: #333;
+  } */

@@ -15,4 +15,4 @@ const Reactions = ({ reactions }) => {
   );
 };
 
-export default Reactions;
+export default Reactions; 

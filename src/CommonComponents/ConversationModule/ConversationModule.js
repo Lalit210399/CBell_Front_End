@@ -10,7 +10,6 @@ const ConversationModule = ({ currentUser, users, taskId, eventId, isActive }) =
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isNewConversation, setIsNewConversation] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState(null);
 
   const handleResponse = async (response) => {
     if (response.status === 404) {
@@ -69,11 +68,10 @@ const ConversationModule = ({ currentUser, users, taskId, eventId, isActive }) =
         return prev;
       });
       setIsNewConversation(false);
-      setLastUpdated(new Date().toISOString());
+      setIsNewConversation(false);
     } catch (err) {
       setError(err.message);
     } finally {
-      setLoading(false);
     }
   }, [taskId, isActive]);
 

@@ -1,22 +1,15 @@
 // src/components/MessageItem.jsx
 import React, { useState } from 'react';
-import { Reply, MoreHorizontal, Smile, SmilePlus } from 'lucide-react';
 import Avatar from './Avatar';
 import ReplyBox from './ReplyBox';
 import Reactions from './Reactions';
 
 const MessageItem = ({ message, currentUser, onReply, onReaction, isThread }) => {
   const [showReplyBox, setShowReplyBox] = useState(false);
-  const [showReactions, setShowReactions] = useState(false);
 
   const handleReply = (content) => {
     onReply(message.threadId, content);
     setShowReplyBox(false);
-  };
-
-  const handleReaction = (reaction) => {
-    onReaction(message.threadId, null, reaction);
-    setShowReactions(false);
   };
 
   return (
@@ -32,6 +25,7 @@ const MessageItem = ({ message, currentUser, onReply, onReaction, isThread }) =>
           </div>
           <div className="message-text">{message.conversationText}</div>
           <Reactions reactions={message.reactions || []} />
+          {/* 
           <div className="message-actions">
             <button 
               className="action-button" 
@@ -59,11 +53,12 @@ const MessageItem = ({ message, currentUser, onReply, onReaction, isThread }) =>
                   ))}
                 </div>
               )}
-            </div>
-            <button className="action-button">
-              <MoreHorizontal />
-            </button>
-          </div>
+            </div> 
+          */}
+          {/* <button className="action-button">
+            <MoreHorizontal />
+          </button>
+          </div> */}
         </div>
       </div>
 
