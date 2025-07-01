@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import Table from "../../../CommonComponents/Table/Table";
 import { Download, Share2 } from "lucide-react";
 import { useUser } from "../../../Context/UserContext";
-import InstagramMediaUploader from '../../../CommonComponents/SocialMediaPost/Instagram';
-import "../Tasks.css";
+import { FaInstagram, FaFacebook, FaEnvelope } from 'react-icons/fa';
+import FileShareModel from '../../../CommonComponents/FileShareModal/FileShareModel';
+import "./Publish.css";
 
 const columns = [
   { key: 'creative_name', label: 'Creative Name' },
@@ -14,21 +15,36 @@ const columns = [
   { key: 'publish', label: 'Publish' },
 ];
 
+const getPlatformIcon = (platform) => {
+  const size = 14;
+  switch (platform.toLowerCase()) {
+    case 'instagram':
+      return <FaInstagram size={size} color="#E1306C" title="Published on Instagram" />;
+    case 'facebook':
+      return <FaFacebook size={size} color="#4267B2" title="Published on Facebook" />;
+    case 'mail':
+      return <FaEnvelope size={size} color="#0072C6" title="Published via Email" />;
+    default:
+      return null;
+  }
+};
+
 const Publish = ({ eventId }) => {
   const [publishData, setPublishData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
   const [documentId, setDocumentId] = useState('');
   const [description, setDescription] = useState('');
+  const [fileDetail, setFileDetail] = useState(null);
+  const [showShareModal, setShowShareModal] = useState(false);
   const { user } = useUser();
 
-  //console.log("User:", user);
+  //console.log('fileDetail in Publish' ,fileDetail, );
 
   const handleDownload = (files) => {
     files.forEach(file => {
-      const documentId = file.url.split('/').pop();
+      const docId = file.url.split('/').pop();
       const link = document.createElement("a");
-      link.href = `/apis/document/download/${documentId}`;
+      link.href = `/apis/document/download/${docId}`;
       link.download = file.name;
       document.body.appendChild(link);
       link.click();
@@ -36,12 +52,19 @@ const Publish = ({ eventId }) => {
     });
   };
 
-  const handleSendMail = (creativeName) => {
-    //console.log("Sending mail for:", creativeName);
-    // Integrate email logic here
+  const handlePlatformPublish = (docId, platform) => {
+    handlePublishRecord(docId, platform);
   };
 
   const handlePublishRecord = async (docId, platform) => {
+    const userId = user?.userID || '';
+    const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
+    const payload = {
+      platforms: [platform],
+      userId,
+      userName,
+    };
+
     try {
       const response = await fetch(`/apis/document/publish-record/${docId}`, {
         method: 'POST',
@@ -49,23 +72,23 @@ const Publish = ({ eventId }) => {
           'Content-Type': 'application/json',
           'ngrok-skip-browser-warning': '1',
         },
-        body: JSON.stringify({
-          platforms: [platform],
-          userId: user?.id || '',
-          userName: user?.name || '',
-        }),
+        body: JSON.stringify(payload),
       });
       if (!response.ok) throw new Error('Failed to record publish');
-      // Optionally show a success message
+      fetchPublishedTasks(); // Refresh after publish
     } catch (err) {
       console.error('Error calling publish-record:', err);
     }
   };
 
-  const handleShare = async (file) => {
+  const handleShare = (file, fullTask) => {
+    debugger;
+    console.log('Publish Share Button Pressed. File data:', file, 'Full Task data:', fullTask);
+    console.log('File URL:', file.document.fileId);
     setDescription(file.name || '');
-    setDocumentId(file.url.split('/').pop());
-    setOpen(true);
+    setDocumentId(file.document.fileId);
+    setFileDetail({ ...file, fullTask });
+    setShowShareModal(true);
   };
 
   const fetchPublishedTasks = async () => {
@@ -79,16 +102,18 @@ const Publish = ({ eventId }) => {
         },
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch published tasks");
-      }
+      if (!response.ok) throw new Error("Failed to fetch published tasks");
 
       const data = await response.json();
-
+      //console.log('Fetched published tasks:', data);
       const formatted = data.map(task => {
         const fileLinks = (task.documents || []).map(doc => ({
           name: doc.filename,
-          url: `/apis/task/download_document/${doc.documentId}`
+          url: `/apis/task/download_document/${doc.documentId}`,
+          status: doc.status || "Not Published",
+          publishedTo: doc.publishedTo || [],
+          fullTask: task, // Attach the whole task object here
+          document: doc    // Attach the full document object as well
         }));
 
         return {
@@ -96,7 +121,7 @@ const Publish = ({ eventId }) => {
           creative_name: task.taskTitle,
           creative_type: task.creativeType,
           files: fileLinks,
-          status: task.taskStatus,
+          status: fileLinks.length > 0 ? fileLinks.map(f => f.status).join(", ") : "No File",
         };
       });
 
@@ -109,30 +134,23 @@ const Publish = ({ eventId }) => {
   };
 
   useEffect(() => {
-    if (eventId) {
-      fetchPublishedTasks();
-    }
+    if (eventId) fetchPublishedTasks();
   }, [eventId]);
 
   const renderCell = (key, item) => {
     if (key === 'download') {
       return (
-        <button
-          className="icon-btn"
-          onClick={() => handleDownload(item.files)}
-          title="Download File"
-        >
+        <button className="icon-btn" onClick={() => handleDownload(item.files)} title="Download File">
           <Download size={18} />
         </button>
       );
     }
     if (key === 'publish') {
-      // Show share icon for each file
       return item.files?.map((file, idx) => (
         <button
           key={idx}
           className="icon-btn"
-          onClick={() => handleShare(file)}
+          onClick={() => handleShare(file, file.fullTask)}
           title="Publish"
         >
           <Share2 size={18} />
@@ -141,10 +159,21 @@ const Publish = ({ eventId }) => {
     }
     if (key === 'files') {
       return item.files?.map((file, idx) => (
-        <div key={idx}>
-          <a href={file.url.replace('/apis/task/download_document/', '/apis/document/view/')} target="_blank" rel="noopener noreferrer">
+        <div key={idx} className="file-entry">
+          <a
+            href={file.url.replace('/apis/task/download_document/', '/apis/document/view/')}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             {file.name}
           </a>
+          <span className="platform-icons">
+            {file.publishedTo?.map((p, i) => (
+              <span key={i} className="platform-icon">
+                {getPlatformIcon(p.platform)}
+              </span>
+            ))}
+          </span>
         </div>
       )) || "No File";
     }
@@ -163,16 +192,17 @@ const Publish = ({ eventId }) => {
         addEventText="Click here to add a New Publish"
         onAddEventClick={() => alert("Add Publish clicked")}
       />
-      <InstagramMediaUploader
-        igUserId="17841474808473956"
-        fbPageId="648945998310294"
-        accessToken="EAAJ0QEHHOUIBO6BX2GUImguPnS4OR32GGZCmUDwVUnhmSVohMcZAZATGfZBkNQrbWL4Cxzzjx9fWXZCC5VmOiRKJq2dlSQZBO3hmLEHxZAOfIbiwe6yfg9hrpuzpZBroHlg6RkqU01jPX33P5wWup6yK0SVFkByGjsZCppm6NE8mtpeuPIzPCi3NrRgvZBZB28UKTB3"
-        open={open}
-        onClose={() => setOpen(false)}
-        defaultImageUrl={documentId || ''}
-        defaultCaption={description || ''}
-        onSuccess={(platform) => handlePublishRecord(documentId, platform)}
-      />
+
+      {showShareModal && (
+        <FileShareModel
+          onClose={() => setShowShareModal(false)}
+          fileDetail={fileDetail}
+          documentId={documentId}
+          description={description}
+          onPlatformPublish={handlePlatformPublish}
+          documents={fileDetail && fileDetail.document ? [fileDetail.document] : []}
+        />
+      )}
     </div>
   );
 };

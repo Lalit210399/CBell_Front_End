@@ -1,6 +1,8 @@
+// Schedule.js
 import React, { useEffect, useState } from "react";
 import CustomCalendar from "../../CommonComponents/Calendar/CustomCalendar";
 import { useMessages } from "../../Context/MessageContext";
+import { useUser } from "../../Context/UserContext";
 import "./Schedule.css";
 
 const Schedule = () => {
@@ -8,11 +10,15 @@ const Schedule = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { addMessage } = useMessages();
+  const { user } = useUser();
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await fetch("/apis/event/get_all_events", {
+        setLoading(true);
+        setError(null);
+        
+        const response = await fetch(`/apis/event/get_all_events?organizationId=${user?.organizationId}`, {
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
@@ -21,12 +27,17 @@ const Schedule = () => {
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          throw new Error(`Failed to fetch events: ${response.status}`);
         }
 
-        const data = await response.json();
+        const responseData = await response.json();
+        const eventsData = responseData.data || responseData; // Handle both response formats
 
-        const formattedEvents = data.map((event) => {
+        if (!Array.isArray(eventsData)) {
+          throw new Error("Expected array of events but got something else");
+        }
+
+        const formattedEvents = eventsData.map((event) => {
           const eventDate = new Date(event.eventDate);
           const now = new Date();
           const timeDiff = eventDate.getTime() - now.getTime();
@@ -54,22 +65,25 @@ const Schedule = () => {
 
         setEvents(formattedEvents);
       } catch (err) {
+        console.error("Error fetching events:", err);
         setError(err.message);
         addMessage({
-            text: "Failed to load events. Please try again.",
-            type: "Error",
-            duration: 3000,
-          });
+          text: "Failed to load events. Please try again.",
+          type: "error",
+          duration: 3000,
+        });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchEvents();
-  }, []);
+    if (user?.organizationId) {
+      fetchEvents();
+    }
+  }, [user?.organizationId]);
 
   return (
-    <div className="calendar-container">
+    <div className="schedule-container">
       <CustomCalendar 
         events={events}
         loading={loading}

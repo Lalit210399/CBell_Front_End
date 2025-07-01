@@ -107,10 +107,30 @@
   color: #e1306c; /* Instagram */
 }
 
-.platform-selector.icons button.active:nth-child(2) {
+/* Facebook icon color fix: target button for Facebook specifically */
+.platform-selector.icons button.active[title="Facebook"] {
   color: #4267B2; /* Facebook */
 }
 
 .platform-selector.icons button:hover {
   transform: scale(1.1);
+}
+
+.file-link {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f9f9f9;
+  color: #333;
+  text-decoration: none;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  box-sizing: border-box;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

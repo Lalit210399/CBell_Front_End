@@ -203,7 +203,7 @@ const Signup = () => {
             </div>
 
             <Button type="submit" className="signup-button" disabled={loading}>
-              {loading ? "Signing up..." : "Sign Up"}
+              {loading ? "Signing up..." : ""}
               Sign Up
             </Button>
           </form>

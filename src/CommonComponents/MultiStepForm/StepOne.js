@@ -5,33 +5,26 @@ import Button from "../Button/Button";
 const StepOne = ({ nextStep, setFormData, formData }) => {
   const location = useLocation();
   const navigate = useNavigate();
-
-  // Get selectedDate from location state if present
   const selectedDate = location.state?.selectedDate
     ? new Date(location.state.selectedDate)
     : null;
-  //console.log("StepOne received selectedDate:", selectedDate);
 
   const [eventTypes, setEventTypes] = useState([]);
 
   useEffect(() => {
-    (async () => {
+    const fetchEventTypes = async () => {
       try {
-        const response = await fetch(
-          "/apis/eventtype/get_all_event-types",
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-              "ngrok-skip-browser-warning": "1",
-            },
-          }
-        );
+        const response = await fetch("/apis/eventtype/get_all_event-types", {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "ngrok-skip-browser-warning": "1",
+          },
+        });
 
         if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
 
         const data = await response.json();
-
         const formattedEventTypes = data.map((event) => ({
           id: event?.id || event?._id || null,
           name: event.typeName,
@@ -42,7 +35,9 @@ const StepOne = ({ nextStep, setFormData, formData }) => {
       } catch (error) {
         console.error("Error fetching event types:", error);
       }
-    })();
+    };
+
+    fetchEventTypes();
   }, []);
 
   const selectEventType = (event) => {
@@ -51,38 +46,26 @@ const StepOne = ({ nextStep, setFormData, formData }) => {
       return;
     }
 
-    // Update form data
-    setFormData((prev) => ({
-      ...prev,
-      eventType: event.name,
-      eventTypeId: event.id,
-      eventTypeDesc: event.desc,
-      date: selectedDate || null,
-    }));
-
-    // Build navigation state
     const navigationState = {
       mode: "create",
       eventType: event.name,
       eventTypeId: event.id,
       eventTypeDesc: event.desc,
+      formData: {
+        ...formData,
+        eventType: event.name,
+        eventTypeId: event.id,
+        eventTypeDesc: event.desc,
+      }
     };
 
-    // Add selectedDate only if it exists
     if (selectedDate) {
       const localDateString = selectedDate.getFullYear() + '-' +
         String(selectedDate.getMonth() + 1).padStart(2, '0') + '-' +
         String(selectedDate.getDate()).padStart(2, '0');
       navigationState.selectedDate = localDateString;
-      //console.log("[StepOne] Adding selectedDate to navigationState:", localDateString);
-    } else {
-      //console.log("[StepOne] No selectedDate to add to navigationState");
     }
 
-    // Log the full navigation state before navigating
-    //console.log("[StepOne] navigationState:", navigationState);
-
-    // Navigate to EventDetailPage
     navigate("/events/eventDetailPage", { state: navigationState });
   };
 
@@ -106,8 +89,9 @@ const StepOne = ({ nextStep, setFormData, formData }) => {
         )}
       </div>
       <div className="bottom-section">
-        <Button onClick={() => navigate(-1)} className="btn-secondary">Back</Button>
-        {/* <Button onClick={nextStep} className="btn-primary">Next</Button> */}
+        <Button onClick={() => navigate(-1)} className="btn-secondary">
+          Back
+        </Button>
       </div>
     </div>
   );

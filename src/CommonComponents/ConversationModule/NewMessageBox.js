@@ -1,89 +1,96 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Paperclip, Send } from 'lucide-react';
 import Avatar from './Avatar';
+import MessageStrip from '../MessageStrip/MessageStrip';
 
-const PaperclipButton = ({ onAttach }) => {
-  const [showPopup, setShowPopup] = useState(false);
-  const photoInputRef = useRef(null);
-  const docInputRef = useRef(null);
-
-  const handlePaperclipClick = () => setShowPopup(!showPopup);
-
-  const handlePhotoClick = () => {
-    setShowPopup(false);
-    photoInputRef.current.click();
-  };
-
-  const handleDocClick = () => {
-    setShowPopup(false);
-    docInputRef.current.click();
-  };
-
-  const handlePhotoChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      onAttach(Array.from(e.target.files));
-      e.target.value = '';
-    }
-  };
-
-  const handleDocChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      onAttach(Array.from(e.target.files));
-      e.target.value = '';
-    }
-  };
-
+const FilePreviewBox = ({ file, uploading, onRemove }) => {
+  if (!file) return null;
+  const type = file.type;
+  let preview = null;
+  let icon = '📎';
+  if (type.startsWith('image/')) {
+    preview = <img src={URL.createObjectURL(file)} alt={file.name} style={{ maxWidth: 80, maxHeight: 60, borderRadius: 4, border: '1px solid #eee', objectFit: 'contain', marginRight: 8 }} />;
+  } else if (type.startsWith('video/')) {
+    preview = <video src={URL.createObjectURL(file)} style={{ maxWidth: 80, maxHeight: 60, borderRadius: 4, border: '1px solid #eee', marginRight: 8 }} controls />;
+  } else if (type.startsWith('audio/')) {
+    preview = <audio src={URL.createObjectURL(file)} style={{ width: 80, marginRight: 8 }} controls />;
+  } else if (type === 'application/pdf') {
+    icon = '📄';
+  } else if (type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || type === 'application/msword') {
+    icon = '📝';
+  } else if (type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || type === 'application/vnd.ms-excel') {
+    icon = '📊';
+  } else if (type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' || type === 'application/vnd.ms-powerpoint') {
+    icon = '📈';
+  }
   return (
-    <div style={{ position: "relative", display: "inline-block" }}>
-      <button className="action-button" type="button" onClick={handlePaperclipClick}>
-        <Paperclip />
-      </button>
-      {showPopup && (
-        <div style={{
-          position: "absolute",
-          top: "100%",
-          left: 0,
-          background: "#fff",
-          border: "1px solid #ccc",
-          zIndex: 10,
-          padding: "8px"
-        }}>
-          <button type="button" onClick={handlePhotoClick}>Photos</button>
-          <button type="button" onClick={handleDocClick}>Document</button>
-        </div>
-      )}
-      <input
-        type="file"
-        accept="image/*"
-        style={{ display: "none" }}
-        ref={photoInputRef}
-        onChange={handlePhotoChange}
-      />
-      <input
-        type="file"
-        accept=".xml,.html,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
-        style={{ display: "none" }}
-        ref={docInputRef}
-        onChange={handleDocChange}
-      />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fafafa', border: '1px solid #eee', borderRadius: 6, padding: '4px 8px', marginTop: 8, maxWidth: 220 }}>
+      {preview || <span style={{ fontSize: 20 }}>{icon}</span>}
+      <span style={{ fontSize: 13, maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+      {uploading ? <span style={{ color: '#aaa', fontSize: 12 }}>Uploading...</span> : <button onClick={onRemove} style={{ color: 'red', border: 'none', background: 'none', cursor: 'pointer', fontSize: 13 }}>Remove</button>}
     </div>
   );
 };
 
 const NewMessageBox = ({ onSend, currentUser }) => {
   const [message, setMessage] = useState('');
-  const [attachments, setAttachments] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedDocId, setUploadedDocId] = useState(null);
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setSelectedFile(file);
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('description', file.name);
+      const response = await fetch('/apis/document/upload_document', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) throw new Error('File upload failed');
+      const data = await response.json();
+      setUploadedDocId(data.documentId);
+    } catch (err) {
+      alert('File upload failed');
+      setSelectedFile(null);
+      setUploadedDocId(null);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    setUploadedDocId(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const handleSend = () => {
-    if (message.trim() || attachments.length > 0) {
-      onSend({ message, attachments });
+    if (message.trim() || uploadedDocId) {
+      onSend(message, uploadedDocId ? [uploadedDocId] : []);
       setMessage('');
-      setAttachments([]);
+      setSelectedFile(null);
+      setUploadedDocId(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      // Reset textarea height after send
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
     }
+  };
+
+  // Show message strip for under development feature
+  const [showDevMsg, setShowDevMsg] = useState(false);
+  const handlePaperclipClick = (e) => {
+    e.preventDefault();
+    setShowDevMsg(true);
+    setTimeout(() => setShowDevMsg(false), 2000);
   };
 
   const handleKeyDown = (e) => {
@@ -117,6 +124,17 @@ const NewMessageBox = ({ onSend, currentUser }) => {
 
   return (
     <div className="sticky-message-box">
+      {showDevMsg && (
+        <div style={{ position: 'absolute', top: -40, left: 0, right: 0, zIndex: 10 }}>
+          <MessageStrip
+            text="This feature is under development."
+            type="Information"
+            showIcon={true}
+            showCloseButton={false}
+            duration={2000}
+          />
+        </div>
+      )}
       <Avatar user={currentUser} />
       <div className="message-input-wrapper">
         <textarea
@@ -127,39 +145,24 @@ const NewMessageBox = ({ onSend, currentUser }) => {
           placeholder="Type a new message"
           rows="1"
         />
-        {/* Attachment preview */}
-        {attachments.length > 0 && (
-          <div className="attachment-preview" style={{ marginTop: 8 }}>
-            {attachments.map((file, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
-                {file.type.startsWith('image/') ? (
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt={file.name}
-                    style={{ width: 40, height: 40, objectFit: 'cover', marginRight: 8, borderRadius: 4 }}
-                  />
-                ) : (
-                  <span style={{ marginRight: 8 }}>📄</span>
-                )}
-                <span style={{ fontSize: 14 }}>{file.name}</span>
-                <button
-                  type="button"
-                  onClick={() => removeAttachment(idx)}
-                  style={{ marginLeft: 8, cursor: 'pointer', background: 'none', border: 'none', color: 'red' }}
-                  aria-label="Remove"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-          </div>
+        {selectedFile && (
+          <FilePreviewBox file={selectedFile} uploading={uploading} onRemove={handleRemoveFile} />
         )}
         <div className="editor-actions">
-          <PaperclipButton onAttach={handleAttach} />
+          <input
+            type="file"
+            style={{ display: 'none' }}
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            disabled={uploading}
+          />
+          <button className="action-button" onClick={() => fileInputRef.current && fileInputRef.current.click()} disabled={uploading}>
+            <Paperclip />
+          </button>
           <button 
             className="send-button" 
             onClick={handleSend}
-            disabled={!message.trim() && attachments.length === 0}
+            disabled={(!message.trim() && !uploadedDocId) || uploading}
           >
             <Send />
           </button>

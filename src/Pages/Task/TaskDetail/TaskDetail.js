@@ -17,11 +17,13 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
   const [content, setContent] = useState(taskData.description || "");
 
   const dropdownOptions = [
-    { label: "Podcast", value: "Podcast" },
-    { label: "Success Story", value: "Success Story" },
-    { label: "Testimonial", value: "Testimonial" },
-    { label: "Newsletter", value: "Newsletter" },
-    { label: "Social Media Post", value: "Social Media Post" },
+    { label: "Standees", value: "Standees" },
+    { label: "Banner", value: "Banner" },
+    { label: "Stage Flex", value: "Stage Flex" },
+    { label: "Brochure / Leaflet", value: "Brochure / Leaflet" },
+    { label: "Placards / Poster", value: "Placards / Poster" },
+    { label: "Invitation/Envelope", value: "Invitation/Envelope" },
+    { label: "certificates/trophies", value: "certificates/trophies" },
   ];
 
   const isDisabled = mode === "view" || !permissions.canEdit;

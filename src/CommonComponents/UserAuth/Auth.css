@@ -331,3 +331,55 @@
   position: relative;
   z-index: 1;
 }
+
+/* Forgot Password specific styles */
+.otp-resend {
+  text-align: center;
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+.resend-link {
+  background: none;
+  border: none;
+  color: #4a90e2;
+  cursor: pointer;
+  margin-left: 5px;
+  padding: 0;
+  font-size: 14px;
+}
+
+.resend-link:hover {
+  text-decoration: underline;
+}
+
+.resend-link:disabled {
+  color: #ccc;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+/* Step indicator (optional) */
+.step-indicator {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.step {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 10px;
+  font-weight: bold;
+  color: #666;
+}
+
+.step.active {
+  background-color: #4a90e2;
+  color: white;
+}

@@ -27,7 +27,7 @@ const FilesUploads = ({
   onFileSelect,
   enableSelectionCheckbox = false, // ← NEW PROP
 }) => {
-  const [links, setLinks] = useState([]);
+  // const [links, setLinks] = useState([]); // commented out for now
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
@@ -65,8 +65,8 @@ const FilesUploads = ({
   }, [files, uploadedFiles]);
 
   useEffect(() => {
-    onDataChange?.({ links, uploadedFiles });
-  }, [links, uploadedFiles]);
+    onDataChange?.({ uploadedFiles });
+  }, [ uploadedFiles]);
 
   const getFileTypeFromMime = (mime) => {
     if (!mime) return 'file';
@@ -77,14 +77,14 @@ const FilesUploads = ({
     return 'file';
   };
 
-  const handleAddLink = () => {
-    const newLink = prompt("Enter the new link URL:");
-    if (newLink) {
-      const updatedLinks = [...links, newLink];
-      setLinks(updatedLinks);
-      onDataChange?.({ links: updatedLinks, uploadedFiles });
-    }
-  };
+  // const handleAddLink = () => {
+  //   const newLink = prompt("Enter the new link URL:");
+  //   if (newLink) {
+  //     const updatedLinks = [...links, newLink];
+  //     setLinks(updatedLinks);
+  //     onDataChange?.({ links: updatedLinks, uploadedFiles });
+  //   }
+  // };
 
   const uploadFileToBackend = async (file, description) => {
     const formData = new FormData();
@@ -343,7 +343,7 @@ const FilesUploads = ({
         </div>
       )}
 
-      <div className="links-container">
+      {/* <div className="links-container">
         <h3>Links</h3>
         <ul>
           {links.map((link, index) => (
@@ -355,7 +355,7 @@ const FilesUploads = ({
         <div className="add-link-icon" onClick={handleAddLink}>
           <PlusCircle size={30} />
         </div>
-      </div>
+      </div> */}
 
       <div className="files-container">
         <div className="files-header">

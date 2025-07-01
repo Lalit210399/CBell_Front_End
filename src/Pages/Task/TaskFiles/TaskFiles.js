@@ -116,6 +116,7 @@ const TasksFiles = ({
           selectedFiles={selectedFiles.map(f => f.documentId)}
           onFileSelect={handleFileSelect}
           hasApprovedFile={hasApprovedFile} // Pass this prop to child
+          enableSelectionCheckbox={true}
         />
       )}
     </div>

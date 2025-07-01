@@ -17,7 +17,7 @@ const TableHeader = ({ onSearch, onNewEventClick, loading, permissions }) => {
             onChange={(e) => onSearch(e.target.value)}
           />
         </div>
-        <Button type="button" className="btn-secondary" Icon={Filter}>
+        <Button type="button" disabled={true} className="btn-secondary" Icon={Filter}>
           Filters
         </Button>
         <Button
