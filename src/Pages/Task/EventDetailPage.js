@@ -22,6 +22,7 @@ const EventDetail = () => {
   const { user } = useUser();
   const { addMessage } = useMessages();
   const { permissions: userPermissions } = useUser();
+  //console.log("User:" , user.organization.name);
 
   const permissions = {
     canEdit: mode === "create" ? true : userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
@@ -42,7 +43,7 @@ const EventDetail = () => {
     selectedDate: locationSelectedDate
   } = location.state || {};
 
-  const selectedDate = locationSelectedDate 
+  const selectedDate = locationSelectedDate
     ? new Date(locationSelectedDate)
     : null;
 
@@ -289,8 +290,8 @@ const EventDetail = () => {
       : fetchedEvent?.eventDate
         ? formatDateForInput(fetchedEvent.eventDate)
         : formatDateForInput(new Date()),
-    type: eventType || fetchedEvent?.eventType || "",
-    typeDesc: eventTypeDesc || fetchedEvent?.eventTypeDesc || "", // Added typeDesc
+    type: fetchedEvent?.typeName || eventType || "", // Changed to use typeName from fetchedEvent
+    typeDesc: fetchedEvent?.eventTypeDesc || eventTypeDesc || "",
     createdBy: mode === "create"
       ? user?.firstName || "User"
       : `User ID ${fetchedEvent?.createdBy || ""}`,
@@ -302,7 +303,7 @@ const EventDetail = () => {
     },
     participants,
   };
-  
+
   const guestsData = mode === "create"
     ? []
     : fetchedEvent?.specialGuests?.map((guest, index) => ({
@@ -367,7 +368,7 @@ const EventDetail = () => {
     : tabs;
 
   const breadcrumbItems = [
-    { label: "AISSMS COP", href: "#", icon: Building },
+    { label: user?.organization?.name || "Organization", href: "#", icon: Building },
     {
       label: "Events",
       href: "/events",

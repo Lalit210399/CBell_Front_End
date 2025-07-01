@@ -114,7 +114,7 @@
   background: #f8fafd;
 }
 
-.send-button {
+.send_button {
   background: #1a73e8;
   color: #fff;
   border: none;
@@ -125,7 +125,7 @@
   cursor: pointer;
   transition: background 0.2s;
 }
-.send-button:disabled {
+.send_button:disabled {
   background: #b3d1fc;
   cursor: not-allowed;
 }

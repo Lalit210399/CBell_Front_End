@@ -38,7 +38,7 @@ const Publish = ({ eventId }) => {
   const [showShareModal, setShowShareModal] = useState(false);
   const { user } = useUser();
 
-  console.log('fileDetail in Publish' ,fileDetail, );
+  //console.log('fileDetail in Publish' ,fileDetail, );
 
   const handleDownload = (files) => {
     files.forEach(file => {
@@ -82,9 +82,11 @@ const Publish = ({ eventId }) => {
   };
 
   const handleShare = (file, fullTask) => {
+    debugger;
     console.log('Publish Share Button Pressed. File data:', file, 'Full Task data:', fullTask);
+    console.log('File URL:', file.document.fileId);
     setDescription(file.name || '');
-    setDocumentId(file.url.split('/').pop());
+    setDocumentId(file.document.fileId);
     setFileDetail({ ...file, fullTask });
     setShowShareModal(true);
   };
@@ -103,7 +105,7 @@ const Publish = ({ eventId }) => {
       if (!response.ok) throw new Error("Failed to fetch published tasks");
 
       const data = await response.json();
-      console.log('Fetched published tasks:', data);
+      //console.log('Fetched published tasks:', data);
       const formatted = data.map(task => {
         const fileLinks = (task.documents || []).map(doc => ({
           name: doc.filename,

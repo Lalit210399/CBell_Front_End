@@ -11,7 +11,7 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [platform, setPlatform] = useState(null);
 
-  console.log('FileShareModel fileDetail:', fileDetail);
+  //console.log('FileShareModel fileDetail:', fileDetail);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];

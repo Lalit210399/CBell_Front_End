@@ -23,11 +23,15 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
     const fetchFile = async () => {
       if (documentId && !fileDetail?.file) {
         try {
-          const response = await fetch(`/apis/task/download_document/${documentId}`);
+          const response = await fetch(`/apis/task/download_document/${documentId}`, {
+            method: 'GET',
+            headers: {
+              'ngrok-skip-browser-warning': '1'
+            }
+          });
           const blob = await response.blob();
 
-          const filename =
-            fileDetail?.filename || fileDetail?.name || 'attachment';
+          const filename = fileDetail?.filename || fileDetail?.name || 'attachment';
           const file = new File([blob], filename, { type: blob.type });
 
           const url = `/apis/document/view/${documentId}`;
@@ -78,14 +82,14 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
       const formDataToSend = new FormData();
       formDataToSend.append('To', formData.to);
       formDataToSend.append('Cc', formData.cc);
-      formDataToSend.append('Bcc', formData.bcc);
+      formDataToSend.append('bcc', formData.bcc);
       formDataToSend.append('Subject', formData.subject);
       formDataToSend.append('Message', formData.message);
       formDataToSend.append('DocumentId', formData.documentId);
 
-      if (attachment?.file) {
-        formDataToSend.append('Attachment', attachment.file);
-      }
+      // if (attachment?.file) {
+      //   formDataToSend.append('Attachment', attachment.file, attachment.file.name);
+      // }
 
       const response = await fetch('/apis/email/send', {
         method: 'POST',
@@ -216,7 +220,7 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
         </div>
 
         <div className="email-form-actions">
-          <button type="submit" className="send-button" disabled={isSending}>
+          <button type="submit" className="send_button" disabled={isSending}>
             {isSending ? 'Sending...' : 'Send'}
           </button>
         </div>

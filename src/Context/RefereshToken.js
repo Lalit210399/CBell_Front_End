@@ -31,7 +31,7 @@ export async function fetchWithRefresh(input, init = {}) {
       source = refreshToken ? 'localStorage' : 'none';
     }
     if (refreshToken) {
-      console.log(`Existing refresh token found in ${source}:`, refreshToken);
+      //console.log(`Existing refresh token found in ${source}:`, refreshToken);
     } else {
       console.warn('LocalRefreshToken is not accessible in cookies or localStorage');
     }
@@ -48,8 +48,8 @@ export async function fetchWithRefresh(input, init = {}) {
       .then((data) => {
         const newToken = data.accessToken;
         localStorage.setItem('accessToken', newToken);
-        console.log('New access token:', newToken);
-        console.log('Refresh token:', refreshToken); // Log the refresh token
+        //console.log('New access token:', newToken);
+        //console.log('Refresh token:', refreshToken); // Log the refresh token
         isRefreshing = false;
         return newToken;
       })

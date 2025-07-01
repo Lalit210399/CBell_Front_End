@@ -41,7 +41,7 @@ export const signin = async (credentials) => {
     }
 
     const data = await response.json();
-    console.log("Signin response data:", data);
+    //console.log("Signin response data:", data);
 
     if (!response.ok) {
       throw new Error(data.message || `Login failed with status ${response.status}`);

@@ -31,6 +31,7 @@ const DetailTopSection = ({
   const [editableTypeDesc, setEditableTypeDesc] = useState(
     mode === "create" ? "" : data?.typeDesc || ""
   );
+  console.log("data in DetailTopSection:", data);
 
   useEffect(() => {
     if (mode === "create") {
@@ -83,21 +84,21 @@ const DetailTopSection = ({
                   placeholder={mode === "create" ? "Enter event title" : ""}
                 />
                 <span className="event-type-text">{data?.type || "No type specified"}</span>
-                <textarea
+                {/* <textarea
                   className="editable-desc-input"
                   value={editableTypeDesc}
                   onChange={handleTypeDescChange}
                   placeholder="Enter event type description"
                   rows={2}
-                />
+                /> */}
               </div>
             ) : (
               <div className="view-mode-fields">
                 <span className="header_title">{editableTitle}</span>
                 <span className="event-type-text">{data?.type || "No type specified"}</span>
-                {data?.typeDesc && (
+                {/* {data?.typeDesc && (
                   <span className="event-type-desc">{data.typeDesc}</span>
-                )}
+                )} */}
               </div>
             )}
           </div>

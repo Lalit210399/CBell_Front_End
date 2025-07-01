@@ -35,6 +35,8 @@ const TaskDetailPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  //console.log("User Organization:", user?.organization?.name || "No Organization");
+
   const [taskData, setTaskData] = useState({
     id: "",
     eventId: "",
@@ -389,7 +391,7 @@ const TaskDetailPage = () => {
   ];
 
   const breadcrumbItems = [
-    { label: "AISSMS COP", href: "#", icon: Building },
+    { label: user?.organization?.name, href: "#", icon: Building },
     { label: "Events", href: "/events", icon: Calendar },
     { label: taskTitle || "New Task", href: "#", icon: Pencil },
   ];

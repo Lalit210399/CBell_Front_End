@@ -58,7 +58,8 @@ const ConversationModule = ({ currentUser, users, taskId, eventId, isActive }) =
         conversationText: thread.conversationText,
         createdOn: thread.createdOn,
         replies: [],
-        reactions: []
+        reactions: [],
+        documentIds: Array.isArray(thread.documentId) ? thread.documentId : (thread.documentId ? [thread.documentId] : [])
       }));
 
       setMessages(prev => {
@@ -86,9 +87,8 @@ const ConversationModule = ({ currentUser, users, taskId, eventId, isActive }) =
     return () => clearInterval(pollInterval);
   }, [fetchMessages]);
 
-  const handleSendMessage = useCallback(async (content) => {
-    if (!content.trim()) return;
-
+  const handleSendMessage = useCallback(async (content, documentIds = []) => {
+    if (!content.trim() && (!documentIds || documentIds.length === 0)) return;
     try {
       const payload = {
         OrganizationId: currentUser.organizationId,
@@ -97,9 +97,8 @@ const ConversationModule = ({ currentUser, users, taskId, eventId, isActive }) =
         UserId: currentUser.id,
         userName: `${currentUser.firstName} ${currentUser.lastName}`,
         ConversationText: content,
-        DocumentId: []
+        DocumentId: documentIds || []
       };
-
       const response = await fetch('/apis/chat-thread/add-thread', {
         method: 'POST',
         headers: {
@@ -108,18 +107,16 @@ const ConversationModule = ({ currentUser, users, taskId, eventId, isActive }) =
         },
         body: JSON.stringify(payload)
       });
-
       const data = await handleResponse(response);
-
       const newMessage = {
         threadId: data.threadId || uuidv4(),
         user: currentUser,
         conversationText: content,
         createdOn: new Date().toISOString(),
         replies: [],
-        reactions: []
+        reactions: [],
+        documentIds: documentIds || []
       };
-
       setMessages(prev => [...prev, newMessage]);
       setIsNewConversation(false);
     } catch (err) {
