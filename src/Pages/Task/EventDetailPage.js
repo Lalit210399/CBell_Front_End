@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useNavigate, useLocation } from "react-router-dom";
 import TabMenu from "../../CommonComponents/TabMenu/TabMenu";
 import Detail from "./EventDetail/EventDetail";
@@ -56,7 +57,7 @@ const EventDetail = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const response = await fetch(`/apis/task/by-event/${eventId}?organizationId=${user?.organizationId}`, {
+        const response = await fetchWithRefresh(`/apis/task/by-event/${eventId}?organizationId=${user?.organizationId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -127,7 +128,7 @@ const EventDetail = () => {
     const fetchEvent = async () => {
       if (!eventId) return;
       try {
-        const response = await fetch(`/apis/event/get_event/${eventId}?organizationId=${user?.organizationId}`, {
+        const response = await fetchWithRefresh(`/apis/event/get_event/${eventId}?organizationId=${user?.organizationId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -199,7 +200,7 @@ const EventDetail = () => {
         : `/apis/event/update/${eventId}`;
       const method = mode === "create" ? "POST" : "PUT";
 
-      const response = await fetch(url, {
+      const response = await fetchWithRefresh(url, {
         method,
         headers: {
           "Content-Type": "application/json",

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import CustomCalendar from "../../CommonComponents/Calendar/CustomCalendar";
 import { useMessages } from "../../Context/MessageContext";
 import { useUser } from "../../Context/UserContext";
+import { fetchWithRefresh } from "../../Context/RefereshToken";
 import "./Schedule.css";
 
 const Schedule = () => {
@@ -18,7 +19,7 @@ const Schedule = () => {
         setLoading(true);
         setError(null);
         
-        const response = await fetch(`/apis/event/get_all_events?organizationId=${user?.organizationId}`, {
+        const response = await fetchWithRefresh(`/apis/event/get_all_events?organizationId=${user?.organizationId}`, {
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",

@@ -32,7 +32,8 @@ const ConversationModule = ({ currentUser, users, taskId, eventId, isActive }) =
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`/apis/chat-thread/get-task-chat/${taskId}`, {
+      const { fetchWithRefresh } = await import('../../Context/RefereshToken');
+      const response = await fetchWithRefresh(`/apis/chat-thread/get-task-chat/${taskId}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -100,7 +101,8 @@ const ConversationModule = ({ currentUser, users, taskId, eventId, isActive }) =
         DocumentId: documentIds || []
       };
       // First, add the thread
-      const response = await fetch('/apis/chat-thread/add-thread', {
+      const { fetchWithRefresh } = await import('../../Context/RefereshToken');
+      const response = await fetchWithRefresh('/apis/chat-thread/add-thread', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
@@ -122,7 +124,7 @@ const ConversationModule = ({ currentUser, users, taskId, eventId, isActive }) =
             ConversationId: data.conversationId,
             TaskId: taskId
           };
-          await fetch('/apis/Document-Details', {
+          await fetchWithRefresh('/apis/Document-Details', {
             method: 'POST',
             headers: {
               "Content-Type": "application/json",

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { Upload, ChevronLeft, ChevronRight, X, ExternalLink } from "lucide-react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -82,7 +83,7 @@ const FileUpload = ({
     formData.append("File", file);
     formData.append("description", file.name);
 
-    const response = await fetch("/apis/document/upload_document", {
+    const response = await fetchWithRefresh("/apis/document/upload_document", {
       method: "POST",
       body: formData,
       headers: { "ngrok-skip-browser-warning": "1" }
@@ -101,7 +102,7 @@ const FileUpload = ({
     };
     if (taskId) payload.taskId = taskId;
 
-    const response = await fetch("/apis/Document-Details", {
+    const response = await fetchWithRefresh("/apis/Document-Details", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
