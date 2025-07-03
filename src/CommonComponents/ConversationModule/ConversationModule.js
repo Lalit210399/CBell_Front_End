@@ -99,6 +99,7 @@ const ConversationModule = ({ currentUser, users, taskId, eventId, isActive }) =
         ConversationText: content,
         DocumentId: documentIds || []
       };
+      // First, add the thread
       const response = await fetch('/apis/chat-thread/add-thread', {
         method: 'POST',
         headers: {
@@ -108,6 +109,32 @@ const ConversationModule = ({ currentUser, users, taskId, eventId, isActive }) =
         body: JSON.stringify(payload)
       });
       const data = await handleResponse(response);
+
+      // After thread is added, call /apis/Document-Details with conversationId
+      if (data && data.conversationId) {
+        try {
+          // DocumentId should not be an array, so pick the first if array, or pass as is
+          let docId = Array.isArray(documentIds) ? documentIds[0] : documentIds;
+          const docDetailsPayload = {
+            EventId: eventId,
+            OrganizationId: currentUser.organizationId,
+            DocumentId: docId,
+            ConversationId: data.conversationId,
+            TaskId: taskId
+          };
+          await fetch('/apis/Document-Details', {
+            method: 'POST',
+            headers: {
+              "Content-Type": "application/json",
+              "ngrok-skip-browser-warning": "1",
+            },
+            body: JSON.stringify(docDetailsPayload)
+          });
+        } catch (err) {
+          console.error('Failed to link document to conversation:', err);
+        }
+      }
+
       const newMessage = {
         threadId: data.threadId || uuidv4(),
         user: currentUser,
