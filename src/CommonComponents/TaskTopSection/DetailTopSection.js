@@ -31,7 +31,7 @@ const DetailTopSection = ({
   const [editableTypeDesc, setEditableTypeDesc] = useState(
     mode === "create" ? "" : data?.typeDesc || ""
   );
-  console.log("data in DetailTopSection:", data);
+  //console.log("data in DetailTopSection:", data);
 
   useEffect(() => {
     if (mode === "create") {
