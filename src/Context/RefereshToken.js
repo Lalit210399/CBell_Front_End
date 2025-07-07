@@ -1,10 +1,7 @@
-// utils/fetchWithRefresh.js
-import Cookies from 'js-cookie';
-
+import { logout } from '../Services/AuthN';
 let isRefreshing = false;
 let refreshPromise = null;
 
-// Helper to get refresh token from cookies by name
 function getCookieValue(name) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
@@ -29,7 +26,6 @@ export async function fetchWithRefresh(input, init = {}) {
     return response;
   }
 
-  // Access token expired, try refreshing
   if (!isRefreshing) {
     isRefreshing = true;
     // Get refresh token from cookie (not httpOnly)
@@ -72,6 +68,17 @@ export async function fetchWithRefresh(input, init = {}) {
 
     return fetch(input, { ...init, headers: retryHeaders });
   } catch (err) {
+    // If refresh token failed, call logout and redirect to login
+    try {
+      await logout();
+    } catch (logoutErr) {
+      console.error('Logout after refresh token failure failed:', logoutErr);
+    }
+    // Redirect to login page
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
     throw err;
   }
 }
+ 
