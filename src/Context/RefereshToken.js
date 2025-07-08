@@ -1,8 +1,13 @@
-// utils/fetchWithRefresh.js
-import Cookies from 'js-cookie';
-
+import { logout } from '../Services/AuthN';
 let isRefreshing = false;
 let refreshPromise = null;
+
+function getCookieValue(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
 
 export async function fetchWithRefresh(input, init = {}) {
   let accessToken = localStorage.getItem('accessToken');
@@ -21,19 +26,14 @@ export async function fetchWithRefresh(input, init = {}) {
     return response;
   }
 
-  // Access token expired, try refreshing
   if (!isRefreshing) {
     isRefreshing = true;
-    let refreshToken = localStorage.getItem('LocalRefreshToken');
-    let source = 'cookie';
-    if (!refreshToken) {
-      refreshToken = localStorage.getItem('LocalRefreshToken');
-      source = refreshToken ? 'localStorage' : 'none';
-    }
+    // Get refresh token from cookie (not httpOnly)
+    let refreshToken = getCookieValue('LocalRefreshToken');
     if (refreshToken) {
-      //console.log(`Existing refresh token found in ${source}:`, refreshToken);
+      console.log('Refresh token from cookie:', refreshToken);
     } else {
-      console.warn('LocalRefreshToken is not accessible in cookies or localStorage');
+      console.warn('LocalRefreshToken is not accessible in cookies');
     }
 
     refreshPromise = fetch('/apis/auth/refresh-token', {
@@ -48,8 +48,6 @@ export async function fetchWithRefresh(input, init = {}) {
       .then((data) => {
         const newToken = data.accessToken;
         localStorage.setItem('accessToken', newToken);
-        //console.log('New access token:', newToken);
-        //console.log('Refresh token:', refreshToken); // Log the refresh token
         isRefreshing = false;
         return newToken;
       })
@@ -70,6 +68,17 @@ export async function fetchWithRefresh(input, init = {}) {
 
     return fetch(input, { ...init, headers: retryHeaders });
   } catch (err) {
+    // If refresh token failed, call logout and redirect to login
+    try {
+      await logout();
+    } catch (logoutErr) {
+      console.error('Logout after refresh token failure failed:', logoutErr);
+    }
+    // Redirect to login page
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
     throw err;
   }
 }
+ 

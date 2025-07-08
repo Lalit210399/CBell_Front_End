@@ -94,12 +94,12 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
               <button onClick={() => handleShare('instagram')} className="icon-button" title="Instagram">
                 <FaInstagram className="icon" />
               </button>
-              <button onClick={() => handleShare('twitter')} className="icon-button" title="Twitter">
+              {/* <button onClick={() => handleShare('twitter')} className="icon-button" title="Twitter">
                 <FaTwitter className="icon" />
               </button>
               <button onClick={() => handleShare('linkedin')} className="icon-button" title="LinkedIn">
                 <FaLinkedin className="icon" />
-              </button>
+              </button> */}
             </div>
           </div>
         </div>

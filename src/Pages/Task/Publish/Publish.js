@@ -82,9 +82,9 @@ const Publish = ({ eventId }) => {
   };
 
   const handleShare = (file, fullTask) => {
-    debugger;
-    console.log('Publish Share Button Pressed. File data:', file, 'Full Task data:', fullTask);
-    console.log('File URL:', file.document.fileId);
+    // debugger;
+    // console.log('Publish Share Button Pressed. File data:', file, 'Full Task data:', fullTask);
+    // console.log('File URL:', file.document.fileId);
     setDescription(file.name || '');
     setDocumentId(file.document.fileId);
     setFileDetail({ ...file, fullTask });

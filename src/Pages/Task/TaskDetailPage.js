@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useLocation, useNavigate } from "react-router-dom";
 import TabMenu from "../../CommonComponents/TabMenu/TabMenu";
 import CommentsPreview from "./Comments_Preview/CommentsPreview";
@@ -93,7 +94,7 @@ const TaskDetailPage = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch("/apis/auth/users", {
+        const response = await fetchWithRefresh("/apis/auth/users", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -127,7 +128,7 @@ const TaskDetailPage = () => {
       
       try {
         setIsLoading(true);
-        const response = await fetch(`/apis/task/get_task/${taskId}`, {
+        const response = await fetchWithRefresh(`/apis/task/get_task/${taskId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -234,7 +235,7 @@ const TaskDetailPage = () => {
         try {
           const approvalResults = await Promise.allSettled(
             selectedFiles.map(async (file) => {
-              const response = await fetch(`/apis/document/approve/${file.documentId}`, {
+              const response = await fetchWithRefresh(`/apis/document/approve/${file.documentId}`, {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
@@ -290,7 +291,7 @@ const TaskDetailPage = () => {
       
       const method = mode === "edit" ? "PUT" : "POST";
 
-      const response = await fetch(url, {
+      const response = await fetchWithRefresh(url, {
         method,
         headers: {
           "Content-Type": "application/json",

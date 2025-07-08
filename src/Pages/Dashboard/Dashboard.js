@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useNavigate } from "react-router-dom";
 import StatusCard from "../../CommonComponents/Status_Card/Status_Card";
 import EventList from "../../CommonComponents/EventsList/EventsList";
@@ -22,7 +23,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     const organizationId = user?.organizationId || "681460dcb8327b2e3417d8b1";
-    fetch(`/apis/dashboard?OrganizationId=${organizationId}`, {
+    fetchWithRefresh(`/apis/dashboard?OrganizationId=${organizationId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -37,7 +38,7 @@ const Dashboard = () => {
       })
       .then((data) => {
         const currentDate = new Date();
-        
+
         // Process events
         const events = data.events.map((event) => ({
           id: event.id || Math.random().toString(36).substring(2, 9),

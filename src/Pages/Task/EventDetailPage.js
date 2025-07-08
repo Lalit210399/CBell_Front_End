@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useNavigate, useLocation } from "react-router-dom";
 import TabMenu from "../../CommonComponents/TabMenu/TabMenu";
 import Detail from "./EventDetail/EventDetail";
@@ -18,11 +19,11 @@ const EventDetail = () => {
   const [tasksData, setTasksData] = useState([]);
   const [activeTab, setActiveTab] = useState("Details");
   const [mode, setMode] = useState("view");
+  const [isSubmitting, setIsSubmitting] = useState(false); // New state to track submission
   const detailSaveRef = useRef(null);
   const { user } = useUser();
   const { addMessage } = useMessages();
   const { permissions: userPermissions } = useUser();
-  //console.log("User:" , user.organization.name);
 
   const permissions = {
     canEdit: mode === "create" ? true : userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
@@ -56,7 +57,7 @@ const EventDetail = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const response = await fetch(`/apis/task/by-event/${eventId}?organizationId=${user?.organizationId}`, {
+        const response = await fetchWithRefresh(`/apis/task/by-event/${eventId}?organizationId=${user?.organizationId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -127,7 +128,7 @@ const EventDetail = () => {
     const fetchEvent = async () => {
       if (!eventId) return;
       try {
-        const response = await fetch(`/apis/event/get_event/${eventId}?organizationId=${user?.organizationId}`, {
+        const response = await fetchWithRefresh(`/apis/event/get_event/${eventId}?organizationId=${user?.organizationId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -165,6 +166,7 @@ const EventDetail = () => {
   }, [eventId, mode, selectedDate, eventData, user?.organizationId, formData, eventType, eventTypeId, eventTypeDesc]);
 
   const handleSaveEvent = async (topSectionData, getDetailData) => {
+    setIsSubmitting(true); // Set submitting state
     const detailData = getDetailData ? getDetailData() : {
       description: "",
       location: "Pune",
@@ -198,7 +200,7 @@ const EventDetail = () => {
         : `/apis/event/update/${eventId}`;
       const method = mode === "create" ? "POST" : "PUT";
 
-      const response = await fetch(url, {
+      const response = await fetchWithRefresh(url, {
         method,
         headers: {
           "Content-Type": "application/json",
@@ -216,7 +218,15 @@ const EventDetail = () => {
         type: "success",
         duration: 3000,
       });
-      navigate("/events", { state: { refresh: true } });
+      
+      // Only navigate after successful save
+      navigate("/events", { 
+        state: { 
+          refresh: true,
+          // Preserve the mode until navigation completes
+          mode: mode 
+        } 
+      });
     } catch (error) {
       console.error(`Error ${mode === "create" ? "creating" : "updating"} event:`, error);
       addMessage({
@@ -224,6 +234,8 @@ const EventDetail = () => {
         type: "error",
         duration: 3000,
       });
+    } finally {
+      setIsSubmitting(false); // Reset submitting state
     }
   };
 
@@ -290,7 +302,7 @@ const EventDetail = () => {
       : fetchedEvent?.eventDate
         ? formatDateForInput(fetchedEvent.eventDate)
         : formatDateForInput(new Date()),
-    type: fetchedEvent?.typeName || eventType || "", // Changed to use typeName from fetchedEvent
+    type: fetchedEvent?.typeName || eventType || "",
     typeDesc: fetchedEvent?.eventTypeDesc || eventTypeDesc || "",
     createdBy: mode === "create"
       ? user?.firstName || "User"
@@ -403,6 +415,7 @@ const EventDetail = () => {
           participants={participants}
           permissions={permissions}
           initialDate={selectedDate ? formatDateForInput(selectedDate) : ""}
+          isSubmitting={isSubmitting} // Pass submitting state
         />
       </div>
       <div className="Inner-Content">
