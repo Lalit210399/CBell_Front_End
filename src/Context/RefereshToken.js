@@ -30,11 +30,11 @@ export async function fetchWithRefresh(input, init = {}) {
     isRefreshing = true;
     // Get refresh token from cookie (not httpOnly)
     let refreshToken = getCookieValue('LocalRefreshToken');
-    if (refreshToken) {
-      console.log('Refresh token from cookie:', refreshToken);
-    } else {
-      console.warn('LocalRefreshToken is not accessible in cookies');
-    }
+    // if (refreshToken) {
+    //   console.log('Refresh token from cookie:', refreshToken);
+    // } else {
+    //   console.warn('LocalRefreshToken is not accessible in cookies');
+    // }
 
     refreshPromise = fetch('/apis/auth/refresh-token', {
       method: 'POST',

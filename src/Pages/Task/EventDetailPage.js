@@ -19,20 +19,14 @@ const EventDetail = () => {
   const [tasksData, setTasksData] = useState([]);
   const [activeTab, setActiveTab] = useState("Details");
   const [mode, setMode] = useState("view");
-  const [isSubmitting, setIsSubmitting] = useState(false); // New state to track submission
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const detailSaveRef = useRef(null);
   const { user } = useUser();
   const { addMessage } = useMessages();
   const { permissions: userPermissions } = useUser();
-
-  const permissions = {
-    canEdit: mode === "create" ? true : userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
-    canCreateTask: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Create") ?? false,
-    canSave: mode === "create" ? true : userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
-  };
-
   const navigate = useNavigate();
   const location = useLocation();
+
   const {
     eventId,
     mode: initialMode,
@@ -49,10 +43,10 @@ const EventDetail = () => {
     : null;
 
   useEffect(() => {
-    if (initialMode) {
+    if (initialMode && mode !== initialMode) {
       setMode(initialMode);
     }
-  }, [initialMode]);
+  }, [initialMode, mode]);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -99,9 +93,7 @@ const EventDetail = () => {
     if (mode === "create") {
       const newEvent = {
         eventName: formData?.eventName || "",
-        eventDate: selectedDate
-          ? selectedDate.toISOString()
-          : new Date().toISOString(),
+        eventDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
         eventDescription: formData?.eventDescription || "",
         coordinators: [],
         specialGuests: [],
@@ -111,17 +103,32 @@ const EventDetail = () => {
         eventTypeDesc: eventTypeDesc || "",
         location: formData?.location || "",
       };
-      setFetchedEvent(newEvent);
+
+      if (JSON.stringify(fetchedEvent) !== JSON.stringify(newEvent)) {
+        setFetchedEvent(newEvent);
+      }
+
       return;
     }
 
     if (eventData) {
-      setFetchedEvent({
+      const transformedEvent = {
         ...eventData,
         eventType: eventType || eventData.eventType,
         eventTypeId: eventTypeId || eventData.eventTypeId,
-        eventTypeDesc: eventTypeDesc || eventData.eventTypeDesc
-      });
+        eventTypeDesc: eventTypeDesc || eventData.eventTypeDesc,
+        coordinators: Array.isArray(eventData.coordinators)
+          ? eventData.coordinators.map(coord => typeof coord === 'string' ? { name: coord, title: "Coordinator" } : coord)
+          : [],
+        specialGuests: Array.isArray(eventData.specialGuests)
+          ? eventData.specialGuests.map(guest => typeof guest === 'string' ? { name: guest, title: "Guest" } : guest)
+          : []
+      };
+
+      if (JSON.stringify(fetchedEvent) !== JSON.stringify(transformedEvent)) {
+        setFetchedEvent(transformedEvent);
+      }
+
       return;
     }
 
@@ -136,8 +143,7 @@ const EventDetail = () => {
             "ngrok-skip-browser-warning": "1",
           },
         });
-        if (!response.ok)
-          throw new Error(`HTTP error! Status: ${response.status}`);
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const responseData = await response.json();
         const eventData = responseData.data || responseData;
 
@@ -148,10 +154,12 @@ const EventDetail = () => {
             : [],
           specialGuests: Array.isArray(eventData.specialGuests)
             ? eventData.specialGuests.map(guest => typeof guest === 'string' ? { name: guest, title: "Guest" } : guest)
-            : []
+            : [],
         };
 
-        setFetchedEvent(transformedData);
+        if (JSON.stringify(fetchedEvent) !== JSON.stringify(transformedData)) {
+          setFetchedEvent(transformedData);
+        }
       } catch (error) {
         console.error("Error fetching event:", error);
         addMessage({
@@ -163,10 +171,27 @@ const EventDetail = () => {
     };
 
     fetchEvent();
-  }, [eventId, mode, selectedDate, eventData, user?.organizationId, formData, eventType, eventTypeId, eventTypeDesc]);
+  }, [
+    eventId,
+    mode,
+    selectedDate,
+    eventData,
+    user?.organizationId,
+    formData,
+    eventType,
+    eventTypeId,
+    eventTypeDesc,
+    fetchedEvent, // ensure comparison prevents re-trigger
+  ]);
+
+  const permissions = {
+    canEdit: mode === "create" ? true : userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
+    canCreateTask: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Create") ?? false,
+    canSave: mode === "create" ? true : userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
+  };
 
   const handleSaveEvent = async (topSectionData, getDetailData) => {
-    setIsSubmitting(true); // Set submitting state
+    setIsSubmitting(true);
     const detailData = getDetailData ? getDetailData() : {
       description: "",
       location: "Pune",
@@ -218,14 +243,12 @@ const EventDetail = () => {
         type: "success",
         duration: 3000,
       });
-      
-      // Only navigate after successful save
-      navigate("/events", { 
-        state: { 
+
+      navigate("/events", {
+        state: {
           refresh: true,
-          // Preserve the mode until navigation completes
-          mode: mode 
-        } 
+          mode: mode
+        }
       });
     } catch (error) {
       console.error(`Error ${mode === "create" ? "creating" : "updating"} event:`, error);
@@ -235,7 +258,7 @@ const EventDetail = () => {
         duration: 3000,
       });
     } finally {
-      setIsSubmitting(false); // Reset submitting state
+      setIsSubmitting(false);
     }
   };
 
@@ -281,16 +304,16 @@ const EventDetail = () => {
   };
 
   const participants = [
-    ...(fetchedEvent?.coordinators?.map((coord, index) => ({
+    ...(fetchedEvent?.coordinators || []).map((coord, index) => ({
       id: `coordinator-${index}`,
       name: coord?.name || coord,
       avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(coord?.name || coord)}&background=random`,
-    })) || []),
-    ...(fetchedEvent?.specialGuests?.map((guest, index) => ({
+    })),
+    ...(fetchedEvent?.specialGuests || []).map((guest, index) => ({
       id: `guest-${index}`,
       name: guest?.name || guest,
       avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(guest?.name || guest)}&background=random`,
-    })) || []),
+    })),
   ];
 
   const topSectionData = {
@@ -316,21 +339,8 @@ const EventDetail = () => {
     participants,
   };
 
-  const guestsData = mode === "create"
-    ? []
-    : fetchedEvent?.specialGuests?.map((guest, index) => ({
-      id: index,
-      name: guest?.name || guest,
-      title: guest?.title || "Guest",
-    })) || [];
-
-  const organizersData = mode === "create"
-    ? []
-    : fetchedEvent?.coordinators?.map((coord, index) => ({
-      id: index + 100,
-      name: coord?.name || coord,
-      title: coord?.title || "Coordinator",
-    })) || [];
+  const guestsData = mode === "create" ? [] : fetchedEvent?.specialGuests || [];
+  const organizersData = mode === "create" ? [] : fetchedEvent?.coordinators || [];
 
   const tabs = [
     {
@@ -415,7 +425,7 @@ const EventDetail = () => {
           participants={participants}
           permissions={permissions}
           initialDate={selectedDate ? formatDateForInput(selectedDate) : ""}
-          isSubmitting={isSubmitting} // Pass submitting state
+          isSubmitting={isSubmitting}
         />
       </div>
       <div className="Inner-Content">

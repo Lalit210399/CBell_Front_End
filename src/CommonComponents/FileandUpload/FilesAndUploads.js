@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { fetchWithRefresh } from '../../Context/RefereshToken';
+
 import {
   Image as ImageIcon,
   Music as MusicIcon,
@@ -92,7 +92,7 @@ const FilesUploads = ({
     formData.append('File', file);
     formData.append('description', description || file.name);
 
-    const response = await fetchWithRefresh('/apis/document/upload_document', {
+    const response = await fetch('/apis/document/upload_document', {
       method: 'POST',
       body: formData,
       headers: { 'ngrok-skip-browser-warning': '1' }
@@ -112,7 +112,7 @@ const FilesUploads = ({
 
     if (taskId) payload.taskId = taskId;
 
-    const response = await fetchWithRefresh('/apis/Document-Details', {
+    const response = await fetch('/apis/Document-Details', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -129,7 +129,7 @@ const FilesUploads = ({
     if (!window.confirm('Are you sure you want to delete this file?')) return;
 
     try {
-      const response = await fetchWithRefresh(`/apis/document/delete/${fileId}`, {
+      const response = await fetch(`/apis/document/delete/${fileId}`, {
         method: 'DELETE',
         headers: { 'ngrok-skip-browser-warning': '1' }
       });

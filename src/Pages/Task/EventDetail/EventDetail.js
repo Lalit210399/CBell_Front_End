@@ -17,23 +17,19 @@ const Detail = ({
   const editorRef = useRef(initialDescription);
 
   useEffect(() => {
-    if (mode === "view" || mode === "edit") {
-      // Only update if values are different to avoid infinite loop
-      if (
-        JSON.stringify(guests) !== JSON.stringify(guestsData)
-      ) {
-        setGuests(guestsData);
-      }
-      if (
-        JSON.stringify(organizers) !== JSON.stringify(organizersData)
-      ) {
-        setOrganizers(organizersData);
-      }
-    } else if (mode === "create") {
-      if (guests.length !== 0) setGuests([]);
-      if (organizers.length !== 0) setOrganizers([]);
+  if ((mode === "view" || mode === "edit")) {
+    if (JSON.stringify(guests) !== JSON.stringify(guestsData)) {
+      setGuests(guestsData);
     }
-  }, [mode, guestsData, organizersData]);
+    if (JSON.stringify(organizers) !== JSON.stringify(organizersData)) {
+      setOrganizers(organizersData);
+    }
+  } else if (mode === "create") {
+    if (guests.length !== 0) setGuests([]);
+    if (organizers.length !== 0) setOrganizers([]);
+  }
+}, [mode, guestsData, organizersData]);
+
 
   const handleGuestChange = (e) => {
     const { name, value } = e.target;
