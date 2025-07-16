@@ -12,7 +12,7 @@ import EventDetailPage from "./Pages/Task/EventDetailPage";
 import ForgotPassword from "./CommonComponents/UserAuth/ForgotPassword";
 import TasksDetail from "./Pages/Task/TaskDetailPage";
 import Instagram from "./InstagramPost";
-import ProtectedRoute from "./Context/ProtectedRoute"; 
+// import ProtectedRoute from "./Context/ProtectedRoute"; 
 
 function App() {
   return (
@@ -28,7 +28,7 @@ function App() {
         <Route
           path="/*"
           element={
-            <ProtectedRoute>
+            // <ProtectedRoute>
               <MainLayout>
                 <Routes>
                   <Route path="/auth" element={<AuthN />} />
@@ -44,7 +44,7 @@ function App() {
                   {/* Add more protected routes here */}
                 </Routes>
               </MainLayout>
-            </ProtectedRoute>
+            // </ProtectedRoute>
           }
         />
       </Routes>

@@ -152,11 +152,12 @@ label {
   border-radius: var(--radius-sm);
   resize: none;
   outline: none;
-}
-
-textarea {
   height: 100px;
 }
+/* 
+textarea {
+  
+} */
 
 input {
   border: none;
