@@ -1,37 +1,73 @@
+.dashboard-container {
+  font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+  padding: 40px 20px;
+  max-width: 1440px;
+  margin: auto;
+}
 
+.status-cards {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  gap: 24px;
+}
+
+.status-cards > div {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(60, 72, 88, 0.12);
+  padding: 32px 24px;
+  flex: 1;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.status-cards > div:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 8px 32px rgba(60, 72, 88, 0.18);
+}
+
+.event-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.event-section > div {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(60, 72, 88, 0.10);
+  padding: 28px 20px;
+  flex: 1;
+  min-width: 320px;
+  margin-bottom: 12px;
+  transition: box-shadow 0.2s;
+}
+
+.event-section > div:hover {
+  box-shadow: 0 6px 24px rgba(60, 72, 88, 0.16);
+}
+
+@media (max-width: 1024px) {
+  .status-cards, .event-section {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .status-cards > div, .event-section > div {
+    width: 100%;
+    margin-bottom: 0;
+  }
+}
+
+@media (max-width: 600px) {
   .dashboard-container {
-    font-family: Arial, sans-serif;
-    padding: 20px;
-    max-width: 1440px;
-    margin: auto;
+    padding: 16px 4px;
   }
-  
-  .status-cards {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    gap: 16px;
+  .status-cards > div, .event-section > div {
+    padding: 18px 8px;
   }
-  
-  .event-section {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 16px;
-  }
-  
-  .event-section > div {
-    flex: 1;
-    min-width: 300px;
-  }
-  
-  @media (max-width: 768px) {
-    .status-cards, .event-section {
-      flex-direction: column;
-    }
-  
-    .status-cards > div, .event-section > div {
-      width: 100%;
-    }
-  }
+}
   

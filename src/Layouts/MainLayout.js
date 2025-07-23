@@ -6,16 +6,16 @@ import "./MainLayout.css";
 
 const MainLayout = ({ children }) => {
   const location = useLocation();
-  const hideNavAndSidebar = location.pathname === "/" || location.pathname === "/login" || location.pathname === "/signup";
+  const hideNavAndSidebar = ["/", "/login", "/signup"].includes(location.pathname);
 
   return (
     <div className={`layout-container ${hideNavAndSidebar ? 'no-nav-sidebar' : ''}`}>
       {!hideNavAndSidebar && <Sidebar />}
       <div className="main-content-container">
         {!hideNavAndSidebar && <Navbar />}
-        <div className="main-content">
+        <main className="main-content">
           {children}
-        </div>
+        </main>
       </div>
     </div>
   );
