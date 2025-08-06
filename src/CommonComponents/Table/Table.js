@@ -16,12 +16,14 @@ const Table = ({
   showActions = true,
   onRowClick,
   loading = false,
-  skeletonCount = 5, // Number of skeleton rows to show
+  skeletonCount = 5,
 }) => {
   const [menuOpenIndex, setMenuOpenIndex] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const menuRefs = useRef([]);
 
-  const toggleMenu = (index) => {
+  const toggleMenu = (index, e) => {
+    e.stopPropagation();
     setMenuOpenIndex(menuOpenIndex === index ? null : index);
   };
 
@@ -36,21 +38,18 @@ const Table = ({
     onSort?.(key, direction);
   };
 
-  const menuRef = useRef(null);
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRefs.current.some(ref => ref && !ref.contains(event.target))) {
+        setMenuOpenIndex(null);
+      }
+    };
 
-useEffect(() => {
-  const handleClickOutside = (event) => {
-    if (menuRef.current && !menuRef.current.contains(event.target)) {
-      setMenuOpenIndex(null);
-    }
-  };
-
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => {
-    document.removeEventListener("mousedown", handleClickOutside);
-  };
-}, []);
-
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="table-container">
@@ -71,7 +70,7 @@ useEffect(() => {
                     )}
                 </th>
               ))}
-              {showActions && <th className="sticky-header">Action</th>}
+              {showActions && <th className="sticky-header">Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -114,21 +113,22 @@ useEffect(() => {
                     </td>
                   ))}
                   {showActions && (
-                    <td className="action-container" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        className="action-button"
-                        onClick={() => toggleMenu(index)}
-                      >
-                        ⋮
-                      </button>
-                      {menuOpenIndex === index && (
-                        <div className="dropdown_menu" ref={menuRef}>
+                    <td className="action-container">
+                      <div ref={el => menuRefs.current[index] = el}>
+                        <button
+                          className="action-button"
+                          onClick={(e) => toggleMenu(index, e)}
+                        >
+                          ⋮
+                        </button>
+                        <div className={`dropdown_menu ${menuOpenIndex === index ? 'active' : ''}`}>
                           {onDuplicate && (
                             <button
                               className="dropdown_item"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 onDuplicate(item);
-                                toggleMenu(null);
+                                setMenuOpenIndex(null);
                               }}
                             >
                               Duplicate
@@ -137,9 +137,10 @@ useEffect(() => {
                           {onArchive && (
                             <button
                               className="dropdown_item"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 onArchive(item);
-                                toggleMenu(null);
+                                setMenuOpenIndex(null);
                               }}
                             >
                               Archive
@@ -148,31 +149,30 @@ useEffect(() => {
                           {onDelete && (
                             <button
                               className="dropdown_item delete"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 onDelete(item);
-                                toggleMenu(null);
+                                setMenuOpenIndex(null);
                               }}
                             >
                               Delete
                             </button>
                           )}
                         </div>
-                      )}
+                      </div>
                     </td>
                   )}
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={columns.length + (showActions ? 1 : 0)} className="no-data">
+                <td colSpan={columns.length + (showActions ? 1 : 0)} className="no-events">
+                  <div className="no-events-icon">📊</div>
                   {noDataText}
                   {onAddEventClick && (
-                    <>
-                      <br />
-                      <span className="add-event" onClick={onAddEventClick}>
-                        {addEventText}
-                      </span>
-                    </>
+                    <div className="add-event" onClick={onAddEventClick}>
+                      {addEventText}
+                    </div>
                   )}
                 </td>
               </tr>

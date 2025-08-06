@@ -1,19 +1,20 @@
 /* Layout Variables */
 :root {
-  --sidebar-width: 240px;
-  --sidebar-collapsed-width: 80px;
+  --sidebar-width: 80px;
+  --sidebar-collapsed-width: 60px;
   --navbar-height: 80px;
   --transition-duration: 0.3s;
   --transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
   --content-padding: 2rem;
+  --content-margin: 1.5rem; /* New: Consistent margin around content */
   --mobile-breakpoint: 768px;
+  --mobile-navbar-height: 90px;
 }
 
 /* Layout Container */
 .layout-container {
   display: flex;
   min-height: 100vh;
-  /* background-color: #f8fafc; */
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
@@ -35,12 +36,16 @@
 /* Main Content Area */
 .main-content {
   flex-grow: 1;
-  padding: var(--content-padding);
+  /* padding: var(--content-padding); */
+  margin: 10px 20px 10px 55px;
+  margin-top: calc(var(--navbar-height) + var(--content-margin));
+  margin-bottom: var(--content-margin);
   overflow-y: auto;
-  margin-top: var(--navbar-height);
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  border-radius: 12px 0 0 0;
-  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.02);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* Pages without navbar/sidebar */
@@ -49,18 +54,34 @@
 }
 
 .layout-container.no-nav-sidebar .main-content {
-  margin-top: 0;
+  margin: 0;
   border-radius: 0;
+  box-shadow: none;
+  min-height: 100vh;
 }
 
 /* Responsive Design */
+@media (max-width: 1200px) {
+  :root {
+    --content-padding: 1.75rem;
+    --content-margin: 1.25rem;
+  }
+}
+
 @media (max-width: 1024px) {
   :root {
     --content-padding: 1.5rem;
+    --content-margin: 1rem;
   }
 }
 
 @media (max-width: 768px) {
+  :root {
+    --content-padding: 1.25rem;
+    --content-margin: 0.75rem;
+    --navbar-height: 60px;
+  }
+
   .main-content-container {
     margin-left: 0;
   }
@@ -70,8 +91,20 @@
   }
   
   .main-content {
-    padding: 1rem;
-    margin-top: 60px;
-    border-radius: 0;
+    margin-top: calc(var(--mobile-navbar-height) + var(--content-margin));
+    margin-left: var(--content-margin);
+    margin-right: var(--content-margin);
+    border-radius: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --content-padding: 1rem;
+    --content-margin: 0.5rem;
+  }
+
+  .main-content {
+    border-radius: 6px;
   }
 }

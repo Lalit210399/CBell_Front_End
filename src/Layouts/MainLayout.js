@@ -14,7 +14,9 @@ const MainLayout = ({ children }) => {
       <div className="main-content-container">
         {!hideNavAndSidebar && <Navbar />}
         <main className="main-content">
-          {children}
+          <div className="content-wrapper">
+            {children}
+          </div>
         </main>
       </div>
     </div>

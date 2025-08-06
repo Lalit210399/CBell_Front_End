@@ -15,11 +15,11 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #b2b2b2;
+  background-color: transparent;
   border-radius: 12px;
 }
 
 /* Show scrollbar only on hover */
 body:hover ::-webkit-scrollbar {
-  opacity: 1; /* Show scrollbar when hovered */
+  opacity: 0; /* Show scrollbar when hovered */
 }
