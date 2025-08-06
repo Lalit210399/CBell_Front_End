@@ -173,3 +173,93 @@ function Navbar() {
 }
 
 export default Navbar;
+
+
+
+
+
+
+// import React, { useState, useRef, useEffect } from "react";
+// import { Link, useLocation, useNavigate } from "react-router-dom";
+// import { BellRing, Menu, X } from "lucide-react";
+// import { useUser } from "../../Context/UserContext";
+// import { logout } from "../../Services/AuthN";
+// import "./Navbar.css";
+
+// function Navbar() {
+//   const location = useLocation();
+//   const navigate = useNavigate();
+//   const { user } = useUser();
+//   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
+
+//   const handleLogout = async () => {
+//     try {
+//       await logout();
+//       navigate("/");
+//     } catch (error) {
+//       console.error("Logout failed:", error);
+//       navigate("/");
+//     }
+//   };
+
+//   const toggleMobileMenu = () => {
+//     setMobileMenuVisible(!mobileMenuVisible);
+//   };
+
+//   return (
+//     <nav className="navbar">
+//       {/* Left: Role */}
+//       <div className="role-tag">
+//         <div className="role-circle">M</div>
+//         <span>Marketer</span>
+//       </div>
+
+//       {/* Center Tabs */}
+//       <div className="center-tabs">
+//         <Link
+//           to="/dashboard"
+//           className={`tab ${location.pathname === "/dashboard" ? "active" : ""}`}
+//         >
+//           Dashboard
+//         </Link>
+//         <Link
+//           to="/report"
+//           className={`tab ${location.pathname === "/report" ? "active" : ""}`}
+//         >
+//           Report
+//         </Link>
+//         <Link
+//           to="/ai-analytic"
+//           className={`tab ${location.pathname === "/ai-analytic" ? "active" : ""}`}
+//         >
+//           AI Analytic
+//         </Link>
+//         <Link
+//           to="/schedule"
+//           className={`tab ${location.pathname === "/schedule" ? "active" : ""}`}
+//         >
+//           Schedule
+//         </Link>
+//       </div>
+
+//       {/* Right Section */}
+//       <div className="nav-actions">
+//         <button className="add-button">+</button>
+//         <BellRing size={22} className="bell" />
+//         <div className="user-block">
+//           <img
+//             src="https://randomuser.me/api/portraits/women/44.jpg"
+//             alt="User"
+//             className="avatar"
+//           />
+//           <div className="user-info">
+//             <div className="user-name">{user?.firstName || "Selma Knight"}</div>
+//             <div className="user-email">{user?.email || "selma@gmail.com"}</div>
+//           </div>
+//         </div>
+//       </div>
+//     </nav>
+//   );
+// }
+
+// export default Navbar;
