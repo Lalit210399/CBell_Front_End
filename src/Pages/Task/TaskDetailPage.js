@@ -230,21 +230,13 @@ const TaskDetailPage = () => {
 
   useEffect(() => {
     if (Array.isArray(taskData.assignedTo)) {
-      console.log("Processing assignedTo:", taskData.assignedTo); // Debug log
-      // In view mode, we can use the assignedTo data directly from the API
-      // In edit mode, we need to convert it to the format expected by the dropdown
-      if (mode === "view") {
-        setSelectedParticipantIds(taskData.assignedTo);
-      } else if (usersList.length > 0) {
-        // For edit mode, ensure we have the full user objects
-        const fullUserObjects = taskData.assignedTo.map(assignedUser => {
-          const fullUser = usersList.find(user => user.id === assignedUser.id);
-          return fullUser || assignedUser;
-        });
-        setSelectedParticipantIds(fullUserObjects);
-      }
+      // Always keep IDs only in selection state
+      const idsOnly = taskData.assignedTo
+        .map((assigned) => (typeof assigned === "object" ? assigned?.id : assigned))
+        .filter(Boolean);
+      setSelectedParticipantIds(idsOnly);
     }
-  }, [usersList, taskData.assignedTo, mode]);
+  }, [taskData.assignedTo]);
 
   const updateTaskDetail = (field, value) => {
     setTaskData(prev => {
@@ -315,7 +307,10 @@ const TaskDetailPage = () => {
         EventId: mode === "edit" ? taskData.eventId : eventId,
         TaskTitle: taskTitle,
         TaskStatus: taskStatus.value,
-        AssignedTo: selectedParticipantIds,
+        // Ensure only IDs are sent to the API
+        AssignedTo: (selectedParticipantIds || []).map((item) =>
+          typeof item === "object" ? item?.id : item
+        ),
         CreatedBy: user?.id || 0,
         UpdatedBy: user?.id || 0,
         CreativeType: taskData.type,

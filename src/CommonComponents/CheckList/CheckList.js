@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import "./CheckList.css";
 
 const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
+  const createPlaceholderItem = () => ({ text: "", checked: false, isPlaceholder: true });
+
   const transformItems = (items) => {
     if (!items || items.length === 0) {
-      return [{ text: "", checked: false, isPlaceholder: true }];
+      return [createPlaceholderItem()];
     }
     return items.map(item => ({
       text: item.text || "",
@@ -16,7 +18,7 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
   const [checklist, setChecklist] = useState(() => transformItems(initialItems));
 
   useEffect(() => {
-    onChecklistChange(checklist);
+    onChecklistChange(checklist.filter(item => item.text.trim() || !item.isPlaceholder));
   }, [checklist, onChecklistChange]);
 
   const toggleCheck = (index) => {
@@ -44,15 +46,20 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
       setChecklist(prev => {
         const newList = [...prev];
         newList[index] = { ...newList[index], isPlaceholder: false };
+        // Always ensure there is one placeholder at the end
         if (!newList.some(item => item.isPlaceholder)) {
-          newList.push({ text: "", checked: false, isPlaceholder: true });
+          newList.push(createPlaceholderItem());
         }
         return newList;
       });
     }
 
     if (event.key === "Backspace" && !checklist[index].text && !checklist[index].isPlaceholder) {
-      setChecklist(prev => prev.filter((_, i) => i !== index));
+      setChecklist(prev => {
+        const newList = prev.filter((_, i) => i !== index);
+        // If nothing left, add placeholder
+        return newList.length > 0 ? newList : [createPlaceholderItem()];
+      });
     }
   };
 
