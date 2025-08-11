@@ -166,10 +166,10 @@ const Login = () => {
             </div>
           </form>
 
-          <Button className="google-button">
+          {/* <Button className="google-button">
             <img src="/Google_Logo.svg" alt="Google" />
             Login with Google
-          </Button>
+          </Button> */}
           <div className="forgot-password-link">
             <Link to="/forgot-password" className="forgot-password-text">
               Forgot Password?

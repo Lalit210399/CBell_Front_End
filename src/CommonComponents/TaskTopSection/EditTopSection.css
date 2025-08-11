@@ -190,17 +190,48 @@
 .header-date {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
     color: var(--textDark);
     font-size: 14px;
     font-weight: 500;
-    width: 150px;
+    background: #f8f9fa;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
 }
 
 .header-date input {
-    width: 100%;
-    padding: 6px 12px;
-    border-radius: var(--radius-md);
+    width: 200px;
+    padding: 8px 12px;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    outline: none;
+}
+
+.header-date input:hover {
+    border-color: #4a90e2;
+    box-shadow: 0 2px 6px rgba(74, 144, 226, 0.15);
+}
+
+.header-date input:focus {
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+    transform: translateY(-1px);
+}
+
+.header-date input::-webkit-calendar-picker-indicator {
+    background-color: transparent;
+    cursor: pointer;
+    filter: invert(0.5);
+    transition: filter 0.3s ease;
+}
+
+.header-date input::-webkit-calendar-picker-indicator:hover {
+    filter: invert(0.7);
 }
 
 /* 📝 Created By Section */

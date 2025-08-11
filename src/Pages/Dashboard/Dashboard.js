@@ -22,74 +22,116 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const organizationId = user?.organizationId || "681460dcb8327b2e3417d8b1";
-    fetchWithRefresh(`/apis/dashboard?OrganizationId=${organizationId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "1",
-      },
-    })
-      .then((res) => {
-        if (!res.ok) {
+    const organizationId = user?.organizationId;
+    const organizationName = user?.organization?.name || "Organization"; // Get organization name from user context
+    
+    // Fetch dashboard summary data
+    const fetchDashboardData = async () => {
+      try {
+        // Initial dashboard data
+        const dashboardRes = await fetchWithRefresh(`/apis/dashboard?OrganizationId=${organizationId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "1",
+          },
+        });
+
+        if (!dashboardRes.ok) {
           throw new Error("Failed to fetch dashboard data");
         }
-        return res.json();
-      })
-      .then((data) => {
+        const dashboardData = await dashboardRes.json();
+
+        // Fetch upcoming events
+        const upcomingRes = await fetchWithRefresh(`/apis/event/get_upcoming_events?organizationId=${organizationId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "1",
+          },
+        });
+
+        if (!upcomingRes.ok) {
+          throw new Error("Failed to fetch upcoming events");
+        }
+        const upcomingData = await upcomingRes.json();
+
+        // Fetch past events
+        const pastRes = await fetchWithRefresh(`/apis/event/get_past_events?organizationId=${organizationId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "1",
+          },
+        });
+
+        if (!pastRes.ok) {
+          throw new Error("Failed to fetch past events");
+        }
+        const pastData = await pastRes.json();
+
         const currentDate = new Date();
 
-        // Process events
-        const events = data.events.map((event) => ({
+        // Process upcoming events with organization name
+        const processedUpcomingEvents = upcomingData.data.map(event => ({
           id: event.id || Math.random().toString(36).substring(2, 9),
           name: event.eventName,
-          college: event.organizationName,
+          college: organizationName, // Using organization name from user context
           date: new Date(event.eventDate).toLocaleDateString(),
-          rawDate: new Date(event.eventDate)
+          rawDate: new Date(event.eventDate),
+          type: event.typeName
         }));
 
-        const upcoming = events.filter(
-          (event) => event.rawDate >= currentDate
-        );
-        const past = events.filter(
-          (event) => event.rawDate < currentDate
-        );
+        // Process past events with organization name
+        const processedPastEvents = pastData.data.map(event => ({
+          id: event.id || Math.random().toString(36).substring(2, 9),
+          name: event.eventName,
+          college: organizationName, // Using organization name from user context
+          date: new Date(event.eventDate).toLocaleDateString(),
+          rawDate: new Date(event.eventDate),
+          type: event.typeName
+        }));
 
-        // Process tasks with status
-        const tasks = data.tasks.map((task) => ({
+        // Process tasks with status (from dashboard data)
+        const tasks = dashboardData.tasks?.map((task) => ({
           id: task.id || Math.random().toString(36).substring(2, 9),
           name: task.taskTitle,
           event: task.eventName,
-          college: task.organizationName,
+          college: task.organizationName || organizationName, // Fallback to user's organization name
           status: task.taskStatus,
           date: new Date(task.dueDate).toLocaleDateString(),
           rawDate: new Date(task.dueDate),
           statusClass: getStatusClass(task.taskStatus)
-        }));
+        })) || [];
 
         // Count pending tasks (status not "Approved")
         const pendingTasksCount = tasks.filter(
           task => task.status !== "Approved"
         ).length;
 
-        setActiveEvents(data.activeEventsCount || upcoming.length);
-        setPendingTasks(data.pendingTasksCount || pendingTasksCount);
-        setDeadlines(data.upcomingDeadlinesCount || 
+        setActiveEvents(dashboardData.activeEventsCount || processedUpcomingEvents.length);
+        setPendingTasks(dashboardData.pendingTasksCount || pendingTasksCount);
+        setDeadlines(dashboardData.upcomingDeadlinesCount || 
           tasks.filter(task => task.rawDate >= currentDate).length);
-        setUpcomingEvents(upcoming);
-        setPastEvents(past);
+        setUpcomingEvents(processedUpcomingEvents);
+        setPastEvents(processedPastEvents);
         setTasks(tasks);
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error("Error fetching dashboard data:", error);
         addMessage({
           text: "Failed to load dashboard data. Please try again.",
           type: "error",
           duration: 3000,
         });
-      })
-      .finally(() => setLoading(false));
-  }, []);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (organizationId) {
+      fetchDashboardData();
+    }
+  }, [user?.organizationId, user?.organization?.name]);
 
   const getStatusClass = (status) => {
     switch(status?.toLowerCase()) {

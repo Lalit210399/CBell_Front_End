@@ -38,15 +38,16 @@ const EventDetail = () => {
     selectedDate: locationSelectedDate
   } = location.state || {};
 
-  const selectedDate = locationSelectedDate
-    ? new Date(locationSelectedDate)
-    : null;
+  const selectedDate = React.useMemo(() => (
+    locationSelectedDate ? new Date(locationSelectedDate) : null
+  ), [locationSelectedDate]);
 
+  // Only sync from navigation when initialMode changes; don't override local edits
   useEffect(() => {
-    if (initialMode && mode !== initialMode) {
+    if (initialMode) {
       setMode(initialMode);
     }
-  }, [initialMode, mode]);
+  }, [initialMode]);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -135,7 +136,7 @@ const EventDetail = () => {
     const fetchEvent = async () => {
       if (!eventId) return;
       try {
-        const response = await fetchWithRefresh(`/apis/event/get_event/${eventId}?organizationId=${user?.organizationId}`, {
+        const response = await fetchWithRefresh(`/apis/task/get_tasks_only?organizationId=${user?.organizationId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -171,18 +172,7 @@ const EventDetail = () => {
     };
 
     fetchEvent();
-  }, [
-    eventId,
-    mode,
-    selectedDate,
-    eventData,
-    user?.organizationId,
-    formData,
-    eventType,
-    eventTypeId,
-    eventTypeDesc,
-    fetchedEvent, // ensure comparison prevents re-trigger
-  ]);
+  }, [eventId, mode, selectedDate, eventData, user?.organizationId, formData, eventType, eventTypeId, eventTypeDesc, fetchedEvent, addMessage]);
 
   const permissions = {
     canEdit: mode === "create" ? true : userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
@@ -215,7 +205,10 @@ const EventDetail = () => {
         name: guest.name,
         title: guest.title || "Guest"
       })),
-      eventDate: topSectionData?.date || (selectedDate ? selectedDate.toISOString() : new Date().toISOString()),
+      // Expect topSectionData.date to be a datetime-local value; convert to ISO
+      eventDate: topSectionData?.date
+        ? new Date(topSectionData.date).toISOString()
+        : (selectedDate ? selectedDate.toISOString() : new Date().toISOString()),
       createdBy: user?.id || 1
     };
 
@@ -238,6 +231,8 @@ const EventDetail = () => {
       if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
 
       const result = await response.json();
+      // Switch to view mode after successful save/create
+      setMode("view");
       addMessage({
         text: `Event ${mode === "create" ? "created" : "updated"} successfully!`,
         type: "success",
@@ -247,7 +242,7 @@ const EventDetail = () => {
       navigate("/events", {
         state: {
           refresh: true,
-          mode: mode
+          mode: "view"
         }
       });
     } catch (error) {
@@ -291,16 +286,20 @@ const EventDetail = () => {
   };
 
   const handleTabChange = (tab) => {
-    if (mode === "edit") {
-      setMode("view");
-    }
+    // Keep current mode when switching tabs
     setActiveTab(tab);
   };
 
-  const formatDateForInput = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    return date.toISOString().split("T")[0];
+  const formatDateTimeLocal = (dateInput) => {
+    if (!dateInput) return "";
+    const d = new Date(dateInput);
+    const pad = (n) => String(n).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const HH = pad(d.getHours());
+    const MM = pad(d.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${HH}:${MM}`;
   };
 
   const participants = [
@@ -320,11 +319,11 @@ const EventDetail = () => {
     title: mode === "create" ? formData?.eventName || "" : fetchedEvent?.eventName || "",
     date: mode === "create"
       ? selectedDate
-        ? formatDateForInput(selectedDate)
-        : formatDateForInput(new Date())
+        ? formatDateTimeLocal(selectedDate)
+        : formatDateTimeLocal(new Date())
       : fetchedEvent?.eventDate
-        ? formatDateForInput(fetchedEvent.eventDate)
-        : formatDateForInput(new Date()),
+        ? formatDateTimeLocal(fetchedEvent.eventDate)
+        : formatDateTimeLocal(new Date()),
     type: fetchedEvent?.typeName || eventType || "",
     typeDesc: fetchedEvent?.eventTypeDesc || eventTypeDesc || "",
     createdBy: mode === "create"
@@ -424,7 +423,7 @@ const EventDetail = () => {
           data={topSectionData}
           participants={participants}
           permissions={permissions}
-          initialDate={selectedDate ? formatDateForInput(selectedDate) : ""}
+          initialDate={selectedDate ? formatDateTimeLocal(selectedDate) : ""}
           isSubmitting={isSubmitting}
         />
       </div>
@@ -435,7 +434,10 @@ const EventDetail = () => {
           setActiveTab={handleTabChange}
           showEditButton={showEdit && mode === "view" && permissions.canEdit}
           isEditMode={mode === "edit"}
-          onEditClick={() => setMode("edit")}
+          onEditClick={() => {
+            debugger;
+            setMode("edit");
+          }}
           onCancelClick={() => setMode("view")}
         />
       </div>

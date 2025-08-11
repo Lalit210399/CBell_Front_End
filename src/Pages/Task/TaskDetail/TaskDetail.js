@@ -6,7 +6,15 @@ import { Wand } from "lucide-react";
 import "./TaskDetail.css";
 
 const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => {
-  const [selectedDate, setSelectedDate] = useState(taskData.date || "");
+  // Parse initial datetime from taskData or use current datetime
+  const initialDateTime = taskData.date 
+    ? new Date(taskData.date)
+    : new Date();
+  
+  // Format for datetime-local input (YYYY-MM-DDTHH:mm)
+  const [localDateTime, setLocalDateTime] = useState(
+    initialDateTime.toISOString().slice(0, 16)
+  );
   const [quantity, setQuantity] = useState(taskData.quantity || 1);
   const [selectedType, setSelectedType] = useState(
     taskData.type ? { label: taskData.type, value: taskData.type } : null
@@ -31,7 +39,8 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
   // Reset form when switching to view mode or task data changes
   useEffect(() => {
     if (mode === "view") {
-      setSelectedDate(taskData.date || "");
+      const dateTime = taskData.date ? new Date(taskData.date) : new Date();
+      setLocalDateTime(dateTime.toISOString().slice(0, 16));
       setQuantity(taskData.quantity || 1);
       setSelectedType(
         taskData.type ? { label: taskData.type, value: taskData.type } : null
@@ -48,12 +57,13 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
     }
   };
 
-  const handleDateChange = (e) => {
-    const newDate = e.target.value;
-    setSelectedDate(newDate);
-    if (newDate !== taskData.date) {
-      onUpdate("date", newDate);
-    }
+  const handleDateTimeChange = (e) => {
+    const newLocalDateTime = e.target.value;
+    setLocalDateTime(newLocalDateTime);
+    
+    // Convert to ISO format with timezone (YYYY-MM-DDTHH:mm:ss.sssZ)
+    const isoDateTime = new Date(newLocalDateTime).toISOString();
+    onUpdate("date", isoDateTime);
   };
 
   const handleQuantityChange = (e) => {
@@ -99,14 +109,14 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
           </div>
 
           <div className="input-group">
-            <label htmlFor="task-date">Due Date</label>
+            <label htmlFor="task-datetime">Due Date & Time</label>
             <div className="input-box">
               <input
-                id="task-date"
-                name="taskDate"
-                type="date"
-                value={selectedDate}
-                onChange={handleDateChange}
+                id="task-datetime"
+                name="taskDateTime"
+                type="datetime-local"
+                value={localDateTime}
+                onChange={handleDateTimeChange}
                 disabled={isDisabled}
               />
             </div>

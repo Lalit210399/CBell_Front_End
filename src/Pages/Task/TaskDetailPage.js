@@ -18,6 +18,9 @@ const TaskDetailPage = () => {
   
   const { taskId, mode: initialMode = "view", eventId, organizationId } = location.state || {};
   
+  console.log("Location state:", location.state); // Debug log
+  console.log("TaskId from state:", taskId); // Debug log
+  
   const [taskTitle, setTaskTitle] = useState("");
   const [taskStatus, setTaskStatus] = useState({
     label: "New",
@@ -35,8 +38,6 @@ const TaskDetailPage = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  //console.log("User Organization:", user?.organization?.name || "No Organization");
 
   const [taskData, setTaskData] = useState({
     id: "",
@@ -92,39 +93,66 @@ const TaskDetailPage = () => {
   };
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetchWithRefresh("/apis/auth/users", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "1",
-          },
-        });
-        
-        if (!response.ok) {
-          throw new Error("Failed to fetch users");
-        }
-        
-        const data = await response.json();
-        setUsersList(data);
-        
-        if (mode === "create") {
-          initializeCreateMode();
-        }
-      } catch (err) {
-        console.error("Error fetching users:", err);
-        setError("Failed to load users list");
-        setIsLoading(false);
+  const fetchUsers = async () => {
+    try {
+      // Only fetch users in edit or create mode
+      if (mode !== "edit" && mode !== "create") {
+        // In view mode, we don't need to fetch users, so we can stop loading
+        // The task fetch will handle the loading state
+        return;
       }
-    };
 
-    fetchUsers();
-  }, []);
+      const orgId = user?.organizationId || organizationId;
+      if (!orgId) {
+        throw new Error("No organizationId available for user fetch");
+      }
+      
+      const response = await fetchWithRefresh(`/apis/auth/users?organizationId=${orgId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1",
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch users");
+      }
+      
+      const { data: usersData } = await response.json();
+      
+      const formattedUsers = usersData.map(user => ({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        fullName: `${user.firstName} ${user.lastName}`,
+        organizationId: user.organizationId
+      }));
+      
+      setUsersList(formattedUsers);
+      
+      if (mode === "create") {
+        initializeCreateMode();
+      }
+    } catch (err) {
+      console.error("Error fetching users:", err);
+      setError("Failed to load users list");
+      setIsLoading(false);
+    }
+  };
 
+  fetchUsers();
+}, [user?.organizationId, organizationId, mode]); // Added mode to dependencies
   useEffect(() => {
     const fetchTask = async () => {
-      if (!taskId || mode === "create") return;
+      if (!taskId || mode === "create") {
+        // If no taskId in view mode, stop loading
+        if (mode === "view" && !taskId) {
+          setIsLoading(false);
+        }
+        return;
+      }
       
       try {
         setIsLoading(true);
@@ -140,11 +168,19 @@ const TaskDetailPage = () => {
           throw new Error("Failed to fetch task");
         }
 
-        const data = await response.json();
+        const responseData = await response.json();
+        
+        console.log("Task data received:", responseData); // Debug log
+        
+        // Handle case where API returns an array instead of a single object
+        const data = Array.isArray(responseData) ? responseData[0] : responseData;
+        
+        if (!data) {
+          throw new Error("No task data found");
+        }
         
         setTaskTitle(data.taskTitle || "");
-        setCreatedBy(data.createdBy ? `User ${data.createdBy}` : 
-          (user ? `${user.firstName} ${user.lastName}` : "User"));
+        setCreatedBy(data.createdBy || (user ? `${user.firstName} ${user.lastName}` : "User"));
         
         const matchedStatus = statusOptions.find(
           opt => opt.value.toLowerCase() === (data.taskStatus || "New").toLowerCase()
@@ -159,12 +195,14 @@ const TaskDetailPage = () => {
             }))
           : [{ text: "", checked: false, isPlaceholder: false }];
 
+        console.log("Setting task data with assignedTo:", data.assignedTo); // Debug log
+        
         setTaskData({
           id: data.id || "",
           eventId: data.eventId || "",
           taskTitle: data.taskTitle || "",
           taskStatus: matchedStatus.value,
-          assignedTo: data.assignedTo?.map(user => user.id) || [],
+          assignedTo: data.assignedTo || [],
           createdBy: data.createdBy || "",
           updatedBy: data.updatedBy || "",
           type: data.creativeType || "",
@@ -183,24 +221,30 @@ const TaskDetailPage = () => {
       }
     };
 
-    if (usersList.length > 0 && mode !== "create") {
+    // Fetch task immediately in view mode, or wait for users list in edit mode
+    if (mode === "view" || (usersList.length > 0 && mode !== "create")) {
+      console.log("Fetching task with mode:", mode, "taskId:", taskId); // Debug log
       fetchTask();
     }
-  }, [taskId, usersList, mode, organizationId, user, eventId]);
+  }, [taskId, mode, organizationId, user, eventId]);
 
   useEffect(() => {
-    if (usersList.length > 0 && Array.isArray(taskData.assignedTo)) {
-      const participantIds = usersList
-        .filter(user => 
-          taskData.assignedTo.includes(`${user.firstName} ${user.lastName}`)
-        )
-        .map(user => user.id);
-      
-      setSelectedParticipantIds(prevIds => 
-        JSON.stringify(prevIds) !== JSON.stringify(participantIds) ? participantIds : prevIds
-      );
+    if (Array.isArray(taskData.assignedTo)) {
+      console.log("Processing assignedTo:", taskData.assignedTo); // Debug log
+      // In view mode, we can use the assignedTo data directly from the API
+      // In edit mode, we need to convert it to the format expected by the dropdown
+      if (mode === "view") {
+        setSelectedParticipantIds(taskData.assignedTo);
+      } else if (usersList.length > 0) {
+        // For edit mode, ensure we have the full user objects
+        const fullUserObjects = taskData.assignedTo.map(assignedUser => {
+          const fullUser = usersList.find(user => user.id === assignedUser.id);
+          return fullUser || assignedUser;
+        });
+        setSelectedParticipantIds(fullUserObjects);
+      }
     }
-  }, [usersList, taskData.assignedTo]);
+  }, [usersList, taskData.assignedTo, mode]);
 
   const updateTaskDetail = (field, value) => {
     setTaskData(prev => {
@@ -230,7 +274,6 @@ const TaskDetailPage = () => {
 
     setIsLoading(true);
     try {
-      // Handle file approvals if files are selected and Files tab is active
       if (selectedFiles.length > 0 && activeTab === "Files & Uploads") {
         try {
           const approvalResults = await Promise.allSettled(
@@ -250,7 +293,6 @@ const TaskDetailPage = () => {
             })
           );
           
-          // Log any failed approvals
           approvalResults.forEach((result, index) => {
             if (result.status === "rejected") {
               console.error(`Failed to approve file ${selectedFiles[index].documentId}:`, result.reason);
@@ -261,7 +303,6 @@ const TaskDetailPage = () => {
         }
       }
 
-      // Proceed with task save
       const formattedChecklist = Array.isArray(taskData.checklist)
         ? taskData.checklist.map(item => ({
             text: item.text,
@@ -412,6 +453,7 @@ const TaskDetailPage = () => {
       </div>
 
       <div className="Top-Section">
+        {console.log("Rendering TopSection with assignedTo:", selectedParticipantIds)} {/* Debug log */}
         <TopSection
           title={taskTitle}
           setTitle={setTaskTitle}
@@ -424,7 +466,13 @@ const TaskDetailPage = () => {
           mode={mode}
           users={usersList}
           onParticipantsChange={setSelectedParticipantIds}
-          assignedTo={taskData.assignedTo || []}
+          // For display, pass the original assignedTo with names when available,
+          // but selection/change emits only IDs which we keep in selectedParticipantIds
+          assignedTo={
+            Array.isArray(taskData.assignedTo) && taskData.assignedTo.length > 0
+              ? taskData.assignedTo
+              : selectedParticipantIds
+          }
           permissions={permissions}
         />
       </div>

@@ -1,29 +1,16 @@
-/* EventList.css */
+/* EventsList.css */
 .event-list {
-    margin-top: 20px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 16px;
-  }
-  
-  .event-list h3 {
-    color: #333;
-  }
-  
-  .event-list ul {
-    list-style-type: none;
-    padding: 0;
-  }
-  
-  .event-list li {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px;
-  }
-  
-  .event-list li:not(:last-child) {
-    border-bottom: 1px solid #ddd;
-  }
+  margin-top: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 16px;
+  background: white;
+}
+
+.event-list h3 {
+  color: #333;
+  margin: 0 0 16px 0;
+}
 
 /* Event List Header */
 .event-list-header {
@@ -43,106 +30,72 @@
   color: #a51c1c;
 }
 
-/* See All Button */
-.see-all-button {
-  background-color: transparent; /* Remove background color */
-  color: #841111; /* Text color */
-  border: none; /* Remove border */
-  padding: 10px 16px; /* Add padding for spacing */
-  font-size: 14px; /* Font size for the button text */
-  font-weight: bold; /* Make the text bold */
-  cursor: pointer; /* Change cursor to pointer on hover */
-  text-align: center; /* Center-align the text */
-  display: inline-block; /* Ensure it behaves like a button */
-  text-decoration: underline; /* Add underline to the text */
-  transition: color 0.3s ease; /* Smooth transition for hover effects */
+/* Scrollable container */
+.scrollable-container {
+  max-height: 400px;
+  overflow-y: auto;
+  position: relative;
+  border: 1px solid #eee;
+  border-radius: 4px;
 }
 
-.see-all-button:hover {
-  color: #a51c1c; /* Darker text color on hover */
-  text-decoration: underline; /* Keep underline on hover */
+/* Sticky header */
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Add Event Container */
-.add_event {
-  display: flex;
-  align-items: center;
-  gap: 5px; /* Add spacing between the icon and text */
-  cursor: pointer;
-  color: #120e0e;
-  transition: color 0.3s ease;
-}
-
-.add_event:hover {
-  color: #0e0808; /* Change color on hover */
-}
-
-/* Add Event Text */
-.add_event_text {
-  font-size: 14px;
-  font-weight: bold;
-}
-
-.event-list-items {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.event-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #eee;
-}
-
-.event-item span {
-  flex: 1;
-  padding: 0 8px;
-  font-size: 14px;
-}
-
-.event-name {
-  font-weight: 600;
-}
-
-.event-org,
-.event-date {
-  color: #555;
-}
-
-.event-list-items {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
+/* List styles */
+.event-list-items,
 .task-list-items {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.task-item {
+/* Column headers */
+.column-headers {
+  font-weight: bold;
+  background-color: #f5f5f5;
+  border-bottom: 2px solid #ddd;
+  padding: 12px 15px;
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #eee;
 }
 
-.task-item span {
-  flex: 1;
-  padding: 0 8px;
+.column-headers span {
+  color: #555;
   font-size: 14px;
 }
 
+/* Item styles */
+.event-item,
+.task-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 15px;
+  border-bottom: 1px solid #eee;
+  align-items: center;
+}
+
+.event-item span,
+.task-item span {
+  flex: 1;
+  font-size: 14px;
+}
+
+/* Specific column styles */
 .task-name {
   flex: 2;
-  font-weight: bold;
+  font-weight: 600;
 }
 
 .event-name {
   flex: 2;
+  font-weight: 600;
 }
 
 .org-name {
@@ -151,36 +104,64 @@
 
 .due-date {
   flex: 2;
-  /* text-align: right; */
+  text-align: right;
 }
 
-.scrollable-list {
-  max-height: 250px;
-  overflow-y: auto;
-  margin-bottom: 10px;
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
 }
 
-/* Add these styles to your EventsList.css */
-.column-headers {
+.status-approved {
+  background-color: #e6f7ee;
+  color: #0a7b4c;
+}
+
+.status-pending {
+  background-color: #fff8e6;
+  color: #d97706;
+}
+
+.status-rejected {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.status-approval {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.status-default {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+/* Add Event Container */
+.add_event {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  color: #120e0e;
+  transition: color 0.3s ease;
+}
+
+.add_event:hover {
+  color: #0e0808;
+}
+
+/* Add Event Text */
+.add_event_text {
+  font-size: 14px;
   font-weight: bold;
-  background-color: #f5f5f5;
-  border-bottom: 2px solid #ddd;
-  margin-bottom: 8px;
-  padding: 10px 15px;
 }
 
-.column-headers span {
-  color: #555;
-}
-
-/* Ensure headers align with content */
-.task-item.column-headers span,
-.event-item.column-headers span {
-  display: inline-block;
-  width: 100%;
-}
-
-/* Adjust spacing for headers */
-ul.scrollable-list {
-  padding-top: 0;
+/* Skeleton loading */
+.event-item .react-loading-skeleton,
+.task-item .react-loading-skeleton {
+  line-height: 2;
 }
