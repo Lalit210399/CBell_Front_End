@@ -48,27 +48,27 @@ const DetailTopSection = ({
   initialDate = ""
 }) => {
   const [editableTitle, setEditableTitle] = useState(
-    mode === "create" ? "" : data?.title || ""
+    mode === "create" ? (data?.title || "") : (data?.title || "")
   );
   const [editableDate, setEditableDate] = useState(
     mode === "create" ? formatDateTimeLocal(initialDate || new Date()) : formatDateTimeLocal(data?.date || new Date())
   );
   const [editableTypeDesc, setEditableTypeDesc] = useState(
-    mode === "create" ? "" : data?.typeDesc || ""
+    mode === "create" ? (data?.typeDesc || "") : (data?.typeDesc || "")
   );
-  //console.log("data in DetailTopSection:", data);
 
+  // Only update state when data or mode changes, not on every render
   useEffect(() => {
     if (mode === "create") {
-      if (editableTitle !== "") setEditableTitle("");
-      if (editableDate !== formatDateTimeLocal(initialDate || new Date())) setEditableDate(formatDateTimeLocal(initialDate || new Date()));
-      if (editableTypeDesc !== "") setEditableTypeDesc("");
+      setEditableTitle("");
+      setEditableDate(formatDateTimeLocal(initialDate || new Date()));
+      setEditableTypeDesc("");
     } else {
-      if (editableTitle !== (data?.title || "")) setEditableTitle(data?.title || "");
-      if (editableDate !== formatDateTimeLocal(data?.date || new Date())) setEditableDate(formatDateTimeLocal(data?.date || new Date()));
-      if (editableTypeDesc !== (data?.typeDesc || "")) setEditableTypeDesc(data?.typeDesc || "");
+      setEditableTitle(data?.title || "");
+      setEditableDate(formatDateTimeLocal(data?.date || new Date()));
+      setEditableTypeDesc(data?.typeDesc || "");
     }
-  }, [data?.title, data?.date, data?.typeDesc, mode, initialDate, editableTitle, editableDate, editableTypeDesc]);
+  }, [mode, data?.title, data?.date, data?.typeDesc, initialDate]);
 
   const handleTitleChange = (e) => {
     setEditableTitle(e.target.value);
@@ -93,6 +93,12 @@ const DetailTopSection = ({
 
   return (
     <div className="detail-header-container">
+      {/* Debug info - remove in production */}
+      {/* {process.env.NODE_ENV === 'development' && (
+        <div style={{ position: 'absolute', top: 0, right: 0, background: '#f0f0f0', padding: '5px', fontSize: '12px', zIndex: 1000 }}>
+          Mode: {mode}, CanSave: {permissions?.canSave ? 'true' : 'false'}, Title: {editableTitle}, Date: {editableDate}
+        </div>
+      )} */}
       <div className="header-left-section">
         <div className="top-left">
           <button className="back-button" onClick={onBackClick}>
@@ -107,6 +113,7 @@ const DetailTopSection = ({
                   value={editableTitle}
                   onChange={handleTitleChange}
                   placeholder={mode === "create" ? "Enter event title" : ""}
+                  autoFocus={mode === "create"}
                 />
                 <span className="event-type-text">{data?.type || "No type specified"}</span>
                 {/* <textarea
@@ -148,6 +155,7 @@ const DetailTopSection = ({
                 value={editableDate}
                 onChange={handleDateChange}
                 placeholder="Select date and time"
+                min={new Date().toISOString().slice(0, 16)}
               />
             ) : (
               <span>{formatDateTimeForDisplay(data?.date || editableDate)}</span>

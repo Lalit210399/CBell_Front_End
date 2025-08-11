@@ -2,7 +2,6 @@ import React from 'react';
 import './Avatar.css';
 
 const Avatar = ({ src, alt = '', name = '', size = '32px', shape = 'circle' }) => {
-  console.log("Avatar rendering with name:", name, "src:", src); // Debug log
   const avatarClass = `avatar ${size} ${shape}`;
 
   const getInitials = (nameStr) => {
@@ -19,7 +18,6 @@ const Avatar = ({ src, alt = '', name = '', size = '32px', shape = 'circle' }) =
   };
 
   const fallbackContent = getInitials(name) || alt?.charAt(0).toUpperCase() || '?';
-  console.log("Avatar fallback content:", fallbackContent); // Debug log
 
   return (
     <div className={avatarClass}>

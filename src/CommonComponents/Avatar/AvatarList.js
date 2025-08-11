@@ -3,9 +3,7 @@ import Avatar from './Avatar';
 import './AvatarList.css';
 
 const AvatarList = ({ avatars, stack = true, maxVisible = 4, showTooltip = false }) => {
-  console.log("AvatarList received avatars:", avatars); // Debug log
   const visibleAvatars = avatars.slice(0, maxVisible);
-  console.log("Visible avatars:", visibleAvatars); // Debug log
 
   return (
     <div className={`avatar-list ${stack ? 'stacked' : ''}`}>

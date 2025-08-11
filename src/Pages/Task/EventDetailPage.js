@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useNavigate, useLocation } from "react-router-dom";
 import TabMenu from "../../CommonComponents/TabMenu/TabMenu";
@@ -105,10 +105,7 @@ const EventDetail = () => {
         location: formData?.location || "",
       };
 
-      if (JSON.stringify(fetchedEvent) !== JSON.stringify(newEvent)) {
-        setFetchedEvent(newEvent);
-      }
-
+      setFetchedEvent(newEvent);
       return;
     }
 
@@ -126,10 +123,7 @@ const EventDetail = () => {
           : []
       };
 
-      if (JSON.stringify(fetchedEvent) !== JSON.stringify(transformedEvent)) {
-        setFetchedEvent(transformedEvent);
-      }
-
+      setFetchedEvent(transformedEvent);
       return;
     }
 
@@ -158,9 +152,7 @@ const EventDetail = () => {
             : [],
         };
 
-        if (JSON.stringify(fetchedEvent) !== JSON.stringify(transformedData)) {
-          setFetchedEvent(transformedData);
-        }
+        setFetchedEvent(transformedData);
       } catch (error) {
         console.error("Error fetching event:", error);
         addMessage({
@@ -172,13 +164,13 @@ const EventDetail = () => {
     };
 
     fetchEvent();
-  }, [eventId, mode, selectedDate, eventData, user?.organizationId, formData, eventType, eventTypeId, eventTypeDesc, fetchedEvent, addMessage]);
+  }, [eventId, mode, selectedDate, eventData, user?.organizationId, formData, eventType, eventTypeId, eventTypeDesc, addMessage]);
 
-  const permissions = {
+  const permissions = React.useMemo(() => ({
     canEdit: mode === "create" ? true : userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
     canCreateTask: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Create") ?? false,
     canSave: mode === "create" ? true : userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
-  };
+  }), [mode, userPermissions?.permissions?.Events, userPermissions?.permissions?.Tasks]);
 
   const handleSaveEvent = async (topSectionData, getDetailData) => {
     setIsSubmitting(true);
@@ -302,20 +294,24 @@ const EventDetail = () => {
     return `${yyyy}-${mm}-${dd}T${HH}:${MM}`;
   };
 
-  const participants = [
+  const participants = React.useMemo(() => [
     ...(fetchedEvent?.coordinators || []).map((coord, index) => ({
       id: `coordinator-${index}`,
       name: coord?.name || coord,
-      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(coord?.name || coord)}&background=random`,
+      src: coord?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(coord?.name || coord)}&background=random`,
+      size: "32px",
+      shape: "circle"
     })),
     ...(fetchedEvent?.specialGuests || []).map((guest, index) => ({
       id: `guest-${index}`,
       name: guest?.name || guest,
-      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(guest?.name || guest)}&background=random`,
+      src: guest?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(guest?.name || guest)}&background=random`,
+      size: "32px",
+      shape: "circle"
     })),
-  ];
+  ], [fetchedEvent?.coordinators, fetchedEvent?.specialGuests]);
 
-  const topSectionData = {
+  const topSectionData = React.useMemo(() => ({
     title: mode === "create" ? formData?.eventName || "" : fetchedEvent?.eventName || "",
     date: mode === "create"
       ? selectedDate
@@ -336,12 +332,18 @@ const EventDetail = () => {
       shape: "circle",
     },
     participants,
-  };
+  }), [mode, formData?.eventName, fetchedEvent?.eventName, selectedDate, fetchedEvent?.eventDate, fetchedEvent?.typeName, eventType, fetchedEvent?.eventTypeDesc, eventTypeDesc, user?.firstName, fetchedEvent?.createdBy, participants]);
 
-  const guestsData = mode === "create" ? [] : fetchedEvent?.specialGuests || [];
-  const organizersData = mode === "create" ? [] : fetchedEvent?.coordinators || [];
+  const guestsData = React.useMemo(() => 
+    mode === "create" ? [] : fetchedEvent?.specialGuests || [], 
+    [mode, fetchedEvent?.specialGuests]
+  );
+  const organizersData = React.useMemo(() => 
+    mode === "create" ? [] : fetchedEvent?.coordinators || [], 
+    [mode, fetchedEvent?.coordinators]
+  );
 
-  const tabs = [
+  const tabs = React.useMemo(() => [
     {
       label: "Details",
       component: (
@@ -382,13 +384,16 @@ const EventDetail = () => {
         />
       ),
     },
-  ];
+  ], [mode, detailSaveRef, guestsData, organizersData, formData?.eventDescription, fetchedEvent?.eventDescription, formData?.location, fetchedEvent?.locationDetails, tasksData, eventId, user?.organizationId, handleDownload, handleSendMail]);
 
-  const filteredTabs = mode === "create"
-    ? tabs.filter(tab => tab.label === "Details")
-    : tabs;
+  const filteredTabs = React.useMemo(() => 
+    mode === "create"
+      ? tabs.filter(tab => tab.label === "Details")
+      : tabs,
+    [mode, tabs]
+  );
 
-  const breadcrumbItems = [
+  const breadcrumbItems = React.useMemo(() => [
     { label: user?.organization?.name || "Organization", href: "#", icon: Building },
     {
       label: "Events",
@@ -404,7 +409,7 @@ const EventDetail = () => {
       href: "#",
       icon: FileText,
     },
-  ];
+  ], [user?.organization?.name, mode, fetchedEvent?.eventName, navigate]);
 
   return (
     <div className="event-detail-module">

@@ -231,6 +231,11 @@
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     transition: all 0.3s ease;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 1 !important;
 }
 
 .editable-date-input:hover {
@@ -421,10 +426,12 @@
 }
 
 .edit-mode-fields {
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     gap: 0.5rem;
     width: 100%;
+    position: relative !important;
+    z-index: 1 !important;
 }
 
 .editable-title-input {
