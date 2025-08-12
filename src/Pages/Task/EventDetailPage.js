@@ -298,14 +298,15 @@ const EventDetail = () => {
     ...(fetchedEvent?.coordinators || []).map((coord, index) => ({
       id: `coordinator-${index}`,
       name: coord?.name || coord,
-      src: coord?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(coord?.name || coord)}&background=random`,
+      // Use explicit avatar URL if provided; otherwise force fallback initials for consistent color
+      src: coord?.avatarUrl && String(coord.avatarUrl).trim() !== '' ? coord.avatarUrl : null,
       size: "32px",
       shape: "circle"
     })),
     ...(fetchedEvent?.specialGuests || []).map((guest, index) => ({
       id: `guest-${index}`,
       name: guest?.name || guest,
-      src: guest?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(guest?.name || guest)}&background=random`,
+      src: guest?.avatarUrl && String(guest.avatarUrl).trim() !== '' ? guest.avatarUrl : null,
       size: "32px",
       shape: "circle"
     })),

@@ -1,24 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./CheckList.css";
 
 const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
   const createPlaceholderItem = () => ({ text: "", checked: false, isPlaceholder: true });
 
   const transformItems = (items) => {
-    if (!items || items.length === 0) {
-      return [createPlaceholderItem()];
-    }
-    return items.map(item => ({
-      text: item.text || "",
-      checked: item.checked || false,
-      isPlaceholder: item.isPlaceholder || false
-    }));
+    let transformed = (items || [])
+      .filter(item => item.text && item.text.trim() !== "")
+      .map(item => ({
+        text: item.text,
+        checked: item.checked || false,
+        isPlaceholder: false
+      }));
+
+    transformed.push(createPlaceholderItem());
+    return transformed;
   };
 
   const [checklist, setChecklist] = useState(() => transformItems(initialItems));
+  const inputRefs = useRef([]);
 
   useEffect(() => {
-    onChecklistChange(checklist.filter(item => item.text.trim() || !item.isPlaceholder));
+    onChecklistChange(checklist.filter(item => item.text.trim() && !item.isPlaceholder));
   }, [checklist, onChecklistChange]);
 
   const toggleCheck = (index) => {
@@ -32,23 +35,36 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
 
   const handleInputChange = (index, value) => {
     if (mode === "view") return;
-    setChecklist(prev =>
-      prev.map((item, i) =>
-        i === index ? { ...item, text: value } : item
-      )
-    );
+    setChecklist(prev => {
+      const updated = prev.map((item, i) =>
+        i === index ? { ...item, text: value, isPlaceholder: false } : item
+      );
+      if (!updated.some(item => item.isPlaceholder)) {
+        updated.push(createPlaceholderItem());
+      }
+      return updated;
+    });
   };
 
   const handleKeyDown = (index, event) => {
     if (mode === "view") return;
 
-    if (event.key === "Enter" && checklist[index].text.trim()) {
+    if (event.key === "Enter") {
+      event.preventDefault();
       setChecklist(prev => {
-        const newList = [...prev];
-        newList[index] = { ...newList[index], isPlaceholder: false };
-        // Always ensure there is one placeholder at the end
-        if (!newList.some(item => item.isPlaceholder)) {
+        let newList = [...prev];
+        if (newList[index].isPlaceholder && newList[index].text.trim()) {
+          newList[index] = { ...newList[index], isPlaceholder: false };
           newList.push(createPlaceholderItem());
+
+          setTimeout(() => {
+            inputRefs.current[newList.length - 1]?.focus();
+          }, 0);
+        } else {
+          // Move focus to the next item
+          setTimeout(() => {
+            inputRefs.current[index + 1]?.focus();
+          }, 0);
         }
         return newList;
       });
@@ -56,9 +72,14 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
 
     if (event.key === "Backspace" && !checklist[index].text && !checklist[index].isPlaceholder) {
       setChecklist(prev => {
-        const newList = prev.filter((_, i) => i !== index);
-        // If nothing left, add placeholder
-        return newList.length > 0 ? newList : [createPlaceholderItem()];
+        let newList = prev.filter((_, i) => i !== index);
+        if (!newList.some(item => item.isPlaceholder)) {
+          newList.push(createPlaceholderItem());
+        }
+        setTimeout(() => {
+          inputRefs.current[Math.max(0, index - 1)]?.focus();
+        }, 0);
+        return newList;
       });
     }
   };
@@ -71,10 +92,11 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
             type="checkbox"
             checked={item.checked}
             onChange={() => toggleCheck(index)}
-            disabled={mode === "view"}
+            disabled={mode === "view" || item.isPlaceholder}
           />
           <span className="checkbox-custom"></span>
           <input
+            ref={(el) => (inputRefs.current[index] = el)}
             type="text"
             placeholder={item.isPlaceholder ? "Add checklist item..." : ""}
             value={item.text}
