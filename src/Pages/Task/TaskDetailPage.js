@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import MessageStrip from "../../CommonComponents/MessageStrip/MessageStrip";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useLocation, useNavigate } from "react-router-dom";
 import TabMenu from "../../CommonComponents/TabMenu/TabMenu";
@@ -18,9 +19,6 @@ const TaskDetailPage = () => {
   
   const { taskId, mode: initialMode = "view", eventId, organizationId } = location.state || {};
   
-  console.log("Location state:", location.state); // Debug log
-  console.log("TaskId from state:", taskId); // Debug log
-  
   const [taskTitle, setTaskTitle] = useState("");
   const [taskStatus, setTaskStatus] = useState({
     label: "New",
@@ -38,6 +36,7 @@ const TaskDetailPage = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showErrorPopup, setShowErrorPopup] = useState(false);
 
   const [taskData, setTaskData] = useState({
     id: "",
@@ -93,61 +92,58 @@ const TaskDetailPage = () => {
   };
 
   useEffect(() => {
-  const fetchUsers = async () => {
-    try {
-      // Only fetch users in edit or create mode
-      if (mode !== "edit" && mode !== "create") {
-        // In view mode, we don't need to fetch users, so we can stop loading
-        // The task fetch will handle the loading state
-        return;
-      }
+    const fetchUsers = async () => {
+      try {
+        if (mode !== "edit" && mode !== "create") {
+          return;
+        }
 
-      const orgId = user?.organizationId || organizationId;
-      if (!orgId) {
-        throw new Error("No organizationId available for user fetch");
+        const orgId = user?.organizationId || organizationId;
+        if (!orgId) {
+          throw new Error("No organizationId available for user fetch");
+        }
+        
+        const response = await fetchWithRefresh(`/apis/auth/users?organizationId=${orgId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "1",
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch users");
+        }
+        
+        const { data: usersData } = await response.json();
+        
+        const formattedUsers = usersData.map(user => ({
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          fullName: `${user.firstName} ${user.lastName}`,
+          organizationId: user.organizationId
+        }));
+        
+        setUsersList(formattedUsers);
+        
+        if (mode === "create") {
+          initializeCreateMode();
+        }
+      } catch (err) {
+        console.error("Error fetching users:", err);
+        setError("Failed to load users list");
+        setIsLoading(false);
       }
-      
-      const response = await fetchWithRefresh(`/apis/auth/users?organizationId=${orgId}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "1",
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to fetch users");
-      }
-      
-      const { data: usersData } = await response.json();
-      
-      const formattedUsers = usersData.map(user => ({
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        fullName: `${user.firstName} ${user.lastName}`,
-        organizationId: user.organizationId
-      }));
-      
-      setUsersList(formattedUsers);
-      
-      if (mode === "create") {
-        initializeCreateMode();
-      }
-    } catch (err) {
-      console.error("Error fetching users:", err);
-      setError("Failed to load users list");
-      setIsLoading(false);
-    }
-  };
+    };
 
-  fetchUsers();
-}, [user?.organizationId, organizationId, mode]); // Added mode to dependencies
+    fetchUsers();
+  }, [user?.organizationId, organizationId, mode]);
+
   useEffect(() => {
     const fetchTask = async () => {
       if (!taskId || mode === "create") {
-        // If no taskId in view mode, stop loading
         if (mode === "view" && !taskId) {
           setIsLoading(false);
         }
@@ -169,10 +165,6 @@ const TaskDetailPage = () => {
         }
 
         const responseData = await response.json();
-        
-        console.log("Task data received:", responseData); // Debug log
-        
-        // Handle case where API returns an array instead of a single object
         const data = Array.isArray(responseData) ? responseData[0] : responseData;
         
         if (!data) {
@@ -194,8 +186,6 @@ const TaskDetailPage = () => {
               isPlaceholder: Boolean(item?.isPlaceholder)
             }))
           : [{ text: "", checked: false, isPlaceholder: false }];
-
-        console.log("Setting task data with assignedTo:", data.assignedTo); // Debug log
         
         setTaskData({
           id: data.id || "",
@@ -221,16 +211,13 @@ const TaskDetailPage = () => {
       }
     };
 
-    // Fetch task immediately in view mode, or wait for users list in edit mode
     if (mode === "view" || (usersList.length > 0 && mode !== "create")) {
-      console.log("Fetching task with mode:", mode, "taskId:", taskId); // Debug log
       fetchTask();
     }
   }, [taskId, mode, organizationId, user, eventId]);
 
   useEffect(() => {
     if (Array.isArray(taskData.assignedTo)) {
-      // Always keep IDs only in selection state
       const idsOnly = taskData.assignedTo
         .map((assigned) => (typeof assigned === "object" ? assigned?.id : assigned))
         .filter(Boolean);
@@ -260,7 +247,16 @@ const TaskDetailPage = () => {
 
   const handleSaveClick = async () => {
     if (!permissions.canSave) {
-      alert("You don't have permission to save tasks");
+      setError("You don't have permission to save tasks");
+      setShowErrorPopup(true);
+      return;
+    }
+
+    // Validation: If status is Approved, at least one file must be selected
+    if (taskStatus.value === "Approved" && selectedFiles.length === 0) {
+      setError("You must select at least one file to approve the task.");
+      setShowErrorPopup(true);
+      setActiveTab("Files & Uploads");
       return;
     }
 
@@ -307,7 +303,6 @@ const TaskDetailPage = () => {
         EventId: mode === "edit" ? taskData.eventId : eventId,
         TaskTitle: taskTitle,
         TaskStatus: taskStatus.value,
-        // Ensure only IDs are sent to the API
         AssignedTo: (selectedParticipantIds || []).map((item) =>
           typeof item === "object" ? item?.id : item
         ),
@@ -356,6 +351,7 @@ const TaskDetailPage = () => {
     } catch (error) {
       console.error("Save failed:", error);
       setError(`Save failed: ${error.message}`);
+      setShowErrorPopup(true);
     } finally {
       setIsLoading(false);
     }
@@ -437,18 +433,30 @@ const TaskDetailPage = () => {
     return <div className="loading-container">Loading...</div>;
   }
 
-  if (error) {
-    return <div className="error-container">{error}</div>;
-  }
-
   return (
     <div className="task-creation-module">
+      {/* Error Popup */}
+      {showErrorPopup && (
+        <div className="error-popup-overlay">
+          <div className="error-popup-container">
+            <MessageStrip
+              text={error}
+              type="error"
+              duration={0} // Don't auto-close
+              showIcon={true}
+              showCloseButton={true}
+              onClose={() => setShowErrorPopup(false)}
+              className="error-popup-message"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="BreadCrumb">
         <Breadcrumb items={breadcrumbItems} />
       </div>
 
       <div className="Top-Section">
-        {console.log("Rendering TopSection with assignedTo:", selectedParticipantIds)} {/* Debug log */}
         <TopSection
           title={taskTitle}
           setTitle={setTaskTitle}
@@ -461,8 +469,6 @@ const TaskDetailPage = () => {
           mode={mode}
           users={usersList}
           onParticipantsChange={setSelectedParticipantIds}
-          // For display, pass the original assignedTo with names when available,
-          // but selection/change emits only IDs which we keep in selectedParticipantIds
           assignedTo={
             Array.isArray(taskData.assignedTo) && taskData.assignedTo.length > 0
               ? taskData.assignedTo
