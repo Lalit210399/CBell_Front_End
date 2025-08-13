@@ -114,9 +114,6 @@ const NewMessageBox = ({ onSend, currentUser }) => {
     adjustTextareaHeight();
   }, [message]);
 
-  const handleAttach = (files) => {
-    setAttachments((prev) => [...prev, ...files]);
-  };
 
   const removeAttachment = (index) => {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
