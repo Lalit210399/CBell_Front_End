@@ -1,37 +1,254 @@
-
-  .dashboard-container {
+.dashboard-container {
     font-family: Arial, sans-serif;
     padding: 20px;
     max-width: 1440px;
     margin: auto;
   }
   
-  .status-cards {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    gap: 16px;
-  }
-  
+  /* General Layout */
+.dashboard-visuals {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+  margin-bottom: 32px;
+}
+.calendar-card, .bargraph-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  padding: 24px;
+  flex: 1 1 350px;
+  min-width: 320px;
+  transition: box-shadow 0.3s, transform 0.2s;
+}
+.calendar-card:hover, .bargraph-card:hover {
+  box-shadow: 0 8px 24px rgba(79,140,255,0.18);
+  transform: translateY(-4px) scale(1.03);
+}
+
+/* Status Cards */
+.StatusCardStyled {
+  background: linear-gradient(135deg, #4f8cff 60%, #6ee2f5 100%);
+  color: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  padding: 32px 24px;
+  transition: box-shadow 0.3s, transform 0.2s;
+  cursor: pointer;
+  min-width: 220px;
+  margin: 0 8px;
+}
+.StatusCardStyled[status="warning"] {
+  background: linear-gradient(135deg, #ffb347 60%, #ffe29f 100%);
+  color: #2d3a4a;
+}
+.StatusCardStyled[status="alert"] {
+  background: linear-gradient(135deg, #ff6b81 60%, #ffb6b9 100%);
+  color: #fff;
+}
+.StatusCardStyled:hover {
+  box-shadow: 0 8px 24px rgba(79,140,255,0.18);
+  transform: translateY(-4px) scale(1.03);
+}
+
+/* Event Section */
+.event-section {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+  margin-bottom: 32px;
+}
+.add_event {
+  background: linear-gradient(135deg, #4f8cff 60%, #6ee2f5 100%);
+  color: #fff;
+  border-radius: 40px;
+  padding: 10px 25px;
+  font-weight: 600;
+  box-shadow: 0 8px 32px rgba(79,140,255,0.18);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: box-shadow 0.3s, transform 0.2s;
+  margin-top: 10px;
+  align-self: flex-end;
+}
+.add_event:hover {
+  box-shadow: 0 12px 40px rgba(79,140,255,0.28);
+  transform: translateY(-4px) scale(1.04);
+}
+.add-icon {
+  font-size: 1.2rem;
+}
+
+/* Calendar */
+.react-calendar {
+  border: none;
+  background: transparent;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+.react-calendar__tile {
+  background: #f0f4fa;
+  border-radius: 10px;
+  color: #2d3a4a;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s;
+}
+.react-calendar__tile--active,
+.react-calendar__tile--hasActive {
+  background: linear-gradient(135deg, #4f8cff 60%, #6ee2f5 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(79,140,255,0.18);
+}
+.react-calendar__tile:enabled:hover {
+  background: #e3f0ff;
+  color: #4f8cff;
+}
+
+/* Bar Graph */
+.bargraph-card .recharts-bar-rectangle {
+  rx: 8;
+}
+.bargraph-card .recharts-bar {
+  transition: all 0.4s cubic-bezier(.4,0,.2,1);
+}
+.bargraph-card .recharts-tooltip-wrapper {
+  font-size: 1rem;
+  background: #fff;
+  color: #2d3a4a;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+/* Event List */
+.event-list-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.event-list-item {
+  background: #f7fafd;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  border-left: 5px solid #4f8cff;
+  margin-bottom: 12px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.event-list-item.status-pending {
+  border-left-color: #ffb347;
+}
+.event-list-item.status-alert, .event-list-item.status-deadlines {
+  border-left-color: #ff6b81;
+}
+.event-list-item:hover {
+  box-shadow: 0 4px 16px rgba(79,140,255,0.10);
+  background: #e3f0ff;
+}
+
+/* Action Buttons */
+.action-btn {
+  background: #e3f0ff;
+  color: #4f8cff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.98rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  margin-left: 8px;
+}
+.action-btn:hover {
+  background: #4f8cff;
+  color: #fff;
+}
+
+/* Toast Notifications */
+.ToastContainer {
+  position: fixed;
+  top: 32px;
+  right: 32px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.Toast {
+  background: #4f8cff;
+  color: #fff;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 500;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+  opacity: 0.95;
+  animation: fadeIn 0.5s;
+  transition: opacity 0.4s;
+}
+.Toast[type="error"], .Toast.error {
+  background: #ff6b81;
+}
+
+/* Typography */
+h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #2d3a4a;
+  margin-bottom: 24px;
+}
+h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2d3a4a;
+  margin-bottom: 18px;
+}
+.user-name {
+  color: #4f8cff;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px);}
+  to { opacity: 1; transform: translateY(0);}
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .dashboard-visuals,
   .event-section {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 16px;
+    flex-direction: column;
+    gap: 18px;
   }
-  
-  .event-section > div {
-    flex: 1;
-    min-width: 300px;
+  .calendar-card, .bargraph-card {
+    min-width: unset;
   }
-  
-  @media (max-width: 768px) {
-    .status-cards, .event-section {
-      flex-direction: column;
-    }
-  
-    .status-cards > div, .event-section > div {
-      width: 100%;
-    }
-  }
-  
+}
+
+.calendar-event-date {
+  background: linear-gradient(135deg, #4f8cff 60%, #6ee2f5 100%) !important;
+  color: #fff !important;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(79,140,255,0.18);
+  cursor: pointer;
+}
+.calendar-event-date:hover {
+  background: #6ee2f5 !important;
+  color: #2d3a4a !important;
+}
+.calendar-today-date {
+  border: 2px solid #ffb347 !important;
+  box-shadow: 0 0 0 2px #ffe29f !important;
+  font-weight: bold;
+}
+
+.event-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}

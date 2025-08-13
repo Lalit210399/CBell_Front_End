@@ -37,6 +37,8 @@ const NewMessageBox = ({ onSend, currentUser }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadedDocId, setUploadedDocId] = useState(null);
+  // eslint-disable-next-line no-unused-vars
+  const [attachments, setAttachments] = useState([]);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -86,12 +88,7 @@ const NewMessageBox = ({ onSend, currentUser }) => {
   };
 
   // Show message strip for under development feature
-  const [showDevMsg, setShowDevMsg] = useState(false);
-  const handlePaperclipClick = (e) => {
-    e.preventDefault();
-    setShowDevMsg(true);
-    setTimeout(() => setShowDevMsg(false), 2000);
-  };
+  const [showDevMsg] = useState(false);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -114,7 +111,12 @@ const NewMessageBox = ({ onSend, currentUser }) => {
     adjustTextareaHeight();
   }, [message]);
 
+  // eslint-disable-next-line no-unused-vars
+  const handleAttach = (files) => {
+    setAttachments((prev) => [...prev, ...files]);
+  };
 
+  // eslint-disable-next-line no-unused-vars
   const removeAttachment = (index) => {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
@@ -169,4 +171,4 @@ const NewMessageBox = ({ onSend, currentUser }) => {
   );
 };
 
-export default NewMessageBox; 
+export default NewMessageBox;

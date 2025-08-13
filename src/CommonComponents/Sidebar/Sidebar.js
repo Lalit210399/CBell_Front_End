@@ -15,7 +15,9 @@ function Sidebar() {
 
   return (
     <div className="sidebar">
-      <div className="logo">CB</div>
+      <div className="logo">C-Bell
+        
+      </div>
       <ul className="menu">
         {hasDashboardPermission && (
           <li>
