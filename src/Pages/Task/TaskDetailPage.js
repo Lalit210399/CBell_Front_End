@@ -9,6 +9,7 @@ import TaskDetail from "./TaskDetail/TaskDetail";
 import TopSection from "../../CommonComponents/TaskTopSection/EditTopSection";
 import Breadcrumb from "../../CommonComponents/Breadcrumb/Breadcrumb";
 import { useUser } from "../../Context/UserContext";
+import { useMessages } from "../../Context/MessageContext";
 import { Building, Calendar, Pencil } from "lucide-react";
 import "./Tasks.css";
 
@@ -16,6 +17,7 @@ const TaskDetailPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, permissions: userPermissions } = useUser();
+  const { addMessage } = useMessages();
   
   const { taskId, mode: initialMode = "view", eventId, organizationId } = location.state || {};
   
@@ -35,8 +37,6 @@ const TaskDetailPage = () => {
   const [selectedParticipantIds, setSelectedParticipantIds] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showErrorPopup, setShowErrorPopup] = useState(false);
 
   const [taskData, setTaskData] = useState({
     id: "",
@@ -133,7 +133,11 @@ const TaskDetailPage = () => {
         }
       } catch (err) {
         console.error("Error fetching users:", err);
-        setError("Failed to load users list");
+        addMessage({
+          text: "Failed to load users list",
+          type: "error",
+          duration: 3000
+        });
         setIsLoading(false);
       }
     };
@@ -205,7 +209,11 @@ const TaskDetailPage = () => {
 
       } catch (err) {
         console.error("Error loading task:", err);
-        setError("Failed to load task details");
+        addMessage({
+          text: "Failed to load task details",
+          type: "error",
+          duration: 3000
+        });
       } finally {
         setIsLoading(false);
       }
@@ -247,15 +255,21 @@ const TaskDetailPage = () => {
 
   const handleSaveClick = async () => {
     if (!permissions.canSave) {
-      setError("You don't have permission to save tasks");
-      setShowErrorPopup(true);
+      addMessage({
+        text: "You don't have permission to save tasks",
+        type: "error",
+        duration: 3000
+      });
       return;
     }
 
     // Validation: If status is Approved, at least one file must be selected
     if (taskStatus.value === "Approved" && selectedFiles.length === 0) {
-      setError("You must select at least one file to approve the task.");
-      setShowErrorPopup(true);
+      addMessage({
+        text: "You must select at least one file to approve the task.",
+        type: "error",
+        duration: 3000
+      });
       setActiveTab("Files & Uploads");
       return;
     }
@@ -288,6 +302,11 @@ const TaskDetailPage = () => {
           });
         } catch (fileError) {
           console.error("Error in file approval process:", fileError);
+          addMessage({
+            text: "Error approving files",
+            type: "error",
+            duration: 3000
+          });
         }
       }
 
@@ -345,13 +364,26 @@ const TaskDetailPage = () => {
           state: { ...location.state, taskId: result.taskId, mode: "view" },
           replace: true
         });
+        addMessage({
+          text: "Task created successfully",
+          type: "success",
+          duration: 3000
+        });
       } else {
         setMode("view");
+        addMessage({
+          text: "Task updated successfully",
+          type: "success",
+          duration: 3000
+        });
       }
     } catch (error) {
       console.error("Save failed:", error);
-      setError(`Save failed: ${error.message}`);
-      setShowErrorPopup(true);
+      addMessage({
+        text: `Save failed: ${error.message}`,
+        type: "error",
+        duration: 3000
+      });
     } finally {
       setIsLoading(false);
     }
@@ -435,23 +467,6 @@ const TaskDetailPage = () => {
 
   return (
     <div className="task-creation-module">
-      {/* Error Popup */}
-      {showErrorPopup && (
-        <div className="error-popup-overlay">
-          <div className="error-popup-container">
-            <MessageStrip
-              text={error}
-              type="error"
-              duration={0} // Don't auto-close
-              showIcon={true}
-              showCloseButton={true}
-              onClose={() => setShowErrorPopup(false)}
-              className="error-popup-message"
-            />
-          </div>
-        </div>
-      )}
-
       <div className="BreadCrumb">
         <Breadcrumb items={breadcrumbItems} />
       </div>
