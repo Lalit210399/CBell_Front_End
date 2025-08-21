@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useNavigate, useLocation } from "react-router-dom";
 import TabMenu from "../../CommonComponents/TabMenu/TabMenu";
@@ -14,12 +14,13 @@ import { Building, Calendar, FileText } from "lucide-react";
 import "./Tasks.css";
 
 const EventDetail = () => {
-  const [showEdit, setShowEdit] = useState(true);
+  const [showEdit] = useState(true);
   const [fetchedEvent, setFetchedEvent] = useState(null);
   const [tasksData, setTasksData] = useState([]);
   const [activeTab, setActiveTab] = useState("Details");
   const [mode, setMode] = useState("view");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
   const detailSaveRef = useRef(null);
   const { user } = useUser();
   const { addMessage } = useMessages();
@@ -88,7 +89,7 @@ const EventDetail = () => {
     if (activeTab === "Task" && eventId) {
       fetchTasks();
     }
-  }, [activeTab, eventId, user?.organizationId]);
+  }, [activeTab, eventId, user?.organizationId, addMessage]);
 
   useEffect(() => {
     if (mode === "create") {
@@ -174,6 +175,21 @@ const EventDetail = () => {
 
   const handleSaveEvent = async (topSectionData, getDetailData) => {
     setIsSubmitting(true);
+    // Basic validation for required fields: name/title and date
+    const errors = {};
+    const titleValue = (topSectionData?.title || "").trim();
+    if (!titleValue) {
+      errors.title = "Event name is required";
+    }
+    if (!topSectionData?.date) {
+      errors.date = "Event date is required";
+    }
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      setIsSubmitting(false);
+      addMessage({ text: "Please fix the highlighted fields", type: "error", duration: 2500 });
+      return;
+    }
     const detailData = getDetailData ? getDetailData() : {
       description: "",
       location: "Pune",
@@ -182,7 +198,7 @@ const EventDetail = () => {
     };
 
     const payload = {
-      eventName: topSectionData?.title || "",
+      eventName: titleValue,
       organizationId: user?.organizationId,
       eventTypeId: eventTypeId || fetchedEvent?.eventTypeId,
       eventType: eventType || fetchedEvent?.eventType,
@@ -272,21 +288,21 @@ const EventDetail = () => {
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = useCallback(() => {
     addMessage({
       text: "Download functionality coming soon!",
       type: "info",
       duration: 3000,
     });
-  };
+  }, [addMessage]);
 
-  const handleSendMail = () => {
+  const handleSendMail = useCallback(() => {
     addMessage({
       text: "Mail sending functionality coming soon!",
       type: "info",
       duration: 3000,
     });
-  };
+  }, [addMessage]);
 
   const handleBackClick = () => navigate(-1);
 
@@ -392,11 +408,13 @@ const EventDetail = () => {
     },
     {
       label: "Files & Uploads",
-      component: <FileUploads
-        filesFromTasks={[]}
-        eventId={eventId}
-        organizationId={user?.organizationId}
-      />,
+      component: (
+        <FileUploads
+          filesFromTasks={[]}
+          eventId={eventId}
+          organizationId={user?.organizationId}
+        />
+      ),
     },
     {
       label: "To Publish",
@@ -404,8 +422,8 @@ const EventDetail = () => {
         <Publish
           publishData={[]}
           eventId={eventId}
-          onDownload={handleDownload}
-          onSendMail={handleSendMail}
+          onDownload={() => handleDownload()}
+          onSendMail={() => handleSendMail()}
         />
       ),
     },
@@ -455,6 +473,8 @@ const EventDetail = () => {
           permissions={permissions}
           initialDate={selectedDate ? formatDateTimeLocal(selectedDate) : ""}
           isSubmitting={isSubmitting}
+          errors={validationErrors}
+          onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
         />
       </div>
       <div className="Inner-Content">

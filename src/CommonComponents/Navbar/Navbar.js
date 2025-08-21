@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { BellRing } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
@@ -8,10 +8,10 @@ import "./Navbar.css";
 function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, permissions: userPermissions } = useUser();
+  const { user, permissions: userPermissions, setUser, setPermissions } = useUser();
   const [dropdownVisible, setDropdownVisible] = useState(false);
 
-  const { setUser, setPermissions } = useUser();
+  const dropdownRef = useRef(null);
 
   const handleLogout = async () => {
     try {
@@ -38,15 +38,34 @@ function Navbar() {
     }
   };
 
-
   const toggleDropdown = () => {
     setDropdownVisible((prev) => !prev);
   };
 
+  // ✅ Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        setDropdownVisible(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   // Check permissions for each tab
-  const hasDashboardPermission = userPermissions?.permissions?.Dashboard?.["Dashboard Management"]?.includes("Read") ?? false;
-  const hasEventsPermission = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
-  const hasSchedulePermission = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
+  const hasDashboardPermission =
+    userPermissions?.permissions?.Dashboard?.["Dashboard Management"]?.includes("Read") ?? false;
+  const hasEventsPermission =
+    userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
+  const hasSchedulePermission =
+    userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
 
   return (
     <nav className="navbar">
@@ -69,7 +88,7 @@ function Navbar() {
       </div>
       <div className="nav-right">
         <BellRing size={22} className="bell-icon" />
-        <div className="user-info">
+        <div className="user-info" ref={dropdownRef}>
           <div className="user-details">
             <span className="user-name">{user?.firstName}</span>
             <span className="user-role">Creator</span>

@@ -191,6 +191,14 @@ const Dashboard = () => {
         />
       </div>
 
+      <div className="task-section">
+        <EventList
+        title="Pending Tasks"
+        data={tasks}
+        type="tasks"
+        loading={loading}
+        onSeeAll={() => handleSeeAllClick("Pending Tasks")}
+      />
       <EventList
         title="Pending Tasks"
         data={tasks}
@@ -198,6 +206,9 @@ const Dashboard = () => {
         loading={loading}
         onSeeAll={() => handleSeeAllClick("Pending Tasks")}
       />
+      </div>
+
+      
     </div>
   );
 };

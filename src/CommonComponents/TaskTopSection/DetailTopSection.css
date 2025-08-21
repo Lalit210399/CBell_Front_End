@@ -212,6 +212,9 @@
     outline: none;
     width: 100%;
 }
+.editable-title-input.error {
+    border-color: red;
+}
 
 .editable-title-input::placeholder {
     color: #aaa;
@@ -236,6 +239,15 @@
     opacity: 1 !important;
     position: relative !important;
     z-index: 1 !important;
+}
+.editable-date-input.error {
+    border-color: red;
+}
+
+.field-error {
+    color: red;
+    font-size: 12px;
+    margin-top: 4px;
 }
 
 .editable-date-input:hover {

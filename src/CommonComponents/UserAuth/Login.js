@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import "./Auth.css";
 import Button from "../Button/Button";
 import { signin, getPermissions } from "../../Services/AuthN";
@@ -17,6 +17,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -165,14 +166,22 @@ const Login = () => {
             </div>
 
             {/* Password Field */}
-            <div className={`input-group ${errors.password ? "error" : ""}`}>
+            <div className={`input-group with-toggle ${errors.password ? "error" : ""}`}>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
               />
+              <button
+                type="button"
+                className="password-toggle"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                onClick={() => setShowPassword((prev) => !prev)}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
               {errors.password && (
                 <div className="signup-error-icon-wrapper">
                   <AlertCircle size={18} />

@@ -1,6 +1,6 @@
 // components/ProtectedRoute.js
 import React from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useUser } from "../Context/UserContext";
 
 function getCookieValue(name) {
@@ -11,12 +11,16 @@ function getCookieValue(name) {
 }
 
 const ProtectedRoute = ({ children }) => {
-  const { user } = useUser();
+  const { user, loading } = useUser();
+  const location = useLocation();
   const refreshToken = getCookieValue("LocalRefreshToken");
 
-  // ✅ Check both refreshToken + user context
+  // Wait until auth state is restored to avoid redirecting away on refresh
+  if (loading) return null;
+
+  // ✅ Check both refreshToken + user context after loading
   if (!refreshToken || !user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   return children;

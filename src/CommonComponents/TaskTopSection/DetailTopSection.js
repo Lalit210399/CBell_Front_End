@@ -45,7 +45,9 @@ const DetailTopSection = ({
   data = {},
   participants = [],
   permissions = {},
-  initialDate = ""
+  initialDate = "",
+  errors = {},
+  onClearError
 }) => {
   const [editableTitle, setEditableTitle] = useState(
     mode === "create" ? (data?.title || "") : (data?.title || "")
@@ -72,10 +74,12 @@ const DetailTopSection = ({
 
   const handleTitleChange = (e) => {
     setEditableTitle(e.target.value);
+    if (errors && errors.title && onClearError) onClearError('title');
   };
 
   const handleDateChange = (e) => {
     setEditableDate(e.target.value);
+    if (errors && errors.date && onClearError) onClearError('date');
   };
 
   const handleTypeDescChange = (e) => {
@@ -106,12 +110,15 @@ const DetailTopSection = ({
               <div className="edit-mode-fields">
                 <input
                   type="text"
-                  className="editable-title-input"
+                  className={`editable-title-input ${errors && errors.title ? 'error' : ''}`}
                   value={editableTitle}
                   onChange={handleTitleChange}
                   placeholder={mode === "create" ? "Enter event title" : ""}
                   autoFocus={mode === "create"}
                 />
+                {(errors && errors.title) && (
+                  <div className="field-error">{errors.title}</div>
+                )}
                 <span className="event-type-text">{data?.type || "No type specified"}</span>
               </div>
             ) : (
@@ -143,14 +150,19 @@ const DetailTopSection = ({
           <div className="date-section">
             {mode === "view" && <Calendar size={16} />}
             {(mode === "edit" || mode === "create") ? (
-              <input
-                type="datetime-local"
-                className="editable-date-input"
-                value={editableDate}
-                onChange={handleDateChange}
-                placeholder="Select date and time"
-                min={new Date().toISOString().slice(0, 16)}
-              />
+              <>
+                <input
+                  type="datetime-local"
+                  className={`editable-date-input ${errors && errors.date ? 'error' : ''}`}
+                  value={editableDate}
+                  onChange={handleDateChange}
+                  placeholder="Select date and time"
+                  min={new Date().toISOString().slice(0, 16)}
+                />
+                {(errors && errors.date) && (
+                  <div className="field-error">{errors.date}</div>
+                )}
+              </>
             ) : (
               <span>{formatDateTimeForDisplay(data?.date || editableDate)}</span>
             )}

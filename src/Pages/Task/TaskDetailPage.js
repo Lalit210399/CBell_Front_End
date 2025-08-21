@@ -38,6 +38,7 @@ const TaskDetailPage = () => {
   const [selectedParticipantIds, setSelectedParticipantIds] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [validationErrors, setValidationErrors] = useState({});
 
   const [taskData, setTaskData] = useState({
     id: "",
@@ -264,6 +265,24 @@ const TaskDetailPage = () => {
       return;
     }
 
+    // Required field validations
+    const errors = {};
+    if (!taskTitle || !taskTitle.toString().trim()) {
+      errors.title = "Title is required";
+    }
+    if (!taskData?.type || !taskData.type.toString().trim()) {
+      errors.type = "Creative type is required";
+    }
+    if (!taskData?.date) {
+      errors.date = "Due date is required";
+    }
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      addMessage({ text: "Please fill all required fields", type: "error", duration: 2500 });
+      setActiveTab("Details");
+      return;
+    }
+
     // Validation: If status is Approved, at least one file must be selected
     if (taskStatus.value === "Approved" && selectedFiles.length === 0) {
       addMessage({
@@ -429,6 +448,8 @@ const TaskDetailPage = () => {
           mode={mode}
           permissions={permissions}
           eventDate={eventDate}
+          errors={validationErrors}
+          onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
         />
       ),
     },

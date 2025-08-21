@@ -5,7 +5,7 @@ import Dropdown from "../../../CommonComponents/Dropdown/Dropdown";
 import { Wand } from "lucide-react";
 import "./TaskDetail.css";
 
-const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {}, eventDate: eventDateProp }) => {
+const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {}, eventDate: eventDateProp, errors = {}, onClearError }) => {
   // Parse initial datetime from taskData or use current datetime
   const initialDateTime = taskData.date 
     ? new Date(taskData.date)
@@ -55,6 +55,7 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {}, event
     if (option?.value !== taskData.type) {
       onUpdate("type", option?.value || "");
     }
+    if (errors?.type && onClearError) onClearError('type');
   };
 
   const handleDateTimeChange = (e) => {
@@ -64,6 +65,7 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {}, event
     // Convert to ISO format with timezone (YYYY-MM-DDTHH:mm:ss.sssZ)
     const isoDateTime = new Date(newLocalDateTime).toISOString();
     onUpdate("date", isoDateTime);
+    if (errors?.date && onClearError) onClearError('date');
   };
 
   const handleQuantityChange = (e) => {
@@ -108,7 +110,7 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {}, event
     <div className="detail_container">
       <div className="Right_Section Section">
         <div className="form-container">
-          <div className="input-group">
+          <div className={`input-group ${errors?.type ? 'error' : ''}`}>
             <label htmlFor="task-type">Creative Type</label>
             <div className="input-box">
               <span className="icon"><Wand /></span>
@@ -121,9 +123,10 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {}, event
                 disabled={isDisabled}
               />
             </div>
+            {errors?.type && <div className="field-error">{errors.type}</div>}
           </div>
 
-          <div className="input-group">
+          <div className={`input-group ${errors?.date ? 'error' : ''}`}>
             <label htmlFor="task-datetime">Due Date & Time</label>
             <div className="input-box">
               <input
@@ -137,6 +140,7 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {}, event
                 disabled={isDisabled}
               />
             </div>
+            {errors?.date && <div className="field-error">{errors.date}</div>}
           </div>
 
           <div className="input-group">
@@ -150,6 +154,7 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {}, event
                 onChange={handleQuantityChange}
                 className="no-spinner"
                 disabled={isDisabled}
+                min={1}
               />
             </div>
           </div>
