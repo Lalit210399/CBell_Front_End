@@ -223,6 +223,35 @@ const EventDetail = () => {
       if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
 
       const result = await response.json();
+      
+      // For new events, get the ID from the response and update the state
+      if (mode === "create" && result.id) {
+        // Update the URL state to include the new event ID
+        navigate(location.pathname, {
+          state: {
+            ...location.state,
+            eventId: result.id,
+            eventData: {
+              ...payload,
+              id: result.id,
+              coordinators: payload.coordinators,
+              specialGuests: payload.specialGuests
+            }
+          },
+          replace: true
+        });
+      }
+      
+      // Update the local state with the saved data
+      const updatedEvent = {
+        ...payload,
+        id: mode === "create" ? result.id : eventId,
+        coordinators: payload.coordinators,
+        specialGuests: payload.specialGuests
+      };
+      
+      setFetchedEvent(updatedEvent);
+      
       // Switch to view mode after successful save/create
       setMode("view");
       addMessage({
@@ -231,12 +260,6 @@ const EventDetail = () => {
         duration: 3000,
       });
 
-      navigate("/events", {
-        state: {
-          refresh: true,
-          mode: "view"
-        }
-      });
     } catch (error) {
       console.error(`Error ${mode === "create" ? "creating" : "updating"} event:`, error);
       addMessage({
@@ -273,6 +296,7 @@ const EventDetail = () => {
         eventId,
         mode: "create",
         organizationId: user?.organizationId,
+        eventDate: fetchedEvent?.eventDate || (selectedDate ? selectedDate.toISOString() : undefined),
       },
     });
   };

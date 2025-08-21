@@ -20,9 +20,29 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
   const [checklist, setChecklist] = useState(() => transformItems(initialItems));
   const inputRefs = useRef([]);
 
+  const normalizeItems = (items) =>
+    (items || [])
+      .filter((item) => item.text && item.text.trim() !== "")
+      .map((item) => ({ text: item.text, checked: !!item.checked }));
+
+  // Keep internal state in sync when parent changes initialItems, but only if different
   useEffect(() => {
-    onChecklistChange(checklist.filter(item => item.text.trim() && !item.isPlaceholder));
-  }, [checklist, onChecklistChange]);
+    const transformed = transformItems(initialItems);
+    const currentNormalized = normalizeItems(checklist);
+    const incomingNormalized = normalizeItems(transformed);
+
+    if (JSON.stringify(currentNormalized) !== JSON.stringify(incomingNormalized)) {
+      setChecklist(transformed);
+    }
+  }, [initialItems]);
+
+  // Notify parent only when editable and checklist actually changes
+  useEffect(() => {
+    if (mode === "view") return;
+    onChecklistChange(
+      checklist.filter(item => item.text.trim() && !item.isPlaceholder)
+    );
+  }, [checklist, mode]);
 
   const toggleCheck = (index) => {
     if (mode === "view") return;

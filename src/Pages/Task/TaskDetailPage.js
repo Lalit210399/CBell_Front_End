@@ -19,7 +19,8 @@ const TaskDetailPage = () => {
   const { user, permissions: userPermissions } = useUser();
   const { addMessage } = useMessages();
   
-  const { taskId, mode: initialMode = "view", eventId, organizationId } = location.state || {};
+  const { taskId, mode: initialMode = "view", eventId, organizationId, eventDate: navEventDate } = location.state || {};
+  const eventDate = React.useMemo(() => navEventDate ? new Date(navEventDate) : null, [navEventDate]);
   
   const [taskTitle, setTaskTitle] = useState("");
   const [taskStatus, setTaskStatus] = useState({
@@ -274,6 +275,20 @@ const TaskDetailPage = () => {
       return;
     }
 
+    // Validate task date between now and event date (if provided)
+    try {
+      const now = new Date();
+      const selected = new Date(taskData.date);
+      if (selected <= now) {
+        addMessage({ text: "Task date must be later than today.", type: "error", duration: 3000 });
+        return;
+      }
+      if (eventDate && selected >= new Date(eventDate)) {
+        addMessage({ text: "Task date must be earlier than the event date.", type: "error", duration: 3000 });
+        return;
+      }
+    } catch {}
+
     setIsLoading(true);
     try {
       if (selectedFiles.length > 0 && activeTab === "Files & Uploads") {
@@ -413,6 +428,7 @@ const TaskDetailPage = () => {
           onUpdate={updateTaskDetail}
           mode={mode}
           permissions={permissions}
+          eventDate={eventDate}
         />
       ),
     },

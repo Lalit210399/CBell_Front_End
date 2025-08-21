@@ -1,6 +1,6 @@
 // Pages/Auth/Login.js
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { AlertCircle } from "lucide-react";
 import "./Auth.css";
@@ -10,7 +10,7 @@ import { useUser } from "../../Context/UserContext";
 import ERROR_MESSAGES from "../../Resources/ResourceFiles/ResourceFiles";
 
 const Login = () => {
-  const { setUser, setPermissions } = useUser();
+  const { user, setUser, setPermissions } = useUser();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -21,6 +21,23 @@ const Login = () => {
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  useEffect(() => {
+    if (user) {
+      // Redirect to first allowed page based on permissions
+      try {
+        const stored = localStorage.getItem("permissions");
+        const perms = stored ? JSON.parse(stored) : null;
+        const p = perms?.permissions || {};
+        const canDashboard = Array.isArray(p?.Dashboard?.["Dashboard Management"]) && p.Dashboard["Dashboard Management"].includes("Read");
+        const canEvents = Array.isArray(p?.Events?.["Event Management"]) && p.Events["Event Management"].includes("Read");
+        const target = canDashboard ? "/dashboard" : canEvents ? "/events" : "/login";
+        navigate(target, { replace: true });
+      } catch {
+        navigate("/dashboard", { replace: true });
+      }
+    }
+  }, [user, navigate]);
 
   const validate = () => {
     const validationErrors = {};
@@ -81,12 +98,17 @@ const Login = () => {
           localStorage.setItem("permissions", JSON.stringify(permissionResponse));
           setPermissions(permissionResponse);
 
-          // Navigate only after all data is loaded
-          navigate("/dashboard");
+          // Navigate only after all data is loaded → route to first allowed page
+          const p = permissionResponse?.permissions || {};
+          const canDashboard = Array.isArray(p?.Dashboard?.["Dashboard Management"]) && p.Dashboard["Dashboard Management"].includes("Read");
+          const canEvents = Array.isArray(p?.Events?.["Event Management"]) && p.Events["Event Management"].includes("Read");
+          const target = canDashboard ? "/dashboard" : canEvents ? "/events" : "/login";
+          navigate(target);
         } catch (permissionError) {
           console.error("Permission fetch failed:", permissionError);
           setMessage("Login successful, but couldn't load permissions");
-          navigate("/dashboard"); // Still navigate but show message
+          // Fallback to dashboard, but will be re-guarded by route protection if not allowed
+          navigate("/dashboard");
         }
       } else {
         throw new Error(response.message || "Unexpected response from server");

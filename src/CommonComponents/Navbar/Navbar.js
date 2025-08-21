@@ -8,18 +8,36 @@ import "./Navbar.css";
 function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const {user, permissions: userPermissions } = useUser();
+  const { user, permissions: userPermissions } = useUser();
   const [dropdownVisible, setDropdownVisible] = useState(false);
+
+  const { setUser, setPermissions } = useUser();
 
   const handleLogout = async () => {
     try {
-      await logout();
-      navigate("/");
+      await logout(); // call backend logout (clear cookies)
+
+      // ✅ clear frontend state
+      localStorage.removeItem("user");
+      localStorage.removeItem("permissions");
+      setUser(null);
+      setPermissions(null);
+
+      // ✅ redirect after state cleared
+      navigate("/login", { replace: true });
     } catch (error) {
       console.error("Logout failed:", error);
-      navigate("/");
+
+      // still force clear on failure
+      localStorage.removeItem("user");
+      localStorage.removeItem("permissions");
+      setUser(null);
+      setPermissions(null);
+
+      navigate("/login", { replace: true });
     }
   };
+
 
   const toggleDropdown = () => {
     setDropdownVisible((prev) => !prev);

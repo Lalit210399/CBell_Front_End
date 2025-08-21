@@ -138,9 +138,10 @@
     border: 1px solid var(--grayBorder);
     border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    width: 160px;
-    height: 24px;
-    padding: 8px 0;
+    width: 260px;
+    max-height: 340px;
+    padding: 0;
+    overflow: hidden;
 }
 
 .avatar-add-button {
@@ -164,6 +165,66 @@
     margin-left: 5px;
     border: 1px solid var(--grayBorder);
     border-radius: 5px;
+}
+
+/* New user dropdown styles */
+.user-dropdown {
+  display: flex;
+  flex-direction: column;
+}
+.user-dropdown-header {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid var(--grayBorder);
+  background: var(--white);
+}
+.user-search {
+  flex: 1;
+  border: 1px solid var(--grayBorder);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.user-done {
+  border: 1px solid var(--grayBorder);
+  background: var(--white);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  color: var(--textDark);
+}
+.user-dropdown-list {
+  max-height: 280px;
+  overflow: auto;
+}
+.user-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.user-item:hover {
+  /* background: var(--darkHover); */
+}
+.user-item.selected {
+  background: rgba(74, 144, 226, 0.08);
+}
+.user-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--lightGray);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--textDark);
+}
+.user-name {
+  font-size: 13px;
 }
 
 .header-avatar-dropdown {

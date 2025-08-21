@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Save, Calendar } from "lucide-react";
+import { ArrowLeft, Save, Calendar, Users } from "lucide-react";
 import AvatarList from "../Avatar/index";
 import "./DetailTopSection.css";
 
@@ -91,14 +91,11 @@ const DetailTopSection = ({
     onSaveClick(payload);
   };
 
+  // Check if participants array is empty
+  const hasParticipants = participants && participants.length > 0;
+
   return (
     <div className="detail-header-container">
-      {/* Debug info - remove in production */}
-      {/* {process.env.NODE_ENV === 'development' && (
-        <div style={{ position: 'absolute', top: 0, right: 0, background: '#f0f0f0', padding: '5px', fontSize: '12px', zIndex: 1000 }}>
-          Mode: {mode}, CanSave: {permissions?.canSave ? 'true' : 'false'}, Title: {editableTitle}, Date: {editableDate}
-        </div>
-      )} */}
       <div className="header-left-section">
         <div className="top-left">
           <button className="back-button" onClick={onBackClick}>
@@ -116,30 +113,27 @@ const DetailTopSection = ({
                   autoFocus={mode === "create"}
                 />
                 <span className="event-type-text">{data?.type || "No type specified"}</span>
-                {/* <textarea
-                  className="editable-desc-input"
-                  value={editableTypeDesc}
-                  onChange={handleTypeDescChange}
-                  placeholder="Enter event type description"
-                  rows={2}
-                /> */}
               </div>
             ) : (
               <div className="view-mode-fields">
                 <span className="header_title">{editableTitle}</span>
                 <span className="event-type-text">{data?.type || "No type specified"}</span>
-                {/* {data?.typeDesc && (
-                  <span className="event-type-desc">{data.typeDesc}</span>
-                )} */}
               </div>
             )}
           </div>
         </div>
         {mode === "view" && (
           <div className="avatar-dropdown-container">
-            <div className="avatar-group">
-              <AvatarList avatars={participants} maxVisible={2} />
-            </div>
+            {hasParticipants ? (
+              <div className="avatar-group">
+                <AvatarList avatars={participants} maxVisible={2} />
+              </div>
+            ) : (
+              <div className="no-participants-placeholder">
+                <Users size={16} className="placeholder-icon" />
+                <span className="placeholder-text">No participants yet</span>
+              </div>
+            )}
           </div>
         )}
       </div>

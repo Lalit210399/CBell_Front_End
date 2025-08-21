@@ -12,7 +12,7 @@ import EventDetailPage from "./Pages/Task/EventDetailPage";
 import ForgotPassword from "./CommonComponents/UserAuth/ForgotPassword";
 import TasksDetail from "./Pages/Task/TaskDetailPage";
 import Instagram from "./InstagramPost";
-// import ProtectedRoute from "./Context/ProtectedRoute"; 
+import ProtectedRoute, { RequirePermission } from "./Context/ProtectedRoute"; 
 
 function App() {
   return (
@@ -28,25 +28,46 @@ function App() {
         <Route
           path="/*"
           element={
-            // <ProtectedRoute>
+            <ProtectedRoute>
               <MainLayout>
                 <Routes>
                   <Route path="/auth" element={<AuthN />} />
-                  <Route path="/events" element={<Event />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/schedule" element={<Schedule />} />
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <RequirePermission resource="Dashboard" managementKey="Dashboard Management" action="Read">
+                        <Dashboard />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="/events"
+                    element={
+                      <RequirePermission resource="Events" managementKey="Event Management" action="Read">
+                        <Event />
+                      </RequirePermission>
+                    }
+                  />
+                  <Route
+                    path="/schedule"
+                    element={
+                      <RequirePermission resource="Events" managementKey="Event Management" action="Read">
+                        <Schedule />
+                      </RequirePermission>
+                    }
+                  />
                   <Route path="/events/stepForm" element={<StepForm />} />
                   <Route path="/dashboard/stepForm" element={<StepForm />} />
                   <Route path="/schedule/stepForm" element={<StepForm />} />
                   <Route path="/events/eventDetailPage" element={<EventDetailPage />} />
                   <Route path="/events/eventDetailPage/tasks" element={<TasksDetail />} />
                   <Route path="/instagram" element={<Instagram />} />
-                  {/* Add more protected routes here */}
                 </Routes>
               </MainLayout>
-            // </ProtectedRoute>
+            </ProtectedRoute>
           }
         />
+
       </Routes>
     </Router>
   );

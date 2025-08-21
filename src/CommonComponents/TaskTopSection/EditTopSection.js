@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Users } from "lucide-react";
 import AvatarList from "../Avatar/index";
 import Dropdown from "../../CommonComponents/Dropdown/Dropdown";
 import "./EditTopSection.css";
@@ -23,6 +23,7 @@ const TopSection = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const titleRef = useRef(null);
+  const [userSearch, setUserSearch] = useState("");
 
   // Find creator user from users list or create a fallback
   const creatorUser =
@@ -90,6 +91,38 @@ const TopSection = ({
       shape: "circle",
     };
   });
+
+  // Check if there are assigned users
+  const hasAssignedUsers = selectedParticipants && selectedParticipants.length > 0;
+
+  // Normalize assigned IDs for quick lookup and updates
+  const assignedIds = React.useMemo(() =>
+    (assignedTo || []).map((item) =>
+      typeof item === "string" || typeof item === "number" ? item : item?.id
+    ).filter(Boolean)
+  , [assignedTo]);
+
+  const filteredUsers = React.useMemo(() => {
+    const q = userSearch.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter((u) =>
+      `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase().includes(q)
+    );
+  }, [users, userSearch]);
+
+  const isUserSelected = (id) => assignedIds.includes(id);
+  const toggleUserSelection = (id) => {
+    const next = isUserSelected(id)
+      ? assignedIds.filter((x) => x !== id)
+      : [...assignedIds, id];
+    onParticipantsChange(next);
+  };
+
+  const getUserInitials = (firstName = "", lastName = "") => {
+    const a = (firstName[0] || "").toUpperCase();
+    const b = (lastName[0] || "").toUpperCase();
+    return (a + b) || "?";
+  };
 
   const handleTitleChange = (e) => {
     const newTitle = e.target.innerText;
@@ -164,7 +197,14 @@ const TopSection = ({
 
         <div className="header-avatar-dropdown">
           <div className="header-avatar-group">
-            <AvatarList avatars={selectedParticipants} maxVisible={2} />
+            {hasAssignedUsers ? (
+              <AvatarList avatars={selectedParticipants} maxVisible={2} />
+            ) : (
+              <div className="no-assigned-users-placeholder">
+                <Users size={14} className="placeholder-icon" />
+                <span className="placeholder-text">No assigned users</span>
+              </div>
+            )}
 
             {(mode === "edit" || mode === "create") &&
               permissions.canAssignUsers && (
@@ -177,12 +217,37 @@ const TopSection = ({
                   </button>
                   {isDropdownOpen && (
                     <div className="inline-dropdown" ref={dropdownRef}>
-                      <Dropdown
-                        options={userOptions}
-                        onSelect={handleUserSelect}
-                        multiSelect={true}
-                        selectedOptions={selectedOptions}
-                      />
+                      <div className="user-dropdown">
+                        <div className="user-dropdown-header">
+                          <input
+                            type="text"
+                            className="user-search"
+                            placeholder="Search users..."
+                            value={userSearch}
+                            onChange={(e) => setUserSearch(e.target.value)}
+                          />
+                          <button className="user-done" onClick={() => setIsDropdownOpen(false)}>Done</button>
+                        </div>
+                        <div className="user-dropdown-list">
+                          {filteredUsers.length === 0 ? (
+                            <div className="user-empty">No users found</div>
+                          ) : (
+                            filteredUsers.map((u) => (
+                              <label key={u.id} className={`user-item ${isUserSelected(u.id) ? "selected" : ""}`}>
+                                <input
+                                  type="checkbox"
+                                  checked={isUserSelected(u.id)}
+                                  onChange={() => toggleUserSelection(u.id)}
+                                />
+                                <span className="user-avatar">
+                                  {getUserInitials(u.firstName, u.lastName)}
+                                </span>
+                                <span className="user-name">{`${u.firstName || "User"} ${u.lastName || ""}`}</span>
+                              </label>
+                            ))
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

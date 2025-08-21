@@ -5,7 +5,7 @@ import Dropdown from "../../../CommonComponents/Dropdown/Dropdown";
 import { Wand } from "lucide-react";
 import "./TaskDetail.css";
 
-const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => {
+const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {}, eventDate: eventDateProp }) => {
   // Parse initial datetime from taskData or use current datetime
   const initialDateTime = taskData.date 
     ? new Date(taskData.date)
@@ -89,6 +89,21 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
     }
   };
 
+  const minDateTime = (() => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
+  })();
+
+  const maxDateTime = (() => {
+    if (!eventDateProp) return undefined;
+    const end = new Date(eventDateProp);
+    end.setMinutes(end.getMinutes() - end.getTimezoneOffset());
+    // Task must be earlier than event date → set max to event date minus 1 minute
+    end.setMinutes(end.getMinutes() - 1);
+    return end.toISOString().slice(0, 16);
+  })();
+
   return (
     <div className="detail_container">
       <div className="Right_Section Section">
@@ -117,6 +132,8 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
                 type="datetime-local"
                 value={localDateTime}
                 onChange={handleDateTimeChange}
+                min={minDateTime}
+                max={maxDateTime}
                 disabled={isDisabled}
               />
             </div>
@@ -146,6 +163,9 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
             mode={mode}
             canEdit={permissions.canEdit}
           />
+          {eventDateProp && (
+            <div className="event-date-hint">Event date: {new Date(eventDateProp).toLocaleString()}</div>
+          )}
         </div>
       </div>
 
