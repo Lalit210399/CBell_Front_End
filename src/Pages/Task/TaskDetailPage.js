@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import MessageStrip from "../../CommonComponents/MessageStrip/MessageStrip";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useLocation, useNavigate } from "react-router-dom";
 import TabMenu from "../../CommonComponents/TabMenu/TabMenu";
@@ -8,6 +9,7 @@ import TaskDetail from "./TaskDetail/TaskDetail";
 import TopSection from "../../CommonComponents/TaskTopSection/EditTopSection";
 import Breadcrumb from "../../CommonComponents/Breadcrumb/Breadcrumb";
 import { useUser } from "../../Context/UserContext";
+import { useMessages } from "../../Context/MessageContext";
 import { Building, Calendar, Pencil } from "lucide-react";
 import "./Tasks.css";
 
@@ -15,8 +17,10 @@ const TaskDetailPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, permissions: userPermissions } = useUser();
+  const { addMessage } = useMessages();
   
-  const { taskId, mode: initialMode = "view", eventId, organizationId } = location.state || {};
+  const { taskId, mode: initialMode = "view", eventId, organizationId, eventDate: navEventDate } = location.state || {};
+  const eventDate = React.useMemo(() => navEventDate ? new Date(navEventDate) : null, [navEventDate]);
   
   const [taskTitle, setTaskTitle] = useState("");
   const [taskStatus, setTaskStatus] = useState({
@@ -34,9 +38,7 @@ const TaskDetailPage = () => {
   const [selectedParticipantIds, setSelectedParticipantIds] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  //console.log("User Organization:", user?.organization?.name || "No Organization");
+  const [validationErrors, setValidationErrors] = useState({});
 
   const [taskData, setTaskData] = useState({
     id: "",
@@ -94,7 +96,16 @@ const TaskDetailPage = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetchWithRefresh("/apis/auth/users", {
+        if (mode !== "edit" && mode !== "create") {
+          return;
+        }
+
+        const orgId = user?.organizationId || organizationId;
+        if (!orgId) {
+          throw new Error("No organizationId available for user fetch");
+        }
+        
+        const response = await fetchWithRefresh(`/apis/auth/users?organizationId=${orgId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -106,25 +117,44 @@ const TaskDetailPage = () => {
           throw new Error("Failed to fetch users");
         }
         
-        const data = await response.json();
-        setUsersList(data);
+        const { data: usersData } = await response.json();
+        
+        const formattedUsers = usersData.map(user => ({
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          fullName: `${user.firstName} ${user.lastName}`,
+          organizationId: user.organizationId
+        }));
+        
+        setUsersList(formattedUsers);
         
         if (mode === "create") {
           initializeCreateMode();
         }
       } catch (err) {
         console.error("Error fetching users:", err);
-        setError("Failed to load users list");
+        addMessage({
+          text: "Failed to load users list",
+          type: "error",
+          duration: 3000
+        });
         setIsLoading(false);
       }
     };
 
     fetchUsers();
-  }, []);
+  }, [user?.organizationId, organizationId, mode]);
 
   useEffect(() => {
     const fetchTask = async () => {
-      if (!taskId || mode === "create") return;
+      if (!taskId || mode === "create") {
+        if (mode === "view" && !taskId) {
+          setIsLoading(false);
+        }
+        return;
+      }
       
       try {
         setIsLoading(true);
@@ -140,11 +170,15 @@ const TaskDetailPage = () => {
           throw new Error("Failed to fetch task");
         }
 
-        const data = await response.json();
+        const responseData = await response.json();
+        const data = Array.isArray(responseData) ? responseData[0] : responseData;
+        
+        if (!data) {
+          throw new Error("No task data found");
+        }
         
         setTaskTitle(data.taskTitle || "");
-        setCreatedBy(data.createdBy ? `User ${data.createdBy}` : 
-          (user ? `${user.firstName} ${user.lastName}` : "User"));
+        setCreatedBy(data.createdBy || (user ? `${user.firstName} ${user.lastName}` : "User"));
         
         const matchedStatus = statusOptions.find(
           opt => opt.value.toLowerCase() === (data.taskStatus || "New").toLowerCase()
@@ -158,13 +192,13 @@ const TaskDetailPage = () => {
               isPlaceholder: Boolean(item?.isPlaceholder)
             }))
           : [{ text: "", checked: false, isPlaceholder: false }];
-
+        
         setTaskData({
           id: data.id || "",
           eventId: data.eventId || "",
           taskTitle: data.taskTitle || "",
           taskStatus: matchedStatus.value,
-          assignedTo: data.assignedTo?.map(user => user.id) || [],
+          assignedTo: data.assignedTo || [],
           createdBy: data.createdBy || "",
           updatedBy: data.updatedBy || "",
           type: data.creativeType || "",
@@ -177,30 +211,29 @@ const TaskDetailPage = () => {
 
       } catch (err) {
         console.error("Error loading task:", err);
-        setError("Failed to load task details");
+        addMessage({
+          text: "Failed to load task details",
+          type: "error",
+          duration: 3000
+        });
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (usersList.length > 0 && mode !== "create") {
+    if (mode === "view" || (usersList.length > 0 && mode !== "create")) {
       fetchTask();
     }
-  }, [taskId, usersList, mode, organizationId, user, eventId]);
+  }, [taskId, mode, organizationId, user, eventId]);
 
   useEffect(() => {
-    if (usersList.length > 0 && Array.isArray(taskData.assignedTo)) {
-      const participantIds = usersList
-        .filter(user => 
-          taskData.assignedTo.includes(`${user.firstName} ${user.lastName}`)
-        )
-        .map(user => user.id);
-      
-      setSelectedParticipantIds(prevIds => 
-        JSON.stringify(prevIds) !== JSON.stringify(participantIds) ? participantIds : prevIds
-      );
+    if (Array.isArray(taskData.assignedTo)) {
+      const idsOnly = taskData.assignedTo
+        .map((assigned) => (typeof assigned === "object" ? assigned?.id : assigned))
+        .filter(Boolean);
+      setSelectedParticipantIds(idsOnly);
     }
-  }, [usersList, taskData.assignedTo]);
+  }, [taskData.assignedTo]);
 
   const updateTaskDetail = (field, value) => {
     setTaskData(prev => {
@@ -224,13 +257,59 @@ const TaskDetailPage = () => {
 
   const handleSaveClick = async () => {
     if (!permissions.canSave) {
-      alert("You don't have permission to save tasks");
+      addMessage({
+        text: "You don't have permission to save tasks",
+        type: "error",
+        duration: 3000
+      });
       return;
     }
 
+    // Required field validations
+    const errors = {};
+    if (!taskTitle || !taskTitle.toString().trim()) {
+      errors.title = "Title is required";
+    }
+    if (!taskData?.type || !taskData.type.toString().trim()) {
+      errors.type = "Creative type is required";
+    }
+    if (!taskData?.date) {
+      errors.date = "Due date is required";
+    }
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      addMessage({ text: "Please fill all required fields", type: "error", duration: 2500 });
+      setActiveTab("Details");
+      return;
+    }
+
+    // Validation: If status is Approved, at least one file must be selected
+    if (taskStatus.value === "Approved" && selectedFiles.length === 0) {
+      addMessage({
+        text: "You must select at least one file to approve the task.",
+        type: "error",
+        duration: 3000
+      });
+      setActiveTab("Files & Uploads");
+      return;
+    }
+
+    // Validate task date between now and event date (if provided)
+    try {
+      const now = new Date();
+      const selected = new Date(taskData.date);
+      if (selected <= now) {
+        addMessage({ text: "Task date must be later than today.", type: "error", duration: 3000 });
+        return;
+      }
+      if (eventDate && selected >= new Date(eventDate)) {
+        addMessage({ text: "Task date must be earlier than the event date.", type: "error", duration: 3000 });
+        return;
+      }
+    } catch {}
+
     setIsLoading(true);
     try {
-      // Handle file approvals if files are selected and Files tab is active
       if (selectedFiles.length > 0 && activeTab === "Files & Uploads") {
         try {
           const approvalResults = await Promise.allSettled(
@@ -250,7 +329,6 @@ const TaskDetailPage = () => {
             })
           );
           
-          // Log any failed approvals
           approvalResults.forEach((result, index) => {
             if (result.status === "rejected") {
               console.error(`Failed to approve file ${selectedFiles[index].documentId}:`, result.reason);
@@ -258,10 +336,14 @@ const TaskDetailPage = () => {
           });
         } catch (fileError) {
           console.error("Error in file approval process:", fileError);
+          addMessage({
+            text: "Error approving files",
+            type: "error",
+            duration: 3000
+          });
         }
       }
 
-      // Proceed with task save
       const formattedChecklist = Array.isArray(taskData.checklist)
         ? taskData.checklist.map(item => ({
             text: item.text,
@@ -274,7 +356,9 @@ const TaskDetailPage = () => {
         EventId: mode === "edit" ? taskData.eventId : eventId,
         TaskTitle: taskTitle,
         TaskStatus: taskStatus.value,
-        AssignedTo: selectedParticipantIds,
+        AssignedTo: (selectedParticipantIds || []).map((item) =>
+          typeof item === "object" ? item?.id : item
+        ),
         CreatedBy: user?.id || 0,
         UpdatedBy: user?.id || 0,
         CreativeType: taskData.type,
@@ -314,12 +398,26 @@ const TaskDetailPage = () => {
           state: { ...location.state, taskId: result.taskId, mode: "view" },
           replace: true
         });
+        addMessage({
+          text: "Task created successfully",
+          type: "success",
+          duration: 3000
+        });
       } else {
         setMode("view");
+        addMessage({
+          text: "Task updated successfully",
+          type: "success",
+          duration: 3000
+        });
       }
     } catch (error) {
       console.error("Save failed:", error);
-      setError(`Save failed: ${error.message}`);
+      addMessage({
+        text: `Save failed: ${error.message}`,
+        type: "error",
+        duration: 3000
+      });
     } finally {
       setIsLoading(false);
     }
@@ -349,6 +447,9 @@ const TaskDetailPage = () => {
           onUpdate={updateTaskDetail}
           mode={mode}
           permissions={permissions}
+          eventDate={eventDate}
+          errors={validationErrors}
+          onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
         />
       ),
     },
@@ -401,10 +502,6 @@ const TaskDetailPage = () => {
     return <div className="loading-container">Loading...</div>;
   }
 
-  if (error) {
-    return <div className="error-container">{error}</div>;
-  }
-
   return (
     <div className="task-creation-module">
       <div className="BreadCrumb">
@@ -424,7 +521,11 @@ const TaskDetailPage = () => {
           mode={mode}
           users={usersList}
           onParticipantsChange={setSelectedParticipantIds}
-          assignedTo={taskData.assignedTo || []}
+          assignedTo={
+            Array.isArray(taskData.assignedTo) && taskData.assignedTo.length > 0
+              ? taskData.assignedTo
+              : selectedParticipantIds
+          }
           permissions={permissions}
         />
       </div>

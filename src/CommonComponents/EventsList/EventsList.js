@@ -1,17 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import './EventsList.css';
 
 const EventList = ({ title, data = [], type, onSeeAll, icon, loading }) => {
-  const [visibleCount, setVisibleCount] = useState(5);
+  const [visibleCount, setVisibleCount] = useState(10);
+  const listRef = useRef(null);
 
-  const isScrollable = data.length > visibleCount;
+  // Infinite scroll handler
+  useEffect(() => {
+    const listElement = listRef.current;
+    if (!listElement) return;
 
-  const handleSeeAll = () => {
-    setVisibleCount((prev) => prev + 5);
-    if (onSeeAll) onSeeAll();
-  };
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = listElement;
+      if (scrollTop + clientHeight >= scrollHeight - 20 && visibleCount < data.length) {
+        setVisibleCount(prev => Math.min(prev + 10, data.length));
+      }
+    };
+
+    listElement.addEventListener('scroll', handleScroll);
+    return () => listElement.removeEventListener('scroll', handleScroll);
+  }, [visibleCount, data.length]);
 
   const renderSkeletonItem = (index) => (
     <li key={index} className={type === 'tasks' ? 'task-item' : 'event-item'}>
@@ -46,7 +56,7 @@ const EventList = ({ title, data = [], type, onSeeAll, icon, loading }) => {
         <li className="column-headers task-item">
           <span className="task-name">Task Name</span>
           <span className="event-name">Event</span>
-          <span className="org-name">College</span>
+          <span className="org-name">Organization</span>
           <span className="status-header">Status</span>
           <span className="due-date">Due Date</span>
         </li>
@@ -55,7 +65,7 @@ const EventList = ({ title, data = [], type, onSeeAll, icon, loading }) => {
       return (
         <li className="column-headers event-item">
           <span className="event-name">Event Name</span>
-          <span className="event-org">College</span>
+          <span className="event-org">Organization</span>
           <span className="event-date">Date</span>
         </li>
       );
@@ -69,21 +79,24 @@ const EventList = ({ title, data = [], type, onSeeAll, icon, loading }) => {
         {icon && <div className="icon-container">{icon}</div>}
       </div>
 
-      <ul className={`${type === 'tasks' ? 'task-list-items' : 'event-list-items'} scrollable-list`}>
-        {!loading && data.length > 0 && renderColumnHeaders()}
-        
-        {loading
-          ? Array.from({ length: 3 }).map((_, index) => renderSkeletonItem(index))
-          : data.slice(0, visibleCount).map((item, index) =>
-              type === 'tasks' ? renderTaskColumns(item) : renderEventItem(item, index)
-            )}
-      </ul>
-
-      {!loading && isScrollable && (
-        <button className="see-all-button" onClick={handleSeeAll}>
-          See More
-        </button>
-      )}
+      <div className="scrollable-container">
+        <ul 
+          ref={listRef}
+          className={`${type === 'tasks' ? 'task-list-items' : 'event-list-items'}`}
+        >
+          {!loading && data.length > 0 && (
+            <div className="sticky-header">
+              {renderColumnHeaders()}
+            </div>
+          )}
+          
+          {loading
+            ? Array.from({ length: 3 }).map((_, index) => renderSkeletonItem(index))
+            : data.slice(0, visibleCount).map((item, index) =>
+                type === 'tasks' ? renderTaskColumns(item) : renderEventItem(item, index)
+              )}
+        </ul>
+      </div>
     </div>
   );
 };

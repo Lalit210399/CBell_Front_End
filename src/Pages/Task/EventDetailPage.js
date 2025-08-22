@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useNavigate, useLocation } from "react-router-dom";
 import TabMenu from "../../CommonComponents/TabMenu/TabMenu";
@@ -14,12 +14,13 @@ import { Building, Calendar, FileText } from "lucide-react";
 import "./Tasks.css";
 
 const EventDetail = () => {
-  const [showEdit, setShowEdit] = useState(true);
+  const [showEdit] = useState(true);
   const [fetchedEvent, setFetchedEvent] = useState(null);
   const [tasksData, setTasksData] = useState([]);
   const [activeTab, setActiveTab] = useState("Details");
   const [mode, setMode] = useState("view");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
   const detailSaveRef = useRef(null);
   const { user } = useUser();
   const { addMessage } = useMessages();
@@ -38,15 +39,16 @@ const EventDetail = () => {
     selectedDate: locationSelectedDate
   } = location.state || {};
 
-  const selectedDate = locationSelectedDate
-    ? new Date(locationSelectedDate)
-    : null;
+  const selectedDate = React.useMemo(() => (
+    locationSelectedDate ? new Date(locationSelectedDate) : null
+  ), [locationSelectedDate]);
 
+  // Only sync from navigation when initialMode changes; don't override local edits
   useEffect(() => {
-    if (initialMode && mode !== initialMode) {
+    if (initialMode) {
       setMode(initialMode);
     }
-  }, [initialMode, mode]);
+  }, [initialMode]);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -87,7 +89,7 @@ const EventDetail = () => {
     if (activeTab === "Task" && eventId) {
       fetchTasks();
     }
-  }, [activeTab, eventId, user?.organizationId]);
+  }, [activeTab, eventId, user?.organizationId, addMessage]);
 
   useEffect(() => {
     if (mode === "create") {
@@ -104,10 +106,7 @@ const EventDetail = () => {
         location: formData?.location || "",
       };
 
-      if (JSON.stringify(fetchedEvent) !== JSON.stringify(newEvent)) {
-        setFetchedEvent(newEvent);
-      }
-
+      setFetchedEvent(newEvent);
       return;
     }
 
@@ -125,17 +124,14 @@ const EventDetail = () => {
           : []
       };
 
-      if (JSON.stringify(fetchedEvent) !== JSON.stringify(transformedEvent)) {
-        setFetchedEvent(transformedEvent);
-      }
-
+      setFetchedEvent(transformedEvent);
       return;
     }
 
     const fetchEvent = async () => {
       if (!eventId) return;
       try {
-        const response = await fetchWithRefresh(`/apis/event/get_event/${eventId}?organizationId=${user?.organizationId}`, {
+        const response = await fetchWithRefresh(`/apis/task/get_tasks_only?organizationId=${user?.organizationId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -157,9 +153,7 @@ const EventDetail = () => {
             : [],
         };
 
-        if (JSON.stringify(fetchedEvent) !== JSON.stringify(transformedData)) {
-          setFetchedEvent(transformedData);
-        }
+        setFetchedEvent(transformedData);
       } catch (error) {
         console.error("Error fetching event:", error);
         addMessage({
@@ -171,27 +165,31 @@ const EventDetail = () => {
     };
 
     fetchEvent();
-  }, [
-    eventId,
-    mode,
-    selectedDate,
-    eventData,
-    user?.organizationId,
-    formData,
-    eventType,
-    eventTypeId,
-    eventTypeDesc,
-    fetchedEvent, // ensure comparison prevents re-trigger
-  ]);
+  }, [eventId, mode, selectedDate, eventData, user?.organizationId, formData, eventType, eventTypeId, eventTypeDesc, addMessage]);
 
-  const permissions = {
+  const permissions = React.useMemo(() => ({
     canEdit: mode === "create" ? true : userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
     canCreateTask: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Create") ?? false,
     canSave: mode === "create" ? true : userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
-  };
+  }), [mode, userPermissions?.permissions?.Events, userPermissions?.permissions?.Tasks]);
 
   const handleSaveEvent = async (topSectionData, getDetailData) => {
     setIsSubmitting(true);
+    // Basic validation for required fields: name/title and date
+    const errors = {};
+    const titleValue = (topSectionData?.title || "").trim();
+    if (!titleValue) {
+      errors.title = "Event name is required";
+    }
+    if (!topSectionData?.date) {
+      errors.date = "Event date is required";
+    }
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      setIsSubmitting(false);
+      addMessage({ text: "Please fix the highlighted fields", type: "error", duration: 2500 });
+      return;
+    }
     const detailData = getDetailData ? getDetailData() : {
       description: "",
       location: "Pune",
@@ -200,7 +198,7 @@ const EventDetail = () => {
     };
 
     const payload = {
-      eventName: topSectionData?.title || "",
+      eventName: titleValue,
       organizationId: user?.organizationId,
       eventTypeId: eventTypeId || fetchedEvent?.eventTypeId,
       eventType: eventType || fetchedEvent?.eventType,
@@ -215,7 +213,10 @@ const EventDetail = () => {
         name: guest.name,
         title: guest.title || "Guest"
       })),
-      eventDate: topSectionData?.date || (selectedDate ? selectedDate.toISOString() : new Date().toISOString()),
+      // Expect topSectionData.date to be a datetime-local value; convert to ISO
+      eventDate: topSectionData?.date
+        ? new Date(topSectionData.date).toISOString()
+        : (selectedDate ? selectedDate.toISOString() : new Date().toISOString()),
       createdBy: user?.id || 1
     };
 
@@ -238,18 +239,43 @@ const EventDetail = () => {
       if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
 
       const result = await response.json();
+      
+      // For new events, get the ID from the response and update the state
+      if (mode === "create" && result.id) {
+        // Update the URL state to include the new event ID
+        navigate(location.pathname, {
+          state: {
+            ...location.state,
+            eventId: result.id,
+            eventData: {
+              ...payload,
+              id: result.id,
+              coordinators: payload.coordinators,
+              specialGuests: payload.specialGuests
+            }
+          },
+          replace: true
+        });
+      }
+      
+      // Update the local state with the saved data
+      const updatedEvent = {
+        ...payload,
+        id: mode === "create" ? result.id : eventId,
+        coordinators: payload.coordinators,
+        specialGuests: payload.specialGuests
+      };
+      
+      setFetchedEvent(updatedEvent);
+      
+      // Switch to view mode after successful save/create
+      setMode("view");
       addMessage({
         text: `Event ${mode === "create" ? "created" : "updated"} successfully!`,
         type: "success",
         duration: 3000,
       });
 
-      navigate("/events", {
-        state: {
-          refresh: true,
-          mode: mode
-        }
-      });
     } catch (error) {
       console.error(`Error ${mode === "create" ? "creating" : "updating"} event:`, error);
       addMessage({
@@ -262,21 +288,21 @@ const EventDetail = () => {
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = useCallback(() => {
     addMessage({
       text: "Download functionality coming soon!",
       type: "info",
       duration: 3000,
     });
-  };
+  }, [addMessage]);
 
-  const handleSendMail = () => {
+  const handleSendMail = useCallback(() => {
     addMessage({
       text: "Mail sending functionality coming soon!",
       type: "info",
       duration: 3000,
     });
-  };
+  }, [addMessage]);
 
   const handleBackClick = () => navigate(-1);
 
@@ -286,45 +312,55 @@ const EventDetail = () => {
         eventId,
         mode: "create",
         organizationId: user?.organizationId,
+        eventDate: fetchedEvent?.eventDate || (selectedDate ? selectedDate.toISOString() : undefined),
       },
     });
   };
 
   const handleTabChange = (tab) => {
-    if (mode === "edit") {
-      setMode("view");
-    }
+    // Keep current mode when switching tabs
     setActiveTab(tab);
   };
 
-  const formatDateForInput = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    return date.toISOString().split("T")[0];
+  const formatDateTimeLocal = (dateInput) => {
+    if (!dateInput) return "";
+    const d = new Date(dateInput);
+    const pad = (n) => String(n).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const HH = pad(d.getHours());
+    const MM = pad(d.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${HH}:${MM}`;
   };
 
-  const participants = [
+  const participants = React.useMemo(() => [
     ...(fetchedEvent?.coordinators || []).map((coord, index) => ({
       id: `coordinator-${index}`,
       name: coord?.name || coord,
-      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(coord?.name || coord)}&background=random`,
+      // Use explicit avatar URL if provided; otherwise force fallback initials for consistent color
+      src: coord?.avatarUrl && String(coord.avatarUrl).trim() !== '' ? coord.avatarUrl : null,
+      size: "32px",
+      shape: "circle"
     })),
     ...(fetchedEvent?.specialGuests || []).map((guest, index) => ({
       id: `guest-${index}`,
       name: guest?.name || guest,
-      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(guest?.name || guest)}&background=random`,
+      src: guest?.avatarUrl && String(guest.avatarUrl).trim() !== '' ? guest.avatarUrl : null,
+      size: "32px",
+      shape: "circle"
     })),
-  ];
+  ], [fetchedEvent?.coordinators, fetchedEvent?.specialGuests]);
 
-  const topSectionData = {
+  const topSectionData = React.useMemo(() => ({
     title: mode === "create" ? formData?.eventName || "" : fetchedEvent?.eventName || "",
     date: mode === "create"
       ? selectedDate
-        ? formatDateForInput(selectedDate)
-        : formatDateForInput(new Date())
+        ? formatDateTimeLocal(selectedDate)
+        : formatDateTimeLocal(new Date())
       : fetchedEvent?.eventDate
-        ? formatDateForInput(fetchedEvent.eventDate)
-        : formatDateForInput(new Date()),
+        ? formatDateTimeLocal(fetchedEvent.eventDate)
+        : formatDateTimeLocal(new Date()),
     type: fetchedEvent?.typeName || eventType || "",
     typeDesc: fetchedEvent?.eventTypeDesc || eventTypeDesc || "",
     createdBy: mode === "create"
@@ -337,12 +373,18 @@ const EventDetail = () => {
       shape: "circle",
     },
     participants,
-  };
+  }), [mode, formData?.eventName, fetchedEvent?.eventName, selectedDate, fetchedEvent?.eventDate, fetchedEvent?.typeName, eventType, fetchedEvent?.eventTypeDesc, eventTypeDesc, user?.firstName, fetchedEvent?.createdBy, participants]);
 
-  const guestsData = mode === "create" ? [] : fetchedEvent?.specialGuests || [];
-  const organizersData = mode === "create" ? [] : fetchedEvent?.coordinators || [];
+  const guestsData = React.useMemo(() => 
+    mode === "create" ? [] : fetchedEvent?.specialGuests || [], 
+    [mode, fetchedEvent?.specialGuests]
+  );
+  const organizersData = React.useMemo(() => 
+    mode === "create" ? [] : fetchedEvent?.coordinators || [], 
+    [mode, fetchedEvent?.coordinators]
+  );
 
-  const tabs = [
+  const tabs = React.useMemo(() => [
     {
       label: "Details",
       component: (
@@ -366,11 +408,13 @@ const EventDetail = () => {
     },
     {
       label: "Files & Uploads",
-      component: <FileUploads
-        filesFromTasks={[]}
-        eventId={eventId}
-        organizationId={user?.organizationId}
-      />,
+      component: (
+        <FileUploads
+          filesFromTasks={[]}
+          eventId={eventId}
+          organizationId={user?.organizationId}
+        />
+      ),
     },
     {
       label: "To Publish",
@@ -378,18 +422,21 @@ const EventDetail = () => {
         <Publish
           publishData={[]}
           eventId={eventId}
-          onDownload={handleDownload}
-          onSendMail={handleSendMail}
+          onDownload={() => handleDownload()}
+          onSendMail={() => handleSendMail()}
         />
       ),
     },
-  ];
+  ], [mode, detailSaveRef, guestsData, organizersData, formData?.eventDescription, fetchedEvent?.eventDescription, formData?.location, fetchedEvent?.locationDetails, tasksData, eventId, user?.organizationId, handleDownload, handleSendMail]);
 
-  const filteredTabs = mode === "create"
-    ? tabs.filter(tab => tab.label === "Details")
-    : tabs;
+  const filteredTabs = React.useMemo(() => 
+    mode === "create"
+      ? tabs.filter(tab => tab.label === "Details")
+      : tabs,
+    [mode, tabs]
+  );
 
-  const breadcrumbItems = [
+  const breadcrumbItems = React.useMemo(() => [
     { label: user?.organization?.name || "Organization", href: "#", icon: Building },
     {
       label: "Events",
@@ -405,7 +452,7 @@ const EventDetail = () => {
       href: "#",
       icon: FileText,
     },
-  ];
+  ], [user?.organization?.name, mode, fetchedEvent?.eventName, navigate]);
 
   return (
     <div className="event-detail-module">
@@ -424,8 +471,10 @@ const EventDetail = () => {
           data={topSectionData}
           participants={participants}
           permissions={permissions}
-          initialDate={selectedDate ? formatDateForInput(selectedDate) : ""}
+          initialDate={selectedDate ? formatDateTimeLocal(selectedDate) : ""}
           isSubmitting={isSubmitting}
+          errors={validationErrors}
+          onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
         />
       </div>
       <div className="Inner-Content">
@@ -435,7 +484,10 @@ const EventDetail = () => {
           setActiveTab={handleTabChange}
           showEditButton={showEdit && mode === "view" && permissions.canEdit}
           isEditMode={mode === "edit"}
-          onEditClick={() => setMode("edit")}
+          onEditClick={() => {
+            debugger;
+            setMode("edit");
+          }}
           onCancelClick={() => setMode("view")}
         />
       </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Users } from "lucide-react";
 import AvatarList from "../Avatar/index";
 import Dropdown from "../../CommonComponents/Dropdown/Dropdown";
 import "./EditTopSection.css";
@@ -21,35 +21,53 @@ const TopSection = ({
 }) => {
   const [editableTitle, setEditableTitle] = useState(title || "");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [selectedUserIds, setSelectedUserIds] = useState([]);
   const dropdownRef = useRef(null);
   const titleRef = useRef(null);
+  const [userSearch, setUserSearch] = useState("");
 
-  const creatorUser = users.find(user =>
-    `${user.firstName} ${user.lastName}` === createdBy
-  ) || { firstName: createdBy?.split(' ')[0] || 'User', lastName: createdBy?.split(' ')[1] || '' };
+  // Local state for assigned user IDs
+  const [assignedIds, setAssignedIds] = useState([]);
+
+  // Sync local assignedIds with incoming prop
+  useEffect(() => {
+    const ids = (assignedTo || [])
+      .map((item) =>
+        typeof item === "string" || typeof item === "number" ? item : item?.id
+      )
+      .filter(Boolean);
+    setAssignedIds(ids);
+  }, [assignedTo]);
+
+  // Find creator user from users list or create a fallback
+  const creatorUser =
+    users.find(
+      (user) =>
+        user.id === createdBy?.id ||
+        `${user.firstName} ${user.lastName}` === createdBy
+    ) || {
+      firstName:
+        createdBy?.name?.split(" ")[0] || createdBy?.split(" ")[0] || "User",
+      lastName:
+        createdBy?.name?.split(" ")[1] || createdBy?.split(" ")[1] || "",
+    };
 
   const creatorAvatar = {
-    id: 'creator',
-    name: createdBy,
+    id: "creator",
+    name: creatorUser.firstName + " " + creatorUser.lastName,
     fallback: creatorUser.firstName?.charAt(0).toUpperCase() || "U",
     size: "24px",
     shape: "circle",
   };
 
-  // ✅ Update selected user IDs from assignedTo (assumed to be array of IDs)
   useEffect(() => {
-    if (users.length > 0 && assignedTo.length > 0) {
-      setSelectedUserIds(assignedTo);
-    }
-  }, [users, assignedTo]);
+    setEditableTitle(title || "");
+  }, [title]);
 
-  // ✅ Notify parent with selected participants as array of IDs
   useEffect(() => {
-    if (onParticipantsChange) {
-      onParticipantsChange(selectedUserIds);
+    if (mode === "create" && titleRef.current && !title) {
+      titleRef.current.focus();
     }
-  }, [selectedUserIds, onParticipantsChange]);
+  }, [mode, title]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -62,25 +80,47 @@ const TopSection = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    setEditableTitle(title || "");
-  }, [title]);
+  // Prepare selected participants (from local assignedIds so avatars update instantly)
+  const selectedParticipants = assignedIds.map((assignedId) => {
+    const fullUser = users.find((u) => u.id === assignedId);
+    const firstName = fullUser?.firstName || "User";
+    const lastName = fullUser?.lastName || "";
+    const fullName = `${firstName} ${lastName}`.trim();
 
-  useEffect(() => {
-    if (mode === "create" && titleRef.current && !title) {
-      titleRef.current.focus();
-    }
-  }, [mode, title]);
-
-  const selectedParticipants = users
-    .filter(user => selectedUserIds.includes(user.id))
-    .map(user => ({
-      id: user.id,
-      name: `${user.firstName} ${user.lastName}`,
-      fallback: user.firstName?.charAt(0).toUpperCase() || "?",
+    return {
+      id: assignedId,
+      name: fullName,
+      fallback: (firstName?.charAt(0) || "?").toUpperCase(),
       size: "20px",
       shape: "circle",
-    }));
+    };
+  });
+
+  const hasAssignedUsers = selectedParticipants && selectedParticipants.length > 0;
+
+  const filteredUsers = React.useMemo(() => {
+    const q = userSearch.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter((u) =>
+      `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase().includes(q)
+    );
+  }, [users, userSearch]);
+
+  const isUserSelected = (id) => assignedIds.includes(id);
+
+  const toggleUserSelection = (id) => {
+    const next = isUserSelected(id)
+      ? assignedIds.filter((x) => x !== id)
+      : [...assignedIds, id];
+    setAssignedIds(next);
+    onParticipantsChange(next); // notify parent immediately
+  };
+
+  const getUserInitials = (firstName = "", lastName = "") => {
+    const a = (firstName[0] || "").toUpperCase();
+    const b = (lastName[0] || "").toUpperCase();
+    return (a + b) || "?";
+  };
 
   const handleTitleChange = (e) => {
     const newTitle = e.target.innerText;
@@ -97,14 +137,7 @@ const TopSection = ({
   };
 
   const handleAddButtonClick = () => {
-    setIsDropdownOpen(prev => !prev);
-  };
-
-  const handleUserSelect = (selected) => {
-    const ids = Array.isArray(selected)
-      ? selected.map(s => s.value)
-      : [selected.value];
-    setSelectedUserIds(ids);
+    setIsDropdownOpen((prev) => !prev);
   };
 
   return (
@@ -115,7 +148,7 @@ const TopSection = ({
             <ArrowLeft size={20} />
           </button>
           <div className="header-title-container">
-            {(mode === "edit" || mode === "create") ? (
+            {mode === "edit" || mode === "create" ? (
               <h2
                 className="header-title-input"
                 contentEditable
@@ -134,37 +167,71 @@ const TopSection = ({
 
         <div className="header-avatar-dropdown">
           <div className="header-avatar-group">
-            <AvatarList avatars={selectedParticipants} maxVisible={2} />
-
-            {(mode === "edit" || mode === "create") && permissions.canAssignUsers && (
-              <div className="add-participant-section">
-                <button 
-                  className="avatar-add-button" 
-                  onClick={handleAddButtonClick}
-                >
-                  +
-                </button>
-                {isDropdownOpen && (
-                  <div className="inline-dropdown" ref={dropdownRef}>
-                    <Dropdown
-                      options={users.map(user => ({
-                        value: user.id,
-                        label: `${user.firstName} ${user.lastName}`,
-                      }))}
-                      onSelect={handleUserSelect}
-                      multiSelect={true}
-                      selectedOptions={selectedUserIds.map(id => {
-                        const u = users.find(u => u.id === id);
-                        return {
-                          value: id,
-                          label: `${u?.firstName || ''} ${u?.lastName || ''}`
-                        };
-                      })}
-                    />
-                  </div>
-                )}
+            {hasAssignedUsers ? (
+              <AvatarList avatars={selectedParticipants} maxVisible={2} />
+            ) : (
+              <div className="no-assigned-users-placeholder">
+                <Users size={14} className="placeholder-icon" />
+                <span className="placeholder-text">No assigned users</span>
               </div>
             )}
+
+            {(mode === "edit" || mode === "create") &&
+              permissions.canAssignUsers && (
+                <div className="add-participant-section">
+                  <button
+                    className="avatar-add-button"
+                    onClick={handleAddButtonClick}
+                  >
+                    +
+                  </button>
+                  {isDropdownOpen && (
+                    <div className="inline-dropdown" ref={dropdownRef}>
+                      <div className="user-dropdown">
+                        <div className="user-dropdown-header">
+                          <input
+                            type="text"
+                            className="user-search"
+                            placeholder="Search users..."
+                            value={userSearch}
+                            onChange={(e) => setUserSearch(e.target.value)}
+                          />
+                          <button
+                            className="user-done"
+                            onClick={() => setIsDropdownOpen(false)}
+                          >
+                            Done
+                          </button>
+                        </div>
+                        <div className="user-dropdown-list">
+                          {filteredUsers.length === 0 ? (
+                            <div className="user-empty">No users found</div>
+                          ) : (
+                            filteredUsers.map((u) => (
+                              <label
+                                key={u.id}
+                                className={`user-item ${
+                                  isUserSelected(u.id) ? "selected" : ""
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isUserSelected(u.id)}
+                                  onChange={() => toggleUserSelection(u.id)}
+                                />
+                                <span className="user-avatar">
+                                  {getUserInitials(u.firstName, u.lastName)}
+                                </span>
+                                <span className="user-name">{`${u.firstName || "User"} ${u.lastName || ""}`}</span>
+                              </label>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
           </div>
 
           <div className="header-dropdown-container">
@@ -181,7 +248,9 @@ const TopSection = ({
       <div className="header-right">
         <div className="header-date-creator">
           <div className="header-creator">
-            <span>{createdBy}</span>
+            <span>
+              {creatorUser.firstName} {creatorUser.lastName}
+            </span>
             <AvatarList
               avatars={[creatorAvatar]}
               showTooltip={false}
@@ -192,10 +261,7 @@ const TopSection = ({
 
         <div className="header-actions">
           {(mode === "edit" || mode === "create") && permissions.canSave && (
-            <button
-              className="header-save"
-              onClick={onSaveClick}
-            >
+            <button className="header-save" onClick={onSaveClick}>
               <Save size={16} />
               Save
             </button>

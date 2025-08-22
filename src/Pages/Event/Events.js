@@ -31,7 +31,7 @@ const EventTable = () => {
       setLoading(true);
       setError(null);
 
-      const res = await fetchWithRefresh(`/apis/event/get_all_events?organizationId=${user?.organizationId}`);
+      const res = await fetchWithRefresh(`/apis/event/get_events_only?organizationId=${user?.organizationId}`);
 
       if (!res.ok) {
         throw new Error(`Failed to fetch events: ${res.status}`);

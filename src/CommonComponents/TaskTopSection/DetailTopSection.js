@@ -1,15 +1,40 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Save, Calendar } from "lucide-react";
+import { ArrowLeft, Save, Calendar, Users } from "lucide-react";
 import AvatarList from "../Avatar/index";
 import "./DetailTopSection.css";
 
-function formatDateInput(date) {
+function formatDateTimeLocal(date) {
   if (!date) return "";
-  const d = typeof date === "string" ? new Date(date + "T00:00:00") : new Date(date);
+  const d = typeof date === "string" ? new Date(date) : new Date(date);
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function formatDateTimeForDisplay(date) {
+  if (!date) return "";
+  const d = typeof date === "string" ? new Date(date) : new Date(date);
+  
+  // Convert to Indian timezone (IST - UTC+5:30)
+  const istDate = new Date(d.getTime() + (5.5 * 60 * 60 * 1000));
+  
+  const year = istDate.getUTCFullYear();
+  const month = String(istDate.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(istDate.getUTCDate()).padStart(2, "0");
+  const hours = String(istDate.getUTCHours()).padStart(2, "0");
+  const minutes = String(istDate.getUTCMinutes()).padStart(2, "0");
+  
+  // Format with better spacing: "DD/MM/YYYY • HH:MM"
+  return (
+    <span>
+      <span className="date-part">{day}/{month}/{year}</span>
+      <span className="date-time-separator">  </span>
+      <span className="time-part">{hours}:{minutes}</span>
+    </span>
+  );
 }
 
 const DetailTopSection = ({
@@ -20,37 +45,41 @@ const DetailTopSection = ({
   data = {},
   participants = [],
   permissions = {},
-  initialDate = ""
+  initialDate = "",
+  errors = {},
+  onClearError
 }) => {
   const [editableTitle, setEditableTitle] = useState(
-    mode === "create" ? "" : data?.title || ""
+    mode === "create" ? (data?.title || "") : (data?.title || "")
   );
   const [editableDate, setEditableDate] = useState(
-    mode === "create" ? formatDateInput(initialDate) : formatDateInput(data?.date)
+    mode === "create" ? formatDateTimeLocal(initialDate || new Date()) : formatDateTimeLocal(data?.date || new Date())
   );
   const [editableTypeDesc, setEditableTypeDesc] = useState(
-    mode === "create" ? "" : data?.typeDesc || ""
+    mode === "create" ? (data?.typeDesc || "") : (data?.typeDesc || "")
   );
-  //console.log("data in DetailTopSection:", data);
 
+  // Only update state when data or mode changes, not on every render
   useEffect(() => {
     if (mode === "create") {
-      if (editableTitle !== "") setEditableTitle("");
-      if (editableDate !== formatDateInput(initialDate)) setEditableDate(formatDateInput(initialDate));
-      if (editableTypeDesc !== "") setEditableTypeDesc("");
+      setEditableTitle("");
+      setEditableDate(formatDateTimeLocal(initialDate || new Date()));
+      setEditableTypeDesc("");
     } else {
-      if (editableTitle !== (data?.title || "")) setEditableTitle(data?.title || "");
-      if (editableDate !== formatDateInput(data?.date)) setEditableDate(formatDateInput(data?.date));
-      if (editableTypeDesc !== (data?.typeDesc || "")) setEditableTypeDesc(data?.typeDesc || "");
+      setEditableTitle(data?.title || "");
+      setEditableDate(formatDateTimeLocal(data?.date || new Date()));
+      setEditableTypeDesc(data?.typeDesc || "");
     }
-  }, [data?.title, data?.date, data?.typeDesc, mode, initialDate]);
+  }, [mode, data?.title, data?.date, data?.typeDesc, initialDate]);
 
   const handleTitleChange = (e) => {
     setEditableTitle(e.target.value);
+    if (errors && errors.title && onClearError) onClearError('title');
   };
 
   const handleDateChange = (e) => {
     setEditableDate(e.target.value);
+    if (errors && errors.date && onClearError) onClearError('date');
   };
 
   const handleTypeDescChange = (e) => {
@@ -66,6 +95,9 @@ const DetailTopSection = ({
     onSaveClick(payload);
   };
 
+  // Check if participants array is empty
+  const hasParticipants = participants && participants.length > 0;
+
   return (
     <div className="detail-header-container">
       <div className="header-left-section">
@@ -78,36 +110,37 @@ const DetailTopSection = ({
               <div className="edit-mode-fields">
                 <input
                   type="text"
-                  className="editable-title-input"
+                  className={`editable-title-input ${errors && errors.title ? 'error' : ''}`}
                   value={editableTitle}
                   onChange={handleTitleChange}
                   placeholder={mode === "create" ? "Enter event title" : ""}
+                  autoFocus={mode === "create"}
                 />
+                {(errors && errors.title) && (
+                  <div className="field-error">{errors.title}</div>
+                )}
                 <span className="event-type-text">{data?.type || "No type specified"}</span>
-                {/* <textarea
-                  className="editable-desc-input"
-                  value={editableTypeDesc}
-                  onChange={handleTypeDescChange}
-                  placeholder="Enter event type description"
-                  rows={2}
-                /> */}
               </div>
             ) : (
               <div className="view-mode-fields">
                 <span className="header_title">{editableTitle}</span>
                 <span className="event-type-text">{data?.type || "No type specified"}</span>
-                {/* {data?.typeDesc && (
-                  <span className="event-type-desc">{data.typeDesc}</span>
-                )} */}
               </div>
             )}
           </div>
         </div>
         {mode === "view" && (
           <div className="avatar-dropdown-container">
-            <div className="avatar-group">
-              <AvatarList avatars={participants} maxVisible={2} />
-            </div>
+            {hasParticipants ? (
+              <div className="avatar-group">
+                <AvatarList avatars={participants} maxVisible={2} />
+              </div>
+            ) : (
+              <div className="no-participants-placeholder">
+                <Users size={16} className="placeholder-icon" />
+                <span className="placeholder-text">No participants yet</span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -117,15 +150,21 @@ const DetailTopSection = ({
           <div className="date-section">
             {mode === "view" && <Calendar size={16} />}
             {(mode === "edit" || mode === "create") ? (
-              <input
-                type="date"
-                className="editable-date-input"
-                value={editableDate}
-                onChange={handleDateChange}
-                placeholder="Select date"
-              />
+              <>
+                <input
+                  type="datetime-local"
+                  className={`editable-date-input ${errors && errors.date ? 'error' : ''}`}
+                  value={editableDate}
+                  onChange={handleDateChange}
+                  placeholder="Select date and time"
+                  min={new Date().toISOString().slice(0, 16)}
+                />
+                {(errors && errors.date) && (
+                  <div className="field-error">{errors.date}</div>
+                )}
+              </>
             ) : (
-              <span>{editableDate}</span>
+              <span>{formatDateTimeForDisplay(data?.date || editableDate)}</span>
             )}
           </div>
 

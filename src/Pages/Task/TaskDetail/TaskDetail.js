@@ -5,8 +5,16 @@ import Dropdown from "../../../CommonComponents/Dropdown/Dropdown";
 import { Wand } from "lucide-react";
 import "./TaskDetail.css";
 
-const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => {
-  const [selectedDate, setSelectedDate] = useState(taskData.date || "");
+const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {}, eventDate: eventDateProp, errors = {}, onClearError }) => {
+  // Parse initial datetime from taskData or use current datetime
+  const initialDateTime = taskData.date 
+    ? new Date(taskData.date)
+    : new Date();
+  
+  // Format for datetime-local input (YYYY-MM-DDTHH:mm)
+  const [localDateTime, setLocalDateTime] = useState(
+    initialDateTime.toISOString().slice(0, 16)
+  );
   const [quantity, setQuantity] = useState(taskData.quantity || 1);
   const [selectedType, setSelectedType] = useState(
     taskData.type ? { label: taskData.type, value: taskData.type } : null
@@ -31,7 +39,8 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
   // Reset form when switching to view mode or task data changes
   useEffect(() => {
     if (mode === "view") {
-      setSelectedDate(taskData.date || "");
+      const dateTime = taskData.date ? new Date(taskData.date) : new Date();
+      setLocalDateTime(dateTime.toISOString().slice(0, 16));
       setQuantity(taskData.quantity || 1);
       setSelectedType(
         taskData.type ? { label: taskData.type, value: taskData.type } : null
@@ -46,14 +55,17 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
     if (option?.value !== taskData.type) {
       onUpdate("type", option?.value || "");
     }
+    if (errors?.type && onClearError) onClearError('type');
   };
 
-  const handleDateChange = (e) => {
-    const newDate = e.target.value;
-    setSelectedDate(newDate);
-    if (newDate !== taskData.date) {
-      onUpdate("date", newDate);
-    }
+  const handleDateTimeChange = (e) => {
+    const newLocalDateTime = e.target.value;
+    setLocalDateTime(newLocalDateTime);
+    
+    // Convert to ISO format with timezone (YYYY-MM-DDTHH:mm:ss.sssZ)
+    const isoDateTime = new Date(newLocalDateTime).toISOString();
+    onUpdate("date", isoDateTime);
+    if (errors?.date && onClearError) onClearError('date');
   };
 
   const handleQuantityChange = (e) => {
@@ -79,11 +91,26 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
     }
   };
 
+  const minDateTime = (() => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
+  })();
+
+  const maxDateTime = (() => {
+    if (!eventDateProp) return undefined;
+    const end = new Date(eventDateProp);
+    end.setMinutes(end.getMinutes() - end.getTimezoneOffset());
+    // Task must be earlier than event date → set max to event date minus 1 minute
+    end.setMinutes(end.getMinutes() - 1);
+    return end.toISOString().slice(0, 16);
+  })();
+
   return (
     <div className="detail_container">
       <div className="Right_Section Section">
         <div className="form-container">
-          <div className="input-group">
+          <div className={`input-group ${errors?.type ? 'error' : ''}`}>
             <label htmlFor="task-type">Creative Type</label>
             <div className="input-box">
               <span className="icon"><Wand /></span>
@@ -96,20 +123,24 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
                 disabled={isDisabled}
               />
             </div>
+            {errors?.type && <div className="field-error">{errors.type}</div>}
           </div>
 
-          <div className="input-group">
-            <label htmlFor="task-date">Due Date</label>
+          <div className={`input-group ${errors?.date ? 'error' : ''}`}>
+            <label htmlFor="task-datetime">Due Date & Time</label>
             <div className="input-box">
               <input
-                id="task-date"
-                name="taskDate"
-                type="date"
-                value={selectedDate}
-                onChange={handleDateChange}
+                id="task-datetime"
+                name="taskDateTime"
+                type="datetime-local"
+                value={localDateTime}
+                onChange={handleDateTimeChange}
+                min={minDateTime}
+                max={maxDateTime}
                 disabled={isDisabled}
               />
             </div>
+            {errors?.date && <div className="field-error">{errors.date}</div>}
           </div>
 
           <div className="input-group">
@@ -123,6 +154,7 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
                 onChange={handleQuantityChange}
                 className="no-spinner"
                 disabled={isDisabled}
+                min={1}
               />
             </div>
           </div>
@@ -136,6 +168,9 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {} }) => 
             mode={mode}
             canEdit={permissions.canEdit}
           />
+          {eventDateProp && (
+            <div className="event-date-hint">Event date: {new Date(eventDateProp).toLocaleString()}</div>
+          )}
         </div>
       </div>
 

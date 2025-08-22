@@ -154,15 +154,11 @@ label {
   outline: none;
   height: 100px;
 }
-/* 
-textarea {
-  
-} */
 
 input {
   border: none;
   outline: none;
-  flex: 1;
+  /* flex: 1; */
   font-size: var(--font-size);
 }
 

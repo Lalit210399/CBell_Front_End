@@ -1,5 +1,6 @@
 // Schedule.js
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import CustomCalendar from "../../CommonComponents/Calendar/CustomCalendar";
 import { useMessages } from "../../Context/MessageContext";
 import { useUser } from "../../Context/UserContext";
@@ -12,6 +13,7 @@ const Schedule = () => {
   const [error, setError] = useState(null);
   const { addMessage } = useMessages();
   const { user } = useUser();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -32,7 +34,7 @@ const Schedule = () => {
         }
 
         const responseData = await response.json();
-        const eventsData = responseData.data || responseData; // Handle both response formats
+        const eventsData = responseData.data || responseData;
 
         if (!Array.isArray(eventsData)) {
           throw new Error("Expected array of events but got something else");
@@ -61,6 +63,7 @@ const Schedule = () => {
             start: eventDate,
             end: eventDate,
             category: category,
+            rawData: event, // keep full event data for detail page
           };
         });
 
@@ -83,12 +86,24 @@ const Schedule = () => {
     }
   }, [user?.organizationId]);
 
+  // 👇 handle click
+  const handleEventClick = (event) => {
+    navigate("/events/eventDetailPage", {
+      state: {
+        eventId: event.id,
+        mode: "view",
+        eventData: event.rawData,
+      },
+    });
+  };
+
   return (
     <div className="schedule-container">
       <CustomCalendar 
         events={events}
         loading={loading}
         error={error}
+        onEventClick={handleEventClick} // pass to calendar
       />
     </div>
   );

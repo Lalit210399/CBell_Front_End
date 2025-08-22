@@ -557,8 +557,8 @@
 /* File Selection and Status */
 .file-selection-radio {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: -14px;
+  right: -12px;
   z-index: 10;
   width: 20px;
   height: 20px;

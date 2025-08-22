@@ -47,7 +47,8 @@
 }
 
 .back-button:hover {
-    background-color: #282d28; /* NOT IN THEME YET */
+    background-color: #282d28;
+    /* NOT IN THEME YET */
 }
 
 .back-button:active {
@@ -78,16 +79,17 @@
     border: 1px solid var(--colourBorder);
     border-radius: 16px;
     background: var(--white);
-    color: #555; /* Consider adding to theme */
+    color: #555;
+    /* Consider adding to theme */
     justify-content: space-between;
 }
 
 .event-type-text {
-  font-size: 14px;
-  color: var(--textLight);
-  margin-top: 2px;
-  display: block;
-  padding-left: 2px;
+    font-size: 14px;
+    color: var(--textLight);
+    margin-top: 2px;
+    display: block;
+    padding-left: 2px;
 }
 
 
@@ -105,7 +107,8 @@
 }
 
 .avatar-add-button {
-    color: #990099; /* NOT IN THEME */
+    color: #990099;
+    /* NOT IN THEME */
     border: 1px dotted #990099;
     border-radius: 50%;
     background: transparent;
@@ -175,7 +178,8 @@
 }
 
 .new-task-btn:hover {
-    background: var(--primary); /* NOT IN THEME */
+    background: var(--primary);
+    /* NOT IN THEME */
     color: var(--white);
 }
 
@@ -198,22 +202,99 @@
     background: var(--lightGray);
 }
 
-.editable-title-input,
-.editable-date-input {
-  border: 1px solid var(--grayLine);
-  border-radius: var(--radius-md);
-  padding: 6px 10px;
-  font-size: 16px;
-  color: var(--textDark);
-  background: var(--white);
-  outline: none;
-  width: 100%;
+.editable-title-input {
+    border: 1px solid var(--grayLine);
+    border-radius: var(--radius-md);
+    padding: 6px 10px;
+    font-size: 16px;
+    color: var(--textDark);
+    background: var(--white);
+    outline: none;
+    width: 100%;
+}
+.editable-title-input.error {
+    border-color: red;
 }
 
-.editable-title-input::placeholder,
+.editable-title-input::placeholder {
+    color: #aaa;
+    font-style: italic;
+}
+
+/* Enhanced DateTime Input Styling */
+.editable-date-input {
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    color: var(--textDark);
+    background: var(--white);
+    outline: none;
+    width: 200px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
+.editable-date-input.error {
+    border-color: red;
+}
+
+.field-error {
+    color: red;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.editable-date-input:hover {
+    border-color: #4a90e2;
+    box-shadow: 0 2px 6px rgba(74, 144, 226, 0.15);
+}
+
+.editable-date-input:focus {
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+    transform: translateY(-1px);
+}
+
 .editable-date-input::placeholder {
-  color: #aaa;
-  font-style: italic;
+    color: #999;
+    font-style: italic;
+}
+
+/* Custom styling for datetime-local input */
+.editable-date-input::-webkit-calendar-picker-indicator {
+    background-color: transparent;
+    cursor: pointer;
+    filter: invert(0.5);
+    transition: filter 0.3s ease;
+}
+
+.editable-date-input::-webkit-calendar-picker-indicator:hover {
+    filter: invert(0.7);
+}
+
+/* Date section container styling */
+.date-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--textDark);
+    /* background: #f8f9fa; */
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid #a0aab5;
+}
+
+.date-section svg {
+    /* color: #4a90e2; */
+    flex-shrink: 0;
 }
 
 
@@ -309,77 +390,99 @@
 
 
 .detail-header-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1rem;
 }
 
 .header-left-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
 }
 
 .top-left {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
 .header-titles {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
 .header_title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #333;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #333;
 }
 
 .event-type-text {
-  font-size: 0.875rem;
-  color: #555;
-  font-weight: 500;
+    font-size: 0.875rem;
+    color: #555;
+    font-weight: 500;
 }
 
 .event-type-desc {
-  font-size: 0.875rem;
-  color: #666;
-  line-height: 1.4;
+    font-size: 0.875rem;
+    color: #666;
+    line-height: 1.4;
 }
 
 .edit-mode-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  width: 100%;
+    display: flex !important;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+    position: relative !important;
+    z-index: 1 !important;
 }
 
 .editable-title-input {
-  font-size: 1.25rem;
-  font-weight: 600;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 0.5rem;
-  width: 100%;
+    font-size: 1.25rem;
+    font-weight: 600;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 0.5rem;
+    width: 100%;
 }
 
 .editable-desc-input {
-  font-size: 0.875rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 0.5rem;
-  width: 100%;
-  resize: vertical;
-  min-height: 40px;
+    font-size: 0.875rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 0.5rem;
+    width: 100%;
+    resize: vertical;
+    min-height: 40px;
 }
 
-/* ... [keep all other existing CSS rules] ... */
+/* Date and time parts styling */
+.date-part {
+    /* color: #2c3e50; */
+    /* font-weight: 600; */
+}
+
+.time-part {
+    color: #34495e;
+    font-weight: 500;
+    /* background: #ecf0f1; */
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+/* Date and time separator styling */
+.date-time-separator {
+    margin: 0 8px;
+    color: #7f8c8d;
+    font-weight: 400;
+}
