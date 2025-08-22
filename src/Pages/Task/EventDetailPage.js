@@ -51,6 +51,7 @@ const EventDetail = () => {
   }, [initialMode]);
 
   useEffect(() => {
+    const abortController = new AbortController();
     const fetchTasks = async () => {
       try {
         const response = await fetchWithRefresh(`/apis/task/by-event/${eventId}?organizationId=${user?.organizationId}`, {
@@ -60,23 +61,32 @@ const EventDetail = () => {
             Accept: "application/json",
             "ngrok-skip-browser-warning": "1",
           },
+          signal: abortController.signal,
         });
+
+        if (response.status === 404) {
+          setTasksData([]);
+          return; // Gracefully handle missing endpoint/data without throwing
+        }
+
         if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
         const data = await response.json();
 
-        const formattedTasks = data.map((task) => ({
+        const safeArray = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+        const formattedTasks = safeArray.map((task) => ({
           id: task.id,
           creative_name: task.taskTitle,
           creative_type: task.creativeType,
-          assigned_to: task.assignedTo.length > 0
+          assigned_to: Array.isArray(task.assignedTo) && task.assignedTo.length > 0
             ? task.assignedTo.map(user => user.name).join(", ")
             : "Unassigned",
-          due_date: new Date(task.dueDate).toLocaleDateString(),
+          due_date: task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "",
           status: task.taskStatus,
         }));
 
         setTasksData(formattedTasks);
       } catch (error) {
+        if (error.name === 'AbortError') return;
         console.error("Error fetching tasks:", error);
         addMessage({
           text: "Failed to load tasks. Please try again.",
@@ -89,6 +99,8 @@ const EventDetail = () => {
     if (activeTab === "Task" && eventId) {
       fetchTasks();
     }
+
+    return () => abortController.abort();
   }, [activeTab, eventId, user?.organizationId, addMessage]);
 
   useEffect(() => {
