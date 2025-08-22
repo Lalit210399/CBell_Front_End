@@ -25,6 +25,19 @@ const TopSection = ({
   const titleRef = useRef(null);
   const [userSearch, setUserSearch] = useState("");
 
+  // Local state for assigned user IDs
+  const [assignedIds, setAssignedIds] = useState([]);
+
+  // Sync local assignedIds with incoming prop
+  useEffect(() => {
+    const ids = (assignedTo || [])
+      .map((item) =>
+        typeof item === "string" || typeof item === "number" ? item : item?.id
+      )
+      .filter(Boolean);
+    setAssignedIds(ids);
+  }, [assignedTo]);
+
   // Find creator user from users list or create a fallback
   const creatorUser =
     users.find(
@@ -67,21 +80,12 @@ const TopSection = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Prepare selected participants for AvatarList
-  const selectedParticipants = (assignedTo || []).map((assigned) => {
-    const assignedId =
-      typeof assigned === "string" || typeof assigned === "number"
-        ? assigned
-        : assigned?.id;
-    const assignedName =
-      typeof assigned === "object" && assigned?.name
-        ? assigned.name
-        : undefined;
-
+  // Prepare selected participants (from local assignedIds so avatars update instantly)
+  const selectedParticipants = assignedIds.map((assignedId) => {
     const fullUser = users.find((u) => u.id === assignedId);
-    const firstName = fullUser?.firstName || assignedName?.split(" ")[0] || "User";
-    const lastName = fullUser?.lastName || assignedName?.split(" ")[1] || "";
-    const fullName = assignedName || `${firstName} ${lastName}`.trim();
+    const firstName = fullUser?.firstName || "User";
+    const lastName = fullUser?.lastName || "";
+    const fullName = `${firstName} ${lastName}`.trim();
 
     return {
       id: assignedId,
@@ -92,15 +96,7 @@ const TopSection = ({
     };
   });
 
-  // Check if there are assigned users
   const hasAssignedUsers = selectedParticipants && selectedParticipants.length > 0;
-
-  // Normalize assigned IDs for quick lookup and updates
-  const assignedIds = React.useMemo(() =>
-    (assignedTo || []).map((item) =>
-      typeof item === "string" || typeof item === "number" ? item : item?.id
-    ).filter(Boolean)
-  , [assignedTo]);
 
   const filteredUsers = React.useMemo(() => {
     const q = userSearch.trim().toLowerCase();
@@ -111,11 +107,13 @@ const TopSection = ({
   }, [users, userSearch]);
 
   const isUserSelected = (id) => assignedIds.includes(id);
+
   const toggleUserSelection = (id) => {
     const next = isUserSelected(id)
       ? assignedIds.filter((x) => x !== id)
       : [...assignedIds, id];
-    onParticipantsChange(next);
+    setAssignedIds(next);
+    onParticipantsChange(next); // notify parent immediately
   };
 
   const getUserInitials = (firstName = "", lastName = "") => {
@@ -141,34 +139,6 @@ const TopSection = ({
   const handleAddButtonClick = () => {
     setIsDropdownOpen((prev) => !prev);
   };
-
-  const handleUserSelect = (selected) => {
-    // Pass only IDs to parent
-    const selectedIds = selected.map((option) => option.value);
-    onParticipantsChange(selectedIds);
-  };
-
-  // Prepare dropdown options from users list
-  const userOptions = users.map((user) => ({
-    value: user.id,
-    label: `${user.firstName} ${user.lastName}`,
-  }));
-
-  // Prepare selected options for dropdown
-  const selectedOptions = (assignedTo || []).map((item) => {
-    const id =
-      typeof item === "string" || typeof item === "number" ? item : item?.id;
-    const nameFromItem = typeof item === "object" ? item?.name : undefined;
-    const fallbackName = users.find((u) => u.id === id);
-    return {
-      value: id,
-      label:
-        nameFromItem ||
-        (fallbackName
-          ? `${fallbackName.firstName} ${fallbackName.lastName}`
-          : "Unknown User"),
-    };
-  });
 
   return (
     <div className="header-wrapper">
@@ -226,14 +196,24 @@ const TopSection = ({
                             value={userSearch}
                             onChange={(e) => setUserSearch(e.target.value)}
                           />
-                          <button className="user-done" onClick={() => setIsDropdownOpen(false)}>Done</button>
+                          <button
+                            className="user-done"
+                            onClick={() => setIsDropdownOpen(false)}
+                          >
+                            Done
+                          </button>
                         </div>
                         <div className="user-dropdown-list">
                           {filteredUsers.length === 0 ? (
                             <div className="user-empty">No users found</div>
                           ) : (
                             filteredUsers.map((u) => (
-                              <label key={u.id} className={`user-item ${isUserSelected(u.id) ? "selected" : ""}`}>
+                              <label
+                                key={u.id}
+                                className={`user-item ${
+                                  isUserSelected(u.id) ? "selected" : ""
+                                }`}
+                              >
                                 <input
                                   type="checkbox"
                                   checked={isUserSelected(u.id)}
