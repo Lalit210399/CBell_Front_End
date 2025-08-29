@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { BellRing, Menu, X } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
@@ -9,15 +8,13 @@ import "./Navbar.css";
 function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, permissions: userPermissions } = useUser();
+  // const { user, permissions: userPermissions } = useUser();
   const { user, permissions: userPermissions, setUser, setPermissions } = useUser();
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const [mobileDropdownVisible, setMobileDropdownVisible] = useState(false);
   const dropdownRef = useRef(null);
   const mobileMenuRef = useRef(null);
-
-  const dropdownRef = useRef(null);
 
   const handleLogout = async () => {
     try {
@@ -45,7 +42,7 @@ function Navbar() {
   };
 
   const toggleDropdown = (e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     if (window.innerWidth <= 768) {
       setMobileDropdownVisible(!mobileDropdownVisible);
       setDropdownVisible(false);
@@ -53,7 +50,7 @@ function Navbar() {
       setDropdownVisible(!dropdownVisible);
       setMobileDropdownVisible(false);
     }
-  };
+  } 
 
   const toggleMobileMenu = () => {
     setMobileMenuVisible(!mobileMenuVisible);
@@ -76,9 +73,7 @@ function Navbar() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  const toggleDropdown = () => {
-    setDropdownVisible((prev) => !prev);
-  };
+  // Removed duplicate toggleDropdown
 
   // ✅ Close dropdown on outside click
   useEffect(() => {
@@ -111,8 +106,7 @@ function Navbar() {
         <button className="menu-button" onClick={toggleMobileMenu}>
           {mobileMenuVisible ? <X className="menu-icon" /> : <Menu className="menu-icon" />}
         </button>
-        
-        <div className={`mobile-menu ${mobileMenuVisible ? 'active' : ''}`}>
+        <div className={`mobile-menu ${mobileMenuVisible ? 'active' : ''}`}> 
           {hasDashboardPermission && (
             <Link 
               to="/dashboard" 
@@ -141,7 +135,6 @@ function Navbar() {
             </Link>
           )}
         </div>
-
         <div className="nav-links">
           {hasDashboardPermission && (
             <Link to="/dashboard" className={location.pathname === "/dashboard" ? "active" : ""}>
@@ -159,7 +152,6 @@ function Navbar() {
             </Link>
           )}
         </div>
-
         <div className="nav-right">
           <BellRing size={22} className="bell-icon" />
           <div className="user-info" ref={dropdownRef} onClick={toggleDropdown}>
@@ -172,52 +164,17 @@ function Navbar() {
                 src="https://randomuser.me/api/portraits/men/1.jpg"
                 alt="User"
                 className="user-avatar"
+                onClick={toggleDropdown}
               />
               <div className={`logout_dropdown ${dropdownVisible ? 'active' : ''}`}>
                 <button onClick={handleLogout} className="danger">
                   Logout
                 </button>
-    <nav className="navbar">
-      <div className="nav-links">
-        {hasDashboardPermission && (
-          <Link to="/dashboard" className={location.pathname === "/dashboard" ? "active" : ""}>
-            Dashboard
-          </Link>
-        )}
-        {hasEventsPermission && (
-          <Link to="/events" className={location.pathname.startsWith("/events") ? "active" : ""}>
-            Events
-          </Link>
-        )}
-        {hasSchedulePermission && (
-          <Link to="/schedule" className={location.pathname === "/schedule" ? "active" : ""}>
-            Schedule
-          </Link>
-        )}
-      </div>
-      <div className="nav-right">
-        <BellRing size={22} className="bell-icon" />
-        <div className="user-info" ref={dropdownRef}>
-          <div className="user-details">
-            <span className="user-name">{user?.firstName}</span>
-            <span className="user-role">Creator</span>
-          </div>
-          <div className="avatar-dropdown-wrapper">
-            <img
-              src="https://randomuser.me/api/portraits/men/1.jpg"
-              alt="User"
-              className="user-avatar"
-              onClick={toggleDropdown}
-            />
-            {dropdownVisible && (
-              <div className="logout_dropdown">
-                <button onClick={handleLogout}>Logout</button>
               </div>
             </div>
           </div>
         </div>
       </nav>
-
       {/* Mobile Dropdown - Only shown on mobile (<768px) */}
       {window.innerWidth <= 768 && (
         <div className={`mobile-dropdown ${mobileDropdownVisible ? 'active' : ''}`}>
