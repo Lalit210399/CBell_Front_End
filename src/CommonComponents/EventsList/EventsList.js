@@ -3,9 +3,19 @@ import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import './EventsList.css';
 
-const EventList = ({ title, data = [], type, onSeeAll, icon, loading }) => {
+const EventList = ({ title, data = [], type, onSeeAll, icon, loading, onEventClick, onTaskClick }) => {
   const [visibleCount, setVisibleCount] = useState(10);
   const listRef = useRef(null);
+
+  // ✅ Date formatter (DD/MM/YYYY)
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0"); // months are 0-indexed
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
 
   // Infinite scroll handler
   useEffect(() => {
@@ -33,20 +43,32 @@ const EventList = ({ title, data = [], type, onSeeAll, icon, loading }) => {
   );
 
   const renderTaskColumns = (item) => (
-    <li key={item.id} className="task-item">
+    <li 
+      key={item.id} 
+      className="task-item"
+      onClick={() => onTaskClick && onTaskClick(item.rawData || item)}
+      style={{ cursor: onTaskClick ? 'pointer' : 'default' }}
+    >
       <span className="task-name">{item.name}</span>
       <span className="event-name">{item.event}</span>
       <span className="org-name">{item.college}</span>
       <span className={`status-badge ${item.statusClass}`}>{item.status}</span>
-      <span className="due-date">{item.date}</span>
+      {/* ✅ Format date */}
+      <span className="due-date">{formatDate(item.date)}</span>
     </li>
   );
 
   const renderEventItem = (item, index) => (
-    <li key={index} className={`event-item ${type === 'upcoming' ? 'upcoming' : ''}`}>
+    <li 
+      key={index} 
+      className={`event-item ${type === 'upcoming' ? 'upcoming' : ''}`}
+      onClick={() => onEventClick && onEventClick(item.rawData || item)}
+      style={{ cursor: onEventClick ? 'pointer' : 'default' }}
+    >
       <span className="event-name">{item.name}</span>
       <span className="event-org">{item.college}</span>
-      <span className="event-date">{item.date}</span>
+      {/* ✅ Format date */}
+      <span className="event-date">{formatDate(item.date)}</span>
     </li>
   );
 

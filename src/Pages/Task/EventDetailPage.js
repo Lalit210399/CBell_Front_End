@@ -497,7 +497,6 @@ const EventDetail = () => {
           showEditButton={showEdit && mode === "view" && permissions.canEdit}
           isEditMode={mode === "edit"}
           onEditClick={() => {
-            debugger;
             setMode("edit");
           }}
           onCancelClick={() => setMode("view")}

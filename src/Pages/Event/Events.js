@@ -26,6 +26,18 @@ const EventTable = () => {
     canDuplicate: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
   };
 
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    // const hours = String(date.getHours()).padStart(2, "0");
+    // const minutes = String(date.getMinutes()).padStart(2, "0");
+    // return `${day}/${month}/${year} ${hours}:${minutes}`;
+    return `${day}/${month}/${year}`;
+  };
+
   const fetchEvents = async () => {
     try {
       setLoading(true);
@@ -68,7 +80,8 @@ const EventTable = () => {
         return {
           id: event.id || Date.now().toString(),
           name: event.eventName || "Unnamed Event",
-          date: event.eventDate ? new Date(event.eventDate).toISOString().split('T')[0] : "N/A",
+          // ✅ Use formatted date
+          date: event.eventDate ? formatDateTime(event.eventDate) : "N/A",
           participants: allParticipants,
           rawData: event
         };
@@ -88,6 +101,7 @@ const EventTable = () => {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     if (permissions.canRead) {
@@ -217,7 +231,7 @@ const EventTable = () => {
               //   rawData: event.rawData,
               //   allEventData: event
               // });
-              
+
               navigate("/events/eventDetailPage", {
                 state: {
                   eventId: event.id,
