@@ -13,7 +13,7 @@ const columns = [
   { key: "status", label: "Status" },
 ];
 
-const Task = ({ tasksData, eventId }) => {
+const Task = ({ tasksData, eventId, eventName }) => {
 
   const [tasks, setTasks] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
@@ -60,12 +60,14 @@ const Task = ({ tasksData, eventId }) => {
 
 
   const handleRowClick = (row) => {
-    //console.log("TaskID:", row.id); // Log the task ID
+    console.log("TaskID:", row.id); // Log the task ID
+    console.log("EventName:", eventName); // Log the task ID
     navigate('/events/eventDetailPage/tasks', { 
       state: { 
         taskId: row.id, 
         mode: "view", 
         eventId: eventId,
+        eventName: eventName,
         organizationId: user?.organizationId 
       } 
     });

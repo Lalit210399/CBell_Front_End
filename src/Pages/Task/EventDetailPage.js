@@ -416,7 +416,7 @@ const EventDetail = () => {
     },
     {
       label: "Task",
-      component: <Task tasksData={tasksData} eventId={eventId} />,
+      component: <Task tasksData={tasksData} eventId={eventId} eventName={fetchedEvent?.eventName || ""} />,
     },
     {
       label: "Files & Uploads",

@@ -19,7 +19,7 @@ const TaskDetailPage = () => {
   const { user, permissions: userPermissions } = useUser();
   const { addMessage } = useMessages();
   
-  const { taskId, mode: initialMode = "view", eventId, organizationId, eventDate: navEventDate } = location.state || {};
+  const { taskId, mode: initialMode = "view", eventId, organizationId, eventDate: navEventDate, eventName } = location.state || {};
   const eventDate = React.useMemo(() => navEventDate ? new Date(navEventDate) : null, [navEventDate]);
   
   const [taskTitle, setTaskTitle] = useState("");
@@ -495,8 +495,9 @@ const TaskDetailPage = () => {
   const breadcrumbItems = [
     { label: user?.organization?.name, href: "#", icon: Building },
     { label: "Events", href: "/events", icon: Calendar },
+    eventName ? { label: eventName, href: "#", icon: Calendar } : null,
     { label: taskTitle || "New Task", href: "#", icon: Pencil },
-  ];
+  ].filter(Boolean);
 
   if (isLoading) {
     return <div className="loading-container">Loading...</div>;

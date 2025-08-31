@@ -166,6 +166,7 @@ const Login = () => {
             </div>
 
             {/* Password Field */}
+            {/* Password Field */}
             <div className={`input-group with-toggle ${errors.password ? "error" : ""}`}>
               <input
                 type={showPassword ? "text" : "password"}
@@ -177,8 +178,13 @@ const Login = () => {
               <button
                 type="button"
                 className="password-toggle"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label="Show password"
+                // Show password while holding
+                onMouseDown={() => setShowPassword(true)}
+                onMouseUp={() => setShowPassword(false)}
+                onMouseLeave={() => setShowPassword(false)}
+                onTouchStart={() => setShowPassword(true)}   // for mobile
+                onTouchEnd={() => setShowPassword(false)}    // for mobile
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
