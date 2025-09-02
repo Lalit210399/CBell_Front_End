@@ -6,16 +6,27 @@ import "./MainLayout.css";
 
 const MainLayout = ({ children }) => {
   const location = useLocation();
-  const hideNavAndSidebar = location.pathname === "/" || location.pathname === "/login" || location.pathname === "/signup";
+  const hideNavAndSidebar =
+    location.pathname === "/" ||
+    location.pathname === "/login" ||
+    location.pathname === "/signup";
 
   return (
-    <div className={`layout-container ${hideNavAndSidebar ? 'no-nav-sidebar' : ''}`}>
-      {!hideNavAndSidebar && <Sidebar />}
-      <div className="main-content-container">
-        {!hideNavAndSidebar && <Navbar />}
-        <div className="main-content">
-          {children}
+    <div className={`app-layout ${hideNavAndSidebar ? "no-nav-sidebar" : ""}`}>
+      {!hideNavAndSidebar && (
+        <div className="app-sidebar">
+          <aside aria-label="Primary">
+            <Sidebar />
+          </aside>
         </div>
+      )}
+      <div className="app-content">
+        {!hideNavAndSidebar && (
+          <header className="app-header" role="banner">
+            <Navbar />
+          </header>
+        )}
+        <section className="app-body">{children}</section>
       </div>
     </div>
   );

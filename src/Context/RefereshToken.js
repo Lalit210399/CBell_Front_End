@@ -1,84 +1,144 @@
-import { logout } from '../Services/AuthN';
+// RefreshToken.js
+import { logout } from "../Services/AuthN";
+
 let isRefreshing = false;
 let refreshPromise = null;
+let refreshFailed = false; // gate to prevent storms after hard failure
 
 function getCookieValue(name) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
+  if (parts.length === 2) return parts.pop().split(";").shift();
   return null;
 }
 
-export async function fetchWithRefresh(input, init = {}) {
-  let accessToken = localStorage.getItem('accessToken');
+function buildHeaders(initHeaders = {}, token) {
+  const h = new Headers(initHeaders);
+  // Only set Authorization if token exists
+  if (token) h.set("Authorization", `Bearer ${token}`);
+  if (!h.has("Accept")) h.set("Accept", "application/json");
+  // Only set content type if caller didn’t provide; for GETs this is unnecessary
+  if (!h.has("Content-Type") && !["GET", "HEAD"].includes((initHeaders.method || "").toUpperCase())) {
+    h.set("Content-Type", "application/json");
+  }
+  h.set("ngrok-skip-browser-warning", "1");
+  return h;
+}
 
-  const headers = {
-    ...(init.headers || {}),
-    Authorization: `Bearer ${accessToken}`,
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-    'ngrok-skip-browser-warning': '1',
-  };
+// You may need to switch between cookie-based refresh (credentials) vs. token in cookie body
+async function doRefreshToken() {
+  // If your server uses cookies (httpOnly) for refresh, you may not need a body at all.
+  // Example #1: cookies only
+  // const res = await fetch("/apis/auth/refresh-token", {
+  //   method: "POST",
+  //   credentials: "include",
+  // });
 
-  const response = await fetch(input, { ...init, headers });
+  // Example #2: refresh token from non-httpOnly cookie (your current approach)
+  const refreshToken = getCookieValue("LocalRefreshToken");
+  if (!refreshToken) throw new Error("NO_REFRESH_TOKEN");
 
-  if (response.status !== 401) {
-    return response;
+  // If your backend expects JSON, keep JSON headers/body. If OAuth2 style, use form-encoded.
+  // Form-encoded (commonly required by OAuth2 servers):
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+  });
+
+  const res = await fetch("/apis/auth/refresh-token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    credentials: "include", // needed if server uses cookies for session/CSRF
+    body,
+  });
+
+  if (!res.ok) {
+    throw new Error(`REFRESH_FAILED_${res.status}`);
   }
 
-  if (!isRefreshing) {
-    isRefreshing = true;
-    // Get refresh token from cookie (not httpOnly)
-    let refreshToken = getCookieValue('LocalRefreshToken');
-    // if (refreshToken) {
-    //   console.log('Refresh token from cookie:', refreshToken);
-    // } else {
-    //   console.warn('LocalRefreshToken is not accessible in cookies');
-    // }
+  const data = await res.json();
+  // Save new tokens; backend may rotate refresh tokens
+  if (data?.accessToken) localStorage.setItem("accessToken", data.accessToken);
+  if (data?.refreshToken) document.cookie = `LocalRefreshToken=${data.refreshToken}; path=/; SameSite=Lax`;
+  return data?.accessToken || null;
+}
 
-    refreshPromise = fetch('/apis/auth/refresh-token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
+async function runRefreshOnce() {
+  if (refreshPromise) return refreshPromise;
+  isRefreshing = true;
+  refreshPromise = doRefreshToken()
+    .then((newAccess) => {
+      isRefreshing = false;
+      refreshPromise = null;
+      refreshFailed = false;
+      return newAccess;
     })
-      .then((res) => {
-        if (!res.ok) throw new Error('Refresh token failed');
-        return res.json();
-      })
-      .then((data) => {
-        const newToken = data.accessToken;
-        localStorage.setItem('accessToken', newToken);
-        isRefreshing = false;
-        return newToken;
-      })
-      .catch((err) => {
-        isRefreshing = false;
-        throw err;
-      });
+    .catch((err) => {
+      isRefreshing = false;
+      refreshPromise = null;
+      refreshFailed = true;
+      throw err;
+    });
+  return refreshPromise;
+}
+
+async function handleHardLogout(reason = "SESSION_EXPIRED") {
+  try {
+    await logout();
+  } catch (e) {
+    // non-fatal
+    console.warn("Logout failed:", e);
+  } finally {
+    // Clear local tokens as a fallback
+    try {
+      localStorage.removeItem("accessToken");
+    } catch {}
+    // Global event for a single toast (optional)
+    try {
+      window.dispatchEvent(new CustomEvent("app:auth-expired", { detail: { reason } }));
+    } catch {}
+    // Redirect to login
+    if (typeof window !== "undefined") {
+      window.location.assign("/login?reason=session_expired");
+    }
+  }
+}
+
+export async function fetchWithRefresh(input, init = {}) {
+  // Stopstorm: if refresh already failed, short-circuit
+  if (refreshFailed) return Promise.reject(new Error("AUTH_REFRESH_FAILED"));
+
+  const method = (init.method || "GET").toUpperCase();
+  const initialToken = localStorage.getItem("accessToken");
+  const headers = buildHeaders(init.headers, initialToken);
+
+  const makeRequest = (tokenToUse) => {
+    const h = buildHeaders(init.headers, tokenToUse);
+    return fetch(input, { ...init, method, headers: h });
+  };
+
+  let res = await makeRequest(initialToken);
+
+  // Only attempt refresh on 401/403 from protected endpoints
+  if (![401, 403].includes(res.status)) {
+    return res;
   }
 
   try {
-    const newToken = await refreshPromise;
+    // If a refresh is ongoing, wait for it; else start one
+    const newToken = await runRefreshOnce();
 
-    // Retry original request with new token
-    const retryHeaders = {
-      ...headers,
-      Authorization: `Bearer ${newToken}`,
-    };
+    if (!newToken) {
+      // No token returned but refresh succeeded (rare); try once without token
+      return makeRequest(null);
+    }
 
-    return fetch(input, { ...init, headers: retryHeaders });
+    // Retry original request with the new token
+    const retryRes = await makeRequest(newToken);
+    return retryRes;
   } catch (err) {
-    // If refresh token failed, call logout and redirect to login
-    try {
-      await logout();
-    } catch (logoutErr) {
-      console.error('Logout after refresh token failure failed:', logoutErr);
-    }
-    // Redirect to login page
-    if (typeof window !== 'undefined') {
-      window.location.href = '/';
-    }
+    // Hard failure: logout once and surface controlled error
+    await handleHardLogout();
     throw err;
   }
 }
- 

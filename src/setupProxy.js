@@ -1,13 +1,12 @@
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const { createProxyMiddleware } = require("http-proxy-middleware");
 
 module.exports = function (app) {
-
   app.use(
-    '/apis',
+    "/apis",
     createProxyMiddleware({
-      target: 'https://devoted-mole-broadly.ngrok-free.app',
+      target: "https://cbell.ai/apis",
       changeOrigin: true,
-      pathRewrite: { '^/apis': '' },
+      pathRewrite: { "^/apis": "" },
     })
   );
 };

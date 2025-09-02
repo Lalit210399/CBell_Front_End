@@ -1,26 +1,65 @@
-.layout-container {
-  display: flex;
-  height: 100vh;
+:root {
+  --sidebar-width: 80px;
+  --navbar-height: 56px;
+  --content-max-width: 1440px;
+  --space-4: 16px;
+  --space-5: 20px;
 }
 
-.main-content-container {
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f8fafc;
+  gap: var(--space-4);
+}
+
+/* Main column uses flex; no hardcoded margin-left */
+/* Right content column */
+.app-content {
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
-  margin-left: 80px; /* Adjust based on sidebar width */
+  flex: 1 1 auto;
+  min-height: 100vh;
 }
 
-.main-content {
-  flex-grow: 1;
-  /* padding: 20px; Adjust padding as needed */
-  overflow-y: auto;
-  margin-top: 80px; /* Adjust based on navbar height */
+.app-header {
+  margin-bottom: var(--space-4);
 }
 
-.layout-container.no-nav-sidebar .main-content-container {
-  margin-left: 0;
+/* Inner content area */
+.app-body {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: var(--content-max-width);
+  padding: var(--space-4);
+  padding-top: calc(var(--navbar-height) + var(--space-4));
+  margin: 0 auto;
 }
 
-.layout-container.no-nav-sidebar .main-content {
-  margin-top: 0;
+/* When no navbar and sidebar */
+.app-layout.no-nav-sidebar .app-sidebar {
+  display: none;
+}
+
+.app-layout.no-nav-sidebar .app-body {
+  padding-top: var(--space-4);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .app-body {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-layout {
+    gap: var(--space-4);
+    padding: var(--space-4);
+  }
+}
+
+/* Sidebar (left) */
+.app-sidebar {
+  flex: 0 0 var(--sidebar-width);
 }

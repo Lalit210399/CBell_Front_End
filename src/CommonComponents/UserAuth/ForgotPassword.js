@@ -57,7 +57,7 @@ const ForgotPassword = () => {
     e.preventDefault();
     setLoading(true);
     setMessage("");
-    
+
     if (!validateEmail()) {
       setLoading(false);
       return;
@@ -78,7 +78,7 @@ const ForgotPassword = () => {
     e.preventDefault();
     setLoading(true);
     setMessage("");
-    
+
     if (!validateOTP()) {
       setLoading(false);
       return;
@@ -99,7 +99,7 @@ const ForgotPassword = () => {
     e.preventDefault();
     setLoading(true);
     setMessage("");
-    
+
     if (!validatePasswords()) {
       setLoading(false);
       return;
@@ -127,14 +127,16 @@ const ForgotPassword = () => {
         <div className="left-section">
           <img src="/nobackgroundimage.svg" alt="Auth" className="auth-image" />
           <div className="left-section-text">Reset Password</div>
-          <p className="left-down-text">Follow the steps to reset your password</p>
+          <p className="left-down-text">
+            Follow the steps to reset your password
+          </p>
         </div>
 
         <div className="sign-up-card">
           <div className="auth-title">
             <h2>Forgot Password</h2>
           </div>
-          
+
           {message && <p className="auth-message">{message}</p>}
 
           {step === 1 && (
@@ -155,7 +157,11 @@ const ForgotPassword = () => {
                 )}
               </div>
 
-              <Button type="submit" className="signup-button" disabled={loading}>
+              <Button
+                type="submit"
+                className="signup-button"
+                disabled={loading}
+              >
                 {loading ? "Sending..." : "Send OTP"}
               </Button>
             </form>
@@ -181,9 +187,9 @@ const ForgotPassword = () => {
               </div>
 
               <div className="otp-resend">
-                Didn't receive OTP? 
-                <button 
-                  type="button" 
+                Didn't receive OTP?
+                <button
+                  type="button"
                   className="resend-link"
                   onClick={handleSendOTP}
                   disabled={loading}
@@ -192,7 +198,11 @@ const ForgotPassword = () => {
                 </button>
               </div>
 
-              <Button type="submit" className="signup-button" disabled={loading}>
+              <Button
+                type="submit"
+                className="signup-button"
+                disabled={loading}
+              >
                 {loading ? "Verifying..." : "Verify OTP"}
               </Button>
             </form>
@@ -200,7 +210,9 @@ const ForgotPassword = () => {
 
           {step === 3 && (
             <form className="auth-form" onSubmit={handleResetPassword}>
-              <div className={`input-group ${errors.newPassword ? "error" : ""}`}>
+              <div
+                className={`input-group ${errors.newPassword ? "error" : ""}`}
+              >
                 <input
                   type="password"
                   name="newPassword"
@@ -211,12 +223,18 @@ const ForgotPassword = () => {
                 {errors.newPassword && (
                   <div className="signup-error-icon-wrapper">
                     <AlertCircle size={18} />
-                    <div className="signup-error-tooltip">{errors.newPassword}</div>
+                    <div className="signup-error-tooltip">
+                      {errors.newPassword}
+                    </div>
                   </div>
                 )}
               </div>
 
-              <div className={`input-group ${errors.confirmPassword ? "error" : ""}`}>
+              <div
+                className={`input-group ${
+                  errors.confirmPassword ? "error" : ""
+                }`}
+              >
                 <input
                   type="password"
                   name="confirmPassword"
@@ -227,12 +245,18 @@ const ForgotPassword = () => {
                 {errors.confirmPassword && (
                   <div className="signup-error-icon-wrapper">
                     <AlertCircle size={18} />
-                    <div className="signup-error-tooltip">{errors.confirmPassword}</div>
+                    <div className="signup-error-tooltip">
+                      {errors.confirmPassword}
+                    </div>
                   </div>
                 )}
               </div>
 
-              <Button type="submit" className="signup-button" disabled={loading}>
+              <Button
+                type="submit"
+                className="signup-button"
+                disabled={loading}
+              >
                 {loading ? "Resetting..." : "Reset Password"}
               </Button>
             </form>
@@ -240,7 +264,10 @@ const ForgotPassword = () => {
 
           <div className="switch-text">
             Remember your password?
-            <Link to="/" className="login-text"> Login </Link>
+            <Link to="/" className="login-text">
+              {" "}
+              Login{" "}
+            </Link>
           </div>
         </div>
       </div>
