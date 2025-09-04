@@ -91,7 +91,7 @@ function Navbar() {
         <div className="user-info" ref={dropdownRef}>
           <div className="user-details">
             <span className="user-name">{user?.firstName}</span>
-            <span className="user-role">Creator</span>
+            <span className="user-role">{user?.roles[0]?.name}</span>
           </div>
           <div className="avatar-dropdown-wrapper">
             <img

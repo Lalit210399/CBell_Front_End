@@ -10,6 +10,7 @@ import Breadcrumb from "../../CommonComponents/Breadcrumb/Breadcrumb";
 import TopSection from "../../CommonComponents/TaskTopSection/DetailTopSection";
 import { useUser } from "../../Context/UserContext";
 import { useMessages } from "../../Context/MessageContext";
+import { getHierarchyUsers } from "../../Services/AuthN";
 import { Building, Calendar, FileText } from "lucide-react";
 import "./Tasks.css";
 
@@ -21,6 +22,8 @@ const EventDetail = () => {
   const [mode, setMode] = useState("view");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+  const [usersList, setUsersList] = useState([]);
+  const [assignedUsers, setAssignedUsers] = useState([]);
   const detailSaveRef = useRef(null);
   const { user } = useUser();
   const { addMessage } = useMessages();
@@ -104,6 +107,10 @@ const EventDetail = () => {
   }, [activeTab, eventId, user?.organizationId, addMessage]);
 
   useEffect(() => {
+    fetchUsers();
+  }, [user?.organizationId]);
+
+  useEffect(() => {
     if (mode === "create") {
       const newEvent = {
         eventName: formData?.eventName || "",
@@ -116,6 +123,7 @@ const EventDetail = () => {
         eventTypeId: eventTypeId || "",
         eventTypeDesc: eventTypeDesc || "",
         location: formData?.location || "",
+        assignedUsers: [],
       };
 
       setFetchedEvent(newEvent);
@@ -133,10 +141,15 @@ const EventDetail = () => {
           : [],
         specialGuests: Array.isArray(eventData.specialGuests)
           ? eventData.specialGuests.map(guest => typeof guest === 'string' ? { name: guest, title: "Guest" } : guest)
-          : []
+          : [],
+        assignedUsers: Array.isArray(eventData.assignedUsers) ? eventData.assignedUsers : []
       };
 
       setFetchedEvent(transformedEvent);
+      // Initialize assignedUsers from eventData if available
+      if (eventData.assignedUsers) {
+        setAssignedUsers(eventData.assignedUsers.map(user => user.userId));
+      }
       return;
     }
 
@@ -163,9 +176,14 @@ const EventDetail = () => {
           specialGuests: Array.isArray(eventData.specialGuests)
             ? eventData.specialGuests.map(guest => typeof guest === 'string' ? { name: guest, title: "Guest" } : guest)
             : [],
+          assignedUsers: Array.isArray(eventData.assignedUsers) ? eventData.assignedUsers : []
         };
 
         setFetchedEvent(transformedData);
+        // Initialize assignedUsers from fetched data
+        if (eventData.assignedUsers) {
+          setAssignedUsers(eventData.assignedUsers.map(user => user.userId));
+        }
       } catch (error) {
         console.error("Error fetching event:", error);
         addMessage({
@@ -209,6 +227,18 @@ const EventDetail = () => {
       organizers: []
     };
 
+    // Prepare assignedUsers array from selected user IDs
+    const assignedUsersPayload = assignedUsers.map(userId => {
+      const user = usersList.find(u => u.id === userId);
+      const currentDate = new Date().toISOString();
+      return {
+        userId: userId,
+        userName: user ? `${user.firstName} ${user.lastName}` : "Unknown User",
+        orgCode: user?.organizationCode || "ORG001",
+        assignedOn: currentDate
+      };
+    });
+
     const payload = {
       eventName: titleValue,
       organizationId: user?.organizationId,
@@ -225,17 +255,20 @@ const EventDetail = () => {
         name: guest.name,
         title: guest.title || "Guest"
       })),
+      assignedUsers: assignedUsersPayload,
       // Expect topSectionData.date to be a datetime-local value; convert to ISO
       eventDate: topSectionData?.date
         ? new Date(topSectionData.date).toISOString()
         : (selectedDate ? selectedDate.toISOString() : new Date().toISOString()),
-      createdBy: user?.id || 1
+      createdBy: user?.userId,
+      isPrivate: true,
+      updatedBy: user?.userId
     };
 
     try {
       const url = mode === "create"
         ? "/apis/event/create_event"
-        : `/apis/event/update/${eventId}`;
+        : `/apis/event/update/${eventId}?userId=${user?.userId}`;
       const method = mode === "create" ? "POST" : "PUT";
 
       const response = await fetchWithRefresh(url, {
@@ -263,7 +296,8 @@ const EventDetail = () => {
               ...payload,
               id: result.id,
               coordinators: payload.coordinators,
-              specialGuests: payload.specialGuests
+              specialGuests: payload.specialGuests,
+              assignedUsers: payload.assignedUsers
             }
           },
           replace: true
@@ -275,7 +309,8 @@ const EventDetail = () => {
         ...payload,
         id: mode === "create" ? result.id : eventId,
         coordinators: payload.coordinators,
-        specialGuests: payload.specialGuests
+        specialGuests: payload.specialGuests,
+        assignedUsers: payload.assignedUsers
       };
       
       setFetchedEvent(updatedEvent);
@@ -316,7 +351,41 @@ const EventDetail = () => {
     });
   }, [addMessage]);
 
+  const fetchUsers = async () => {
+    try {
+      if (!user?.organizationId) {
+        console.warn("No organizationId available for user fetch");
+        return;
+      }
+      
+      const response = await getHierarchyUsers(user.organizationId);
+      
+      const formattedUsers = response.users.map(user => ({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        fullName: `${user.firstName} ${user.lastName}`,
+        organizationId: user.organizationId,
+        organizationCode: user.organizationCode || "ORG001"
+      }));
+      
+      setUsersList(formattedUsers);
+    } catch (error) {
+      console.error("Error fetching hierarchy users:", error);
+      addMessage({
+        text: "Failed to load users list",
+        type: "error",
+        duration: 3000
+      });
+    }
+  };
+
   const handleBackClick = () => navigate(-1);
+
+  const handleParticipantsChange = (participantIds) => {
+    setAssignedUsers(participantIds);
+  };
 
   const handleNewTaskClick = () => {
     navigate("/events/eventDetailPage/tasks", {
@@ -362,7 +431,16 @@ const EventDetail = () => {
       size: "32px",
       shape: "circle"
     })),
-  ], [fetchedEvent?.coordinators, fetchedEvent?.specialGuests]);
+    ...assignedUsers.map((userId) => {
+      const user = usersList.find(u => u.id === userId);
+      return {
+        id: userId,
+        name: user ? `${user.firstName} ${user.lastName}` : "Unknown User",
+        size: "32px",
+        shape: "circle"
+      };
+    }),
+  ], [fetchedEvent?.coordinators, fetchedEvent?.specialGuests, assignedUsers, usersList]);
 
   const topSectionData = React.useMemo(() => ({
     title: mode === "create" ? formData?.eventName || "" : fetchedEvent?.eventName || "",
@@ -487,6 +565,9 @@ const EventDetail = () => {
           isSubmitting={isSubmitting}
           errors={validationErrors}
           onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
+          users={usersList}
+          assignedTo={assignedUsers}
+          onParticipantsChange={handleParticipantsChange}
         />
       </div>
       <div className="Inner-Content">

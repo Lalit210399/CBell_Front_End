@@ -25,14 +25,21 @@ const Login = () => {
 
   useEffect(() => {
     if (user) {
-      // Redirect to first allowed page based on permissions
       try {
         const stored = localStorage.getItem("permissions");
         const perms = stored ? JSON.parse(stored) : null;
         const p = perms?.permissions || {};
-        const canDashboard = Array.isArray(p?.Dashboard?.["Dashboard Management"]) && p.Dashboard["Dashboard Management"].includes("Read");
-        const canEvents = Array.isArray(p?.Events?.["Event Management"]) && p.Events["Event Management"].includes("Read");
-        const target = canDashboard ? "/dashboard" : canEvents ? "/events" : "/login";
+        const canDashboard =
+          Array.isArray(p?.Dashboard?.["Dashboard Management"]) &&
+          p.Dashboard["Dashboard Management"].includes("Read");
+        const canEvents =
+          Array.isArray(p?.Events?.["Event Management"]) &&
+          p.Events["Event Management"].includes("Read");
+        const target = canDashboard
+          ? "/dashboard"
+          : canEvents
+          ? "/events"
+          : "/login";
         navigate(target, { replace: true });
       } catch {
         navigate("/dashboard", { replace: true });
@@ -73,43 +80,36 @@ const Login = () => {
 
     try {
       const response = await signin(formData);
-      //console.log('Login API Response:', response); // Debug log
 
       if (response.message === "Login successful") {
-        // Store all relevant user data from the response
-        const loggedInUser = {
-          email: response.email,
-          firstName: response.firstName,
-          lastName: response.lastName,
-          organization: response.organization, // full organization object
-          organizationId: response.organizationId,
-          userID: response.userId,
-          roleIds: response.roleids,
-          message: response.message,
-          // add any other fields you want to persist
-        };
+        // ✅ Store full login response
+        localStorage.setItem("user", JSON.stringify(response));
+        setUser(response);
 
-        // Store user data
-        localStorage.setItem("user", JSON.stringify(loggedInUser));
-        setUser(loggedInUser);
-
-        // Fetch and store permissions
+        // ✅ Fetch and store permissions
         try {
           const permissionResponse = await getPermissions();
           localStorage.setItem("permissions", JSON.stringify(permissionResponse));
           setPermissions(permissionResponse);
 
-          // Navigate only after all data is loaded → route to first allowed page
+          // Redirect to first allowed page
           const p = permissionResponse?.permissions || {};
-          const canDashboard = Array.isArray(p?.Dashboard?.["Dashboard Management"]) && p.Dashboard["Dashboard Management"].includes("Read");
-          const canEvents = Array.isArray(p?.Events?.["Event Management"]) && p.Events["Event Management"].includes("Read");
-          const target = canDashboard ? "/dashboard" : canEvents ? "/events" : "/login";
+          const canDashboard =
+            Array.isArray(p?.Dashboard?.["Dashboard Management"]) &&
+            p.Dashboard["Dashboard Management"].includes("Read");
+          const canEvents =
+            Array.isArray(p?.Events?.["Event Management"]) &&
+            p.Events["Event Management"].includes("Read");
+          const target = canDashboard
+            ? "/dashboard"
+            : canEvents
+            ? "/events"
+            : "/login";
           navigate(target);
         } catch (permissionError) {
           console.error("Permission fetch failed:", permissionError);
           setMessage("Login successful, but couldn't load permissions");
-          // Fallback to dashboard, but will be re-guarded by route protection if not allowed
-          navigate("/dashboard");
+          navigate("/dashboard"); // fallback
         }
       } else {
         throw new Error(response.message || "Unexpected response from server");
@@ -121,6 +121,7 @@ const Login = () => {
       setLoading(false);
     }
   };
+
   return (
     <div className="auth-container">
       <div className="circle-bg circle-1"></div>
@@ -166,8 +167,11 @@ const Login = () => {
             </div>
 
             {/* Password Field */}
-            {/* Password Field */}
-            <div className={`input-group with-toggle ${errors.password ? "error" : ""}`}>
+            <div
+              className={`input-group with-toggle ${
+                errors.password ? "error" : ""
+              }`}
+            >
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
@@ -179,12 +183,11 @@ const Login = () => {
                 type="button"
                 className="password-toggle"
                 aria-label="Show password"
-                // Show password while holding
                 onMouseDown={() => setShowPassword(true)}
                 onMouseUp={() => setShowPassword(false)}
                 onMouseLeave={() => setShowPassword(false)}
-                onTouchStart={() => setShowPassword(true)}   // for mobile
-                onTouchEnd={() => setShowPassword(false)}    // for mobile
+                onTouchStart={() => setShowPassword(true)}
+                onTouchEnd={() => setShowPassword(false)}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -203,10 +206,6 @@ const Login = () => {
             </div>
           </form>
 
-          {/* <Button className="google-button">
-            <img src="/Google_Logo.svg" alt="Google" />
-            Login with Google
-          </Button> */}
           <div className="forgot-password-link">
             <Link to="/forgot-password" className="forgot-password-text">
               Forgot Password?
@@ -217,7 +216,10 @@ const Login = () => {
 
           <p className="switch-text">
             Don’t have an account?
-            <Link to="/signup" className="login-text"> Register </Link>
+            <Link to="/signup" className="login-text">
+              {" "}
+              Register{" "}
+            </Link>
           </p>
         </div>
       </div>

@@ -10,6 +10,7 @@ import TopSection from "../../CommonComponents/TaskTopSection/EditTopSection";
 import Breadcrumb from "../../CommonComponents/Breadcrumb/Breadcrumb";
 import { useUser } from "../../Context/UserContext";
 import { useMessages } from "../../Context/MessageContext";
+import { getHierarchyUsers } from "../../Services/AuthN";
 import { Building, Calendar, Pencil } from "lucide-react";
 import "./Tasks.css";
 
@@ -105,30 +106,27 @@ const TaskDetailPage = () => {
           throw new Error("No organizationId available for user fetch");
         }
         
-        const response = await fetchWithRefresh(`/apis/auth/users?organizationId=${orgId}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "1",
-          },
-        });
-        
-        if (!response.ok) {
-          throw new Error("Failed to fetch users");
+        try {
+          const response = await getHierarchyUsers(orgId);
+          
+          const formattedUsers = response.users.map(user => ({
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            fullName: `${user.firstName} ${user.lastName}`,
+            organizationId: user.organizationId
+          }));
+          
+          setUsersList(formattedUsers);
+        } catch (error) {
+          console.error("Error fetching hierarchy users:", error);
+          addMessage({
+            text: "Failed to load users list",
+            type: "error",
+            duration: 3000
+          });
         }
-        
-        const { data: usersData } = await response.json();
-        
-        const formattedUsers = usersData.map(user => ({
-          id: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          fullName: `${user.firstName} ${user.lastName}`,
-          organizationId: user.organizationId
-        }));
-        
-        setUsersList(formattedUsers);
         
         if (mode === "create") {
           initializeCreateMode();

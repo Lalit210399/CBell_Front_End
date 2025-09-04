@@ -486,3 +486,149 @@
     color: #7f8c8d;
     font-weight: 400;
 }
+
+/* User assignment dropdown styles */
+.no-assigned-users-placeholder {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #999;
+    font-size: 12px;
+    padding: 4px 8px;
+}
+
+.placeholder-icon {
+    color: #ccc;
+}
+
+.placeholder-text {
+    color: #999;
+}
+
+.add-participant-section {
+    position: relative;
+    margin-left: 8px;
+}
+
+.avatar-add-button {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px dashed #990099;
+    background: transparent;
+    color: #990099;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.avatar-add-button:hover {
+    background: #990099;
+    color: white;
+    border-color: #990099;
+}
+
+.inline-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 1000;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 280px;
+    margin-top: 4px;
+}
+
+.user-dropdown {
+    padding: 12px;
+}
+
+.user-dropdown-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.user-search {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.user-done {
+    padding: 6px 12px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.user-done:hover {
+    background: #0056b3;
+}
+
+.user-dropdown-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.user-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.user-item:hover {
+    background: #f8f9fa;
+}
+
+.user-item.selected {
+    background: #e3f2fd;
+}
+
+.user-item input[type="checkbox"] {
+    margin: 0;
+}
+
+.user-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #007bff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.user-name {
+    flex: 1;
+    font-size: 14px;
+    color: #333;
+}
+
+.user-empty {
+    text-align: center;
+    color: #999;
+    padding: 20px;
+    font-style: italic;
+}

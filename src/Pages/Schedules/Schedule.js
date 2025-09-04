@@ -21,7 +21,7 @@ const Schedule = () => {
         setLoading(true);
         setError(null);
         
-        const response = await fetchWithRefresh(`/apis/event/get_events_only?organizationId=${user?.organizationId}`, {
+        const response = await fetchWithRefresh(`/apis/event/get_events_only?organizationId=${user?.organizationId}&userId=${user?.userId}&role=${encodeURIComponent(user?.roles[0]?.name || "")}`, {
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",

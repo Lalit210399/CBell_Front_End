@@ -17,6 +17,8 @@ const EventTable = () => {
   const { addMessage } = useMessages();
   const { user, permissions: userPermissions } = useUser();
 
+  console.log("user", user?.roles[0]?.name);
+
   const permissions = {
     canCreate: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Create") ?? false,
     canRead: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false,
@@ -43,7 +45,15 @@ const EventTable = () => {
       setLoading(true);
       setError(null);
 
-      const res = await fetchWithRefresh(`/apis/event/get_events_only?organizationId=${user?.organizationId}`);
+      const res = await fetchWithRefresh(`/apis/event/get_events_only?organizationId=${user?.organizationId}&userId=${user?.userId}&role=${encodeURIComponent(user?.roles[0]?.name || "")}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "1",
+          },
+        }
+      );
 
       if (!res.ok) {
         throw new Error(`Failed to fetch events: ${res.status}`);
@@ -180,6 +190,7 @@ const EventTable = () => {
   const columns = [
     { key: "name", label: "Name", skeletonWidth: "60%", skeletonHeight: "20px" },
     { key: "date", label: "Date", skeletonWidth: "30%", skeletonHeight: "20px" },
+    // { key: "institution", label: "Institution", skeletonWidth: "30%", skeletonHeight: "20px" },
     { key: "participants", label: "Participants", skeletonWidth: "100%", skeletonHeight: "40px" },
   ];
 

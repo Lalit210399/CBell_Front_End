@@ -19,6 +19,9 @@ const Dashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  console.log("user", user?.roles[0]?.name);
+  console.log("user", user?.userId);
+
   // Handle event click
   const handleEventClick = (eventData) => {
     navigate("/events/eventDetailPage", {
@@ -75,7 +78,7 @@ const Dashboard = () => {
         let processedUpcomingEvents = [];
         try {
           const res = await fetchWithRefresh(
-            `/apis/event/get_upcoming_events?organizationId=${organizationId}`,
+            `/apis/event/get_upcoming_events?organizationId=${organizationId}&userId=${user?.userId}`,
             {
               method: "GET",
               headers: {
@@ -106,7 +109,7 @@ const Dashboard = () => {
         let processedPastEvents = [];
         try {
           const res = await fetchWithRefresh(
-            `/apis/event/get_past_events?organizationId=${organizationId}`,
+            `/apis/event/get_past_events?organizationId=${organizationId}&userId=${user?.userId}`,
             {
               method: "GET",
               headers: {
