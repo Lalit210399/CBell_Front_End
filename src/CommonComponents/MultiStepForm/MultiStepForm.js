@@ -34,6 +34,7 @@ const MultiStepForm = () => {
           nextStep={nextStep} 
           setFormData={setFormData} 
           formData={formData} 
+          handleChange={handleChange}
         />
       )}
       {step === 2 && (

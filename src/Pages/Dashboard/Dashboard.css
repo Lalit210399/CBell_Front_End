@@ -24,7 +24,13 @@
     flex: 1;
     min-width: 300px;
   }
-  
+
+  .task-section {
+    flex: 1;
+    /* display: flex; */
+    /* min-width: 300px; */
+  }
+
   @media (max-width: 768px) {
     .status-cards, .event-section {
       flex-direction: column;

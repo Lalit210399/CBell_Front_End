@@ -5,13 +5,11 @@ import StatusCard from "../../CommonComponents/Status_Card/Status_Card";
 import EventList from "../../CommonComponents/EventsList/EventsList";
 import { CirclePlus } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
-import { useMessages } from "../../Context/MessageContext";
 import "./Dashboard.css";
 
 const Dashboard = () => {
   const { user } = useUser();
   const navigate = useNavigate();
-  const { addMessage } = useMessages();
 
   const [activeEvents, setActiveEvents] = useState(0);
   const [pendingTasks, setPendingTasks] = useState(0);
@@ -21,88 +19,171 @@ const Dashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const organizationId = user?.organizationId || "681460dcb8327b2e3417d8b1";
-    fetchWithRefresh(`/apis/dashboard?OrganizationId=${organizationId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "1",
+  console.log("user", user?.roles[0]?.name);
+  console.log("user", user?.userId);
+
+  // Handle event click
+  const handleEventClick = (eventData) => {
+    navigate("/events/eventDetailPage", {
+      state: {
+        eventId: eventData.id,
+        mode: "view",
+        eventData: eventData,
       },
-    })
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error("Failed to fetch dashboard data");
+    });
+  };
+
+  // Handle task click
+  const handleTaskClick = (taskData) => {
+    navigate("/events/eventDetailPage/tasks", {
+      state: {
+        taskId: taskData.id,
+        mode: "view",
+        eventId: taskData.eventId || null, // eventId may not exist in new API
+        organizationId: user?.organizationId,
+      },
+    });
+  };
+
+  useEffect(() => {
+    const organizationId = user?.organizationId;
+    const organizationName = user?.organization?.name || "Organization";
+
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      try {
+        // --- Dashboard Summary + Pending Tasks ---
+        let dashboardData = {};
+        try {
+          const res = await fetchWithRefresh(
+            `/apis/dashboard?OrganizationId=${organizationId}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "1",
+              },
+            }
+          );
+          if (res.ok) {
+            dashboardData = await res.json();
+          } else {
+            console.warn("Dashboard API failed");
+          }
+        } catch (err) {
+          console.error("Error fetching dashboard:", err);
         }
-        return res.json();
-      })
-      .then((data) => {
-        const currentDate = new Date();
 
-        // Process events
-        const events = data.events.map((event) => ({
-          id: event.id || Math.random().toString(36).substring(2, 9),
-          name: event.eventName,
-          college: event.organizationName,
-          date: new Date(event.eventDate).toLocaleDateString(),
-          rawDate: new Date(event.eventDate)
-        }));
+        // --- Upcoming Events ---
+        let processedUpcomingEvents = [];
+        try {
+          const res = await fetchWithRefresh(
+            `/apis/event/get_upcoming_events?organizationId=${organizationId}&userId=${user?.userId}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "1",
+              },
+            }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            processedUpcomingEvents = data.data.map((event) => ({
+              id: event.id || Math.random().toString(36).substring(2, 9),
+              name: event.eventName,
+              college: organizationName,
+              date: new Date(event.eventDate).toLocaleDateString(),
+              rawDate: new Date(event.eventDate),
+              type: event.typeName,
+              rawData: event,
+            }));
+          } else {
+            console.warn("Upcoming events API failed");
+          }
+        } catch (err) {
+          console.error("Error fetching upcoming events:", err);
+        }
 
-        const upcoming = events.filter(
-          (event) => event.rawDate >= currentDate
-        );
-        const past = events.filter(
-          (event) => event.rawDate < currentDate
-        );
+        // --- Past Events ---
+        let processedPastEvents = [];
+        try {
+          const res = await fetchWithRefresh(
+            `/apis/event/get_past_events?organizationId=${organizationId}&userId=${user?.userId}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "1",
+              },
+            }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            processedPastEvents = data.data.map((event) => ({
+              id: event.id || Math.random().toString(36).substring(2, 9),
+              name: event.eventName,
+              college: organizationName,
+              date: new Date(event.eventDate).toLocaleDateString(),
+              rawDate: new Date(event.eventDate),
+              type: event.typeName,
+              rawData: event,
+            }));
+          } else {
+            console.warn("Past events API failed");
+          }
+        } catch (err) {
+          console.error("Error fetching past events:", err);
+        }
 
-        // Process tasks with status
-        const tasks = data.tasks.map((task) => ({
-          id: task.id || Math.random().toString(36).substring(2, 9),
-          name: task.taskTitle,
-          event: task.eventName,
-          college: task.organizationName,
-          status: task.taskStatus,
-          date: new Date(task.dueDate).toLocaleDateString(),
-          rawDate: new Date(task.dueDate),
-          statusClass: getStatusClass(task.taskStatus)
-        }));
+        // --- Pending Tasks from dashboard API ---
+        const allTasks =
+          dashboardData.pendingTasks?.map((task) => ({
+            id: task.id || Math.random().toString(36).substring(2, 9),
+            name: task.taskTitle,
+            event: task.eventName,
+            eventId: task.eventId || null, // may be missing
+            college: task.organizationName || organizationName,
+            status: task.taskStatus,
+            date: new Date(task.dueDate).toLocaleDateString(),
+            rawDate: new Date(task.dueDate),
+            statusClass: getStatusClass(task.taskStatus),
+            rawData: task,
+          })) || [];
 
-        // Count pending tasks (status not "Approved")
-        const pendingTasksCount = tasks.filter(
-          task => task.status !== "Approved"
-        ).length;
+        // --- State Update ---
+        setActiveEvents(dashboardData.activeEventsCount || 0);
+        setPendingTasks(dashboardData.pendingTasksCount || allTasks.length);
+        setDeadlines(dashboardData.upcomingDeadlinesCount || 0);
+        setUpcomingEvents(processedUpcomingEvents);
+        setPastEvents(processedPastEvents);
+        setTasks(allTasks);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-        setActiveEvents(data.activeEventsCount || upcoming.length);
-        setPendingTasks(data.pendingTasksCount || pendingTasksCount);
-        setDeadlines(data.upcomingDeadlinesCount || 
-          tasks.filter(task => task.rawDate >= currentDate).length);
-        setUpcomingEvents(upcoming);
-        setPastEvents(past);
-        setTasks(tasks);
-      })
-      .catch((error) => {
-        console.error("Error fetching dashboard data:", error);
-        addMessage({
-          text: "Failed to load dashboard data. Please try again.",
-          type: "error",
-          duration: 3000,
-        });
-      })
-      .finally(() => setLoading(false));
-  }, []);
+    if (organizationId) {
+      fetchDashboardData();
+    }
+  }, [user?.organizationId, user?.organization?.name]);
 
   const getStatusClass = (status) => {
-    switch(status?.toLowerCase()) {
-      case 'approved':
-        return 'status-approved';
-      case 'pending':
-        return 'status-pending';
-      case 'rejected':
-        return 'status-rejected';
-      case 'approval':
-        return 'status-approval';
+    switch (status?.toLowerCase()) {
+      case "approved":
+        return "status-approved";
+      case "pending":
+        return "status-pending";
+      case "rejected":
+        return "status-rejected";
+      case "approval":
+        return "status-approval";
+      case "active":
+        return "status-active";
+      case "new":
+        return "status-new";
       default:
-        return 'status-default';
+        return "status-default";
     }
   };
 
@@ -111,7 +192,7 @@ const Dashboard = () => {
   };
 
   const handleSeeAllClick = (type) => {
-    navigate(`/dashboard/${type.toLowerCase().replace(' ', '-')}`);
+    navigate(`/dashboard/${type.toLowerCase().replace(" ", "-")}`);
   };
 
   return (
@@ -120,16 +201,16 @@ const Dashboard = () => {
 
       <div className="status-cards">
         <StatusCard title="Active Events" count={activeEvents} loading={loading} />
-        <StatusCard 
-          title="Pending Tasks" 
-          count={pendingTasks} 
-          loading={loading} 
+        <StatusCard
+          title="Pending Tasks"
+          count={pendingTasks}
+          loading={loading}
           status="warning"
         />
-        <StatusCard 
-          title="Upcoming Deadlines" 
-          count={deadlines} 
-          loading={loading} 
+        <StatusCard
+          title="Upcoming Deadlines"
+          count={deadlines}
+          loading={loading}
           status="alert"
         />
       </div>
@@ -141,6 +222,7 @@ const Dashboard = () => {
           type="upcoming"
           loading={loading}
           onSeeAll={() => handleSeeAllClick("Upcoming Events")}
+          onEventClick={handleEventClick}
           icon={
             <div className="add_event" onClick={handleAddEventClick}>
               <CirclePlus size={20} className="add-icon" />
@@ -153,16 +235,20 @@ const Dashboard = () => {
           data={pastEvents}
           loading={loading}
           onSeeAll={() => handleSeeAllClick("Past Events")}
+          onEventClick={handleEventClick}
         />
       </div>
 
-      <EventList
-        title="Pending Tasks"
-        data={tasks}
-        type="tasks"
-        loading={loading}
-        onSeeAll={() => handleSeeAllClick("Pending Tasks")}
-      />
+      <div className="task-section">
+        <EventList
+          title="Pending Tasks"
+          data={tasks}
+          type="tasks"
+          loading={loading}
+          onSeeAll={() => handleSeeAllClick("Pending Tasks")}
+          onTaskClick={handleTaskClick}
+        />
+      </div>
     </div>
   );
 };

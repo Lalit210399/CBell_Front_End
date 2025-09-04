@@ -18,6 +18,7 @@ const StepTwo = ({ prevStep, formData, handleChange }) => {
       coordinators: formData.coordinators?.split(",") || [],
       specialGuests: formData.guests?.split(",") || [],
       eventDate: formData.eventDate,
+      isPrivate: true,
     };
 
     try {
