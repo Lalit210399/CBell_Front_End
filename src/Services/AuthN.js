@@ -152,3 +152,27 @@ export const resetPassword = async (email, newPassword, otp) => {
     throw error;
   }
 };
+
+// Fetch Hierarchy Users
+export const getHierarchyUsers = async (organizationId) => {
+  try {
+    const response = await fetch(`/apis/auth/hierarchy-users/${organizationId}`, {
+      method: 'GET',
+      headers: { 
+        'Content-Type': 'application/json',
+        Accept: "application/json",
+        "ngrok-skip-browser-warning": "1",
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch hierarchy users');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    throw error.message || 'Error fetching hierarchy users';
+  }
+};
