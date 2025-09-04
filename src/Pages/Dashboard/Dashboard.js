@@ -4,12 +4,15 @@ import { useNavigate } from "react-router-dom";
 import EventList from "../../CommonComponents/EventsList/EventsList";
 import { CirclePlus } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
+<<<<<<< HEAD
 import { useMessages } from "../../Context/MessageContext";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { motion } from "framer-motion";
 import styled, { keyframes } from "styled-components";
+=======
+>>>>>>> e26ae9932f102f0b1766b1bf1cd6208f60d549d5
 import "./Dashboard.css";
 
 // Animations
@@ -90,7 +93,6 @@ const Toast = styled.div`
 const Dashboard = () => {
   const { user } = useUser();
   const navigate = useNavigate();
-  const { addMessage } = useMessages();
 
   const [activeEvents, setActiveEvents] = useState(0);
   const [pendingTasks, setPendingTasks] = useState(0);
@@ -104,14 +106,18 @@ const Dashboard = () => {
   // eslint-disable-next-line no-unused-vars
   const [toasts, setToasts] = useState([]);
 
-  useEffect(() => {
-    const organizationId = user?.organizationId || "681460dcb8327b2e3417d8b1";
-    fetchWithRefresh(`/apis/dashboard?OrganizationId=${organizationId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "1",
+  console.log("user", user?.roles[0]?.name);
+  console.log("user", user?.userId);
+
+  // Handle event click
+  const handleEventClick = (eventData) => {
+    navigate("/events/eventDetailPage", {
+      state: {
+        eventId: eventData.id,
+        mode: "view",
+        eventData: eventData,
       },
+<<<<<<< HEAD
     })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch dashboard data");
@@ -161,6 +167,145 @@ const Dashboard = () => {
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+=======
+    });
+  };
+
+  // Handle task click
+  const handleTaskClick = (taskData) => {
+    navigate("/events/eventDetailPage/tasks", {
+      state: {
+        taskId: taskData.id,
+        mode: "view",
+        eventId: taskData.eventId || null, // eventId may not exist in new API
+        organizationId: user?.organizationId,
+      },
+    });
+  };
+
+  useEffect(() => {
+    const organizationId = user?.organizationId;
+    const organizationName = user?.organization?.name || "Organization";
+
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      try {
+        // --- Dashboard Summary + Pending Tasks ---
+        let dashboardData = {};
+        try {
+          const res = await fetchWithRefresh(
+            `/apis/dashboard?OrganizationId=${organizationId}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "1",
+              },
+            }
+          );
+          if (res.ok) {
+            dashboardData = await res.json();
+          } else {
+            console.warn("Dashboard API failed");
+          }
+        } catch (err) {
+          console.error("Error fetching dashboard:", err);
+        }
+
+        // --- Upcoming Events ---
+        let processedUpcomingEvents = [];
+        try {
+          const res = await fetchWithRefresh(
+            `/apis/event/get_upcoming_events?organizationId=${organizationId}&userId=${user?.userId}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "1",
+              },
+            }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            processedUpcomingEvents = data.data.map((event) => ({
+              id: event.id || Math.random().toString(36).substring(2, 9),
+              name: event.eventName,
+              college: organizationName,
+              date: new Date(event.eventDate).toLocaleDateString(),
+              rawDate: new Date(event.eventDate),
+              type: event.typeName,
+              rawData: event,
+            }));
+          } else {
+            console.warn("Upcoming events API failed");
+          }
+        } catch (err) {
+          console.error("Error fetching upcoming events:", err);
+        }
+
+        // --- Past Events ---
+        let processedPastEvents = [];
+        try {
+          const res = await fetchWithRefresh(
+            `/apis/event/get_past_events?organizationId=${organizationId}&userId=${user?.userId}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "1",
+              },
+            }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            processedPastEvents = data.data.map((event) => ({
+              id: event.id || Math.random().toString(36).substring(2, 9),
+              name: event.eventName,
+              college: organizationName,
+              date: new Date(event.eventDate).toLocaleDateString(),
+              rawDate: new Date(event.eventDate),
+              type: event.typeName,
+              rawData: event,
+            }));
+          } else {
+            console.warn("Past events API failed");
+          }
+        } catch (err) {
+          console.error("Error fetching past events:", err);
+        }
+
+        // --- Pending Tasks from dashboard API ---
+        const allTasks =
+          dashboardData.pendingTasks?.map((task) => ({
+            id: task.id || Math.random().toString(36).substring(2, 9),
+            name: task.taskTitle,
+            event: task.eventName,
+            eventId: task.eventId || null, // may be missing
+            college: task.organizationName || organizationName,
+            status: task.taskStatus,
+            date: new Date(task.dueDate).toLocaleDateString(),
+            rawDate: new Date(task.dueDate),
+            statusClass: getStatusClass(task.taskStatus),
+            rawData: task,
+          })) || [];
+
+        // --- State Update ---
+        setActiveEvents(dashboardData.activeEventsCount || 0);
+        setPendingTasks(dashboardData.pendingTasksCount || allTasks.length);
+        setDeadlines(dashboardData.upcomingDeadlinesCount || 0);
+        setUpcomingEvents(processedUpcomingEvents);
+        setPastEvents(processedPastEvents);
+        setTasks(allTasks);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (organizationId) {
+      fetchDashboardData();
+    }
+  }, [user?.organizationId, user?.organization?.name]);
+>>>>>>> e26ae9932f102f0b1766b1bf1cd6208f60d549d5
 
   const getStatusClass = (status) => {
     switch (status?.toLowerCase()) {
@@ -172,6 +317,13 @@ const Dashboard = () => {
         return "status-rejected";
       case "approval":
         return "status-approval";
+<<<<<<< HEAD
+=======
+      case "active":
+        return "status-active";
+      case "new":
+        return "status-new";
+>>>>>>> e26ae9932f102f0b1766b1bf1cd6208f60d549d5
       default:
         return "status-default";
     }
@@ -183,6 +335,7 @@ const Dashboard = () => {
 
   const handleSeeAllClick = (type) => {
     navigate(`/dashboard/${type.toLowerCase().replace(" ", "-")}`);
+<<<<<<< HEAD
   };
 
   // Helper to get event dates as strings
@@ -218,6 +371,8 @@ const Dashboard = () => {
     if (eventDates.includes(date.toDateString())) {
       navigate('/dashboard/schedule');
     }
+=======
+>>>>>>> e26ae9932f102f0b1766b1bf1cd6208f60d549d5
   };
 
   return (
@@ -226,6 +381,7 @@ const Dashboard = () => {
         Welcome <span className="user-name">{user?.firstName || "User"}</span>, Plan your day ahead...
       </h1>
 
+<<<<<<< HEAD
       {/* Status Cards */}
       {/* <StatusCards>
         <motion.div whileHover={{ scale: 1.04 }}>
@@ -265,6 +421,22 @@ const Dashboard = () => {
             </BarChart>
           </ResponsiveContainer>
         </motion.div>
+=======
+      <div className="status-cards">
+        <StatusCard title="Active Events" count={activeEvents} loading={loading} />
+        <StatusCard
+          title="Pending Tasks"
+          count={pendingTasks}
+          loading={loading}
+          status="warning"
+        />
+        <StatusCard
+          title="Upcoming Deadlines"
+          count={deadlines}
+          loading={loading}
+          status="alert"
+        />
+>>>>>>> e26ae9932f102f0b1766b1bf1cd6208f60d549d5
       </div>
 
       {/* Event Lists */}
@@ -282,21 +454,33 @@ const Dashboard = () => {
           type="upcoming"
           loading={loading}
           onSeeAll={() => handleSeeAllClick("Upcoming Events")}
+<<<<<<< HEAD
           // icon={
           //   <div className="add_event" onClick={handleAddEventClick}>
           //     <CirclePlus size={20} className="add-icon" />
           //     <span className="add_event_text">New Event</span>
           //   </div>
           // }
+=======
+          onEventClick={handleEventClick}
+          icon={
+            <div className="add_event" onClick={handleAddEventClick}>
+              <CirclePlus size={20} className="add-icon" />
+              <span className="add_event_text">New Event</span>
+            </div>
+          }
+>>>>>>> e26ae9932f102f0b1766b1bf1cd6208f60d549d5
         />
         <EventList
           title="Past Events"
           data={pastEvents}
           loading={loading}
           onSeeAll={() => handleSeeAllClick("Past Events")}
+          onEventClick={handleEventClick}
         />
       </div>
 
+<<<<<<< HEAD
       <EventList
         title="Pending Tasks"
         data={tasks}
@@ -311,6 +495,19 @@ const Dashboard = () => {
         ))}
       </ToastContainer>
     </DashboardContainer>
+=======
+      <div className="task-section">
+        <EventList
+          title="Pending Tasks"
+          data={tasks}
+          type="tasks"
+          loading={loading}
+          onSeeAll={() => handleSeeAllClick("Pending Tasks")}
+          onTaskClick={handleTaskClick}
+        />
+      </div>
+    </div>
+>>>>>>> e26ae9932f102f0b1766b1bf1cd6208f60d549d5
   );
 };
 

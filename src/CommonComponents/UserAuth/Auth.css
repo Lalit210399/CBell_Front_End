@@ -239,6 +239,32 @@
   cursor: pointer;
 }
 
+/* Password visibility toggle */
+.input-group.with-toggle input {
+  padding-right: 44px; /* space for toggle */
+}
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: var(--greyBorder);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* When error icon is present, move toggle slightly left to avoid overlap */
+.input-group.error.with-toggle .password-toggle {
+  right: 34px;
+}
+
 .signup-error-tooltip {
   position: absolute;
   top: -35px;

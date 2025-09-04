@@ -17,6 +17,8 @@ const EventTable = () => {
   const { addMessage } = useMessages();
   const { user, permissions: userPermissions } = useUser();
 
+  console.log("user", user?.roles[0]?.name);
+
   const permissions = {
     canCreate: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Create") ?? false,
     canRead: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false,
@@ -26,12 +28,32 @@ const EventTable = () => {
     canDuplicate: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
   };
 
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    // const hours = String(date.getHours()).padStart(2, "0");
+    // const minutes = String(date.getMinutes()).padStart(2, "0");
+    // return `${day}/${month}/${year} ${hours}:${minutes}`;
+    return `${day}/${month}/${year}`;
+  };
+
   const fetchEvents = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const res = await fetchWithRefresh(`/apis/event/get_all_events?organizationId=${user?.organizationId}`);
+      const res = await fetchWithRefresh(`/apis/event/get_events_only?organizationId=${user?.organizationId}&userId=${user?.userId}&role=${encodeURIComponent(user?.roles[0]?.name || "")}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "1",
+          },
+        }
+      );
 
       if (!res.ok) {
         throw new Error(`Failed to fetch events: ${res.status}`);
@@ -68,7 +90,8 @@ const EventTable = () => {
         return {
           id: event.id || Date.now().toString(),
           name: event.eventName || "Unnamed Event",
-          date: event.eventDate ? new Date(event.eventDate).toISOString().split('T')[0] : "N/A",
+          // ✅ Use formatted date
+          date: event.eventDate ? formatDateTime(event.eventDate) : "N/A",
           participants: allParticipants,
           rawData: event
         };
@@ -88,6 +111,7 @@ const EventTable = () => {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     if (permissions.canRead) {
@@ -166,6 +190,7 @@ const EventTable = () => {
   const columns = [
     { key: "name", label: "Name", skeletonWidth: "60%", skeletonHeight: "20px" },
     { key: "date", label: "Date", skeletonWidth: "30%", skeletonHeight: "20px" },
+    // { key: "institution", label: "Institution", skeletonWidth: "30%", skeletonHeight: "20px" },
     { key: "participants", label: "Participants", skeletonWidth: "100%", skeletonHeight: "40px" },
   ];
 
@@ -217,7 +242,7 @@ const EventTable = () => {
               //   rawData: event.rawData,
               //   allEventData: event
               // });
-              
+
               navigate("/events/eventDetailPage", {
                 state: {
                   eventId: event.id,

@@ -4,11 +4,11 @@ import 'react-loading-skeleton/dist/skeleton.css';
 import './Status_Card.css';
 
 const StatusCard = ({ title, count, loading }) => {
-  const getColor = (value) => {
-    if (value > 10) return 'red';
-    if (value > 5) return 'orange';
-    return 'green';
-  };
+  // const getColor = (value) => {
+  //   if (value > 10) return 'red';
+  //   if (value > 5) return 'orange';
+  //   return 'green';
+  // };
 
   return (
     <div className="status-card">
@@ -16,7 +16,7 @@ const StatusCard = ({ title, count, loading }) => {
       {loading ? (
         <Skeleton width={50} height={30} />
       ) : (
-        <p style={{ color: getColor(count) }}>{count}</p>
+        <p>{count}</p>
       )}
     </div>
   );

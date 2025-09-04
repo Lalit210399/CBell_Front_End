@@ -1,8 +1,8 @@
 // Pages/Auth/Login.js
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import "./Auth.css";
 import Button from "../Button/Button";
 import { signin, getPermissions } from "../../Services/AuthN";
@@ -10,17 +10,42 @@ import { useUser } from "../../Context/UserContext";
 import ERROR_MESSAGES from "../../Resources/ResourceFiles/ResourceFiles";
 
 const Login = () => {
-  const { setUser, setPermissions } = useUser();
+  const { user, setUser, setPermissions } = useUser();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  useEffect(() => {
+    if (user) {
+      try {
+        const stored = localStorage.getItem("permissions");
+        const perms = stored ? JSON.parse(stored) : null;
+        const p = perms?.permissions || {};
+        const canDashboard =
+          Array.isArray(p?.Dashboard?.["Dashboard Management"]) &&
+          p.Dashboard["Dashboard Management"].includes("Read");
+        const canEvents =
+          Array.isArray(p?.Events?.["Event Management"]) &&
+          p.Events["Event Management"].includes("Read");
+        const target = canDashboard
+          ? "/dashboard"
+          : canEvents
+          ? "/events"
+          : "/login";
+        navigate(target, { replace: true });
+      } catch {
+        navigate("/dashboard", { replace: true });
+      }
+    }
+  }, [user, navigate]);
 
   const validate = () => {
     const validationErrors = {};
@@ -55,38 +80,36 @@ const Login = () => {
 
     try {
       const response = await signin(formData);
-      //console.log('Login API Response:', response); // Debug log
 
       if (response.message === "Login successful") {
-        // Store all relevant user data from the response
-        const loggedInUser = {
-          email: response.email,
-          firstName: response.firstName,
-          lastName: response.lastName,
-          organization: response.organization, // full organization object
-          organizationId: response.organizationId,
-          userID: response.userId,
-          roleIds: response.roleids,
-          message: response.message,
-          // add any other fields you want to persist
-        };
+        // ✅ Store full login response
+        localStorage.setItem("user", JSON.stringify(response));
+        setUser(response);
 
-        // Store user data
-        localStorage.setItem("user", JSON.stringify(loggedInUser));
-        setUser(loggedInUser);
-
-        // Fetch and store permissions
+        // ✅ Fetch and store permissions
         try {
           const permissionResponse = await getPermissions();
           localStorage.setItem("permissions", JSON.stringify(permissionResponse));
           setPermissions(permissionResponse);
 
-          // Navigate only after all data is loaded
-          navigate("/dashboard");
+          // Redirect to first allowed page
+          const p = permissionResponse?.permissions || {};
+          const canDashboard =
+            Array.isArray(p?.Dashboard?.["Dashboard Management"]) &&
+            p.Dashboard["Dashboard Management"].includes("Read");
+          const canEvents =
+            Array.isArray(p?.Events?.["Event Management"]) &&
+            p.Events["Event Management"].includes("Read");
+          const target = canDashboard
+            ? "/dashboard"
+            : canEvents
+            ? "/events"
+            : "/login";
+          navigate(target);
         } catch (permissionError) {
           console.error("Permission fetch failed:", permissionError);
           setMessage("Login successful, but couldn't load permissions");
-          navigate("/dashboard"); // Still navigate but show message
+          navigate("/dashboard"); // fallback
         }
       } else {
         throw new Error(response.message || "Unexpected response from server");
@@ -98,6 +121,7 @@ const Login = () => {
       setLoading(false);
     }
   };
+
   return (
     <div className="auth-container">
       <div className="circle-bg circle-1"></div>
@@ -143,14 +167,30 @@ const Login = () => {
             </div>
 
             {/* Password Field */}
-            <div className={`input-group ${errors.password ? "error" : ""}`}>
+            <div
+              className={`input-group with-toggle ${
+                errors.password ? "error" : ""
+              }`}
+            >
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 placeholder="Password"
                 value={formData.password}
                 onChange={handleChange}
               />
+              <button
+                type="button"
+                className="password-toggle"
+                aria-label="Show password"
+                onMouseDown={() => setShowPassword(true)}
+                onMouseUp={() => setShowPassword(false)}
+                onMouseLeave={() => setShowPassword(false)}
+                onTouchStart={() => setShowPassword(true)}
+                onTouchEnd={() => setShowPassword(false)}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
               {errors.password && (
                 <div className="signup-error-icon-wrapper">
                   <AlertCircle size={18} />
@@ -166,10 +206,6 @@ const Login = () => {
             </div>
           </form>
 
-          <Button className="google-button">
-            <img src="/Google_Logo.svg" alt="Google" />
-            Login with Google
-          </Button>
           <div className="forgot-password-link">
             <Link to="/forgot-password" className="forgot-password-text">
               Forgot Password?
@@ -180,7 +216,10 @@ const Login = () => {
 
           <p className="switch-text">
             Don’t have an account?
-            <Link to="/signup" className="login-text"> Register </Link>
+            <Link to="/signup" className="login-text">
+              {" "}
+              Register{" "}
+            </Link>
           </p>
         </div>
       </div>

@@ -227,6 +227,7 @@ h2 {
   .calendar-card, .bargraph-card {
     min-width: unset;
   }
+<<<<<<< HEAD
 }
 
 .calendar-event-date {
@@ -252,3 +253,22 @@ h2 {
   justify-content: space-between;
   margin-bottom: 24px;
 }
+=======
+
+  .task-section {
+    flex: 1;
+    /* display: flex; */
+    /* min-width: 300px; */
+  }
+
+  @media (max-width: 768px) {
+    .status-cards, .event-section {
+      flex-direction: column;
+    }
+  
+    .status-cards > div, .event-section > div {
+      width: 100%;
+    }
+  }
+  
+>>>>>>> e26ae9932f102f0b1766b1bf1cd6208f60d549d5
