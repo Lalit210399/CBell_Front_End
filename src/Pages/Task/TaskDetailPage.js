@@ -60,7 +60,7 @@ const TaskDetailPage = () => {
   const statusOptions = [
     { label: "New", value: "New", color: "gray" },
     { label: "Active", value: "Active", color: "blue" },
-    { label: "Under Review", value: "Under Review", color: "orange" },
+    { label: "Under Approval ", value: "Under Approval ", color: "orange" },
     { label: "Approval", value: "Approval", color: "yellow" },
     { label: "Approved", value: "Approved", color: "green" },
   ];

@@ -5,7 +5,7 @@
   
   .dropdown-toggle {
     background-color: white;
-    border: none;
+    /* border: none; */
     /* margin-top: 10px; */
     padding: 8px 12px;
     cursor: pointer;

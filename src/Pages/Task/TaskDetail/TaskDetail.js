@@ -107,8 +107,8 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {}, event
   })();
 
   return (
-    <div className="detail_container">
-      <div className="Right_Section Section">
+    <div className="task-detail-container">
+      <div className="task-right-section task-section">
         <div className="form-container">
           <div className={`input-group ${errors?.type ? 'error' : ''}`}>
             <label htmlFor="task-type">Creative Type</label>
@@ -174,7 +174,7 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {}, event
         </div>
       </div>
 
-      <div className="Left_Section Section">
+      <div className="task-left-section task-section">
         <TextEditor
           initialContent={content}
           onContentChange={handleContentChange}

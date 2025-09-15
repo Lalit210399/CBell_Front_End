@@ -8,7 +8,7 @@ const Button = ({ onClick, children, type, disabled, className, Icon }) => {
             onClick={onClick}
             type={type}
             disabled={disabled}
-            className={`btn ${className}`}
+            className={`${className}`}
         >
             {Icon && <Icon className="btn-icon" />} {/* Render icon if provided */}
             {children}
