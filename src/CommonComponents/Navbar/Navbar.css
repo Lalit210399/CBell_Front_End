@@ -10,7 +10,7 @@
   left: 86px;
   /* Start after Sidebar */
   border-radius: var(--radius-lg);
-  margin: 24px 0px 24px 10px;
+  margin: 10px;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
@@ -20,6 +20,11 @@
   background-color: var(--white);
   font-family: var(--font-family);
   font-size: var(--font-size);
+  transition: transform 0.3s ease;
+}
+
+.navbar-hidden {
+  transform: translateY(-100%);
 }
 
 .nav-links {

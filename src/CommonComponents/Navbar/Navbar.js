@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+  import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { BellRing } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
@@ -10,6 +10,7 @@ function Navbar() {
   const navigate = useNavigate();
   const { user, permissions: userPermissions, setUser, setPermissions } = useUser();
   const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
 
   const dropdownRef = useRef(null);
 
@@ -59,6 +60,24 @@ function Navbar() {
     };
   }, []);
 
+  // Scroll behavior: hide navbar on scroll down, show on scroll up
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setIsHidden(true);
+      } else {
+        setIsHidden(false);
+      }
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Check permissions for each tab
   const hasDashboardPermission =
     userPermissions?.permissions?.Dashboard?.["Dashboard Management"]?.includes("Read") ?? false;
@@ -68,7 +87,7 @@ function Navbar() {
     userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
 
   return (
-    <nav className="navbar">
+    <nav className={`navbar ${isHidden ? 'navbar-hidden' : ''}`}>
       <div className="nav-links">
         {hasDashboardPermission && (
           <Link to="/dashboard" className={location.pathname === "/dashboard" ? "active" : ""}>

@@ -1,10 +1,4 @@
-# TODO: Remove Highlight Logic
+# TODO for Navbar Updates
 
-- [x] Edit src/Pages/NewDashboard/Dashboard.js:
-  - Remove selectedTileIndex state and setSelectedTileIndex
-  - Remove passing "selected" and "highlightColor" props to Tile component
-  - Remove setting selectedTileIndex in handleTileClick function
-
-- [x] Edit src/CommonComponents/Tiles/Tiles.js:
-  - Remove "selected" and "highlightColor" props from component signature
-  - Update backgroundColor logic to always use bgcolor or default, ignoring highlight
+- [x] Update Navbar.css: Remove margins to eliminate white spaces, add transition for smooth hide/show, add .navbar-hidden class with transform: translateY(-100%)
+- [x] Update Navbar.js: Add useState for isHidden, useEffect for scroll event listener to detect scroll direction and set isHidden

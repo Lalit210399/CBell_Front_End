@@ -377,7 +377,7 @@
     flex-direction: column;
     gap: 8px;
   }
-  
+}
   .avatar {
     align-self: flex-start;
   }
@@ -389,8 +389,7 @@
   .sticky-message-box {
     padding: 8px 12px;
   }
-<<<<<<< HEAD
-  
+
   textarea:focus {
     outline: none;
     border-color: #0078d4;
@@ -553,6 +552,3 @@
   .attach-menu-item:hover {
     background: #333;
   } */
-=======
-}
->>>>>>> e26ae9932f102f0b1766b1bf1cd6208f60d549d5
