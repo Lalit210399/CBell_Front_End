@@ -1,4 +1,4 @@
-.table-container {
+.table_container {
   width: 100%;
   height: 100%;
   padding: 5px 0 0 0;
@@ -8,7 +8,7 @@
   flex-direction: column;
 }
 
-.table-wrapper {
+.table_wrapper {
   max-height: 100%; /* fit parent height */
   overflow: visible; /* allow tooltips to show outside */
   /* border: 1px solid; */
@@ -20,7 +20,7 @@
 }
 
 /* Fixed height for table-wrapper to show exactly 5 rows */
-.table-wrapper.fixed-height {
+.table_wrapper.fixed-height {
       max-height: calc(5 * 87px); /* assuming each row is 48px tall */
   overflow-y: auto;
 }
@@ -49,7 +49,7 @@ th {
 }
 
 /* Ellipsis container */
-.tooltip-wrapper {
+.tooltip_wrapper {
   display: inline-block;
   width: 100%;
   overflow: hidden;
@@ -74,7 +74,7 @@ th:hover {
   background-color: #f0f0f0;
 }
 
-.sticky-header {
+.sticky_header {
   position: sticky;
   right: 0;
   background: var(--white);
@@ -82,15 +82,15 @@ th:hover {
 }
 
 /* Skeleton Loading Styles */
-.skeleton-row {
+.skeleton_row {
   animation: pulse 1.5s ease-in-out infinite;
 }
 
-.skeleton-row td {
+.skeleton_row td {
   padding: 12px;
 }
 
-.skeleton-cell {
+.skeleton_cell {
   background: linear-gradient(90deg, #f5f5f5 25%, #e8e8e8 37%, #f5f5f5 63%);
   background-size: 400% 100%;
   animation: shimmer 1.5s linear infinite;
@@ -100,17 +100,17 @@ th:hover {
   vertical-align: middle;
 }
 
-.skeleton-row:nth-child(even) .skeleton-cell {
+.skeleton_row:nth-child(even) .skeleton-cell {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 37%, #f0f0f0 63%);
 }
 
-.skeleton-avatar {
+.skeleton_avatar {
   width: 30px;
   height: 30px;
   border-radius: 50%;
 }
 
-.skeleton-action {
+.skeleton_action {
   width: 24px;
   height: 24px;
   margin-left: auto;
@@ -135,7 +135,7 @@ th:hover {
   margin-right: 5px;
 }
 
-.extra-participants {
+.extra_participants {
   background: #4b2673;
   color: var(--white);
   border-radius: 50%;
@@ -145,11 +145,11 @@ th:hover {
 }
 
 /* Action Menu Styles */
-.action-container {
+.action_container {
   position: relative;
 }
 
-.action-button {
+.action_button {
   background: none;
   border: none;
   font-size: 16px;
@@ -195,14 +195,14 @@ th:hover {
 }
 
 /* Empty State Styles */
-.no-events {
+.no_events {
   text-align: center;
   color: #777;
   font-size: 14px;
   padding: 20px;
 }
 
-.add-event {
+.add_event {
   color: var(--primary);
   cursor: pointer;
   font-weight: bold;
@@ -214,11 +214,11 @@ tr:hover {
   transition: background 0.2s ease-in-out;
 }
 
-.clickable-row {
+.clickable_row {
   cursor: pointer;
 }
 
-.clickable-row:hover {
+.clickable_row:hover {
   background-color: #f0f0f0;
 }
 
@@ -250,7 +250,7 @@ tbody tr:nth-child(even) {
   }
 
   /* Adjust skeleton for mobile */
-  .skeleton-cell {
+  .skeleton_cell {
     height: 16px;
   }
 }
@@ -266,12 +266,12 @@ tbody tr:nth-child(even) {
     height: 24px;
   }
 
-  .extra-participants {
+  .extra_participants {
     font-size: 10px;
     padding: 4px 6px;
   }
 
-  .action-button {
+  .action_button {
     font-size: 14px;
   }
 
@@ -280,10 +280,10 @@ tbody tr:nth-child(even) {
   }
 
   /* Smaller skeleton on mobile */
-  .skeleton-cell {
+  .skeleton_cell {
     height: 14px;
   }
-  .skeleton-avatar {
+  .skeleton_avatar {
     width: 24px;
     height: 24px;
   }
