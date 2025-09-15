@@ -54,8 +54,8 @@ const Table = ({
   }, []);
 
   return (
-    <div className="table-container">
-      <div className={`table-wrapper ${className}`}>
+    <div className="table_container">
+      <div className={`table_wrapper ${className}`}>
         <table>
           <thead>
             <tr>
@@ -75,17 +75,17 @@ const Table = ({
                     )}
                 </th>
               ))}
-              {showActions && <th className="sticky-header">Action</th>}
+              {showActions && <th className="sticky_header">Action</th>}
             </tr>
           </thead>
           <tbody>
             {loading ? (
               Array.from({ length: skeletonCount }).map((_, index) => (
-                <tr key={`skeleton-${index}`} className="skeleton-row">
+                <tr key={`skeleton-${index}`} className="skeleton_row">
                   {columns.map((column) => (
-                    <td key={`skeleton-cell-${column.key}`}>
+                    <td key={`skeleton_cell-${column.key}`}>
                       <div
-                        className="skeleton-cell"
+                        className="skeleton_cell"
                         style={{
                           width: column.skeletonWidth || "80%",
                           height: column.skeletonHeight || "20px",
@@ -94,9 +94,9 @@ const Table = ({
                     </td>
                   ))}
                   {showActions && (
-                    <td className="action-container">
+                    <td className="action_container">
                       <div
-                        className="skeleton-cell"
+                        className="skeleton_cell"
                         style={{ width: "24px", height: "24px" }}
                       />
                     </td>
@@ -107,13 +107,13 @@ const Table = ({
               data.map((item, rowIndex) => (
                 <tr
                   key={rowIndex}
-                  className={onRowClick ? "clickable-row" : ""}
+                  className={onRowClick ? "clickable_row" : ""}
                   onClick={() => onRowClick?.(item)}
                 >
                   {columns.map((column) => (
                     <td
                       key={column.key}
-                      className={onColumnClick ? "clickable-cell" : ""}
+                      className={onColumnClick ? "clickable_cell" : ""}
                       onClick={(e) => {
                         if (onColumnClick) {
                           e.stopPropagation(); // prevent row click from firing
@@ -122,7 +122,7 @@ const Table = ({
                       }}
                     >
                       <span
-                        className="tooltip-wrapper"
+                        className="tooltip_wrapper"
                         title={item[column.key] ? item[column.key].toString() : ""}
                       >
                         {renderCell ? renderCell(column.key, item) : item[column.key]}
@@ -132,11 +132,11 @@ const Table = ({
                   ))}
                   {showActions && (
                     <td
-                      className="action-container"
+                      className="action_container"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
-                        className="action-button"
+                        className="action_button"
                         onClick={() => toggleMenu(rowIndex)}
                       >
                         ⋮
@@ -192,7 +192,7 @@ const Table = ({
                   {onAddEventClick && (
                     <>
                       <br />
-                      <span className="add-event" onClick={onAddEventClick}>
+                      <span className="add_event" onClick={onAddEventClick}>
                         {addEventText}
                       </span>
                     </>
