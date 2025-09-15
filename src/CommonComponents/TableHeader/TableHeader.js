@@ -22,7 +22,7 @@ const TableHeader = ({ onSearch, onNewEventClick, loading, permissions }) => {
         </Button> */}
         <Button
           type="submit"
-          className="btn-primary"
+          className="table-btn-primary"
           Icon={CirclePlus}
           onClick={onNewEventClick}
           disabled={!permissions?.canCreate || loading}

@@ -5,7 +5,7 @@ import Login from "./CommonComponents/UserAuth/Login";
 import Signup from "./CommonComponents/UserAuth/Signup";
 import AuthN from "./Pages/AuthN";
 import Event from "./Pages/Event/Events";
-import Dashboard from "./Pages/Dashboard/Dashboard";
+import Dashboard from "./Pages/NewDashboard/Dashboard";
 import Schedule from "./Pages/Schedules/Schedule";
 import StepForm from "./CommonComponents/MultiStepForm";
 import EventDetailPage from "./Pages/Task/EventDetailPage";
