@@ -150,6 +150,9 @@ const EventDetail = () => {
       if (eventData.assignedUsers) {
         setAssignedUsers(eventData.assignedUsers.map(user => user.userId));
       }
+      if (transformedEvent.canCRUD === false) {
+        setMode("view");
+      }
       return;
     }
 
@@ -197,11 +200,16 @@ const EventDetail = () => {
     fetchEvent();
   }, [eventId, mode, selectedDate, eventData, user?.organizationId, formData, eventType, eventTypeId, eventTypeDesc, addMessage]);
 
-  const permissions = React.useMemo(() => ({
-    canEdit: mode === "create" ? true : userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
-    canCreateTask: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Create") ?? false,
-    canSave: mode === "create" ? true : userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
-  }), [mode, userPermissions?.permissions?.Events, userPermissions?.permissions?.Tasks]);
+  const permissions = React.useMemo(() => {
+    const userCanEdit = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false;
+    const userCanCreateTask = userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Create") ?? false;
+    const eventAllowsCRUD = fetchedEvent?.canCRUD !== false;
+    return {
+      canEdit: mode === "create" ? true : userCanEdit && eventAllowsCRUD,
+      canCreateTask: userCanCreateTask && eventAllowsCRUD,
+      canSave: mode === "create" ? true : userCanEdit && eventAllowsCRUD,
+    };
+  }, [mode, userPermissions?.permissions?.Events, userPermissions?.permissions?.Tasks, fetchedEvent?.canCRUD]);
 
   const handleSaveEvent = async (topSectionData, getDetailData) => {
     setIsSubmitting(true);

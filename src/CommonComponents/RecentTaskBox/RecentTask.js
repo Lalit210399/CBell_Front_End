@@ -5,13 +5,13 @@ import CustomDropdown from "../Dropdown/CustomDropdown"; // import your reusable
 import { ListTodo } from "lucide-react";
 import "./RecentTask.css";
 
-const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChange }) => {
+const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChange, showDropdown = true, loading = false }) => {
   // dropdown options
   const filterOptions = [
     { label: "All" },
     { label: "New" },
     { label: "Active" },
-    { label: "Under Approval " },
+    { label: "Under Approval" },
     { label: "Approved" },
     { label: "Published" },
   ];
@@ -59,6 +59,16 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
     }
   };
 
+  // Skeleton rows for loading
+  const skeletonRows = Array.from({ length: 5 }, (_, i) => ({
+    status: "",
+    taskName: "",
+    eventName: "",
+    assignedTo: [],
+    dueDate: "",
+    id: `skeleton-${i}`,
+  }));
+
   return (
     <div className="recent-tasks-container">
       {/* Header */}
@@ -67,11 +77,13 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
           <ListTodo />
           <p>{title}</p>
         </div>
-        <CustomDropdown
-          options={filterOptions}
-          defaultLabel={filter}
-          onSelect={(option) => onFilterChange(option.label)}
-        />
+        {showDropdown && (
+          <CustomDropdown
+            options={filterOptions}
+            defaultLabel={filter}
+            onSelect={(option) => onFilterChange(option.label)}
+          />
+        )}
       </div>
 
       {/* Table */}
@@ -83,11 +95,11 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
           { key: "assignedTo", label: "Assigned To" },
           { key: "dueDate", label: "Due Date" },
         ]}
-        data={filteredTasks}
-        renderCell={renderCell}
+        data={loading ? skeletonRows : filteredTasks}
+        renderCell={loading ? () => <div className="skeleton-row-cell" /> : renderCell}
         sortableColumns={["taskName", "eventName", "dueDate"]}
         showActions={false}
-        onRowClick={(task) => onTaskClick?.(task)}
+        onRowClick={loading ? undefined : (task) => onTaskClick?.(task)}
         className="fixed-height"
       />
     </div>

@@ -5,12 +5,12 @@ import { useNavigate, Link } from "react-router-dom";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import "./Auth.css";
 import Button from "../Button/Button";
-import { signin, getPermissions } from "../../Services/AuthN";
+import { signin, getPermissions, getAccessibleOrganizations } from "../../Services/AuthN";
 import { useUser } from "../../Context/UserContext";
 import ERROR_MESSAGES from "../../Resources/ResourceFiles/ResourceFiles";
 
 const Login = () => {
-  const { user, setUser, setPermissions } = useUser();
+  const { user, setUser, setPermissions, setScope } = useUser();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -91,6 +91,16 @@ const Login = () => {
           const permissionResponse = await getPermissions();
           localStorage.setItem("permissions", JSON.stringify(permissionResponse));
           setPermissions(permissionResponse);
+
+          // ✅ Fetch and store accessible organizations (Scope)
+          try {
+            const scopeResponse = await getAccessibleOrganizations();
+            localStorage.setItem("scope", JSON.stringify(scopeResponse));
+            setScope(scopeResponse);
+          } catch (scopeError) {
+            console.error("Scope fetch failed:", scopeError);
+            setMessage("Login successful, but couldn't load accessible organizations");
+          }
 
           // Redirect to first allowed page
           const p = permissionResponse?.permissions || {};

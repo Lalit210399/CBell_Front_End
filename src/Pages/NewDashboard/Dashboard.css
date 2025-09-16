@@ -37,6 +37,21 @@
   margin-top: 10px;
 }
 
+.scope-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scope-label {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .scope-dropdown {
   min-width: 150px;
 }

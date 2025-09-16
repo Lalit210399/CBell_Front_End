@@ -19,6 +19,11 @@ const CustomDropdown = ({
     if (onSelect) onSelect(option);
   };
 
+  // Update selected when defaultLabel changes
+  useEffect(() => {
+    setSelected(defaultLabel);
+  }, [defaultLabel]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -49,21 +54,21 @@ const CustomDropdown = ({
 
       {isOpen && options.length > 0 && (
         <ul className="dropdown_menu">
-          {options.map((option, index) => (
-            <li
-              key={index}
-              className="dropdown-item"
-              onClick={() => handleSelect(option)}
-            >
-              {showDot && (
-                <span
-                  className="dot"
-                  style={{ backgroundColor: option.color || "#111827" }}
-                />
-              )}
-              {option.label}
-            </li>
-          ))}
+{options.map((option, index) => (
+  <li
+    key={index}
+    className={`dropdown-item ${option.label === selected ? "selected" : ""}`}
+    onClick={() => handleSelect(option)}
+  >
+    {showDot && (
+      <span
+        className="dot"
+        style={{ backgroundColor: option.color || "#111827" }}
+      />
+    )}
+    {option.label}
+  </li>
+))}
         </ul>
       )}
 

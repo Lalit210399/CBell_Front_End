@@ -1,9 +1,10 @@
-.detail_container {
+.task-detail-container {
   height: auto; /* allow it to grow based on content */
   display: flex;
-  flex-wrap: wrap; /* allow wrapping */
+  /* flex-wrap: wrap;  */
   width: 100%;
   gap: 35px;
+  margin-top: 10px;
 }
 
 

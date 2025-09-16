@@ -158,7 +158,7 @@ export const getHierarchyUsers = async (organizationId) => {
   try {
     const response = await fetch(`/apis/auth/hierarchy-users/${organizationId}`, {
       method: 'GET',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         Accept: "application/json",
         "ngrok-skip-browser-warning": "1",
@@ -176,3 +176,28 @@ export const getHierarchyUsers = async (organizationId) => {
     throw error.message || 'Error fetching hierarchy users';
   }
 };
+
+// Fetch Accessible Organizations
+export const getAccessibleOrganizations = async () => {
+  try {
+    const response = await fetch('/apis/organization/accessible-organizations', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: "application/json",
+        "ngrok-skip-browser-warning": "1",
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch accessible organizations');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    throw error.message || 'Error fetching accessible organizations';
+  }
+};
+

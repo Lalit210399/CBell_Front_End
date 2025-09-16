@@ -1,10 +1,7 @@
-# TODO: Remove Highlight Logic
-
-- [x] Edit src/Pages/NewDashboard/Dashboard.js:
-  - Remove selectedTileIndex state and setSelectedTileIndex
-  - Remove passing "selected" and "highlightColor" props to Tile component
-  - Remove setting selectedTileIndex in handleTileClick function
-
-- [x] Edit src/CommonComponents/Tiles/Tiles.js:
-  - Remove "selected" and "highlightColor" props from component signature
-  - Update backgroundColor logic to always use bgcolor or default, ignoring highlight
+- [ ] Add orgIdReady state to Dashboard.js
+- [ ] Modify useEffect for selectedOrganizationId to set orgIdReady(true) after setting selectedOrganizationId
+- [ ] Add guard if (!orgIdReady) return; to summary API useEffect and add orgIdReady to deps
+- [ ] Add guard if (!orgIdReady) return; to active events count API useEffect and add orgIdReady to deps
+- [ ] Add guard if (!orgIdReady) return; to events campaign API useEffect and add orgIdReady to deps
+- [ ] Add guard if (!orgIdReady) return; to fetchTasksData function
+- [ ] Add guard if (!orgIdReady) return; to fetchActiveEventsData function

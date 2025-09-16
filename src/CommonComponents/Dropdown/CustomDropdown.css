@@ -34,6 +34,10 @@
   width: 100%;
   z-index: 20;
   padding: 6px 0;
+  max-height: 200px; /* Approx height for 5 items */
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.2) transparent;
 }
 
 .dropdown-item {
@@ -48,10 +52,34 @@
 
 .dropdown-item:hover {
   background: #f3f4f6;
+  text-decoration: cornflowerblue;
+}
+
+.dropdown-item.selected {
+  background: #e0f2fe;
+  font-weight: 500;
+}
+
+.dropdown-item.selected:hover {
+  background: #bae6fd;
 }
 
 .dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
+}
+
+/* Webkit scrollbar styles */
+.dropdown_menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown_menu::-webkit-scrollbar-thumb {
+  background-color: rgba(0,0,0,0.2);
+  border-radius: 3px;
+}
+
+.dropdown_menu::-webkit-scrollbar-track {
+  background: transparent;
 }

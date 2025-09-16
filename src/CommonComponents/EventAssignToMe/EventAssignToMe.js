@@ -6,7 +6,7 @@ import CustomDropdown from "../Dropdown/CustomDropdown";
 import { User } from "lucide-react";
 import "./EventAssignToMe.css";
 
-const EventAssignToMe = ({ events, onEventClick, title = "Events Assigned to Me" }) => {
+const EventAssignToMe = ({ events, onEventClick, title = "Events Assigned to Me", loading = false }) => {
   const [filter, setFilter] = useState("All");
 
   const columns = [
@@ -65,6 +65,16 @@ const EventAssignToMe = ({ events, onEventClick, title = "Events Assigned to Me"
     }
   };
 
+  // Skeleton rows for loading
+  const skeletonRows = Array.from({ length: 5 }, (_, i) => ({
+    eventName: "",
+    collegeName: "",
+    assignTo: [],
+    eventDate: "",
+    createdBy: { name: "", src: "" },
+    id: `skeleton-${i}`,
+  }));
+
   return (
     <div className="event-assign-to-me-container">
       {/* Header */}
@@ -83,11 +93,11 @@ const EventAssignToMe = ({ events, onEventClick, title = "Events Assigned to Me"
       {/* Table */}
       <Table
         columns={columns}
-        data={filteredEvents}
-        renderCell={renderCell}
+        data={loading ? skeletonRows : filteredEvents}
+        renderCell={loading ? () => <div className="skeleton-row-cell" /> : renderCell}
         sortableColumns={["eventName", "collegeName", "eventDate"]}
         showActions={false}
-        onRowClick={(event) => onEventClick?.(event)}
+        onRowClick={loading ? undefined : (event) => onEventClick?.(event)}
         className="fixed-height"
       />
     </div>

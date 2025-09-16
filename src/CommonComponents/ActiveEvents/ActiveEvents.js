@@ -6,7 +6,7 @@ import CustomDropdown from "../Dropdown/CustomDropdown";
 import { Calendar } from "lucide-react";
 import "./ActiveEvents.css";
 
-const ActiveEvents = ({ events, onEventClick, title = "Active Events" }) => {
+const ActiveEvents = ({ events, onEventClick, title = "Active Events", loading = false }) => {
   const [filter, setFilter] = useState("All");
 
   const columns = [
@@ -64,6 +64,15 @@ const ActiveEvents = ({ events, onEventClick, title = "Active Events" }) => {
     }
   };
 
+  // Skeleton rows for loading
+  const skeletonRows = Array.from({ length: 5 }, (_, i) => ({
+    eventName: "",
+    assignTo: [],
+    eventDate: "",
+    createdBy: { name: "", src: "" },
+    id: `skeleton-${i}`,
+  }));
+
   return (
     <div className="active-events-container">
       {/* Header */}
@@ -82,11 +91,11 @@ const ActiveEvents = ({ events, onEventClick, title = "Active Events" }) => {
       {/* Table */}
       <Table
         columns={columns}
-        data={filteredEvents}
-        renderCell={renderCell}
+        data={loading ? skeletonRows : filteredEvents}
+        renderCell={loading ? () => <div className="skeleton-row-cell" /> : renderCell}
         sortableColumns={["eventName", "eventDate"]}
         showActions={false}
-        onRowClick={(event) => onEventClick?.(event)}
+        onRowClick={loading ? undefined : (event) => onEventClick?.(event)}
         className="fixed-height"
       />
     </div>
