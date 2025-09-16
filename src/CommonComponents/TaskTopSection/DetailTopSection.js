@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Save, Calendar, Users } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import AvatarList from "../Avatar/index";
+import { FaCalendarAlt, FaClock } from "react-icons/fa";
 import "./DetailTopSection.css";
 
 function formatDateTimeLocal(date) {
@@ -162,152 +163,76 @@ const DetailTopSection = ({
   // Check if participants array is empty
   const hasParticipants = participants && participants.length > 0;
 
+  const creatorUser = {
+    firstName: data?.creatorName || "User",
+    lastName: "", // or get from data if available
+  };
+
+  const creatorAvatar = {
+    id: "creator",
+    name: creatorUser.firstName + " " + creatorUser.lastName,
+    fallback: creatorUser.firstName?.charAt(0).toUpperCase() || "U",
+    size: "24px",
+    shape: "circle",
+  };
+
   return (
     <div className="detail-header-container">
-      <div className="header-left-section">
-        <div className="top-left">
-          <button className="back-button" onClick={onBackClick}>
-            <ArrowLeft size={20} />
-          </button>
-          <div className="header-titles">
-            {(mode === "edit" || mode === "create") ? (
-              <div className="edit-mode-fields">
-                <input
-                  type="text"
-                  className={`editable-title-input ${errors && errors.title ? 'error' : ''}`}
-                  value={editableTitle}
-                  onChange={handleTitleChange}
-                  placeholder={mode === "create" ? "Enter event title" : ""}
-                  autoFocus={mode === "create"}
-                />
-                {(errors && errors.title) && (
-                  <div className="field-error">{errors.title}</div>
-                )}
-                <span className="event-type-text">{data?.type || "No type specified"}</span>
-              </div>
-            ) : (
-              <div className="view-mode-fields">
-                <span className="header_title">{editableTitle}</span>
-                <span className="event-type-text">{data?.type || "No type specified"}</span>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="avatar-dropdown-container">
-          <div className="avatar-group">
-            {hasAssignedUsers ? (
-              <AvatarList avatars={selectedParticipants} maxVisible={2} />
-            ) : (
-              <div className="no-assigned-users-placeholder">
-                <Users size={14} className="placeholder-icon" />
-                <span className="placeholder-text">No assigned users</span>
-              </div>
-            )}
-
-            {(mode === "edit" || mode === "create") && (
-              <div className="add-participant-section">
-                <button
-                  className="avatar-add-button"
-                  onClick={handleAddButtonClick}
-                >
-                  +
-                </button>
-                {isDropdownOpen && (
-                  <div className="inline-dropdown">
-                    <div className="user-dropdown">
-                      <div className="user-dropdown-header">
-                        <input
-                          type="text"
-                          className="user-search"
-                          placeholder="Search users..."
-                          value={userSearch}
-                          onChange={(e) => setUserSearch(e.target.value)}
-                        />
-                        <button
-                          className="user-done"
-                          onClick={() => setIsDropdownOpen(false)}
-                        >
-                          Done
-                        </button>
-                      </div>
-                      <div className="user-dropdown-list">
-                        {filteredUsers.length === 0 ? (
-                          <div className="user-empty">No users found</div>
-                        ) : (
-                          filteredUsers.map((u) => (
-                            <label
-                              key={u.id}
-                              className={`user-item ${
-                                isUserSelected(u.id) ? "selected" : ""
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isUserSelected(u.id)}
-                                onChange={() => toggleUserSelection(u.id)}
-                              />
-                              <span className="user-avatar">
-                                {getUserInitials(u.firstName, u.lastName)}
-                              </span>
-                              <span className="user-name">{`${u.firstName || "User"} ${u.lastName || ""}`}</span>
-                            </label>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+      <div className="header-row-top">
+        <button className="back-button" onClick={onBackClick}>
+          {/* Your back arrow SVG/icon here */}
+          ←
+        </button>
+        <input
+          className="event-name-input"
+          type="text"
+          placeholder="Enter event name"
+          value={editableTitle}
+          onChange={handleTitleChange}
+        />
+        <span className="created-by-pill">
+          Created by
+          <span className="creator-avatar">
+            {creatorAvatar.fallback}
+          </span>
+        </span>
       </div>
-
-      <div className="right-section">
-        <div className="date-creator-container">
-          <div className="date-section">
-            {mode === "view" && <Calendar size={16} />}
-            {(mode === "edit" || mode === "create") ? (
-              <>
-                <input
-                  type="datetime-local"
-                  className={`editable-date-input ${errors && errors.date ? 'error' : ''}`}
-                  value={editableDate}
-                  onChange={handleDateChange}
-                  placeholder="Select date and time"
-                  min={new Date().toISOString().slice(0, 16)}
-                />
-                {(errors && errors.date) && (
-                  <div className="field-error">{errors.date}</div>
-                )}
-              </>
-            ) : (
-              <span>{formatDateTimeForDisplay(data?.date || editableDate)}</span>
-            )}
-          </div>
-
-          <div className="creator-section">
-            <span>{data.creatorAvatar?.name}</span>
-            <div className="creator-avatar">
-              <AvatarList avatars={[data.creatorAvatar]} />
-            </div>
-          </div>
-        </div>
-
-        <div className="action-buttons">
-          {(mode === "view" || mode === "edit") && permissions?.canCreateTask && (
-            <button className="new-task-btn" onClick={onNewTaskClick}>
-              New Task
-            </button>
-          )}
-
-          {(mode === "edit" || mode === "create") && permissions?.canSave && (
-            <button className="save-btn" onClick={handleSaveClick}>
-              <Save size={16} />
-              Save
-            </button>
-          )}
-        </div>
+      <div className="header-row-bottom">
+        <span className="team-label">Team:</span>
+        {/* Team info here if needed */}
+        <span className="type-label">Type:</span>
+        <select
+          className="event-type-dropdown"
+          value={editableTypeDesc}
+          onChange={handleTypeDescChange}
+        >
+          <option value="">Select Event Type</option>
+          <option value="meeting">Meeting</option>
+          <option value="call">Call</option>
+          <option value="review">Review</option>
+          {/* Add more options as needed */}
+        </select>
+        <span className="date-label">
+          Date:
+          {/* <FaCalendarAlt style={{ marginLeft: 4, marginRight: 4 }} /> */}
+          <input
+            className="date-input"
+            type="date"
+            value={editableDate.split("T")[0]}
+            onChange={e => setEditableDate(e.target.value + editableDate.slice(10))}
+          />
+        </span>
+        <span className="time-label">
+          Time:
+          {/* <FaClock style={{ marginLeft: 4, marginRight: 4 }} /> */}
+          <input
+            className="time-input"
+            type="time"
+            value={editableDate.split("T")[1] || ""}
+            onChange={e => setEditableDate(editableDate.split("T")[0] + "T" + e.target.value)}
+          />
+        </span>
+        <button className="save-btn" onClick={handleSaveClick}>Save</button>
       </div>
     </div>
   );
