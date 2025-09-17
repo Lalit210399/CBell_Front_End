@@ -3,11 +3,11 @@ import "./CustomDropdown.css";
 import { ChevronDown } from "lucide-react";
 
 const CustomDropdown = ({
-  options = [],          // fallback empty array
-  defaultLabel = "Select", 
+  options = [], // fallback empty array
+  defaultLabel = "Select",
   onSelect,
   showDot = false,
-  disabled = false,     // new prop: disable dropdown if needed
+  disabled = false, // new prop: disable dropdown if needed
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selected, setSelected] = useState(defaultLabel);
@@ -44,31 +44,33 @@ const CustomDropdown = ({
       ref={dropdownRef}
     >
       <button
-        className="dropdown-toggle"
+        className="dropdown_toggle"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
       >
-        <span>{selected}</span>
-        <ChevronDown size={18} />
+        <txt>{selected}</txt>
+        <ChevronDown size={18} color="#8B8B8B"/>
       </button>
 
       {isOpen && options.length > 0 && (
         <ul className="dropdown_menu">
-{options.map((option, index) => (
-  <li
-    key={index}
-    className={`dropdown-item ${option.label === selected ? "selected" : ""}`}
-    onClick={() => handleSelect(option)}
-  >
-    {showDot && (
-      <span
-        className="dot"
-        style={{ backgroundColor: option.color || "#111827" }}
-      />
-    )}
-    {option.label}
-  </li>
-))}
+          {options.map((option, index) => (
+            <li
+              key={index}
+              className={`dropdown-item ${
+                option.label === selected ? "selected" : ""
+              }`}
+              onClick={() => handleSelect(option)}
+            >
+              {showDot && (
+                <span
+                  className="dot"
+                  style={{ backgroundColor: option.color || "#111827" }}
+                />
+              )}
+              {option.label}
+            </li>
+          ))}
         </ul>
       )}
 

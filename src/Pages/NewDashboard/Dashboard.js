@@ -22,7 +22,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar,
-  Building2
+  Building2,
 } from "lucide-react";
 import "./Dashboard.css";
 
@@ -36,8 +36,11 @@ const Dashboard = () => {
 
   // Initialize selected organization from localStorage or default to user's org
   useEffect(() => {
-    const savedOrgId = localStorage.getItem('dashboard-selected-organization');
-    if (savedOrgId && scope?.accessibleOrganizations?.some(org => org.id === savedOrgId)) {
+    const savedOrgId = localStorage.getItem("dashboard-selected-organization");
+    if (
+      savedOrgId &&
+      scope?.accessibleOrganizations?.some((org) => org.id === savedOrgId)
+    ) {
       setSelectedOrganizationId(savedOrgId);
     } else {
       setSelectedOrganizationId(user?.organizationId);
@@ -52,7 +55,7 @@ const Dashboard = () => {
 
   const handleNewTask = () => {
     navigate("/events/eventDetailPage/tasks", { state: { mode: "create" } });
-  }
+  };
 
   // State for active component
   const [activeComponent, setActiveComponent] = useState("activeEvents");
@@ -117,7 +120,6 @@ const Dashboard = () => {
     }
   }, [selectedOrganizationId, user?.organizationId, orgIdReady]);
 
-
   /** -------------------- Active Events Count -------------------- **/
   const [activeEventsCount, setActiveEventsCount] = useState(null);
   const [loadingCount, setLoadingCount] = useState(false);
@@ -126,7 +128,10 @@ const Dashboard = () => {
   useEffect(() => {
     if (!orgIdReady) return;
 
-    const organizationId = selectedOrganizationId || user?.organizationId || "685eb18207416b9271b800b3";
+    const organizationId =
+      selectedOrganizationId ||
+      user?.organizationId ||
+      "685eb18207416b9271b800b3";
 
     const fetchActiveEventsCount = async () => {
       setLoadingCount(true);
@@ -168,23 +173,39 @@ const Dashboard = () => {
 
   // Dropdown options for months - next 12 months from current
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
   const currentDate = new Date();
   const monthOptions = [];
   for (let i = 0; i < 12; i++) {
-    const date = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
+    const date = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() + i,
+      1
+    );
     const monthName = monthNames[date.getMonth()];
     const year = date.getFullYear();
     monthOptions.push({ label: `${monthName} ${year}`, value: i });
   }
 
   // Calculate selected month and year from index
-  const selectedMonth = ((currentDate.getMonth() + selectedMonthIndex) % 12) + 1;
-  const selectedYear = currentDate.getFullYear() + Math.floor((currentDate.getMonth() + selectedMonthIndex) / 12);
-
+  const selectedMonth =
+    ((currentDate.getMonth() + selectedMonthIndex) % 12) + 1;
+  const selectedYear =
+    currentDate.getFullYear() +
+    Math.floor((currentDate.getMonth() + selectedMonthIndex) / 12);
 
   /** -------------------- Events Campaign API -------------------- **/
 
@@ -196,7 +217,10 @@ const Dashboard = () => {
     const fetchEventsCampaign = async () => {
       setLoadingEventsCampaign(true);
       try {
-        const monthParam = `${selectedYear}-${String(selectedMonth).padStart(2, "0")}`;
+        const monthParam = `${selectedYear}-${String(selectedMonth).padStart(
+          2,
+          "0"
+        )}`;
         const response = await fetchWithRefresh(
           `apis/dashboard/events?orgid=${organizationId}&filter=month&month=${monthParam}`,
           {
@@ -238,11 +262,20 @@ const Dashboard = () => {
     if (organizationId) {
       fetchEventsCampaign();
     }
-  }, [selectedOrganizationId, user?.organizationId, selectedMonth, selectedYear, orgIdReady]);
+  }, [
+    selectedOrganizationId,
+    user?.organizationId,
+    selectedMonth,
+    selectedYear,
+    orgIdReady,
+  ]);
 
   /** -------------------- Tasks API -------------------- **/
   const fetchTasksData = async (filterType) => {
-    const organizationId = selectedOrganizationId || user?.organizationId || "681460dcb8327b2e3417d8b1";
+    const organizationId =
+      selectedOrganizationId ||
+      user?.organizationId ||
+      "681460dcb8327b2e3417d8b1";
 
     setLoadingTasks(true);
     setErrorTasks(null);
@@ -255,11 +288,11 @@ const Dashboard = () => {
         "Total Tasks": "all",
         "Tasks Due Next 7 Days": "due_soon",
         "Overdue Task": "overdue",
-        "New": "new",
-        "Active": "active",
+        New: "new",
+        Active: "active",
         "Under Review": "under_review",
-        "Approved": "approved",
-        "Published": "published"
+        Approved: "approved",
+        Published: "published",
       };
 
       apiFilter = filterMap[filterType] || "all";
@@ -279,7 +312,7 @@ const Dashboard = () => {
         const data = await response.json();
 
         // Transform API data to match the expected format for RecentTasks component
-        const transformedTasks = data.tasks.map(task => ({
+        const transformedTasks = data.tasks.map((task) => ({
           status: task.taskStatusName,
           taskName: task.taskTitle,
           eventName: task.eventName,
@@ -287,7 +320,7 @@ const Dashboard = () => {
           dueDate: new Date(task.dueDate).toLocaleDateString("en-GB"),
           description: task.description,
           creativeType: task.creativeType,
-          daysUntilDue: task.daysUntilDue
+          daysUntilDue: task.daysUntilDue,
         }));
 
         setTasksData(transformedTasks.slice(0, 5));
@@ -327,16 +360,17 @@ const Dashboard = () => {
         const data = await response.json();
 
         // Transform API data to match the expected format for ActiveEvents component
-        const transformedEvents = data.events.map(event => ({
+        const transformedEvents = data.events.map((event) => ({
           status: "Active", // Assuming all events from this API are active
-          eventName: event.eventName,
-          assignTo: [], // This might need to be populated from the API if available
-          eventDate: new Date(event.eventDate).toLocaleDateString("en-GB"),
-          createdBy: { name: "Admin", src: "" }, // Default value, update if API provides this info
-          description: event.eventDescription,
-          location: event.locationDetails,
-          eventType: event.eventTypeDesc
-        }));
+        eventName: event.eventName,
+        assignTo: [], // This might need to be populated from the API if available
+        eventDate: new Date(event.eventDate).toLocaleDateString("en-GB"),
+        createdBy: { name: "Admin", src: "" }, // Default value, update if API provides this info
+        description: event.eventDescription,
+        location: event.locationDetails,
+        eventType: event.eventTypeDesc,
+        id: event.id, // add id for navigation
+      }));
 
         setActiveEventsData(transformedEvents.slice(0, 5));
       } else {
@@ -375,10 +409,12 @@ const Dashboard = () => {
   const filteredEvents = useMemo(() => {
     if (!allEvents.length) return [];
 
-    return allEvents.filter(event => {
+    return allEvents.filter((event) => {
       const eventDate = new Date(event.date);
-      return eventDate.getMonth() + 1 === selectedMonth &&
-        eventDate.getFullYear() === selectedYear;
+      return (
+        eventDate.getMonth() + 1 === selectedMonth &&
+        eventDate.getFullYear() === selectedYear
+      );
     });
   }, [allEvents, selectedMonth, selectedYear]);
 
@@ -391,14 +427,18 @@ const Dashboard = () => {
     "Active",
     "Under Review",
     "Approved",
-    "Published"
+    "Published",
   ];
 
   /** -------------------- Tiles Data -------------------- **/
   const summaryTiles = [
     {
       icon: <CheckCircle size={24} color="rgba(52, 168, 83, 1)" />,
-      count: loadingSummary ? "..." : errorSummary ? "!" : summaryData?.activeEvents ?? 0,
+      count: loadingSummary
+        ? "..."
+        : errorSummary
+        ? "!"
+        : summaryData?.activeEvents ?? 0,
       title: "Active Events",
       subtitle: "Active Institute events",
       bgcolor: "rgba(181, 224, 194, 0.2)",
@@ -410,7 +450,7 @@ const Dashboard = () => {
     },
     {
       icon: <UserCheck size={24} color="rgba(60, 131, 246, 1)" />,
-      count: summaryData?.assignedEvents, 
+      count: summaryData?.assignedEvents,
       title: "Events Assigned to Me",
       subtitle: "Events I'm Managing",
       bgcolor: "rgba(185, 210, 251, 0.2)",
@@ -515,7 +555,7 @@ const Dashboard = () => {
       borderColor: "rgba(168, 85, 247, 1)",
       // borderColor: "#E4E6E9",
       textColor: "rgba(88, 28, 135, 1)", // Purple
-    }
+    },
   ];
 
   /** -------------------- Events Assigned to Me Data -------------------- **/
@@ -548,16 +588,16 @@ const Dashboard = () => {
           const data = await response.json();
 
           // Transform API data to match EventAssignToMe component format
-          const transformedData = data.events.map(event => ({
+          const transformedData = data.events.map((event) => ({
             status: event.status || "Active",
             eventName: event.eventName,
-            collegeName: event.collegeName || event.college || "",
+            collegeName: event.organizationName || event.collegeName || event.college || "",
             assignTo: event.assignTo || event.assignedTo || [],
             eventDate: new Date(event.eventDate).toLocaleDateString("en-GB"),
             createdBy: {
               name: event.createdBy?.name || "Unknown",
-              src: event.createdBy?.src || ""
-            }
+              src: event.createdBy?.src || "",
+            },
           }));
 
           setEventAssignToMeData(transformedData.slice(0, 5));
@@ -579,18 +619,18 @@ const Dashboard = () => {
     }
   }, [selectedOrganizationId, user?.organizationId, user?.userId, orgIdReady]);
 
-  const scopeOptions = scope?.accessibleOrganizations?.map(org => ({
+  const scopeOptions = scope?.accessibleOrganizations?.map((org) => ({
     label: org.data.organizationCode,
-    value: org.id
+    value: org.id,
   }));
 
   // Update selected organization and persist selection on scope change
   const handleScopeSelect = (option) => {
     setSelectedOrganizationId(option.value);
     if (option.value) {
-      localStorage.setItem('dashboard-selected-organization', option.value);
+      localStorage.setItem("dashboard-selected-organization", option.value);
     } else {
-      localStorage.removeItem('dashboard-selected-organization');
+      localStorage.removeItem("dashboard-selected-organization");
     }
   };
 
@@ -638,7 +678,17 @@ const Dashboard = () => {
 
   // Handle event click
   const handleEventClick = (event, key) => {
-    console.log("Event clicked:", { event, clickedField: key });
+    // Navigate to event detail page with event id and data
+    console.log(event);
+    if (event && event.eventName) {
+      navigate("/events/eventDetailPage", {
+        state: {
+          eventId: event.id || event.eventName, // fallback to eventName if id not present
+          mode: "view",
+          eventData: event,
+        },
+      });
+    }
   };
 
   // Handle event campaign item click
@@ -653,19 +703,32 @@ const Dashboard = () => {
         <h2>Welcome {user?.firstName}, Plan Your Day Ahead</h2>
         <div className="welcome-controls">
           <div className="scope-section">
-            <span className="scope-label"><Building2 />Scope:</span>
+            <span className="scope-label">
+              <Building2 />
+              Scope:
+            </span>
             <div className="scope-dropdown">
               <CustomDropdown
                 options={scopeOptions}
-                defaultLabel={scope?.accessibleOrganizations?.find(org => org.id === selectedOrganizationId)?.data.organizationCode}
+                defaultLabel={
+                  scope?.accessibleOrganizations?.find(
+                    (org) => org.id === selectedOrganizationId
+                  )?.data.organizationCode
+                }
                 onSelect={handleScopeSelect}
               />
             </div>
           </div>
-          <button className="dashboard-btn dashboard-btn-secondary" onClick={handleNewTask}>
+          {/* <button
+            className="dashboard-btn dashboard-btn-secondary"
+            onClick={handleNewTask}
+          >
             + New Task
-          </button>
-          <button className="dashboard-btn dashboard-btn-primary" onClick={handleNewEvent}>
+          </button> */}
+          <button
+            className="dashboard-btn dashboard-btn-primary"
+            onClick={handleNewEvent}
+          >
             + New Event
           </button>
         </div>
@@ -679,22 +742,30 @@ const Dashboard = () => {
 
         <div className="summary-tiles" ref={tilesRef}>
           {summaryTiles.map((tile, idx) => (
-            <Tile key={idx} {...tile} onClick={() => handleTileClick(tile)} isSelected={tile.title === currentTitle} />
+            <Tile
+              key={idx}
+              {...tile}
+              onClick={() => handleTileClick(tile)}
+              isSelected={tile.title === currentTitle}
+            />
           ))}
         </div>
 
-        <button className="scroll-btn right" onClick={() => scrollTiles("right")}>
+        <button
+          className="scroll-btn right"
+          onClick={() => scrollTiles("right")}
+        >
           <ChevronRight size={24} />
         </button>
       </div>
 
       {/* Bottom Section */}
-      <div className="bottom_section">
+      <div className="Second_Row_Section">
         <div className="bottom_section">
           {/* Recent Tasks */}
           {activeComponent === "recent" && (
             <div className="recent-tasks">
-            <RecentTasks
+              <RecentTasks
                 tasks={tasksData}
                 title={currentTitle}
                 filter={filter}
@@ -702,7 +773,11 @@ const Dashboard = () => {
                 onTaskClick={handleTaskClick}
                 loading={loadingTasks}
                 error={errorTasks}
-                showDropdown={["Total Tasks", "Tasks Due Next 7 Days", "Overdue Task"].includes(currentTitle)}
+                showDropdown={[
+                  "Total Tasks",
+                  "Tasks Due Next 7 Days",
+                  "Overdue Task",
+                ].includes(currentTitle)}
               />
             </div>
           )}
@@ -723,12 +798,12 @@ const Dashboard = () => {
           {/* Events Assigned to Me */}
           {activeComponent === "assignedToMe" && (
             <div className="event-assign-to-me">
-          <EventAssignToMe
-            events={eventAssignToMeData.slice(0, 5)}
-            title="Events Assigned to Me"
-            onEventClick={handleEventClick}
-            loading={loadingAssignToMe}
-          />
+              <EventAssignToMe
+                events={eventAssignToMeData.slice(0, 5)}
+                title="Events Assigned to Me"
+                onEventClick={handleEventClick}
+                loading={loadingAssignToMe}
+              />
             </div>
           )}
         </div>
@@ -738,7 +813,7 @@ const Dashboard = () => {
           <div className="event-header">
             <div className="event-title">
               <Calendar size={20} />
-              <p>Events Campaign</p>
+              <span>Events Campaign</span>
             </div>
 
             {/* Month Dropdown */}

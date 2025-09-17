@@ -81,7 +81,7 @@ const EventAssignToMe = ({ events, onEventClick, title = "Events Assigned to Me"
       <div className="event-assign-to-me-header">
         <div className="header_left">
           <User />
-          <p>{title}</p>
+          <span>{title}</span>
         </div>
         {/* <CustomDropdown
           options={filterOptions}

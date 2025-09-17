@@ -79,7 +79,7 @@ const ActiveEvents = ({ events, onEventClick, title = "Active Events", loading =
       <div className="active-events-header">
         <div className="header_left">
           <Calendar />
-          <p>{title}</p>
+          <span>{title}</span>
         </div>
         {/* <CustomDropdown
           options={filterOptions}

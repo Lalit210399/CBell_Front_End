@@ -20,7 +20,7 @@ const EventCampaign = ({
   // Function to format date without year
   const formatDateWithoutYear = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+    return date.toLocaleDateString("en-US", { day: "numeric", month: "short" });
   };
 
   // Add day and formatted date properties
@@ -40,7 +40,7 @@ const EventCampaign = ({
       <div className="event-list">
         {loading ? (
           // Skeleton loading
-          Array.from({ length: 4 }, (_, index) => (
+          Array.from({ length: 2 }, (_, index) => (
             <div key={index} className="event-group skeleton-group">
               <div className="event-date">
                 <div className="skeleton skeleton-day"></div>
@@ -57,7 +57,9 @@ const EventCampaign = ({
             <div key={index} className="event-group">
               <div className="event-date">
                 <span className="event-day">{eventGroup.day}</span>
-                <span className="event-date-text">{eventGroup.formattedDate}</span>
+                <span className="event-date-text">
+                  {eventGroup.formattedDate}
+                </span>
               </div>
               <div className="event-items">
                 {eventGroup.items.map((item, i) => (

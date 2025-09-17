@@ -1,7 +1,1 @@
-- [ ] Add orgIdReady state to Dashboard.js
-- [ ] Modify useEffect for selectedOrganizationId to set orgIdReady(true) after setting selectedOrganizationId
-- [ ] Add guard if (!orgIdReady) return; to summary API useEffect and add orgIdReady to deps
-- [ ] Add guard if (!orgIdReady) return; to active events count API useEffect and add orgIdReady to deps
-- [ ] Add guard if (!orgIdReady) return; to events campaign API useEffect and add orgIdReady to deps
-- [ ] Add guard if (!orgIdReady) return; to fetchTasksData function
-- [ ] Add guard if (!orgIdReady) return; to fetchActiveEventsData function
+- [x] Update Dashboard.js to map organizationName to collegeName in fetchAssignedEvents transformation

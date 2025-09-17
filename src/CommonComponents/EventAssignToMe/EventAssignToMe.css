@@ -1,8 +1,11 @@
 .event-assign-to-me-container {
   background: #fff;
   border-radius: 12px;
-  padding: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .event-assign-to-me-header {
@@ -10,15 +13,16 @@
   justify-content: space-between;
   align-items: center;
   /* margin-bottom: 12px; */
+  height: 2rem;
 }
 
 .header_left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
-.event-assign-to-me-header p {
+.event-assign-to-me-header span {
   font-size: 20px;
   font-weight: 600;
 }

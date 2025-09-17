@@ -99,10 +99,14 @@
   gap: 20px;
   /* flex-wrap: wrap; */
 }
+/* Bottom Section */
+.Second_Row_Section {
+  display: flex;
+  gap: 20px;
+  /* flex-wrap: wrap; */
+}
 
 .events-campaign {
-  position: relative;
-  flex: 1 1 402px;
   min-width: 402px;
   background-color: white;
   border-radius: 12px;
@@ -111,6 +115,8 @@
   /* top: -37px; */
   height: 340px;
   overflow: hidden;
+  gap: 16px;
+  z-index: 10;
 }
 
 .recent-tasks {

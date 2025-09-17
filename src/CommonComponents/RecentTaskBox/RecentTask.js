@@ -75,7 +75,7 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
       <div className="recent-tasks-header">
         <div className="header_left">
           <ListTodo />
-          <p>{title}</p>
+          <span>{title}</span>
         </div>
         {showDropdown && (
           <CustomDropdown

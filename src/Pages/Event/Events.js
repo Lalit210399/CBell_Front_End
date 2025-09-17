@@ -237,11 +237,11 @@ const EventTable = () => {
           onDuplicate={permissions.canDuplicate ? () => alert("Duplicate pressed") : undefined}
           onRowClick={(event) => {
             if (!loading && !error && permissions.canRead) {
-              // console.log("Clicked event data:", {
-              //   id: event.id,
-              //   rawData: event.rawData,
-              //   allEventData: event
-              // });
+              console.log("Clicked event data:", {
+                id: event.id,
+                rawData: event.rawData,
+                allEventData: event
+              });
 
               navigate("/events/eventDetailPage", {
                 state: {
