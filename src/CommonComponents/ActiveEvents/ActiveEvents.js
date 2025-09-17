@@ -1,13 +1,12 @@
-import React, { useState } from "react";
+import React from "react";
 import Table from "../Table/TableNew";
 import AvatarList from "../Avatar/AvatarList";
 import Avatar from "../Avatar/Avatar";
-import CustomDropdown from "../Dropdown/CustomDropdown";
 import { Calendar } from "lucide-react";
 import "./ActiveEvents.css";
 
 const ActiveEvents = ({ events, onEventClick, title = "Active Events" }) => {
-  const [filter, setFilter] = useState("All");
+  const filter = "All";
 
   const columns = [
     { key: "eventName", label: "Event Name" },
@@ -16,19 +15,8 @@ const ActiveEvents = ({ events, onEventClick, title = "Active Events" }) => {
     { key: "createdBy", label: "Created By" },
   ];
 
-  // dropdown options
-  const filterOptions = [
-    { label: "All" },
-    { label: "Active" },
-    { label: "Upcoming" },
-    { label: "Completed" },
-  ];
-
   // 🔹 filter events
-  const filteredEvents =
-    filter === "All"
-      ? events
-      : events.filter((event) => event.status === filter);
+  const filteredEvents = events;
 
   const renderCell = (key, item) => {
     const handleClick = (e) => {

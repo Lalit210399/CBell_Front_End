@@ -180,8 +180,7 @@ const DetailTopSection = ({
     <div className="detail-header-container">
       <div className="header-row-top">
         <button className="back-button" onClick={onBackClick}>
-          {/* Your back arrow SVG/icon here */}
-          ←
+          <ArrowLeft size={24} color="white" />
         </button>
         <input
           className="event-name-input"
@@ -200,39 +199,44 @@ const DetailTopSection = ({
       <div className="header-row-bottom">
         <span className="team-label">Team:</span>
         {/* Team info here if needed */}
-        <span className="type-label">Type:</span>
-        <select
-          className="event-type-dropdown"
-          value={editableTypeDesc}
-          onChange={handleTypeDescChange}
-        >
-          <option value="">Select Event Type</option>
-          <option value="meeting">Meeting</option>
-          <option value="call">Call</option>
-          <option value="review">Review</option>
-          {/* Add more options as needed */}
-        </select>
-        <span className="date-label">
-          Date:
-          {/* <FaCalendarAlt style={{ marginLeft: 4, marginRight: 4 }} /> */}
-          <input
-            className="date-input"
-            type="date"
-            value={editableDate.split("T")[0]}
-            onChange={e => setEditableDate(e.target.value + editableDate.slice(10))}
-          />
-        </span>
-        <span className="time-label">
-          Time:
-          {/* <FaClock style={{ marginLeft: 4, marginRight: 4 }} /> */}
-          <input
-            className="time-input"
-            type="time"
-            value={editableDate.split("T")[1] || ""}
-            onChange={e => setEditableDate(editableDate.split("T")[0] + "T" + e.target.value)}
-          />
-        </span>
-        <button className="save-btn" onClick={handleSaveClick}>Save</button>
+        <div className="right-elements">
+          <span className="type-label">Type:</span>
+          <select
+            className="event-type-dropdown"
+            value={editableTypeDesc}
+            onChange={handleTypeDescChange}
+          >
+            <option value="">Select Event Type</option>
+            <option value="meeting">Meeting</option>
+            <option value="call">Call</option>
+            <option value="review">Review</option>
+            {/* Add more options as needed */}
+          </select>
+          <span className="date-label">
+            Date:
+            {/* <FaCalendarAlt style={{ marginLeft: 4, marginRight: 4 }} /> */}
+            <input
+              className="date-input"
+              type="date"
+              value={editableDate.split("T")[0]}
+              onChange={e => setEditableDate(e.target.value + editableDate.slice(10))}
+            />
+          </span>
+          <span className="time-label">
+            Time:
+            {/* <FaClock style={{ marginLeft: 4, marginRight: 4 }} /> */}
+            <input
+              className="time-input"
+              type="time"
+              value={editableDate.split("T")[1] || ""}
+              onChange={e => setEditableDate(editableDate.split("T")[0] + "T" + e.target.value)}
+            />
+          </span>
+          <button className="save-btn" onClick={handleSaveClick}>
+            <Save size={16} style={{ marginRight: 6 }} />
+            Save
+          </button>
+        </div>
       </div>
     </div>
   );

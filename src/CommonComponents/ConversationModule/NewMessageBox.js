@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Paperclip, Send } from 'lucide-react';
 import Avatar from './Avatar';
-import MessageStrip from '../MessageStrip/MessageStrip';
 
 const FilePreviewBox = ({ file, uploading, onRemove }) => {
   if (!file) return null;
@@ -85,13 +84,7 @@ const NewMessageBox = ({ onSend, currentUser }) => {
     }
   };
 
-  // Show message strip for under development feature
-  const [showDevMsg, setShowDevMsg] = useState(false);
-  const handlePaperclipClick = (e) => {
-    e.preventDefault();
-    setShowDevMsg(true);
-    setTimeout(() => setShowDevMsg(false), 2000);
-  };
+
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -114,62 +107,44 @@ const NewMessageBox = ({ onSend, currentUser }) => {
     adjustTextareaHeight();
   }, [message]);
 
-  const handleAttach = (files) => {
-    setAttachments((prev) => [...prev, ...files]);
-  };
-
-  const removeAttachment = (index) => {
-    setAttachments((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  return (
-    <div className="sticky-message-box">
-      {showDevMsg && (
-        <div style={{ position: 'absolute', top: -40, left: 0, right: 0, zIndex: 10 }}>
-          <MessageStrip
-            text="This feature is under development."
-            type="Information"
-            showIcon={true}
-            showCloseButton={false}
-            duration={2000}
-          />
-        </div>
+return (
+  <div className="sticky-message-box">
+    <Avatar user={currentUser} />
+    <div className="message-input-wrapper">
+      <textarea
+        ref={textareaRef}
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Type a new message"
+        rows="1"
+      />
+      {selectedFile && (
+        <FilePreviewBox file={selectedFile} uploading={uploading} onRemove={handleRemoveFile} />
       )}
-      <Avatar user={currentUser} />
-      <div className="message-input-wrapper">
-        <textarea
-          ref={textareaRef}
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Type a new message"
-          rows="1"
+      <div className="editor-actions">
+        <input
+          type="file"
+          style={{ display: 'none' }}
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          disabled={uploading}
         />
-        {selectedFile && (
-          <FilePreviewBox file={selectedFile} uploading={uploading} onRemove={handleRemoveFile} />
-        )}
-        <div className="editor-actions">
-          <input
-            type="file"
-            style={{ display: 'none' }}
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            disabled={uploading}
-          />
-          <button className="action-button" onClick={() => fileInputRef.current && fileInputRef.current.click()} disabled={uploading}>
-            <Paperclip />
-          </button>
-          <button 
-            className="send-button" 
-            onClick={handleSend}
-            disabled={(!message.trim() && !uploadedDocId) || uploading}
-          >
-            <Send />
-          </button>
-        </div>
+        <button className="action-button" onClick={() => fileInputRef.current && fileInputRef.current.click()} disabled={uploading}>
+          <Paperclip />
+        </button>
+        <button 
+          className="send-button" 
+          onClick={handleSend}
+          disabled={(!message.trim() && !uploadedDocId) || uploading}
+        >
+          <Send />
+        </button>
       </div>
     </div>
-  );
+  </div>
+);
+
 };
 
-export default NewMessageBox; 
+export default NewMessageBox;

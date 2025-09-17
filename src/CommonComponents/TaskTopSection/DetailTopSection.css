@@ -1,15 +1,12 @@
 .detail-header-container {
-    height: auto;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 6px;
-    border-radius: var(--radius-lg);
-    padding: 4px 6px;
-    border: 1px solid var(--colourBorder);
-    background: var(--white);
-    flex-wrap: wrap;
-    margin: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--colourBorder);
+  margin: 10px;
 }
 
 .header-left-section {
@@ -17,6 +14,93 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
+}
+
+/* Team label and avatars container */
+.team-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #444;
+}
+
+/* Team label */
+.team-label {
+    margin-right: 8px;
+}
+
+/* Avatar group container */
+.avatar-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Individual avatar style */
+.avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: var(--primary, #02968A);
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    position: relative;
+}
+
+/* Outer circle around avatar */
+.avatar::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid var(--primary, #02968A);
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
+/* Inner circle around avatar */
+.avatar::after {
+    content: "";
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
+/* Add avatar button style */
+.add-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid var(--primary, #02968A);
+    color: var(--primary, #02968A);
+    font-weight: bold;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: transparent;
+    transition: background-color 0.2s ease;
+}
+
+.add-avatar:hover {
+    background-color: var(--primary-light, #e0f7f5);
 }
 
 .top-left {
@@ -107,9 +191,10 @@
 }
 
 .avatar-add-button {
-    color: #990099;
+    color: #08b394;
     /* NOT IN THEME */
-    border: 1px dotted #990099;
+    border: 1px dotted #08b394;
+;
     border-radius: 50%;
     background: transparent;
 }
@@ -403,32 +488,39 @@
 .header-row-top {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .event-name-input {
   border-radius: 16px;
   border: 1px solid #ccc;
   padding: 6px 14px;
-  font-size: 16px;
-  min-width: 885px;
+  font-size: 14px;
+  min-width: 923px;
   outline: none;
 }
 
 .created-by-pill {
-  background: #f3f3f3;
-  border-radius: 16px;
-  padding: 6px 14px;
+  background: #ffffff;
+  border-radius: 80px;
+  border: 1px solid #ccc;
+  padding: 2px 3px;
   font-size: 14px;
-  color: #555;
   margin-left: auto;
 }
 
 .header-row-bottom {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   margin-top: 4px;
+}
+
+.right-elements {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-left: auto;
 }
 
 .team-label,
@@ -437,31 +529,33 @@
 .time-label {
   font-size: 14px;
   font-weight: 500;
-  color: #444;
+  color: #464545;
+}
+
+.type-label {
+  margin-right: -5px;
 }
 
 .event-type-dropdown {
-  border-radius: 12px;
+  border-radius: 80px;
   border: 1px solid #ccc;
-  padding: 4px 10px;
+  padding: 4px 6px 4px 10px;
   font-size: 14px;
   background: #fff;
 }
 
 .date-input,
 .time-input {
-  border-radius: 10px;
+  border-radius: 80px;
   border: 1px solid #ccc;
   padding: 4px 10px;
   font-size: 14px;
   background: #fff;
-  margin-left: 4px;
-  margin-right: 4px;
-  min-width: 90px;
+  min-width: 70px;
 }
 
 .save-btn {
-  background: var(--primary, #990099);
+  background: #02968A;
   color: #fff;
   border: none;
   border-radius: 16px;
@@ -469,12 +563,14 @@
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  margin-left: 16px;
+  margin-left: 0;
+  margin-top: -2px;
   transition: background 0.2s;
+  min-width: 109px;
 }
 
 .save-btn:hover {
-  background: #7a007a;
+  background: #037269;
 }
 
 .creator-avatar {
