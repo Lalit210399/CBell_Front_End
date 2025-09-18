@@ -15,7 +15,7 @@ const EventTable = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { addMessage } = useMessages();
-  const { user, permissions: userPermissions } = useUser();
+  const { user, permissions: userPermissions, selectedOrganizationId } = useUser();
 
   console.log("user", user?.roles[0]?.name);
 
@@ -45,13 +45,32 @@ const EventTable = () => {
       setLoading(true);
       setError(null);
 
-      const res = await fetchWithRefresh(`/apis/event/get_events_only?organizationId=${user?.organizationId}&userId=${user?.userId}&role=${encodeURIComponent(user?.roles[0]?.name || "")}`,
+      // Use global selectedOrganizationId instead of user.organizationId
+      const organizationId = selectedOrganizationId || user?.organizationId;
+
+      if (!organizationId) {
+        throw new Error("No organization selected");
+      }
+
+      // Determine if we need to include X-Context-Organization header
+      const isViewingOwnOrganization = organizationId === user?.organizationId;
+      
+      // Prepare headers
+      const headers = {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "1",
+      };
+
+      // Only add X-Context-Organization header when viewing a different organization
+      if (!isViewingOwnOrganization) {
+        headers["X-Context-Organization"] = organizationId;
+      }
+
+      // Use the new hierarchy endpoint
+      const res = await fetchWithRefresh(`/apis/event/hierarchy/${organizationId}?userId=${user?.userId}`,
         {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "1",
-          },
+          headers,
         }
       );
 
@@ -112,15 +131,17 @@ const EventTable = () => {
     }
   };
 
-
   useEffect(() => {
-    if (permissions.canRead) {
+    if (permissions.canRead && selectedOrganizationId) {
       fetchEvents();
+    } else if (permissions.canRead && !selectedOrganizationId) {
+      setLoading(false);
+      setError("No organization selected");
     } else {
       setLoading(false);
       setError("You don't have permission to view events");
     }
-  }, [permissions.canRead]);
+  }, [permissions.canRead, selectedOrganizationId]);
 
   const handleRetry = () => {
     if (permissions.canRead) {

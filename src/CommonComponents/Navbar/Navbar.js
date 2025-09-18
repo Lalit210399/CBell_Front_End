@@ -1,14 +1,23 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { BellRing } from "lucide-react";
+import { BellRing, Building2 } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
 import { logout } from "../../Services/AuthN";
+import CustomDropdown from "../Dropdown/CustomDropdown";
 import "./Navbar.css";
 
 function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, permissions: userPermissions, setUser, setPermissions } = useUser();
+  const { 
+    user, 
+    permissions: userPermissions, 
+    setUser, 
+    setPermissions, 
+    scope, 
+    selectedOrganizationId, 
+    handleScopeChange 
+  } = useUser();
   const [dropdownVisible, setDropdownVisible] = useState(false);
 
   const dropdownRef = useRef(null);
@@ -20,6 +29,7 @@ function Navbar() {
       // ✅ clear frontend state
       localStorage.removeItem("user");
       localStorage.removeItem("permissions");
+      localStorage.removeItem("dashboard-selected-organization");
       setUser(null);
       setPermissions(null);
 
@@ -31,6 +41,7 @@ function Navbar() {
       // still force clear on failure
       localStorage.removeItem("user");
       localStorage.removeItem("permissions");
+      localStorage.removeItem("dashboard-selected-organization");
       setUser(null);
       setPermissions(null);
 
@@ -67,6 +78,16 @@ function Navbar() {
   const hasSchedulePermission =
     userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
 
+  // Prepare scope options
+  const scopeOptions = scope?.accessibleOrganizations?.map((org) => ({
+    label: org.data.organizationCode,
+    value: org.id,
+  })) || [];
+
+  const currentScopeLabel = scope?.accessibleOrganizations?.find(
+    (org) => org.id === selectedOrganizationId
+  )?.data.organizationCode || "Select Organization";
+
   return (
     <nav className="navbar">
       <div className="nav-links">
@@ -87,6 +108,21 @@ function Navbar() {
         )}
       </div>
       <div className="nav-right">
+        {/* Scope Selection */}
+        <div className="scope-section">
+          <span className="scope-label">
+            <Building2 size={16} />
+            Scope:
+          </span>
+          <div className="scope-dropdown">
+            <CustomDropdown
+              options={scopeOptions}
+              defaultLabel={currentScopeLabel}
+              onSelect={(option) => handleScopeChange(option.value)}
+            />
+          </div>
+        </div>
+        
         <BellRing size={22} className="bell-icon" />
         <div className="user-info" ref={dropdownRef}>
           <div className="user-details">

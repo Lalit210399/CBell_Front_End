@@ -27,26 +27,18 @@ import {
 import "./Dashboard.css";
 
 const Dashboard = () => {
-  const { user, scope } = useUser();
+  const { user, scope, selectedOrganizationId } = useUser();
   const navigate = useNavigate();
 
-  // State for selected organization
-  const [selectedOrganizationId, setSelectedOrganizationId] = useState(null);
+  // State for orgIdReady - now based on global selectedOrganizationId
   const [orgIdReady, setOrgIdReady] = useState(false);
 
-  // Initialize selected organization from localStorage or default to user's org
+  // Initialize orgIdReady based on global state
   useEffect(() => {
-    const savedOrgId = localStorage.getItem("dashboard-selected-organization");
-    if (
-      savedOrgId &&
-      scope?.accessibleOrganizations?.some((org) => org.id === savedOrgId)
-    ) {
-      setSelectedOrganizationId(savedOrgId);
-    } else {
-      setSelectedOrganizationId(user?.organizationId);
+    if (selectedOrganizationId) {
+      setOrgIdReady(true);
     }
-    setOrgIdReady(true);
-  }, [user?.organizationId, scope?.accessibleOrganizations]);
+  }, [selectedOrganizationId]);
 
   // Handle new event button click
   const handleNewEvent = () => {
@@ -619,21 +611,6 @@ const Dashboard = () => {
     }
   }, [selectedOrganizationId, user?.organizationId, user?.userId, orgIdReady]);
 
-  const scopeOptions = scope?.accessibleOrganizations?.map((org) => ({
-    label: org.data.organizationCode,
-    value: org.id,
-  }));
-
-  // Update selected organization and persist selection on scope change
-  const handleScopeSelect = (option) => {
-    setSelectedOrganizationId(option.value);
-    if (option.value) {
-      localStorage.setItem("dashboard-selected-organization", option.value);
-    } else {
-      localStorage.removeItem("dashboard-selected-organization");
-    }
-  };
-
   const tilesRef = useRef(null);
 
   const scrollTiles = (direction) => {
@@ -702,29 +679,7 @@ const Dashboard = () => {
       <div className="welcome-section">
         <h2>Welcome {user?.firstName}, Plan Your Day Ahead</h2>
         <div className="welcome-controls">
-          <div className="scope-section">
-            <span className="scope-label">
-              <Building2 />
-              Scope:
-            </span>
-            <div className="scope-dropdown">
-              <CustomDropdown
-                options={scopeOptions}
-                defaultLabel={
-                  scope?.accessibleOrganizations?.find(
-                    (org) => org.id === selectedOrganizationId
-                  )?.data.organizationCode
-                }
-                onSelect={handleScopeSelect}
-              />
-            </div>
-          </div>
-          {/* <button
-            className="dashboard-btn dashboard-btn-secondary"
-            onClick={handleNewTask}
-          >
-            + New Task
-          </button> */}
+          {/* Scope section removed - now in navbar */}
           <button
             className="dashboard-btn dashboard-btn-primary"
             onClick={handleNewEvent}

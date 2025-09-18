@@ -6,6 +6,7 @@ export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [permissions, setPermissions] = useState(null);
   const [scope, setScope] = useState(null);
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -13,16 +14,52 @@ export const UserProvider = ({ children }) => {
     const storedUser = localStorage.getItem("user");
     const storedPermissions = localStorage.getItem("permissions");
     const storedScope = localStorage.getItem("scope");
+    const storedSelectedOrg = localStorage.getItem("dashboard-selected-organization");
 
     if (storedUser) setUser(JSON.parse(storedUser));
     if (storedPermissions) setPermissions(JSON.parse(storedPermissions));
     if (storedScope) setScope(JSON.parse(storedScope));
+    if (storedSelectedOrg) setSelectedOrganizationId(storedSelectedOrg);
 
     setLoading(false); // ✅ auth state resolved
   }, []);
 
+  // Initialize selected organization when user and scope are available
+  useEffect(() => {
+    if (user?.organizationId && scope?.accessibleOrganizations && !selectedOrganizationId) {
+      // Check if saved org is still accessible
+      const savedOrgId = localStorage.getItem("dashboard-selected-organization");
+      if (savedOrgId && scope.accessibleOrganizations.some(org => org.id === savedOrgId)) {
+        setSelectedOrganizationId(savedOrgId);
+      } else {
+        // Default to user's organization
+        setSelectedOrganizationId(user.organizationId);
+        localStorage.setItem("dashboard-selected-organization", user.organizationId);
+      }
+    }
+  }, [user?.organizationId, scope?.accessibleOrganizations, selectedOrganizationId]);
+
+  const handleScopeChange = (organizationId) => {
+    setSelectedOrganizationId(organizationId);
+    if (organizationId) {
+      localStorage.setItem("dashboard-selected-organization", organizationId);
+    } else {
+      localStorage.removeItem("dashboard-selected-organization");
+    }
+  };
+
   return (
-    <UserContext.Provider value={{ user, setUser, permissions, setPermissions, scope, setScope, loading }}>
+    <UserContext.Provider value={{ 
+      user, 
+      setUser, 
+      permissions, 
+      setPermissions, 
+      scope, 
+      setScope, 
+      selectedOrganizationId,
+      handleScopeChange,
+      loading 
+    }}>
       {children}
     </UserContext.Provider>
   );

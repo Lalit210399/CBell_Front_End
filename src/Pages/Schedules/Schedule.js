@@ -12,79 +12,101 @@ const Schedule = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { addMessage } = useMessages();
-  const { user } = useUser();
+  const { user, selectedOrganizationId } = useUser();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const response = await fetchWithRefresh(`/apis/event/get_events_only?organizationId=${user?.organizationId}&userId=${user?.userId}&role=${encodeURIComponent(user?.roles[0]?.name || "")}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            "ngrok-skip-browser-warning": "1",
-          },
-        });
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Use global selectedOrganizationId instead of user.organizationId
+      const organizationId = selectedOrganizationId || user?.organizationId;
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch events: ${response.status}`);
-        }
-
-        const responseData = await response.json();
-        const eventsData = responseData.data || responseData;
-
-        if (!Array.isArray(eventsData)) {
-          throw new Error("Expected array of events but got something else");
-        }
-
-        const formattedEvents = eventsData.map((event) => {
-          const eventDate = new Date(event.eventDate);
-          const now = new Date();
-          const timeDiff = eventDate.getTime() - now.getTime();
-          const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-
-          let category;
-          if (daysDiff < 0) {
-            category = "completed";
-          } else if (daysDiff <= 7) {
-            category = "critical";
-          } else if (daysDiff <= 30) {
-            category = "on-track";
-          } else {
-            category = "new";
-          }
-
-          return {
-            id: event.id,
-            title: event.eventName,
-            start: eventDate,
-            end: eventDate,
-            category: category,
-            rawData: event, // keep full event data for detail page
-          };
-        });
-
-        setEvents(formattedEvents);
-      } catch (err) {
-        console.error("Error fetching events:", err);
-        setError(err.message);
-        addMessage({
-          text: "Failed to load events. Please try again.",
-          type: "error",
-          duration: 3000,
-        });
-      } finally {
-        setLoading(false);
+      if (!organizationId) {
+        throw new Error("No organization selected");
       }
-    };
 
-    if (user?.organizationId) {
-      fetchEvents();
+      // Determine if we need to include X-Context-Organization header
+      const isViewingOwnOrganization = organizationId === user?.organizationId;
+      
+      // Prepare headers
+      const headers = {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "1",
+      };
+
+      // Only add X-Context-Organization header when viewing a different organization
+      if (!isViewingOwnOrganization) {
+        headers["X-Context-Organization"] = organizationId;
+      }
+
+      // Use the new hierarchy endpoint
+      const response = await fetchWithRefresh(`/apis/event/hierarchy/${organizationId}?userId=${user?.userId}`, {
+        method: "GET",
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch events: ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      const eventsData = responseData.data || responseData;
+
+      if (!Array.isArray(eventsData)) {
+        throw new Error("Expected array of events but got something else");
+      }
+
+      const formattedEvents = eventsData.map((event) => {
+        const eventDate = new Date(event.eventDate);
+        const now = new Date();
+        const timeDiff = eventDate.getTime() - now.getTime();
+        const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+        let category;
+        if (daysDiff < 0) {
+          category = "completed";
+        } else if (daysDiff <= 7) {
+          category = "critical";
+        } else if (daysDiff <= 30) {
+          category = "on-track";
+        } else {
+          category = "new";
+        }
+
+        return {
+          id: event.id,
+          title: event.eventName,
+          start: eventDate,
+          end: eventDate,
+          category: category,
+          rawData: event, // keep full event data for detail page
+        };
+      });
+
+      setEvents(formattedEvents);
+    } catch (err) {
+      console.error("Error fetching events:", err);
+      setError(err.message);
+      addMessage({
+        text: "Failed to load events. Please try again.",
+        type: "error",
+        duration: 3000,
+      });
+    } finally {
+      setLoading(false);
     }
-  }, [user?.organizationId]);
+  };
+
+  useEffect(() => {
+    if (selectedOrganizationId) {
+      fetchEvents();
+    } else if (!selectedOrganizationId) {
+      setLoading(false);
+      setError("No organization selected");
+    }
+  }, [selectedOrganizationId]);
 
   // 👇 handle click
   const handleEventClick = (event) => {

@@ -51,6 +51,26 @@
   gap: 24px;
 }
 
+.scope-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 16px;
+}
+
+.scope-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.scope-dropdown {
+  min-width: 150px;
+}
+
 .bell-icon {
   color: var(--primary);
   cursor: pointer;

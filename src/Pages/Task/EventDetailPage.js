@@ -11,7 +11,6 @@ import TopSection from "../../CommonComponents/TaskTopSection/DetailTopSectionNe
 import { useUser } from "../../Context/UserContext";
 import { useMessages } from "../../Context/MessageContext";
 import { getHierarchyUsers } from "../../Services/AuthN";
-import { useOrganizationScope } from "../../Hooks/useOrganizationScope";
 import { Building, Calendar, FileText } from "lucide-react";
 import "./Tasks.css";
 
@@ -29,7 +28,6 @@ const EventDetail = () => {
   const { user } = useUser();
   const { addMessage } = useMessages();
   const { permissions: userPermissions } = useUser();
-  const { organizationId } = useOrganizationScope();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -59,7 +57,7 @@ const EventDetail = () => {
     const abortController = new AbortController();
     const fetchTasks = async () => {
       try {
-        const response = await fetchWithRefresh(`/apis/task/by-event/${eventId}?organizationId=${organizationId}`, {
+        const response = await fetchWithRefresh(`/apis/task/by-event/${eventId}?organizationId=${user?.organizationId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -106,7 +104,7 @@ const EventDetail = () => {
     }
 
     return () => abortController.abort();
-  }, [activeTab, eventId, organizationId, addMessage]);
+  }, [activeTab, eventId, user?.organizationId, addMessage]);
 
   useEffect(() => {
     fetchUsers();
@@ -294,7 +292,7 @@ const EventDetail = () => {
       if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
 
       const result = await response.json();
-      
+
       // For new events, get the ID from the response and update the state
       if (mode === "create" && result.id) {
         // Update the URL state to include the new event ID
@@ -313,7 +311,7 @@ const EventDetail = () => {
           replace: true
         });
       }
-      
+
       // Update the local state with the saved data
       const updatedEvent = {
         ...payload,
@@ -322,9 +320,9 @@ const EventDetail = () => {
         specialGuests: payload.specialGuests,
         assignedUsers: payload.assignedUsers
       };
-      
+
       setFetchedEvent(updatedEvent);
-      
+
       // Switch to view mode after successful save/create
       setMode("view");
       addMessage({
@@ -367,9 +365,9 @@ const EventDetail = () => {
         console.warn("No organizationId available for user fetch");
         return;
       }
-      
+
       const response = await getHierarchyUsers(user.organizationId);
-      
+
       const formattedUsers = response.users.map(user => ({
         id: user.id,
         firstName: user.firstName,
@@ -379,7 +377,7 @@ const EventDetail = () => {
         organizationId: user.organizationId,
         organizationCode: user.organizationCode || "ORG001"
       }));
-      
+
       setUsersList(formattedUsers);
     } catch (error) {
       console.error("Error fetching hierarchy users:", error);
@@ -475,12 +473,12 @@ const EventDetail = () => {
     participants,
   }), [mode, formData?.eventName, fetchedEvent?.eventName, selectedDate, fetchedEvent?.eventDate, fetchedEvent?.typeName, eventType, fetchedEvent?.eventTypeDesc, eventTypeDesc, user?.firstName, fetchedEvent?.createdBy, participants]);
 
-  const guestsData = React.useMemo(() => 
-    mode === "create" ? [] : fetchedEvent?.specialGuests || [], 
+  const guestsData = React.useMemo(() =>
+    mode === "create" ? [] : fetchedEvent?.specialGuests || [],
     [mode, fetchedEvent?.specialGuests]
   );
-  const organizersData = React.useMemo(() => 
-    mode === "create" ? [] : fetchedEvent?.coordinators || [], 
+  const organizersData = React.useMemo(() =>
+    mode === "create" ? [] : fetchedEvent?.coordinators || [],
     [mode, fetchedEvent?.coordinators]
   );
 
@@ -529,7 +527,7 @@ const EventDetail = () => {
     },
   ], [mode, detailSaveRef, guestsData, organizersData, formData?.eventDescription, fetchedEvent?.eventDescription, formData?.location, fetchedEvent?.locationDetails, tasksData, eventId, user?.organizationId, handleDownload, handleSendMail]);
 
-  const filteredTabs = React.useMemo(() => 
+  const filteredTabs = React.useMemo(() =>
     mode === "create"
       ? tabs.filter(tab => tab.label === "Details")
       : tabs,
