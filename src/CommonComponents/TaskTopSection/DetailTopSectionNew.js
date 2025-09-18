@@ -55,12 +55,25 @@ const DetailTopSectionNew = ({
 
   useEffect(() => {
     const ids = (assignedTo || [])
-      .map((item) =>
-        typeof item === "string" || typeof item === "number" ? item : item?.id
-      )
+      .map((item) => {
+        // Handle both string/number IDs and full user objects
+        if (typeof item === "string" || typeof item === "number") {
+          return item;
+        } else if (item && typeof item === "object") {
+          // For assigned user objects, use userId field
+          return item.userId || item.id;
+        }
+        return null;
+      })
       .filter(Boolean);
-    setAssignedIds(ids);
-  }, [assignedTo]);
+    
+    // Only update if the IDs have actually changed
+    const currentIds = assignedIds.sort();
+    const newIds = ids.sort();
+    if (JSON.stringify(currentIds) !== JSON.stringify(newIds)) {
+      setAssignedIds(ids);
+    }
+  }, [assignedTo, assignedIds]);
 
   useEffect(() => {
     const fetchEventTypes = async () => {
@@ -136,6 +149,21 @@ const DetailTopSectionNew = ({
 
 
   const selectedParticipants = assignedIds.map((assignedId) => {
+    // First try to find in the full assigned user data (from API)
+    const assignedUser = assignedTo.find((u) => (u.userId || u.id) === assignedId);
+    
+    if (assignedUser) {
+      // Use the assigned user data directly
+      return {
+        id: assignedUser.userId || assignedUser.id,
+        name: assignedUser.userName || assignedUser.name,
+        fallback: (assignedUser.userName || assignedUser.name || "?").charAt(0).toUpperCase(),
+        size: "20px",
+        shape: "circle",
+      };
+    }
+    
+    // Fallback to fetched users if not found in assigned data
     const fullUser = fetchedUsers.find((u) => u.id === assignedId);
     const firstName = fullUser?.firstName || "User";
     const lastName = fullUser?.lastName || "";
@@ -341,17 +369,17 @@ const DetailTopSectionNew = ({
           </div>
 
           <div className="save-button-section" style={{ display: "flex", gap: "8px" }}>
-            {/* {(mode === "view" || mode === "edit") && permissions?.canCreateTask && ( */}
-              <button className="btn-new" onClick={onNewTaskClick}>
-                New Task
-              </button>
-            {/* )} */}
-            {/* {(mode === "edit" || mode === "create") && permissions?.canSave && ( */}
+            {/* Show New Task button in view, edit, or create mode */}
+            <button className="btn-new" onClick={onNewTaskClick}>
+              New Task
+            </button>
+            {/* Show Save button only in edit or create mode */}
+            {(mode === "edit" || mode === "create") && (
               <button className="btn-new" onClick={handleSaveClick}>
                 <Save size={16} />
                 Save
               </button>
-            {/* )} */}
+            )}
           </div>
         </div>
       </div>

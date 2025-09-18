@@ -108,7 +108,7 @@ const Schedule = () => {
     }
   }, [selectedOrganizationId]);
 
-  // 👇 handle click
+  // Original handle click - just pass event ID to EventDetailPage
   const handleEventClick = (event) => {
     navigate("/events/eventDetailPage", {
       state: {

@@ -25,7 +25,7 @@ const EventDetail = () => {
   const [usersList, setUsersList] = useState([]);
   const [assignedUsers, setAssignedUsers] = useState([]);
   const detailSaveRef = useRef(null);
-  const { user } = useUser();
+  const { user, selectedOrganizationId } = useUser();
   const { addMessage } = useMessages();
   const { permissions: userPermissions } = useUser();
   const navigate = useNavigate();
@@ -57,7 +57,9 @@ const EventDetail = () => {
     const abortController = new AbortController();
     const fetchTasks = async () => {
       try {
-        const response = await fetchWithRefresh(`/apis/task/by-event/${eventId}?organizationId=${user?.organizationId}`, {
+        const organizationId = selectedOrganizationId || user?.organizationId;
+        
+        const response = await fetchWithRefresh(`/apis/task/by-event/${eventId}?organizationId=${organizationId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -104,11 +106,11 @@ const EventDetail = () => {
     }
 
     return () => abortController.abort();
-  }, [activeTab, eventId, user?.organizationId, addMessage]);
+  }, [activeTab, eventId, selectedOrganizationId, user?.organizationId, addMessage]);
 
   useEffect(() => {
     fetchUsers();
-  }, [user?.organizationId]);
+  }, [selectedOrganizationId, user?.organizationId]);
 
   useEffect(() => {
     if (mode === "create") {
@@ -118,7 +120,7 @@ const EventDetail = () => {
         eventDescription: formData?.eventDescription || "",
         coordinators: [],
         specialGuests: [],
-        organizationId: user?.organizationId,
+        organizationId: selectedOrganizationId || user?.organizationId,
         eventType: eventType || "",
         eventTypeId: eventTypeId || "",
         eventTypeDesc: eventTypeDesc || "",
@@ -130,44 +132,45 @@ const EventDetail = () => {
       return;
     }
 
-    if (eventData) {
-      const transformedEvent = {
-        ...eventData,
-        eventType: eventType || eventData.eventType,
-        eventTypeId: eventTypeId || eventData.eventTypeId,
-        eventTypeDesc: eventTypeDesc || eventData.eventTypeDesc,
-        coordinators: Array.isArray(eventData.coordinators)
-          ? eventData.coordinators.map(coord => typeof coord === 'string' ? { name: coord, title: "Coordinator" } : coord)
-          : [],
-        specialGuests: Array.isArray(eventData.specialGuests)
-          ? eventData.specialGuests.map(guest => typeof guest === 'string' ? { name: guest, title: "Guest" } : guest)
-          : [],
-        assignedUsers: Array.isArray(eventData.assignedUsers) ? eventData.assignedUsers : []
-      };
-
-      setFetchedEvent(transformedEvent);
-      // Initialize assignedUsers from eventData if available
-      if (eventData.assignedUsers) {
-        setAssignedUsers(eventData.assignedUsers.map(user => user.userId));
-      }
-      if (transformedEvent.canCRUD === false) {
-        setMode("view");
-      }
-      return;
-    }
-
+    // Always fetch full event data using API when eventId is available
     const fetchEvent = async () => {
       if (!eventId) return;
+      
       try {
-        const response = await fetchWithRefresh(`/apis/task/get_tasks_only?organizationId=${user?.organizationId}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            "ngrok-skip-browser-warning": "1",
-          },
-        });
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        const organizationId = selectedOrganizationId || user?.organizationId;
+        
+        if (!organizationId) {
+          throw new Error("No organization selected");
+        }
+
+        // Determine if we need to include X-Context-Organization header
+        const isViewingOwnOrganization = organizationId === user?.organizationId;
+        
+        // Prepare headers
+        const headers = {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "ngrok-skip-browser-warning": "1",
+        };
+
+        // Only add X-Context-Organization header when viewing a different organization
+        if (!isViewingOwnOrganization) {
+          headers["X-Context-Organization"] = organizationId;
+        }
+
+        // Use the new event details API endpoint
+        const response = await fetchWithRefresh(
+          `/apis/event/get_event/${eventId}?organizationId=${organizationId}&userId=${user?.userId}`,
+          {
+            method: "GET",
+            headers,
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
         const responseData = await response.json();
         const eventData = responseData.data || responseData;
 
@@ -183,9 +186,9 @@ const EventDetail = () => {
         };
 
         setFetchedEvent(transformedData);
-        // Initialize assignedUsers from fetched data
-        if (eventData.assignedUsers) {
-          setAssignedUsers(eventData.assignedUsers.map(user => user.userId));
+        // Initialize assignedUsers from fetched data - pass full user objects instead of just IDs
+        if (eventData.assignedUsers && Array.isArray(eventData.assignedUsers)) {
+          setAssignedUsers(eventData.assignedUsers);
         }
       } catch (error) {
         console.error("Error fetching event:", error);
@@ -198,7 +201,7 @@ const EventDetail = () => {
     };
 
     fetchEvent();
-  }, [eventId, mode, selectedDate, eventData, user?.organizationId, formData, eventType, eventTypeId, eventTypeDesc, addMessage]);
+  }, [eventId, mode, selectedDate, selectedOrganizationId, user?.organizationId, user?.userId, formData, eventType, eventTypeId, eventTypeDesc, addMessage]);
 
   const permissions = React.useMemo(() => {
     const userCanEdit = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false;
@@ -235,12 +238,23 @@ const EventDetail = () => {
       organizers: []
     };
 
-    // Prepare assignedUsers array from selected user IDs
-    const assignedUsersPayload = assignedUsers.map(userId => {
-      const user = usersList.find(u => u.id === userId);
+    // Prepare assignedUsers array - assignedUsers already contains full user objects
+    const assignedUsersPayload = assignedUsers.map(assignedUser => {
+      // If it's already a full object, use it directly
+      if (assignedUser && typeof assignedUser === 'object' && assignedUser.userId) {
+        return {
+          userId: assignedUser.userId,
+          userName: assignedUser.userName,
+          orgCode: assignedUser.orgCode || "ORG001",
+          assignedOn: assignedUser.assignedOn || new Date().toISOString()
+        };
+      }
+      
+      // Fallback: if it's just an ID, look it up in usersList
+      const user = usersList.find(u => u.id === assignedUser);
       const currentDate = new Date().toISOString();
       return {
-        userId: userId,
+        userId: assignedUser,
         userName: user ? `${user.firstName} ${user.lastName}` : "Unknown User",
         orgCode: user?.organizationCode || "ORG001",
         assignedOn: currentDate
@@ -249,9 +263,8 @@ const EventDetail = () => {
 
     const payload = {
       eventName: titleValue,
-      organizationId: user?.organizationId,
+      organizationId: selectedOrganizationId || user?.organizationId,
       eventTypeId: topSectionData.eventTypeId || eventTypeId || fetchedEvent?.eventTypeId,
-      eventType: topSectionData.type || eventType || fetchedEvent?.eventType,
       eventTypeDesc: topSectionData.eventTypeDesc || eventTypeDesc || fetchedEvent?.eventTypeDesc,
       eventDescription: detailData.description || "",
       locationDetails: detailData.location || "Pune",
@@ -361,12 +374,14 @@ const EventDetail = () => {
 
   const fetchUsers = async () => {
     try {
-      if (!user?.organizationId) {
+      const organizationId = selectedOrganizationId || user?.organizationId;
+      
+      if (!organizationId) {
         console.warn("No organizationId available for user fetch");
         return;
       }
 
-      const response = await getHierarchyUsers(user.organizationId);
+      const response = await getHierarchyUsers(organizationId);
 
       const formattedUsers = response.users.map(user => ({
         id: user.id,
@@ -392,7 +407,17 @@ const EventDetail = () => {
   const handleBackClick = () => navigate(-1);
 
   const handleParticipantsChange = (participantIds) => {
-    setAssignedUsers(participantIds);
+    // Convert user IDs to full user objects
+    const fullUserObjects = participantIds.map(userId => {
+      const user = usersList.find(u => u.id === userId);
+      return {
+        userId: userId,
+        userName: user ? `${user.firstName} ${user.lastName}` : "Unknown User",
+        orgCode: user?.organizationCode || "ORG001",
+        assignedOn: new Date().toISOString()
+      };
+    });
+    setAssignedUsers(fullUserObjects);
   };
 
   const handleNewTaskClick = () => {
@@ -400,7 +425,7 @@ const EventDetail = () => {
       state: {
         eventId,
         mode: "create",
-        organizationId: user?.organizationId,
+        organizationId: selectedOrganizationId || user?.organizationId,
         eventDate: fetchedEvent?.eventDate || (selectedDate ? selectedDate.toISOString() : undefined),
       },
     });
@@ -439,16 +464,14 @@ const EventDetail = () => {
       size: "32px",
       shape: "circle"
     })),
-    ...assignedUsers.map((userId) => {
-      const user = usersList.find(u => u.id === userId);
-      return {
-        id: userId,
-        name: user ? `${user.firstName} ${user.lastName}` : "Unknown User",
-        size: "32px",
-        shape: "circle"
-      };
-    }),
-  ], [fetchedEvent?.coordinators, fetchedEvent?.specialGuests, assignedUsers, usersList]);
+    // Add assigned users to participants
+    ...(fetchedEvent?.assignedUsers || []).map((assignedUser, index) => ({
+      id: assignedUser.userId || `assigned-${index}`,
+      name: assignedUser.userName || "Unknown User",
+      size: "32px",
+      shape: "circle"
+    })),
+  ], [fetchedEvent?.coordinators, fetchedEvent?.specialGuests, fetchedEvent?.assignedUsers]);
 
   const topSectionData = React.useMemo(() => ({
     title: mode === "create" ? formData?.eventName || "" : fetchedEvent?.eventName || "",
@@ -510,7 +533,7 @@ const EventDetail = () => {
         <FileUploads
           filesFromTasks={[]}
           eventId={eventId}
-          organizationId={user?.organizationId}
+          organizationId={selectedOrganizationId || user?.organizationId}
         />
       ),
     },
@@ -525,7 +548,7 @@ const EventDetail = () => {
         />
       ),
     },
-  ], [mode, detailSaveRef, guestsData, organizersData, formData?.eventDescription, fetchedEvent?.eventDescription, formData?.location, fetchedEvent?.locationDetails, tasksData, eventId, user?.organizationId, handleDownload, handleSendMail]);
+  ], [mode, detailSaveRef, guestsData, organizersData, formData?.eventDescription, fetchedEvent?.eventDescription, formData?.location, fetchedEvent?.locationDetails, tasksData, eventId, selectedOrganizationId, user?.organizationId, handleDownload, handleSendMail]);
 
   const filteredTabs = React.useMemo(() =>
     mode === "create"
@@ -551,6 +574,20 @@ const EventDetail = () => {
       icon: FileText,
     },
   ], [user?.organization?.name, mode, fetchedEvent?.eventName, navigate]);
+
+  // Add console log before passing data to DetailTopSectionNew
+  console.log("=== Data being passed to DetailTopSectionNew ===");
+  console.log("topSectionData:", topSectionData);
+  console.log("participants:", participants);
+  console.log("permissions:", permissions);
+  console.log("usersList:", usersList);
+  console.log("assignedUsers (full data):", assignedUsers);
+  console.log("mode:", mode);
+  console.log("isSubmitting:", isSubmitting);
+  console.log("validationErrors:", validationErrors);
+  console.log("selectedDate:", selectedDate);
+  console.log("fetchedEvent:", fetchedEvent);
+  console.log("================================================");
 
   return (
     <div className="event-detail-module">
