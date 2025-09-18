@@ -12,7 +12,7 @@ const ActiveEvents = ({ events, onEventClick, title = "Active Events", loading =
   const columns = [
     { key: "eventName", label: "Event Name" },
     { key: "assignTo", label: "Assign To" },
-    { key: "eventDate", label: "Event Date" },
+    { key: "displayDate", label: "Event Date" },
     { key: "createdBy", label: "Created By" },
   ];
 
@@ -68,7 +68,7 @@ const ActiveEvents = ({ events, onEventClick, title = "Active Events", loading =
   const skeletonRows = Array.from({ length: 5 }, (_, i) => ({
     eventName: "",
     assignTo: [],
-    eventDate: "",
+    displayDate: "",
     createdBy: { name: "", src: "" },
     id: `skeleton-${i}`,
   }));
@@ -93,7 +93,7 @@ const ActiveEvents = ({ events, onEventClick, title = "Active Events", loading =
         columns={columns}
         data={loading ? skeletonRows : filteredEvents}
         renderCell={loading ? () => <div className="skeleton-row-cell" /> : renderCell}
-        sortableColumns={["eventName", "eventDate"]}
+        sortableColumns={["eventName", "displayDate"]}
         showActions={false}
         onRowClick={loading ? undefined : (event) => onEventClick?.(event)}
         className="fixed-height"

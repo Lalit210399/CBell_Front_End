@@ -1,37 +1,59 @@
 .Events {
   padding: 20px;
 }
+
 .Table_Container {
-    height: 100%;
-    width: 100%;
-    /* max-width: 1169px; */
-    /* box-sizing: border-box; */
-    /* border: 1px solid  red; */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+  height: 100%;
+  width: 100%;
+  /* max-width: 1169px; */
+  /* box-sizing: border-box; */
+  /* border: 1px solid red; */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-  .Welcome-to-AISSMS-IOIT-College {
-    width: 415px;
-    height: 40px;
-    flex-grow: 0;
-    /* font-family: Jost; */
-    font-size: 28px;
-    font-weight: 500;
-    font-stretch: normal;
-    font-style: normal;
-    line-height: normal;
-    letter-spacing: normal;
-    text-align: center;
-    color: #505050;
-  }
-  
-  /* .Welcome-to-AISSMS-IOIT-College .text-style-1 {
-    font-style: italic;
-  } */
+.Welcome-to-AISSMS-IOIT-College {
+  width: 415px;
+  height: 40px;
+  flex-grow: 0;
+  /* font-family: Jost; */
+  font-size: 28px;
+  font-weight: 500;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: normal;
+  letter-spacing: normal;
+  text-align: center;
+  color: #505050;
+}
 
-  /* Loading overlay for table */
+.scope-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 20px 0;
+  gap: 10px;
+}
+
+.scope-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #505050;
+}
+
+.scope-dropdown {
+  min-width: 200px;
+}
+
+/* .Welcome-to-AISSMS-IOIT-College .text-style-1 {
+  font-style: italic;
+} */
+
+/* Loading overlay for table */
 .Table_Container.loading {
   position: relative;
 }
@@ -72,5 +94,5 @@
 /* Disabled state for header during loading */
 .table-header.disabled {
   opacity: 0.6;
-  pointer-events: none
+  pointer-events: none;
 }

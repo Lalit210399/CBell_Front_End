@@ -7,10 +7,11 @@ import Task from "./Tasks/Tasks";
 import Publish from "./Publish/Publish";
 import FileUploads from "./Files_Uploads/FilesUploads";
 import Breadcrumb from "../../CommonComponents/Breadcrumb/Breadcrumb";
-import TopSection from "../../CommonComponents/TaskTopSection/DetailTopSection";
+import TopSection from "../../CommonComponents/TaskTopSection/DetailTopSectionNew";
 import { useUser } from "../../Context/UserContext";
 import { useMessages } from "../../Context/MessageContext";
 import { getHierarchyUsers } from "../../Services/AuthN";
+import { useOrganizationScope } from "../../Hooks/useOrganizationScope";
 import { Building, Calendar, FileText } from "lucide-react";
 import "./Tasks.css";
 
@@ -19,7 +20,7 @@ const EventDetail = () => {
   const [fetchedEvent, setFetchedEvent] = useState(null);
   const [tasksData, setTasksData] = useState([]);
   const [activeTab, setActiveTab] = useState("Details");
-  const [mode, setMode] = useState("view");
+  const [mode, setMode] = useState("View");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [usersList, setUsersList] = useState([]);
@@ -28,6 +29,7 @@ const EventDetail = () => {
   const { user } = useUser();
   const { addMessage } = useMessages();
   const { permissions: userPermissions } = useUser();
+  const { organizationId } = useOrganizationScope();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -57,7 +59,7 @@ const EventDetail = () => {
     const abortController = new AbortController();
     const fetchTasks = async () => {
       try {
-        const response = await fetchWithRefresh(`/apis/task/by-event/${eventId}?organizationId=${user?.organizationId}`, {
+        const response = await fetchWithRefresh(`/apis/task/by-event/${eventId}?organizationId=${organizationId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -104,7 +106,7 @@ const EventDetail = () => {
     }
 
     return () => abortController.abort();
-  }, [activeTab, eventId, user?.organizationId, addMessage]);
+  }, [activeTab, eventId, organizationId, addMessage]);
 
   useEffect(() => {
     fetchUsers();
@@ -250,9 +252,9 @@ const EventDetail = () => {
     const payload = {
       eventName: titleValue,
       organizationId: user?.organizationId,
-      eventTypeId: eventTypeId || fetchedEvent?.eventTypeId,
-      eventType: eventType || fetchedEvent?.eventType,
-      eventTypeDesc: eventTypeDesc || fetchedEvent?.eventTypeDesc,
+      eventTypeId: topSectionData.eventTypeId || eventTypeId || fetchedEvent?.eventTypeId,
+      eventType: topSectionData.type || eventType || fetchedEvent?.eventType,
+      eventTypeDesc: topSectionData.eventTypeDesc || eventTypeDesc || fetchedEvent?.eventTypeDesc,
       eventDescription: detailData.description || "",
       locationDetails: detailData.location || "Pune",
       coordinators: (detailData.organizers || []).map(org => ({
@@ -269,7 +271,7 @@ const EventDetail = () => {
         ? new Date(topSectionData.date).toISOString()
         : (selectedDate ? selectedDate.toISOString() : new Date().toISOString()),
       createdBy: user?.userId,
-      isPrivate: true,
+      isPrivate: false,
       updatedBy: user?.userId
     };
 

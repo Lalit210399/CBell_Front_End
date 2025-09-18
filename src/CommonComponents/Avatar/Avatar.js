@@ -20,7 +20,7 @@ const Avatar = ({ src, alt = '', name = '', size = '32px', shape = 'circle' }) =
   const fallbackContent = getInitials(name) || alt?.charAt(0).toUpperCase() || '?';
 
   return (
-    <div className={avatarClass}>
+    <div className={avatarClass} title={name}>
       {src ? (
         <img src={src} alt={alt} className="avatar-image" onError={(e) => {
           e.target.style.display = 'none';
