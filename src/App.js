@@ -13,6 +13,7 @@ import ForgotPassword from "./CommonComponents/UserAuth/ForgotPassword";
 import TasksDetail from "./Pages/Task/TaskDetailPage";
 import Instagram from "./InstagramPost";
 import ProtectedRoute, { RequirePermission } from "./Context/ProtectedRoute"; 
+import EditableList from "./CommonComponents/List/List";
 
 function App() {
   return (
@@ -62,6 +63,7 @@ function App() {
                   <Route path="/events/eventDetailPage" element={<EventDetailPage />} />
                   <Route path="/events/eventDetailPage/tasks" element={<TasksDetail />} />
                   <Route path="/instagram" element={<Instagram />} />
+                  <Route path="/special-guests" element={<EditableList />} />
                 </Routes>
               </MainLayout>
             </ProtectedRoute>

@@ -121,7 +121,7 @@
     justify-content: center;
     cursor: pointer;
     transition: background 0.3s ease;
-    margin-right: 10px;
+    margin-right: 8px;
 }
 
 .back-button svg {
@@ -488,7 +488,7 @@
 .header-row-top {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
 }
 
 .event-name-input {
@@ -496,17 +496,17 @@
   border: 1px solid #ccc;
   padding: 6px 14px;
   font-size: 14px;
-  min-width: 923px;
   outline: none;
+  width: 100%;
 }
 
 .created-by-pill {
   background: #ffffff;
   border-radius: 80px;
   border: 1px solid #ccc;
-  padding: 2px 3px;
+  padding: 1px 2px;
   font-size: 14px;
-  margin-left: auto;
+  width: 125.33px;
 }
 
 .header-row-bottom {
@@ -578,7 +578,7 @@
   align-items: center;
   justify-content: center;
   margin-left: 8px;
-  width: 28px;
+  width: 30px;
   height: 28px;
   border-radius: 50%;
   background: var(--primary, #990099);

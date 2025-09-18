@@ -16,6 +16,7 @@
 
 /* 📌 Left Section (Back Button + Title Next to Each Other) */
 .header-left {
+    font-size: 14px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;

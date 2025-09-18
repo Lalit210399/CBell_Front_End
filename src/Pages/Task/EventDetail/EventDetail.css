@@ -11,6 +11,24 @@
     width: 50%;
 }
 
+/* Updated styles for event description box */
+.Right_Section {
+    width: 30%;
+    height: 521px;
+    padding-bottom: 12px;
+    border-radius: 12px;
+    border: 1px solid #ccc;
+    opacity: 1;
+}
+
+/* Updated styles for special guests/dignitaries section */
+.Special_Guest {
+    /* width: 70%;
+    height: 555px; */
+    gap: 12px;
+    opacity: 1;
+}
+
 /* Container for input fields to align them side by side */
 .form-row {
     display: flex;

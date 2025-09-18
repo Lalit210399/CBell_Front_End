@@ -48,6 +48,7 @@
 .table-btn-primary {
     background: #392B58;
     color: white;
+    border-radius: 8px;
 }
 
 .table-btn-primary:hover {

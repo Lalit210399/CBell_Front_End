@@ -1,98 +1,145 @@
-.special-guests-container {
-  height: 100%;
-  width: 100%;
+.special-guests-wrapper {
+  max-width: 600px;
+  margin: 20px auto;
+  padding: 10px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-  /* border-radius: 8px; */
-  /* border: solid 1px #c2a7a7; */
-  box-sizing: border-box;
+  height: 80vh;
+  max-height: 600px;
 }
 
-.title {
-  font-size: 18px;
-  font-weight: bold;
-  margin: 0;
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  border-bottom: 1px solid #ddd;
+  /* gap: 10px; Added gap between left and right */
 }
 
-.guests-list {
-  flex: 1;
-  width: 100%;
+.header-left {
+  color: #333;
+}
+
+.add-guest-btn {
+  background-color: transparent;
+  border: none;
+  color: #000000; /* dark teal */
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.add-guest-btn:hover {
+  background-color: #07212d;
+  color: white;
+}
+
+.guests-list-container {
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  border: solid 1px #c2a7a7;
-  border-radius: 8px;
-  padding: 8px;
-  gap: 8px;
+  padding: 10px 15px;
+  flex-grow: 1;
 }
 
 .guest-card {
-  width: 100%;
-  min-height: 60px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 8px 12px;
+  background-color: #f9f9f9;
   border-radius: 12px;
-  background-color: #f8f8f8;
-  box-sizing: border-box;
-  transition: background 0.3s ease-in-out;
+  border: 1px solid #ccc; /* Added grey border */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  padding: 10px 15px;
+  margin-bottom: 12px;
+  position: relative;
 }
 
-.guest-card:hover {
-  background-color: #ececec;
-}
-
-.guests-list::-webkit-scrollbar {
-  width: 4px;
-}
-
-.guests-list::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 12px;
-}
-
-.guests-list::-webkit-scrollbar-thumb {
-  background-color: #b2b2b2;
-  border-radius: 12px;
+.avatar-circle {
+  width: 48px;
+  height: 48px;
+  background-color: #113443; /* dark teal */
+  color: white;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 1.2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+  flex-shrink: 0;
 }
 
 .guest-info {
-  flex: 1;
+  flex-grow: 1;
+  margin-left: 15px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  overflow: hidden;
 }
 
-.guest-name {
-  font-family: Jost;
+.guest-name-input,
+.guest-designation-input {
+  border: none;
+  background: transparent;
   font-size: 14px;
-  font-weight: normal;
+  padding: 4px 0;
+  outline: none;
   color: #333;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0;
+  width: 100%;
+  border-bottom: 1px solid #ffffff;
+  transition: border-color 0.2s ease;
 }
 
-.guest-title {
-  font-family: Jost;
-  font-size: 14px;
-  font-weight: normal;
-  color: #7d7d7d;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0;
-}
-
-.no-guests {
-  border: 1px solid;
-  border-radius: 12px; 
-  color: #777;
+.guest-name-input::placeholder,
+.guest-designation-input::placeholder {
+  color: #999;
   font-style: italic;
-  padding: 10px;
+}
+
+.guest-name-input:focus,
+.guest-designation-input:focus {
+  border-bottom: 1px solid #00796b;
+}
+
+.delete-guest-btn {
+  background: transparent;
+  border: none;
+  color: #999;
+  font-size: 1.5rem;
+  cursor: pointer;
+  margin-left: 15px;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.delete-guest-btn:hover {
+  color: #d32f2f;
+}
+
+@media (max-width: 640px) {
+  .special-guests-wrapper {
+    max-width: 100%;
+    height: auto;
+  }
+  .guest-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .guest-info {
+    margin-left: 0;
+    margin-top: 8px;
+    width: 100%;
+  }
+  .delete-guest-btn {
+    align-self: flex-end;
+    margin-left: 0;
+    margin-top: 8px;
+  }
 }

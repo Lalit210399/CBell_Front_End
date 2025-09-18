@@ -15,11 +15,11 @@
 
 /* Default: both sections 50% */
 .Left_Section {
-    width: 50%;
+    width: 30%;
 }
 
 .Right_Section {
-    width: 50%;
+    width:70%;
 }
 
 /* Collapsed state for Left */

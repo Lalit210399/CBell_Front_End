@@ -3,13 +3,13 @@
   display: flex;
   flex-wrap: wrap; /* allow wrapping */
   width: 100%;
-  gap: 35px;
+  gap: 0px;
 }
 
 
 .Section {
-  flex: 1 1 300px; /* grow, shrink, base width */
-  padding: 10px;
+  /* flex: 1 1 300px;  */
+  padding: 1px;
   box-sizing: border-box;
 }
 
