@@ -12,7 +12,7 @@ const StepTwo = ({ prevStep, formData, handleChange }) => {
       eventName: formData.eventName,
       OrganizationId: "asbb124",  
       eventTypeId: formData.eventTypeId,  
-      eventTypeDesc: formData.eventTypeDesc,
+      eventTypeName: formData.typeName?.trim() || "",
       eventDescription: formData.eventDescription,
       locationDetails: formData.location,
       coordinators: formData.coordinators?.split(",") || [],

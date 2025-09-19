@@ -17,7 +17,7 @@ const MultiStepForm = () => {
     guests: "",
     coordinators: "",
     eventTypeId: "",
-    eventTypeDesc: ""
+    typeName: ""
   });
 
   const nextStep = () => setStep(step + 1);

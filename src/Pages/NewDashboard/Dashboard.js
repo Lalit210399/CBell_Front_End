@@ -27,7 +27,7 @@ import {
 import "./Dashboard.css";
 
 const Dashboard = () => {
-  const { user, scope, selectedOrganizationId } = useUser();
+  const { user, scope, selectedOrganizationId, isViewingOwnOrganization } = useUser();
   const navigate = useNavigate();
 
   // State for orgIdReady - now based on global selectedOrganizationId
@@ -81,9 +81,11 @@ const Dashboard = () => {
     const fetchSummaryData = async () => {
       setLoadingSummary(true);
       setErrorSummary(null);
-      try {
-        const response = await fetchWithRefresh(
-          `apis/dashboard/summary?orgid=${organizationId}&userid=${user?.userId}`,
+        try {
+          // Add includeChildren=true only when viewing own organization (parent scope)
+          const includeChildren = isViewingOwnOrganization() ? "&includeChildren=true" : "&includeChildren=false";
+          const response = await fetchWithRefresh(
+            `apis/dashboard/summary?orgid=${organizationId}&userid=${user?.userId}${includeChildren}`,
           {
             method: "GET",
             headers: {
@@ -279,12 +281,12 @@ const Dashboard = () => {
       const filterMap = {
         "Total Tasks": "all",
         "Tasks Due Next 7 Days": "due_soon",
-        "Overdue Task": "overdue",
-        New: "new",
-        Active: "active",
-        "Under Review": "under_review",
-        Approved: "approved",
-        Published: "published",
+        "Overdue Tasks": "overdue",
+        "New Tasks": "new",
+        "Active Tasks": "active",
+        "Under Review Tasks": "under_review",
+        "Approved Tasks": "approved",
+        "Published Tasks": "published",
       };
 
       apiFilter = filterMap[filterType] || "all";
@@ -414,12 +416,12 @@ const Dashboard = () => {
   const taskTiles = [
     "Total Tasks",
     "Tasks Due Next 7 Days",
-    "Overdue Task",
-    "New",
-    "Active",
-    "Under Review",
-    "Approved",
-    "Published",
+    "Overdue Tasks",
+    "New Tasks",
+    "Active Tasks",
+    "Under Review Tasks",
+    "Approved Tasks",
+    "Published Tasks",
   ];
 
   /** -------------------- Tiles Data -------------------- **/
@@ -479,7 +481,7 @@ const Dashboard = () => {
     {
       icon: <AlertCircle size={24} color="rgba(220, 38, 38, 1)" />,
       count: summaryData?.overdueTasks ?? 0,
-      title: "Overdue Task",
+      title: "Overdue Tasks",
       subtitle: "For Institute Level",
       bgcolor: "rgba(242, 178, 178, 0.2)",
       // bgcolor: "#ffff",
@@ -491,7 +493,7 @@ const Dashboard = () => {
     {
       icon: <Plus size={24} color="rgba(156, 163, 175, 1)" />,
       count: summaryData?.newTasks ?? 0,
-      title: "New",
+      title: "New Tasks",
       subtitle: "Awaiting Assignment",
       bgcolor: "rgba(219, 223, 226, 0.2)",
       // bgcolor: "#ffff",
@@ -503,7 +505,7 @@ const Dashboard = () => {
     {
       icon: <Zap size={24} color="rgba(59, 130, 246, 1)" />,
       count: summaryData?.activeTasks ?? 0,
-      title: "Active",
+      title: "Active Tasks",
       subtitle: "Currently In Progress",
       bgcolor: "rgba(216, 230, 253, 0.2)",
       // bgcolor: "#ffff",
@@ -515,7 +517,7 @@ const Dashboard = () => {
     {
       icon: <ClockIcon size={24} color="rgba(249, 115, 22, 1)" />,
       count: summaryData?.underApprovalTasks ?? 0,
-      title: "Under Review",
+      title: "Under Review Tasks",
       subtitle: "Awaiting Review",
       bgcolor: "rgba(253, 205, 170, 0.2)",
       // bgcolor: "#ffff",
@@ -527,7 +529,7 @@ const Dashboard = () => {
     {
       icon: <CheckCircleIcon size={24} color="rgba(34, 197, 94, 1)" />,
       count: summaryData?.approvedTasks ?? 0,
-      title: "Approved",
+      title: "Approved Tasks",
       subtitle: "Ready To Publish",
       bgcolor: "rgba(176, 233, 197, 0.2)",
       // bgcolor: "#ffff",
@@ -539,7 +541,7 @@ const Dashboard = () => {
     {
       icon: <Star size={24} color="rgba(168, 85, 247, 1)" />,
       count: summaryData?.publishedTasks ?? 0,
-      title: "Published",
+      title: "Published Tasks",
       subtitle: "Completed Tasks",
       bgcolor: "rgba(224, 194, 251, 0.2)",
       // bgcolor: "#ffff",
@@ -564,9 +566,11 @@ const Dashboard = () => {
     const fetchAssignedEvents = async () => {
       setLoadingAssignToMe(true);
       setErrorAssignToMe(null);
-      try {
-        const response = await fetchWithRefresh(
-          `apis/dashboard/assigned-events?orgid=${organizationId}&userid=${userId}`,
+        try {
+          // Add includeChildren=true only when viewing own organization (parent scope)
+          const includeChildren = isViewingOwnOrganization() ? "&includeChildren=true" : "&includeChildren=false";
+          const response = await fetchWithRefresh(
+            `apis/dashboard/assigned-events?orgid=${organizationId}&userid=${userId}${includeChildren}`,
           {
             method: "GET",
             headers: {
@@ -731,7 +735,7 @@ const Dashboard = () => {
                 showDropdown={[
                   "Total Tasks",
                   "Tasks Due Next 7 Days",
-                  "Overdue Task",
+                  "Overdue Tasks",
                 ].includes(currentTitle)}
               />
             </div>

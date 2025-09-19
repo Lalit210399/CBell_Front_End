@@ -10,7 +10,7 @@ const Button = ({ onClick, children, type, disabled, className, Icon }) => {
             disabled={disabled}
             className={`${className}`}
         >
-            {Icon && <Icon className="btn-icon" />} {/* Render icon if provided */}
+            {Icon && <Icon className="btn_icon" />} {/* Render icon if provided */}
             {children}
         </button>
     );
@@ -29,7 +29,7 @@ Button.defaultProps = {
     onClick: () => {},
     type: 'button',
     disabled: false,
-    className: 'btn-secondary',
+    className: 'btn_secondary',
     Icon: null, // Default to no icon
 };
 

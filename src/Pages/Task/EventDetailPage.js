@@ -25,7 +25,7 @@ const EventDetail = () => {
   const [usersList, setUsersList] = useState([]);
   const [assignedUsers, setAssignedUsers] = useState([]);
   const detailSaveRef = useRef(null);
-  const { user, selectedOrganizationId } = useUser();
+  const { user, selectedOrganizationId, isViewingOwnOrganization } = useUser();
   const { addMessage } = useMessages();
   const { permissions: userPermissions } = useUser();
   const navigate = useNavigate();
@@ -36,7 +36,6 @@ const EventDetail = () => {
     mode: initialMode,
     eventType,
     eventTypeId,
-    eventTypeDesc,
     eventData,
     formData,
     selectedDate: locationSelectedDate
@@ -123,7 +122,7 @@ const EventDetail = () => {
         organizationId: selectedOrganizationId || user?.organizationId,
         eventType: eventType || "",
         eventTypeId: eventTypeId || "",
-        eventTypeDesc: eventTypeDesc || "",
+        typeName: fetchedEvent?.typeName || "",
         location: formData?.location || "",
         assignedUsers: [],
       };
@@ -201,18 +200,24 @@ const EventDetail = () => {
     };
 
     fetchEvent();
-  }, [eventId, mode, selectedDate, selectedOrganizationId, user?.organizationId, user?.userId, formData, eventType, eventTypeId, eventTypeDesc, addMessage]);
+  }, [eventId, mode, selectedDate, selectedOrganizationId, user?.organizationId, user?.userId, formData, eventType, eventTypeId, addMessage]);
 
   const permissions = React.useMemo(() => {
     const userCanEdit = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false;
     const userCanCreateTask = userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Create") ?? false;
     const eventAllowsCRUD = fetchedEvent?.canCRUD !== false;
+    const isOwnOrg = isViewingOwnOrganization();
+    
     return {
-      canEdit: mode === "create" ? true : userCanEdit && eventAllowsCRUD,
-      canCreateTask: userCanCreateTask && eventAllowsCRUD,
-      canSave: mode === "create" ? true : userCanEdit && eventAllowsCRUD,
+      // New Event: Only check organization scope (not canCRUD)
+      canCreateEvent: isOwnOrg,
+      // New Task: Check user permissions + canCRUD + organization scope
+      canCreateTask: userCanCreateTask && eventAllowsCRUD && isOwnOrg,
+      // Edit/Save: Check user permissions + canCRUD + organization scope
+      canEdit: mode === "create" ? isOwnOrg : userCanEdit && eventAllowsCRUD && isOwnOrg,
+      canSave: mode === "create" ? isOwnOrg : userCanEdit && eventAllowsCRUD && isOwnOrg,
     };
-  }, [mode, userPermissions?.permissions?.Events, userPermissions?.permissions?.Tasks, fetchedEvent?.canCRUD]);
+  }, [mode, userPermissions?.permissions?.Events, userPermissions?.permissions?.Tasks, fetchedEvent?.canCRUD, isViewingOwnOrganization]);
 
   const handleSaveEvent = async (topSectionData, getDetailData) => {
     setIsSubmitting(true);
@@ -265,7 +270,7 @@ const EventDetail = () => {
       eventName: titleValue,
       organizationId: selectedOrganizationId || user?.organizationId,
       eventTypeId: topSectionData.eventTypeId || eventTypeId || fetchedEvent?.eventTypeId,
-      eventTypeDesc: topSectionData.eventTypeDesc || eventTypeDesc || fetchedEvent?.eventTypeDesc,
+      eventTypeName: (topSectionData.typeName || fetchedEvent?.typeName || "").trim(),
       eventDescription: detailData.description || "",
       locationDetails: detailData.location || "Pune",
       coordinators: (detailData.organizers || []).map(org => ({
@@ -282,6 +287,7 @@ const EventDetail = () => {
         ? new Date(topSectionData.date).toISOString()
         : (selectedDate ? selectedDate.toISOString() : new Date().toISOString()),
       createdBy: user?.userId,
+      createdByName: user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.userName || "Unknown User" : "Unknown User",
       isPrivate: false,
       updatedBy: user?.userId
     };
@@ -483,18 +489,20 @@ const EventDetail = () => {
         ? formatDateTimeLocal(fetchedEvent.eventDate)
         : formatDateTimeLocal(new Date()),
     type: fetchedEvent?.typeName || eventType || "",
-    typeDesc: fetchedEvent?.eventTypeDesc || eventTypeDesc || "",
+        typeDesc: fetchedEvent?.typeName || "",
     createdBy: mode === "create"
-      ? user?.firstName || "User"
-      : `User ID ${fetchedEvent?.createdBy || ""}`,
+      ? (user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.userName || "Current User" : "Current User")
+      : (fetchedEvent?.createdByName || `User ID ${fetchedEvent?.createdBy || ""}`),
     creatorAvatar: {
       id: 0,
-      name: user?.firstName || "User",
+      name: mode === "create" 
+        ? (user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.userName || "Current User" : "Current User")
+        : (fetchedEvent?.createdByName || `User ID ${fetchedEvent?.createdBy || ""}`),
       size: "24px",
       shape: "circle",
     },
     participants,
-  }), [mode, formData?.eventName, fetchedEvent?.eventName, selectedDate, fetchedEvent?.eventDate, fetchedEvent?.typeName, eventType, fetchedEvent?.eventTypeDesc, eventTypeDesc, user?.firstName, fetchedEvent?.createdBy, participants]);
+  }), [mode, formData?.eventName, fetchedEvent?.eventName, selectedDate, fetchedEvent?.eventDate, fetchedEvent?.typeName, eventType, user?.firstName, fetchedEvent?.createdBy, participants]);
 
   const guestsData = React.useMemo(() =>
     mode === "create" ? [] : fetchedEvent?.specialGuests || [],

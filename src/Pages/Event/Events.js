@@ -15,17 +15,19 @@ const EventTable = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { addMessage } = useMessages();
-  const { user, permissions: userPermissions, selectedOrganizationId } = useUser();
+  const { user, permissions: userPermissions, selectedOrganizationId, isViewingOwnOrganization } = useUser();
 
   console.log("user", user?.roles[0]?.name);
 
   const permissions = {
-    canCreate: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Create") ?? false,
+    // New Event: Only check organization scope (not canCRUD)
+    canCreate: (userPermissions?.permissions?.Events?.["Event Management"]?.includes("Create") ?? false) && isViewingOwnOrganization(),
     canRead: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false,
-    canUpdate: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
-    canDelete: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Delete") ?? false,
-    canArchive: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
-    canDuplicate: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false,
+    // Edit/Update/Delete/Archive/Duplicate: Check user permissions + organization scope (canCRUD checked per event)
+    canUpdate: (userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false) && isViewingOwnOrganization(),
+    canDelete: (userPermissions?.permissions?.Events?.["Event Management"]?.includes("Delete") ?? false) && isViewingOwnOrganization(),
+    canArchive: (userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false) && isViewingOwnOrganization(),
+    canDuplicate: (userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false) && isViewingOwnOrganization(),
   };
 
   const formatDateTime = (dateString) => {
@@ -149,7 +151,9 @@ const EventTable = () => {
     }
   };
 
-  const handleNewEvent = () => navigate("/events/stepForm");
+  const handleNewEvent = () => {
+    navigate("/events/eventDetailPage", { state: { mode: "create" } });
+  };
 
   const handleSort = (key, direction) => {
     const sorted = [...events].sort((a, b) => {

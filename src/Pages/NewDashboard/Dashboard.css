@@ -56,6 +56,23 @@
   min-width: 150px;
 }
 
+
+.new-event-btn{
+  background-color: #02968A;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-weight: 400;
+  font-size: 1rem;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
 .dashboard-btn {
   padding: 8px 16px;
   border-radius: 6px;
@@ -66,7 +83,7 @@
 }
 
 .dashboard-btn-primary {
-  background-color: #10b981;
+  background-color: #02968A;
   color: white;
 }
 

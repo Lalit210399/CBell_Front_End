@@ -6,7 +6,7 @@
   height: var(--navbarHeight);
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
   position: fixed;
-  /* z-index: 10; add this */
+  z-index: 1000;
   left: 86px;
   /* Start after Sidebar */
   border-radius: var(--radius-lg);

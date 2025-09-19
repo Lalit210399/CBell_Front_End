@@ -8,7 +8,7 @@ import { useUser } from "../../Context/UserContext";
 import "./Dashboard.css";
 
 const Dashboard = () => {
-  const { user } = useUser();
+  const { user, isViewingOwnOrganization } = useUser();
   const navigate = useNavigate();
 
   const [activeEvents, setActiveEvents] = useState(0);
@@ -224,10 +224,13 @@ const Dashboard = () => {
           onSeeAll={() => handleSeeAllClick("Upcoming Events")}
           onEventClick={handleEventClick}
           icon={
-            <div className="add_event" onClick={handleAddEventClick}>
-              <CirclePlus size={20} className="add-icon" />
-              <span className="add_event_text">New Event</span>
-            </div>
+            // New Event: Only check organization scope (not canCRUD)
+            isViewingOwnOrganization() && (
+              <div className="add_event" onClick={handleAddEventClick}>
+                <CirclePlus size={20} className="add-icon" />
+                <span className="add_event_text">New Event</span>
+              </div>
+            )
           }
         />
         <EventList

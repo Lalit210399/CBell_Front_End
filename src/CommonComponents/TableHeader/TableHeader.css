@@ -60,16 +60,39 @@
   .new-event-button {
     display: flex;
     align-items: center;
-    background: #4b2673;
+    justify-content: center;
+    background: #392B58;
     color: white;
     border: none;
-    border-radius: 24px;
-    padding: 8px 16px;
+    border-radius: 8px;
+    padding: 10px 20px;
     font-size: 14px;
+    font-weight: 500;
     cursor: pointer;
+    transition: all 0.3s ease;
+    gap: 6px;
+    min-height: 40px;
+  }
+  
+  .new-event-button:hover:not(:disabled) {
+    background: #371b54;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(57, 43, 88, 0.3);
+  }
+  
+  .new-event-button:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(57, 43, 88, 0.3);
+  }
+  
+  .new-event-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
   }
   
   .plus-icon {
-    margin-right: 5px;
+    flex-shrink: 0;
   }
   

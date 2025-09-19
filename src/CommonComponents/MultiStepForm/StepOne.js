@@ -50,12 +50,12 @@ const StepOne = ({ nextStep, setFormData, formData }) => {
       mode: "create",
       eventType: event.name,
       eventTypeId: event.id,
-      eventTypeDesc: event.desc,
+      typeName: event.name.trim(),
       formData: {
         ...formData,
         eventType: event.name,
         eventTypeId: event.id,
-        eventTypeDesc: event.desc,
+        typeName: event.name.trim(),
       }
     };
 

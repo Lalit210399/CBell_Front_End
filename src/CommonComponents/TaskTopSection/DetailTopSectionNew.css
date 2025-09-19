@@ -96,6 +96,13 @@
     user-select: none;
 }
 
+.creator-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--textDark);
+    margin-left: 4px;
+}
+
 .avatar-initials {
   user-select: none;
 }

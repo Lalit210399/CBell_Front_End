@@ -1,7 +1,6 @@
 import React from "react";
 import "./TableHeader.css";
-import { Search, Filter, CirclePlus } from "lucide-react";
-import Button from "../Button/Button";
+import { Search, CirclePlus } from "lucide-react";
 
 const TableHeader = ({ onSearch, onNewEventClick, loading, permissions }) => {
   return (
@@ -17,18 +16,22 @@ const TableHeader = ({ onSearch, onNewEventClick, loading, permissions }) => {
             onChange={(e) => onSearch(e.target.value)}
           />
         </div>
-        {/* <Button type="button" disabled={true} className="btn-secondary" Icon={Filter}>
+        {/* <button type="button" disabled={true} className="filter-button">
+          <Filter className="filter-icon" />
           Filters
-        </Button> */}
-        <Button
-          type="submit"
-          className="table-btn-primary"
-          Icon={CirclePlus}
-          onClick={onNewEventClick}
-          disabled={!permissions?.canCreate || loading}
-        >
-          New Event
-        </Button>
+        </button> */}
+        {/* New Event: Only check organization scope (not canCRUD) */}
+        {permissions?.canCreate && (
+          <button
+            type="submit"
+            className="new-event-button"
+            onClick={onNewEventClick}
+            disabled={loading}
+          >
+            <CirclePlus className="plus-icon" size={16} />
+            New Event
+          </button>
+        )}
       </div>
     </div>
   );

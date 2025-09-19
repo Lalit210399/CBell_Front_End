@@ -39,6 +39,11 @@ export const UserProvider = ({ children }) => {
     }
   }, [user?.organizationId, scope?.accessibleOrganizations, selectedOrganizationId]);
 
+  // Helper function to check if user is viewing their own organization
+  const isViewingOwnOrganization = () => {
+    return selectedOrganizationId === user?.organizationId;
+  };
+
   const handleScopeChange = (organizationId, currentLocation = null) => {
     // Check if scope change is allowed on current page
     if (currentLocation) {
@@ -80,6 +85,7 @@ export const UserProvider = ({ children }) => {
       setScope, 
       selectedOrganizationId,
       handleScopeChange,
+      isViewingOwnOrganization,
       loading 
     }}>
       {children}

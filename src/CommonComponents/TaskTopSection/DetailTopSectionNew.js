@@ -36,7 +36,7 @@ const DetailTopSectionNew = ({
   const [editableTime, setEditableTime] = useState("");
   const [selectedEventType, setSelectedEventType] = useState(data?.type || "");
   const [selectedEventTypeId, setSelectedEventTypeId] = useState(data?.eventTypeId || "");
-  const [selectedEventTypeDesc, setSelectedEventTypeDesc] = useState(data?.eventTypeDesc || "");
+  const [selectedTypeName, setSelectedTypeName] = useState(data?.typeName || "");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [assignedIds, setAssignedIds] = useState([]);
@@ -50,7 +50,7 @@ const DetailTopSectionNew = ({
     setEditableTime(dt.time);
     setSelectedEventType(data?.type || "");
     setSelectedEventTypeId(data?.eventTypeId || "");
-    setSelectedEventTypeDesc(data?.eventTypeDesc || "");
+    setSelectedTypeName(data?.typeName || "");
   }, [data]);
 
   useEffect(() => {
@@ -215,7 +215,7 @@ const DetailTopSectionNew = ({
       date: combinedDateTime,
       type: selectedEventType,
       eventTypeId: selectedEventTypeId,
-      eventTypeDesc: selectedEventTypeDesc,
+      eventTypeName: selectedTypeName.trim(),
     };
     onSaveClick(payload);
   };
@@ -243,16 +243,17 @@ const DetailTopSectionNew = ({
           autoFocus={mode === "create"}
         />
         <div className="created-by">
-          <span>Created By</span>
+          <span className="creator-name">{data.createdBy}</span>
           <div className="creator-avatar-new">
-            {data.creatorAvatar ? (
+            {data.createdBy ? (
               <div className="avatar-initials">
-                {getUserInitials(data.creatorAvatar.firstName, data.creatorAvatar.lastName)}
+                {getUserInitials(data.createdBy.split(' ')[0] || '', data.createdBy.split(' ')[1] || '')}
               </div>
             ) : (
               <Users size={20} />
             )}
           </div>
+          <span ></span>
         </div>
       </div>
 
@@ -339,9 +340,9 @@ const DetailTopSectionNew = ({
               const selectedEvent = eventTypes.find(et => et.name === option.value);
               setSelectedEventType(option.value);
               setSelectedEventTypeId(selectedEvent?.id || "");
-              setSelectedEventTypeDesc(selectedEvent?.desc || "");
+              setSelectedTypeName((selectedEvent?.name || "").trim());
             }}
-            disabled={mode === "view" || mode === "edit"}
+            disabled={mode === "view"}
           />
           </div>
 
@@ -370,9 +371,11 @@ const DetailTopSectionNew = ({
 
           <div className="save-button-section" style={{ display: "flex", gap: "8px" }}>
             {/* Show New Task button in view, edit, or create mode */}
-            <button className="btn-new" onClick={onNewTaskClick}>
-              New Task
-            </button>
+            {(mode === "edit" || mode === "create") && (
+              <button className="btn-new" onClick={onNewTaskClick}>
+                New Task
+              </button>
+            )}
             {/* Show Save button only in edit or create mode */}
             {(mode === "edit" || mode === "create") && (
               <button className="btn-new" onClick={handleSaveClick}>
