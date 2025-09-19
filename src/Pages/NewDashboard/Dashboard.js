@@ -42,10 +42,20 @@ const Dashboard = () => {
 
   // Handle new event button click
   const handleNewEvent = () => {
+    // Only allow event creation when viewing own organization
+    if (!isViewingOwnOrganization()) {
+      console.warn("Event creation is only allowed in your own organization");
+      return;
+    }
     navigate("/events/eventDetailPage", { state: { mode: "create" } });
   };
 
   const handleNewTask = () => {
+    // Only allow task creation when viewing own organization
+    if (!isViewingOwnOrganization()) {
+      console.warn("Task creation is only allowed in your own organization");
+      return;
+    }
     navigate("/events/eventDetailPage/tasks", { state: { mode: "create" } });
   };
 
@@ -684,12 +694,15 @@ const Dashboard = () => {
         <h2>Welcome {user?.firstName}, Plan Your Day Ahead</h2>
         <div className="welcome-controls">
           {/* Scope section removed - now in navbar */}
-          <button
-            className="dashboard-btn dashboard-btn-primary"
-            onClick={handleNewEvent}
-          >
-            + New Event
-          </button>
+          {/* Only show New Event button when viewing own organization */}
+          {isViewingOwnOrganization() && (
+            <button
+              className="dashboard-btn dashboard-btn-primary"
+              onClick={handleNewEvent}
+            >
+              + New Event
+            </button>
+          )}
         </div>
       </div>
 

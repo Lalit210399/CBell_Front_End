@@ -1,7 +1,7 @@
 .dropdown-container {
   position: relative;
   display: inline-block;
-  font-family: sans-serif;
+  font-family: 'Lato', sans-serif;
 }
 
 .dropdown_toggle {

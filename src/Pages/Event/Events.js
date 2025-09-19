@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Events.css";
-import TableHeader from "../../CommonComponents/TableHeader/TableHeader";
 import Table from "../../CommonComponents/Table/Table";
 import AvatarList from "../../CommonComponents/Avatar/AvatarList";
 import { useMessages } from "../../Context/MessageContext";
@@ -111,9 +110,12 @@ const EventTable = () => {
         return {
           id: event.id || Date.now().toString(),
           name: event.eventName || "Unnamed Event",
+          type: event.eventTypeDesc || event.eventTypeName || "N/A",
           // ✅ Use formatted date
           date: event.eventDate ? formatDateTime(event.eventDate) : "N/A",
+          createdBy: event.createdByName || event.createdBy?.name || event.createdBy || "Unknown",
           participants: allParticipants,
+          actions: "menu", // For the three dots menu
           rawData: event
         };
       });
@@ -176,8 +178,10 @@ const EventTable = () => {
     }
     const lowerQuery = query.toLowerCase();
     setEvents(
-      originalEvents.filter(({ name }) =>
-        String(name).toLowerCase().includes(lowerQuery)
+      originalEvents.filter(({ name, type, createdBy }) =>
+        String(name).toLowerCase().includes(lowerQuery) ||
+        String(type).toLowerCase().includes(lowerQuery) ||
+        String(createdBy).toLowerCase().includes(lowerQuery)
       )
     );
   };
@@ -213,24 +217,54 @@ const EventTable = () => {
   };
 
   const columns = [
-    { key: "name", label: "Name", skeletonWidth: "60%", skeletonHeight: "20px" },
-    { key: "date", label: "Date", skeletonWidth: "30%", skeletonHeight: "20px" },
-    // { key: "institution", label: "Institution", skeletonWidth: "30%", skeletonHeight: "20px" },
-    { key: "participants", label: "Participants", skeletonWidth: "100%", skeletonHeight: "40px" },
+    { key: "name", label: "Event Name", skeletonWidth: "60%", skeletonHeight: "20px" },
+    { key: "type", label: "Type", skeletonWidth: "25%", skeletonHeight: "20px" },
+    { key: "date", label: "Dates", skeletonWidth: "25%", skeletonHeight: "20px" },
+    { key: "participants", label: "Team Members", skeletonWidth: "100%", skeletonHeight: "40px" },
+    { key: "createdBy", label: "Created By", skeletonWidth: "30%", skeletonHeight: "20px" },
+    { key: "actions", label: "Action", skeletonWidth: "20%", skeletonHeight: "20px" },
   ];
 
   return (
     <div className="Events">
-      <span className="Welcome-to-AISSMS-IOIT-College">
-        Welcome to <span className="text-style-1">{user?.organization?.name || "AISSMS IOIT"}</span>
-      </span>
+      {/* New Header Section */}
+      <div className="events-header">
+        <div className="events-header-content">
+          <div className="events-title-section">
+            <h1 className="events-main-title">Events for {user?.organization?.name || "AISSMS"}</h1>
+            <p className="events-subtitle">Manage all your events in one place</p>
+          </div>
+          {permissions.canCreate && (
+            <button className="events-new-button" onClick={handleNewEvent}>
+              <span className="plus-icon">+</span>
+              New Event
+            </button>
+          )}
+        </div>
+      </div>
 
-      <TableHeader
-        onSearch={handleSearch}
-        onNewEventClick={permissions.canCreate ? handleNewEvent : undefined}
-        loading={loading}
-        permissions={permissions}
-      />
+      <div className="events-controls">
+        <div className="search-container">
+          <div className="search-input-wrapper">
+            <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <input
+              type="text"
+              placeholder="Search events"
+              className="search-input"
+              onChange={(e) => handleSearch(e.target.value)}
+            />
+          </div>
+        </div>
+        <button className="filters-button">
+          <svg className="filter-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46 22,3"></polygon>
+          </svg>
+          Filters
+        </button>
+      </div>
 
       <div className="Table_Container">
         <Table
@@ -246,9 +280,35 @@ const EventTable = () => {
                 <AvatarList
                   avatars={item.participants}
                   stack={true}
-                  maxVisible={2}
+                  maxVisible={3}
                   showTooltip={true}
                 />
+              );
+            }
+            if (key === "type") {
+              return (
+                <span className="type-pill">
+                  {item.type}
+                </span>
+              );
+            }
+            if (key === "createdBy") {
+              const initials = item.createdBy ? item.createdBy.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '??';
+              return (
+                <div className="created-by-avatar">
+                  <span className="avatar-initials">{initials}</span>
+                </div>
+              );
+            }
+            if (key === "actions") {
+              return (
+                <button className="action-menu-button">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="1"></circle>
+                    <circle cx="19" cy="12" r="1"></circle>
+                    <circle cx="5" cy="12" r="1"></circle>
+                  </svg>
+                </button>
               );
             }
             return item[key];
@@ -256,7 +316,7 @@ const EventTable = () => {
           noDataText="No Events Scheduled at this time"
           addEventText="Click here to add a New Event"
           onAddEventClick={permissions.canCreate ? handleNewEvent : undefined}
-          sortableColumns={["name", "date"]}
+          sortableColumns={["name", "type", "date", "createdBy"]}
           onDelete={permissions.canDelete ? ({ id }) => handleDelete(id) : undefined}
           onArchive={permissions.canArchive ? () => alert("Archive pressed") : undefined}
           onDuplicate={permissions.canDuplicate ? () => alert("Duplicate pressed") : undefined}

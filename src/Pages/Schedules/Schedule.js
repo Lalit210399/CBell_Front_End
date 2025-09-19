@@ -12,7 +12,7 @@ const Schedule = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { addMessage } = useMessages();
-  const { user, selectedOrganizationId } = useUser();
+  const { user, selectedOrganizationId, isViewingOwnOrganization } = useUser();
   const navigate = useNavigate();
 
   const fetchEvents = async () => {
@@ -126,6 +126,7 @@ const Schedule = () => {
         loading={loading}
         error={error}
         onEventClick={handleEventClick} // pass to calendar
+        isViewingOwnOrganization={isViewingOwnOrganization} // pass organization check
       />
     </div>
   );

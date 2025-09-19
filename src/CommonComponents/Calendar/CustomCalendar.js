@@ -19,7 +19,7 @@ const CustomToolbar = ({ label, onNavigate }) => (
   </div>
 );
 
-const CustomCalendar = ({ events = [], loading = true, error = null }) => {
+const CustomCalendar = ({ events = [], loading = true, error = null, isViewingOwnOrganization = null }) => {
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const { addMessage } = useMessages();
@@ -32,9 +32,20 @@ const CustomCalendar = ({ events = [], loading = true, error = null }) => {
   };
 
   const handleSelectSlot = ({ start }) => {
+    // Check if user has permission to create events
     if (!permissions.canCreate) {
       addMessage({
         text: "You don't have permission to create events.",
+        type: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
+    // Check if user is viewing their own organization
+    if (isViewingOwnOrganization && !isViewingOwnOrganization()) {
+      addMessage({
+        text: "Event creation is only allowed in your own organization.",
         type: "warning",
         duration: 3000,
       });
@@ -55,8 +66,9 @@ const CustomCalendar = ({ events = [], loading = true, error = null }) => {
       return;
     }
 
-    navigate("/schedule/stepForm", {
+    navigate("/events/eventDetailPage", {
       state: {
+        mode: "create",
         selectedDate: start,
         fromCalendar: true,
       },

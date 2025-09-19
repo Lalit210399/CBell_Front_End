@@ -27,6 +27,8 @@ const EventDetail = () => {
   const detailSaveRef = useRef(null);
   const { user, selectedOrganizationId, isViewingOwnOrganization } = useUser();
   const { addMessage } = useMessages();
+  const addMessageRef = useRef(addMessage);
+  addMessageRef.current = addMessage;
   const { permissions: userPermissions } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
@@ -92,7 +94,7 @@ const EventDetail = () => {
       } catch (error) {
         if (error.name === 'AbortError') return;
         console.error("Error fetching tasks:", error);
-        addMessage({
+        addMessageRef.current({
           text: "Failed to load tasks. Please try again.",
           type: "error",
           duration: 3000,
@@ -105,11 +107,43 @@ const EventDetail = () => {
     }
 
     return () => abortController.abort();
-  }, [activeTab, eventId, selectedOrganizationId, user?.organizationId, addMessage]);
+  }, [activeTab, eventId, selectedOrganizationId, user?.organizationId]);
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      const organizationId = selectedOrganizationId || user?.organizationId;
+      
+      if (!organizationId) {
+        console.warn("No organizationId available for user fetch");
+        return;
+      }
+
+      const response = await getHierarchyUsers(organizationId);
+
+      const formattedUsers = response.users.map(user => ({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        fullName: `${user.firstName} ${user.lastName}`,
+        organizationId: user.organizationId,
+        organizationCode: user.organizationCode || "ORG001"
+      }));
+
+      setUsersList(formattedUsers);
+    } catch (error) {
+      console.error("Error fetching hierarchy users:", error);
+      addMessageRef.current({
+        text: "Failed to load users list",
+        type: "error",
+        duration: 3000
+      });
+    }
+  }, [selectedOrganizationId, user?.organizationId]);
 
   useEffect(() => {
     fetchUsers();
-  }, [selectedOrganizationId, user?.organizationId]);
+  }, [fetchUsers]);
 
   useEffect(() => {
     if (mode === "create") {
@@ -191,7 +225,7 @@ const EventDetail = () => {
         }
       } catch (error) {
         console.error("Error fetching event:", error);
-        addMessage({
+        addMessageRef.current({
           text: "Failed to load event. Please try again.",
           type: "error",
           duration: 3000,
@@ -200,7 +234,7 @@ const EventDetail = () => {
     };
 
     fetchEvent();
-  }, [eventId, mode, selectedDate, selectedOrganizationId, user?.organizationId, user?.userId, formData, eventType, eventTypeId, addMessage]);
+  }, [eventId, mode, selectedDate, selectedOrganizationId, user?.organizationId, user?.userId, formData, eventType, eventTypeId]);
 
   const permissions = React.useMemo(() => {
     const userCanEdit = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false;
@@ -344,7 +378,7 @@ const EventDetail = () => {
 
       // Switch to view mode after successful save/create
       setMode("view");
-      addMessage({
+      addMessageRef.current({
         text: `Event ${mode === "create" ? "created" : "updated"} successfully!`,
         type: "success",
         duration: 3000,
@@ -352,7 +386,7 @@ const EventDetail = () => {
 
     } catch (error) {
       console.error(`Error ${mode === "create" ? "creating" : "updating"} event:`, error);
-      addMessage({
+      addMessageRef.current({
         text: `Failed to ${mode === "create" ? "create" : "update"} event.`,
         type: "error",
         duration: 3000,
@@ -363,52 +397,20 @@ const EventDetail = () => {
   };
 
   const handleDownload = useCallback(() => {
-    addMessage({
+    addMessageRef.current({
       text: "Download functionality coming soon!",
       type: "info",
       duration: 3000,
     });
-  }, [addMessage]);
+  }, []);
 
   const handleSendMail = useCallback(() => {
-    addMessage({
+    addMessageRef.current({
       text: "Mail sending functionality coming soon!",
       type: "info",
       duration: 3000,
     });
-  }, [addMessage]);
-
-  const fetchUsers = async () => {
-    try {
-      const organizationId = selectedOrganizationId || user?.organizationId;
-      
-      if (!organizationId) {
-        console.warn("No organizationId available for user fetch");
-        return;
-      }
-
-      const response = await getHierarchyUsers(organizationId);
-
-      const formattedUsers = response.users.map(user => ({
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        fullName: `${user.firstName} ${user.lastName}`,
-        organizationId: user.organizationId,
-        organizationCode: user.organizationCode || "ORG001"
-      }));
-
-      setUsersList(formattedUsers);
-    } catch (error) {
-      console.error("Error fetching hierarchy users:", error);
-      addMessage({
-        text: "Failed to load users list",
-        type: "error",
-        duration: 3000
-      });
-    }
-  };
+  }, []);
 
   const handleBackClick = () => navigate(-1);
 

@@ -107,7 +107,7 @@ const DetailTopSectionNew = ({
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch(`/apis/auth/hierarchy-users/${user?.organizationId}`, {
+        const response = await fetch(`/apis/auth/assignment-users/${user?.organizationId}`, {
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
@@ -241,6 +241,7 @@ const DetailTopSectionNew = ({
           onChange={handleTitleChange}
           placeholder="Enter event name ..."
           autoFocus={mode === "create"}
+          readOnly={mode === "view"}
         />
         <div className="created-by">
           <span className="creator-name">{data.createdBy}</span>
@@ -371,7 +372,7 @@ const DetailTopSectionNew = ({
 
           <div className="save-button-section" style={{ display: "flex", gap: "8px" }}>
             {/* Show New Task button in view, edit, or create mode */}
-            {(mode === "edit" || mode === "create") && (
+            {(mode === "view") && (
               <button className="btn-new" onClick={onNewTaskClick}>
                 New Task
               </button>

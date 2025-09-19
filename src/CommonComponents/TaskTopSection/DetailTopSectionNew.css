@@ -7,7 +7,7 @@
   padding: 12px 16px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
   border: 1px solid var(--colourBorder);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Lato', sans-serif;
   overflow: visible;
 }
 
@@ -306,6 +306,8 @@
   display: flex;
   /* flex-direction: column; */
   min-width: 140px;
+  align-items: baseline;
+  gap: 10px;
 }
 
 .event-type-select {
@@ -332,6 +334,8 @@
   display: flex;
   /* flex-direction: column; */
   min-width: 120px;
+  align-items: baseline;
+  gap: 10px;
 }
 
 .date-input-new,
