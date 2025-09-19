@@ -39,7 +39,29 @@ export const UserProvider = ({ children }) => {
     }
   }, [user?.organizationId, scope?.accessibleOrganizations, selectedOrganizationId]);
 
-  const handleScopeChange = (organizationId) => {
+  const handleScopeChange = (organizationId, currentLocation = null) => {
+    // Check if scope change is allowed on current page
+    if (currentLocation) {
+      // Only allow scope changes on the exact main pages, not sub-paths
+      const allowedPages = ['/dashboard', '/events', '/schedule'];
+      const isAllowedPage = allowedPages.includes(currentLocation.pathname);
+      
+      // If not on an allowed page, change scope and redirect to dashboard
+      if (!isAllowedPage) {
+        // Change the scope first
+        setSelectedOrganizationId(organizationId);
+        if (organizationId) {
+          localStorage.setItem("dashboard-selected-organization", organizationId);
+        } else {
+          localStorage.removeItem("dashboard-selected-organization");
+        }
+        // Then redirect to dashboard
+        window.location.href = '/dashboard';
+        return;
+      }
+    }
+    
+    // Normal scope change for allowed pages
     setSelectedOrganizationId(organizationId);
     if (organizationId) {
       localStorage.setItem("dashboard-selected-organization", organizationId);

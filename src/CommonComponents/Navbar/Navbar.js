@@ -118,7 +118,7 @@ function Navbar() {
             <CustomDropdown
               options={scopeOptions}
               defaultLabel={currentScopeLabel}
-              onSelect={(option) => handleScopeChange(option.value)}
+              onSelect={(option) => handleScopeChange(option.value, location)}
             />
           </div>
         </div>
