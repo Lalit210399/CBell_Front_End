@@ -355,7 +355,11 @@ const TaskDetailPage = () => {
             }))
           : [{ text: "", checked: false, isPlaceholder: false }];
         
-        setTaskData({
+        console.log("TaskDetailPage: Raw API data:", data);
+        console.log("TaskDetailPage: Formatted checklist:", formattedChecklist);
+        console.log("TaskDetailPage: Description:", data.description);
+        
+        const newTaskData = {
           id: data.id || "",
           eventId: data.eventId || "",
           taskTitle: data.taskTitle || "",
@@ -365,12 +369,25 @@ const TaskDetailPage = () => {
           createdBy: data.createdByName || data.createdBy || "",
           updatedBy: data.updatedByName || data.updatedBy || "",
           type: data.creativeType || "",
-          date: data.dueDate ? data.dueDate.split("T")[0] : new Date().toISOString().split("T")[0],
+          date: data.dueDate ? data.dueDate : new Date().toISOString(),
           quantity: data.creativeNumbers || 1,
           checklist: formattedChecklist,
           description: data.description || "",
           organizationId: data.organizationId || organizationId || "",
-        });
+        };
+        
+        console.log("TaskDetailPage: Setting taskData:", newTaskData);
+        setTaskData(newTaskData);
+        
+        // Also update formData to ensure consistency
+        setFormData(prev => ({
+          ...prev,
+          type: data.creativeType || "",
+          date: data.dueDate ? data.dueDate.split("T")[0] : new Date().toISOString().split("T")[0],
+          quantity: data.creativeNumbers || 1,
+          checklist: formattedChecklist,
+          description: data.description || "",
+        }));
 
       } catch (err) {
         console.error("Error loading task:", err);
@@ -710,7 +727,8 @@ const TaskDetailPage = () => {
       label: "Details",
       component: (
         <TaskDetail
-          taskData={{ ...taskData, ...formData }}
+          taskData={taskData}
+          formData={formData}
           onUpdate={handleFormFieldUpdate}
           mode={mode}
           permissions={permissions}

@@ -5,12 +5,15 @@ import Dropdown from "../../../CommonComponents/Dropdown/Dropdown";
 import { Wand } from "lucide-react";
 import "./TaskDetail.css";
 
-const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {}, eventDate: eventDateProp, errors = {}, onClearError }) => {
+const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", permissions = {}, eventDate: eventDateProp, errors = {}, onClearError }) => {
   const prevModeRef = React.useRef(mode);
   
-  // Parse initial datetime from taskData or use current datetime
-  const initialDateTime = taskData.date 
-    ? new Date(taskData.date)
+  // Merge taskData and formData for display using useMemo to prevent infinite re-renders
+  const mergedData = React.useMemo(() => ({ ...taskData, ...formData }), [taskData, formData]);
+  
+  // Parse initial datetime from merged data or use current datetime
+  const initialDateTime = mergedData.date 
+    ? new Date(mergedData.date)
     : new Date();
   
   // Format for datetime-local input (YYYY-MM-DDTHH:mm)
@@ -20,14 +23,14 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {}, event
   const [localTime, setLocalTime] = useState(
     initialDateTime.toISOString().slice(11, 16)
   );
-  const [quantity, setQuantity] = useState(taskData.quantity || 1);
+  const [quantity, setQuantity] = useState(mergedData.quantity || 1);
   const [selectedType, setSelectedType] = useState(
-    taskData.type ? { label: taskData.type, value: taskData.type } : null
+    mergedData.type ? { label: mergedData.type, value: mergedData.type } : null
   );
   const [checklistData, setChecklistData] = useState(
-    Array.isArray(taskData.checklist) ? taskData.checklist : []
+    Array.isArray(mergedData.checklist) ? mergedData.checklist : []
   );
-  const [content, setContent] = useState(taskData.description || "");
+  const [content, setContent] = useState(mergedData.description || "");
 
   // Hardcoded task types list
   const taskTypes = React.useMemo(() => [
@@ -58,24 +61,41 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {}, event
       setContent(taskData.description || "");
     }
     prevModeRef.current = mode;
-  }, [mode]); // Only depend on mode, not taskData to prevent clearing during validation
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, taskData.id]); // Only depend on mode and taskData.id to prevent infinite loops
 
-  // Initialize form data only once when component mounts or task changes
+  // Initialize form data when taskData changes (only for existing tasks)
   useEffect(() => {
     if (taskData.id && mode !== "create") {
+      console.log("TaskDetail: Initializing form data from taskData:", taskData);
+      
       const dateTime = taskData.date ? new Date(taskData.date) : new Date();
       setLocalDate(dateTime.toISOString().slice(0, 10));
       setLocalTime(dateTime.toISOString().slice(11, 16));
       setQuantity(taskData.quantity || 1);
-      setSelectedType(
-        taskData.type ? { label: taskData.type, value: taskData.type } : null
-      );
-      setChecklistData(Array.isArray(taskData.checklist) ? taskData.checklist : []);
-      setContent(taskData.description || "");
+      
+      // Handle type selection
+      if (taskData.type) {
+        const matchingOption = taskTypes.find(option => option.value === taskData.type);
+        if (matchingOption) {
+          setSelectedType(matchingOption);
+        } else {
+          setSelectedType({ label: taskData.type, value: taskData.type });
+        }
+      } else {
+        setSelectedType(null);
+      }
+      
+      // Handle checklist data
+      const checklistArray = Array.isArray(taskData.checklist) ? taskData.checklist : [];
+      console.log("TaskDetail: Setting checklist data:", checklistArray);
+      setChecklistData(checklistArray);
+      
+      // Handle description content
+      const descriptionContent = taskData.description || "";
+      console.log("TaskDetail: Setting description content:", descriptionContent);
+      setContent(descriptionContent);
     }
-  }, [taskData.id]); // Only reset when task ID changes (new task loaded)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taskData.id, taskData.checklist, taskData.description, taskData.type, taskData.quantity, taskData.date, mode, taskTypes]);
 
   // Initialize form data for create mode
   useEffect(() => {
@@ -96,18 +116,7 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {}, event
     }
   }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sync selectedType with taskData.type changes
-  useEffect(() => {
-    if (taskData.type && taskData.type !== selectedType?.value) {
-      const matchingOption = taskTypes.find(option => option.value === taskData.type);
-      if (matchingOption) {
-        setSelectedType(matchingOption);
-      } else {
-        // Create a new option if not found in predefined list
-        setSelectedType({ label: taskData.type, value: taskData.type });
-      }
-    }
-  }, [taskData.type, selectedType?.value, taskTypes]);
+  // These sync effects are now handled in the main initialization useEffect above
 
   const handleTypeChange = (option) => {
     setSelectedType(option);
@@ -153,23 +162,17 @@ const TaskDetail = ({ taskData, onUpdate, mode = "view", permissions = {}, event
     const val = parseInt(e.target.value, 10);
     const newQty = isNaN(val) ? 1 : val;
     setQuantity(newQty);
-    if (newQty !== taskData.quantity) {
-      onUpdate("quantity", newQty);
-    }
+    onUpdate("quantity", newQty);
   };
 
   const handleChecklistChange = (newChecklist) => {
     setChecklistData(newChecklist);
-    if (JSON.stringify(newChecklist) !== JSON.stringify(taskData.checklist)) {
-      onUpdate("checklist", newChecklist);
-    }
+    onUpdate("checklist", newChecklist);
   };
 
   const handleContentChange = (newContent) => {
     setContent(newContent);
-    if (newContent !== taskData.description) {
-      onUpdate("description", newContent);
-    }
+    onUpdate("description", newContent);
   };
 
   const minDate = (() => {

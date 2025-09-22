@@ -332,8 +332,20 @@ const EventTable = () => {
     if (!window.confirm("Are you sure you want to delete this event?")) return;
     try {
       setLoading(true);
-      const res = await fetchWithRefresh(`/apis/event/delete/${id}`, {
+      
+      // Get the user ID for the API call
+      const userId = user?.userId || user?.id || user?._id || user?.user_id || user?.uid;
+      
+      if (!userId) {
+        throw new Error("User ID not available for delete operation");
+      }
+      
+      const res = await fetchWithRefresh(`/apis/event/delete/${id}?userId=${userId}`, {
         method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1",
+        },
       });
 
       if (!res.ok) throw new Error(`Failed to delete event: ${res.status}`);
