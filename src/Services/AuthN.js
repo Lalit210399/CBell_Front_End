@@ -201,3 +201,34 @@ export const getAccessibleOrganizations = async () => {
   }
 };
 
+
+// Fetch Task Type Options
+export const getTaskTypeOptions = async () => {
+  try {
+    const response = await fetch('/apis/tasksType/get-all', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: "application/json",
+        "ngrok-skip-browser-warning": "1",
+      },
+      credentials: 'include',
+    });
+
+    if (response.status === 404) {
+      console.warn('Task types API endpoint not found, using default values');
+      return null; // Return null to indicate API not available
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch task type options: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching task types:', error);
+    throw error.message || 'Error fetching task type options';
+  }
+};
+

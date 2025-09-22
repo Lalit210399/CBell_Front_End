@@ -11,7 +11,7 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
     { label: "All" },
     { label: "New" },
     { label: "Active" },
-    { label: "Under Approval" },
+    { label: "Under Review" },  // Updated to match API status value
     { label: "Approved" },
     { label: "Published" },
   ];

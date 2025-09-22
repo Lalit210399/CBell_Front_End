@@ -95,6 +95,23 @@
   background: #374151;
 }
 
+.created-by-name {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.created-by-name:hover {
+  background: #bbdefb;
+  transform: translateY(-1px);
+}
+
 /* Skeleton styles */
 .skeleton-row-cell {
   width: 100%;

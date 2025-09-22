@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Table from "../../../CommonComponents/Table/Table";
+import AvatarList from "../../../CommonComponents/Avatar/AvatarList";
 import { useUser } from "../../../Context/UserContext";
 import "../Tasks.css";
 
@@ -58,10 +59,84 @@ const Task = ({ tasksData, eventId, eventName }) => {
     setSortConfig({ key: columnKey, direction });
   };
 
+  // Custom cell renderer for the table (similar to Events.js)
+  const renderCell = (key, item) => {
+    if (key === "assigned_to") {
+      // Debug: Log the actual data structure
+      console.log("=== ASSIGNED TO DEBUG ===");
+      console.log("Item:", item);
+      console.log("Assigned to:", item.assigned_to);
+      console.log("Assigned to type:", typeof item.assigned_to);
+      console.log("Is array:", Array.isArray(item.assigned_to));
+      
+      // Handle assigned users similar to participants in Events.js
+      const assignedUsers = item.assigned_to || [];
+      
+      if (!Array.isArray(assignedUsers) || assignedUsers.length === 0) {
+        return <span className="no-assigned-users">No assigned users</span>;
+      }
+
+      // Debug: Log each user object
+      console.log("Assigned users array:", assignedUsers);
+      assignedUsers.forEach((user, index) => {
+        console.log(`User ${index}:`, user);
+        console.log(`User ${index} type:`, typeof user);
+        console.log(`User ${index} keys:`, user ? Object.keys(user) : "No user object");
+      });
+
+      // Convert assigned users to avatar format
+      const avatars = assignedUsers.map((user, index) => {
+        console.log(`Processing user ${index}:`, user);
+        
+        // Handle different user object formats
+        let userId, firstName, lastName, fullName;
+        
+        if (typeof user === 'object' && user !== null) {
+          // Check for different possible field names
+          userId = user.id || user.userId || user._id || index;
+          firstName = user.firstName || user.first_name || user.name?.split(' ')[0] || '';
+          lastName = user.lastName || user.last_name || user.name?.split(' ').slice(1).join(' ') || '';
+          fullName = user.name || user.userName || user.fullName || `${firstName} ${lastName}`.trim() || `User ${index + 1}`;
+        } else if (typeof user === 'string') {
+          userId = user;
+          fullName = user;
+          firstName = user.split(' ')[0] || '';
+          lastName = user.split(' ').slice(1).join(' ') || '';
+        } else {
+          userId = index;
+          fullName = `User ${index + 1}`;
+          firstName = 'User';
+          lastName = `${index + 1}`;
+        }
+
+        console.log(`Processed user ${index}:`, { userId, firstName, lastName, fullName });
+
+        return {
+          id: userId,
+          name: fullName,
+          src: fullName,
+          fallback: fullName.charAt(0).toUpperCase() || "?",
+          size: "32px",
+          shape: "circle",
+        };
+      });
+
+      console.log("Final avatars:", avatars);
+
+      return (
+        <AvatarList
+          avatars={avatars}
+          stack={true}
+          maxVisible={2}
+          showTooltip={true}
+        />
+      );
+    }
+    return item[key];
+  };
+
 
   const handleRowClick = (row) => {
-    console.log("TaskID:", row.id); // Log the task ID
-    console.log("EventName:", eventName); // Log the task ID
     navigate('/events/eventDetailPage/tasks', { 
       state: { 
         taskId: row.id, 
@@ -79,6 +154,7 @@ const Task = ({ tasksData, eventId, eventName }) => {
         columns={columns}
         data={tasks}
         onSort={handleSort}
+        renderCell={renderCell}
         sortableColumns={["creative_name", "creative_type", "assigned_to", "due_date", "status"]}
         // showActions={false}
         noDataText="No Tasks Scheduled at this time"

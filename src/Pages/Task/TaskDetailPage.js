@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import MessageStrip from "../../CommonComponents/MessageStrip/MessageStrip";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useLocation, useNavigate } from "react-router-dom";
 import TabMenu from "../../CommonComponents/TabMenu/TabMenu";
@@ -8,6 +7,7 @@ import TasksFiles from "./TaskFiles/TaskFiles";
 import TaskDetail from "./TaskDetail/TaskDetail";
 import TopSection from "../../CommonComponents/TaskTopSection/EditTopSection";
 import Breadcrumb from "../../CommonComponents/Breadcrumb/Breadcrumb";
+import PageSkeleton from "../../CommonComponents/SkeletonLoading/PageSkeleton";
 import { useUser } from "../../Context/UserContext";
 import { useMessages } from "../../Context/MessageContext";
 import { getHierarchyUsers } from "../../Services/AuthN";
@@ -22,9 +22,11 @@ const TaskDetailPage = () => {
   
   const { taskId, mode: initialMode = "view", eventId, organizationId, eventDate: navEventDate, eventName } = location.state || {};
   const eventDate = React.useMemo(() => navEventDate ? new Date(navEventDate) : null, [navEventDate]);
+
   
   const [taskTitle, setTaskTitle] = useState("");
   const [taskStatus, setTaskStatus] = useState({
+    id: "",
     label: "New",
     value: "New",
     color: "gray",
@@ -32,6 +34,17 @@ const TaskDetailPage = () => {
   const [activeTab, setActiveTab] = useState("Details");
   const [fileData, setFileData] = useState({ links: [], uploadedFiles: [] });
   const [mode, setMode] = useState(initialMode);
+  
+  // Separate state for form fields to prevent cross-field interference
+  const [formData, setFormData] = useState({
+    title: "",
+    type: "",
+    date: new Date().toISOString().split("T")[0],
+    quantity: 1,
+    description: "",
+    checklist: [{ text: "", checked: false, isPlaceholder: false }],
+  });
+
   const [createdBy, setCreatedBy] = useState(
     user ? `${user.firstName} ${user.lastName}` : "User"
   );
@@ -40,12 +53,15 @@ const TaskDetailPage = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [validationErrors, setValidationErrors] = useState({});
+  const [statusOptions, setStatusOptions] = useState([]);
+  const [hasFetchedUsers, setHasFetchedUsers] = useState(false);
 
   const [taskData, setTaskData] = useState({
     id: "",
     eventId: "",
     taskTitle: "",
     taskStatus: "New",
+    taskStatusId: "",
     assignedTo: [],
     createdBy: "",
     updatedBy: "",
@@ -57,13 +73,7 @@ const TaskDetailPage = () => {
     organizationId: "",
   });
 
-  const statusOptions = [
-    { label: "New", value: "New", color: "gray" },
-    { label: "Active", value: "Active", color: "blue" },
-    { label: "Under Approval ", value: "Under Approval ", color: "orange" },
-    { label: "Approval", value: "Approval", color: "yellow" },
-    { label: "Approved", value: "Approved", color: "green" },
-  ];
+  // No default status options - only use API data
 
   const permissions = {
     canEdit: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Update") ?? false,
@@ -72,12 +82,79 @@ const TaskDetailPage = () => {
     canAssignUsers: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Update") ?? false,
   };
 
-  const initializeCreateMode = () => {
+  const getDefaultColor = (statusValue) => {
+    const colorMap = {
+      "New": "gray",
+      "Active": "blue", 
+      "Under Review": "orange",
+      "Approved": "green",
+      "Published": "purple"
+    };
+    return colorMap[statusValue] || "gray";
+  };
+
+  const fetchStatusOptions = React.useCallback(async () => {
+    try {
+      const response = await fetch('/apis/taskstatus/get-all', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: "application/json",
+          "ngrok-skip-browser-warning": "1",
+        },
+        credentials: 'include',
+      });
+
+      if (response.status === 404) {
+        setStatusOptions([]);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch task status options: ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      
+      // Extract data array from response
+      const data = responseData.data || responseData;
+      
+      // Transform API response to match expected format
+      const formattedOptions = Array.isArray(data) 
+        ? data.map(status => ({
+            id: status.id,
+            label: status.statusName || status.name || status.label || status,
+            value: status.statusName || status.name || status.value || status,
+            color: getDefaultColor(status.statusName || status.name || status.value || status)
+          }))
+        : [];
+      
+      setStatusOptions(formattedOptions);
+      console.log("Status options loaded:", formattedOptions);
+      
+      // If we're in create mode, set the first status as default (only if we have real options)
+      if (mode === "create" && formattedOptions.length > 0) {
+        setTaskStatus(formattedOptions[0]);
+      }
+    } catch (error) {
+      console.error("Error fetching status options:", error);
+      addMessage({
+        text: "Failed to load status options",
+        type: "error",
+        duration: 3000
+      });
+      setStatusOptions([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Remove dependencies to prevent infinite loop
+
+  const initializeCreateMode = React.useCallback(() => {
     setTaskData({
       id: "",
       eventId: eventId || "",
       taskTitle: "",
       taskStatus: "New",
+      taskStatusId: "",
       assignedTo: [],
       createdBy: user ? `${user.firstName} ${user.lastName}` : "User",
       updatedBy: "",
@@ -89,10 +166,34 @@ const TaskDetailPage = () => {
       organizationId: organizationId || "",
     });
     setTaskTitle("");
-    setTaskStatus(statusOptions[0]);
     setCreatedBy(user ? `${user.firstName} ${user.lastName}` : "User");
     setIsLoading(false);
-  };
+  }, [eventId, user, organizationId]);
+
+  // Fetch status options on component mount - only once
+  useEffect(() => {
+    fetchStatusOptions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array - only run once
+
+  // Initialize status when statusOptions are loaded and we're in create mode
+  useEffect(() => {
+    if (mode === "create" && statusOptions.length > 0) {
+      setTaskStatus(statusOptions[0]);
+    }
+  }, [statusOptions, mode]);
+
+
+  // Memoize the organization ID to prevent unnecessary re-renders
+  const currentOrgId = React.useMemo(() => {
+    return user?.organizationId || organizationId;
+  }, [user?.organizationId, organizationId]);
+
+  // Reset users list when organization changes
+  useEffect(() => {
+    setUsersList([]);
+    setHasFetchedUsers(false);
+  }, [currentOrgId]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -101,13 +202,23 @@ const TaskDetailPage = () => {
           return;
         }
 
-        const orgId = user?.organizationId || organizationId;
-        if (!orgId) {
-          throw new Error("No organizationId available for user fetch");
+        if (!currentOrgId) {
+          console.warn("No organizationId available for user fetch");
+          return;
+        }
+        
+        // Check if we already have users for this organization
+        if (hasFetchedUsers) {
+          console.log("Users already loaded for this organization");
+          if (mode === "create") {
+            initializeCreateMode();
+          }
+          return;
         }
         
         try {
-          const response = await getHierarchyUsers(orgId);
+          console.log("Fetching users for organization:", currentOrgId);
+          const response = await getHierarchyUsers(currentOrgId);
           
           const formattedUsers = response.users.map(user => ({
             id: user.id,
@@ -119,6 +230,7 @@ const TaskDetailPage = () => {
           }));
           
           setUsersList(formattedUsers);
+          setHasFetchedUsers(true);
         } catch (error) {
           console.error("Error fetching hierarchy users:", error);
           addMessage({
@@ -143,7 +255,7 @@ const TaskDetailPage = () => {
     };
 
     fetchUsers();
-  }, [user?.organizationId, organizationId, mode]);
+  }, [currentOrgId, mode, addMessage, initializeCreateMode, hasFetchedUsers]);
 
   useEffect(() => {
     const fetchTask = async () => {
@@ -156,16 +268,52 @@ const TaskDetailPage = () => {
       
       try {
         setIsLoading(true);
-        const response = await fetchWithRefresh(`/apis/task/get_task/${taskId}`, {
+        const orgId = user?.organizationId || organizationId;
+        
+        if (!orgId) {
+          throw new Error("No organization selected");
+        }
+
+        // Prepare headers similar to EventDetailPage
+        const headers = {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "ngrok-skip-browser-warning": "1",
+        };
+
+        // Add organization context if needed
+        if (orgId !== user?.organizationId) {
+          headers["X-Context-Organization"] = orgId;
+        }
+
+        const response = await fetchWithRefresh(`/apis/task/get_task/${taskId}?organizationId=${orgId}`, {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "1",
-          },
+          headers,
         });
 
+        if (response.status === 404) {
+          addMessage({
+            text: "Task not found",
+            type: "error",
+            duration: 3000
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        if (response.status === 500) {
+          console.error("Server error fetching task - likely backend data type mismatch");
+          addMessage({
+            text: "Unable to load task due to server error. Please try again later.",
+            type: "error",
+            duration: 5000,
+          });
+          setIsLoading(false);
+          return;
+        }
+
         if (!response.ok) {
-          throw new Error("Failed to fetch task");
+          throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
         const responseData = await response.json();
@@ -176,11 +324,27 @@ const TaskDetailPage = () => {
         }
         
         setTaskTitle(data.taskTitle || "");
-        setCreatedBy(data.createdBy || (user ? `${user.firstName} ${user.lastName}` : "User"));
+        setCreatedBy(data.createdByName || data.createdBy || (user ? `${user.firstName} ${user.lastName}` : "User"));
         
-        const matchedStatus = statusOptions.find(
-          opt => opt.value.toLowerCase() === (data.taskStatus || "New").toLowerCase()
-        ) || statusOptions[0];
+        const currentStatusOptions = statusOptions;
+        const apiStatusName = data.taskStatusName || data.taskStatus || "New";
+        console.log("API Status Data:", { 
+          taskStatusName: data.taskStatusName, 
+          taskStatusId: data.taskStatusId,
+          apiStatusName,
+          statusOptions: currentStatusOptions 
+        });
+        
+        const matchedStatus = currentStatusOptions.find(
+          opt => opt.value.toLowerCase() === apiStatusName.toLowerCase()
+        ) || (currentStatusOptions.length > 0 ? currentStatusOptions[0] : {
+          id: data.taskStatusId || "",
+          label: apiStatusName,
+          value: apiStatusName,
+          color: getDefaultColor(apiStatusName)
+        });
+        
+        console.log("Matched Status:", matchedStatus);
         setTaskStatus(matchedStatus);
 
         const formattedChecklist = Array.isArray(data.checklistDetails) 
@@ -196,9 +360,10 @@ const TaskDetailPage = () => {
           eventId: data.eventId || "",
           taskTitle: data.taskTitle || "",
           taskStatus: matchedStatus.value,
+          taskStatusId: data.taskStatusId || matchedStatus.id,
           assignedTo: data.assignedTo || [],
-          createdBy: data.createdBy || "",
-          updatedBy: data.updatedBy || "",
+          createdBy: data.createdByName || data.createdBy || "",
+          updatedBy: data.updatedByName || data.updatedBy || "",
           type: data.creativeType || "",
           date: data.dueDate ? data.dueDate.split("T")[0] : new Date().toISOString().split("T")[0],
           quantity: data.creativeNumbers || 1,
@@ -210,7 +375,7 @@ const TaskDetailPage = () => {
       } catch (err) {
         console.error("Error loading task:", err);
         addMessage({
-          text: "Failed to load task details",
+          text: `Failed to load task details: ${err.message}`,
           type: "error",
           duration: 3000
         });
@@ -222,7 +387,7 @@ const TaskDetailPage = () => {
     if (mode === "view" || (usersList.length > 0 && mode !== "create")) {
       fetchTask();
     }
-  }, [taskId, mode, organizationId, user, eventId]);
+  }, [taskId, mode, organizationId, user, eventId, addMessage, statusOptions, usersList.length]);
 
   useEffect(() => {
     if (Array.isArray(taskData.assignedTo)) {
@@ -233,8 +398,22 @@ const TaskDetailPage = () => {
     }
   }, [taskData.assignedTo]);
 
-  const updateTaskDetail = (field, value) => {
-    setTaskData(prev => {
+  // Handle title updates separately to prevent interference
+  const handleTitleUpdate = (newTitle) => {
+    setTaskTitle(newTitle);
+    setFormData(prev => ({ ...prev, title: newTitle }));
+    setTaskData(prev => ({ ...prev, taskTitle: newTitle }));
+    
+    // Clear title validation error
+    if (validationErrors.title) {
+      setValidationErrors(prev => ({ ...prev, title: undefined }));
+    }
+  };
+
+  // Handle form field updates with better isolation
+  const handleFormFieldUpdate = (field, value) => {
+    // Update formData for immediate UI updates
+    setFormData(prev => {
       if (field === 'checklist') {
         return {
           ...prev,
@@ -247,13 +426,37 @@ const TaskDetailPage = () => {
       }
       return { ...prev, [field]: value };
     });
+    
+    // Also update taskData for consistency
+    setTaskData(prev => {
+      if (field === 'checklist') {
+        const newData = {
+          ...prev,
+          checklist: value.map(item => ({
+            text: item?.text?.toString().trim() || "",
+            checked: Boolean(item?.checked),
+            isPlaceholder: Boolean(item?.isPlaceholder)
+          })).filter(item => item.text)
+        };
+        return newData;
+      }
+      const newData = { ...prev, [field]: value };
+      return newData;
+    });
+    
+    // Clear validation error for this field when user starts typing
+    if (validationErrors[field]) {
+      setValidationErrors(prev => ({ ...prev, [field]: undefined }));
+    }
   };
+
 
   const handleBackClick = () => {
     navigate(-1);
   };
 
   const handleSaveClick = async () => {
+    
     if (!permissions.canSave) {
       addMessage({
         text: "You don't have permission to save tasks",
@@ -265,21 +468,49 @@ const TaskDetailPage = () => {
 
     // Required field validations
     const errors = {};
+    
     if (!taskTitle || !taskTitle.toString().trim()) {
       errors.title = "Title is required";
     }
-    if (!taskData?.type || !taskData.type.toString().trim()) {
+    
+    // Check both taskData and formData for type field
+    const currentType = formData?.type || taskData?.type;
+    if (!currentType || !currentType.toString().trim()) {
       errors.type = "Creative type is required";
     }
-    if (!taskData?.date) {
+    
+    // Check both taskData and formData for date field
+    const currentDate = formData?.date || taskData?.date;
+    if (!currentDate) {
       errors.date = "Due date is required";
     }
+    // Only validate status if status options are available from API
+    if (statusOptions.length > 0) {
+      if (!taskStatus?.id || taskStatus.id === "") {
+        errors.status = "Please select a valid task status";
+      }
+    }
+    
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
-      addMessage({ text: "Please fill all required fields", type: "error", duration: 2500 });
+      
+      // Create specific error message showing which fields are missing
+      const missingFields = Object.keys(errors).map(field => {
+        switch(field) {
+          case 'title': return 'Task Title';
+          case 'type': return 'Creative Type';
+          case 'date': return 'Due Date';
+          case 'status': return 'Task Status';
+          default: return field;
+        }
+      });
+      
+      const errorMessage = `Please fill the following required fields: ${missingFields.join(', ')}`;
+      addMessage({ text: errorMessage, type: "error", duration: 5000 });
       setActiveTab("Details");
       return;
     }
+    
 
     // Validation: If status is Approved, at least one file must be selected
     if (taskStatus.value === "Approved" && selectedFiles.length === 0) {
@@ -292,22 +523,42 @@ const TaskDetailPage = () => {
       return;
     }
 
-    // Validate task date between now and event date (if provided)
+    // Use current form data for validation
+    const currentFormData = { ...taskData, ...formData };
+    
+    // Validate task date and time
     try {
       const now = new Date();
-      const selected = new Date(taskData.date);
-      if (selected <= now) {
-        addMessage({ text: "Task date must be later than today.", type: "error", duration: 3000 });
+      const selected = new Date(currentFormData.date);
+      const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+      
+      if (selected < now) {
+        addMessage({ text: "Task date must be today or later.", type: "error", duration: 3000 });
         return;
       }
+      
+      if (selected < oneHourLater) {
+        addMessage({ 
+          text: "Task due time must be at least 1 hour from now.", 
+          type: "error", 
+          duration: 3000 
+        });
+        return;
+      }
+      
       if (eventDate && selected >= new Date(eventDate)) {
         addMessage({ text: "Task date must be earlier than the event date.", type: "error", duration: 3000 });
         return;
       }
-    } catch {}
+    } catch (error) {
+      console.error("Date validation error:", error);
+      addMessage({ text: "Invalid date format.", type: "error", duration: 3000 });
+      return;
+    }
 
     setIsLoading(true);
     try {
+      
       if (selectedFiles.length > 0 && activeTab === "Files & Uploads") {
         try {
           const approvalResults = await Promise.allSettled(
@@ -342,36 +593,53 @@ const TaskDetailPage = () => {
         }
       }
 
-      const formattedChecklist = Array.isArray(taskData.checklist)
-        ? taskData.checklist.map(item => ({
+      // currentFormData already defined above
+      
+      const formattedChecklist = Array.isArray(currentFormData.checklist)
+        ? currentFormData.checklist.map(item => ({
             text: item.text,
             checked: item.checked,
             isPlaceholder: item.isPlaceholder
           }))
         : [];
 
+      // Try to get user ID from various possible field names
+      const userId = user?.id || user?._id || user?.userId || user?.user_id || user?.uid;
+      
+      // Validate that we have a valid user ID
+      if (!userId) {
+        addMessage({
+          text: "User information not available. Please log in again.",
+          type: "error",
+          duration: 3000
+        });
+        return;
+      }
+      
       const payload = {
-        EventId: mode === "edit" ? taskData.eventId : eventId,
+        EventId: mode === "edit" ? currentFormData.eventId : eventId,
         TaskTitle: taskTitle,
-        TaskStatus: taskStatus.value,
+        taskStatusId: statusOptions.length > 0 ? taskStatus.id : null,
         AssignedTo: (selectedParticipantIds || []).map((item) =>
           typeof item === "object" ? item?.id : item
         ),
-        CreatedBy: user?.id || 0,
-        UpdatedBy: user?.id || 0,
-        CreativeType: taskData.type,
-        DueDate: new Date(taskData.date).toISOString(),
-        CreativeNumbers: taskData.quantity,
+        CreatedBy: userId,
+        UpdatedBy: userId,
+        CreativeType: currentFormData.type,
+        DueDate: new Date(currentFormData.date).toISOString(),
+        CreativeNumbers: currentFormData.quantity,
         checklistDetails: formattedChecklist,
-        Description: taskData.description,
-        OrganizationId: organizationId || taskData.organizationId
+        Description: currentFormData.description,
+        OrganizationId: organizationId || currentFormData.organizationId
       };
+
 
       const url = mode === "edit" 
         ? `/apis/task/update/${taskId}`
         : `/apis/task/create_task`;
       
       const method = mode === "edit" ? "PUT" : "POST";
+
 
       const response = await fetchWithRefresh(url, {
         method,
@@ -381,6 +649,7 @@ const TaskDetailPage = () => {
         },
         body: JSON.stringify(payload),
       });
+
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -441,8 +710,8 @@ const TaskDetailPage = () => {
       label: "Details",
       component: (
         <TaskDetail
-          taskData={taskData}
-          onUpdate={updateTaskDetail}
+          taskData={{ ...taskData, ...formData }}
+          onUpdate={handleFormFieldUpdate}
           mode={mode}
           permissions={permissions}
           eventDate={eventDate}
@@ -492,17 +761,37 @@ const TaskDetailPage = () => {
 
   const breadcrumbItems = [
     { label: user?.organization?.name, href: "#", icon: Building },
-    { label: "Events", href: "/events", icon: Calendar },
-    eventName ? { label: eventName, href: "#", icon: Calendar } : null,
+    { 
+      label: "Events", 
+      href: "/events", 
+      icon: Calendar,
+      onClick: () => navigate("/events")
+    },
+    eventName ? { 
+      label: eventName, 
+      href: "#", 
+      icon: Calendar,
+      onClick: () => navigate("/events/eventDetailPage", {
+        state: {
+          eventId: eventId,
+          mode: "view"
+        }
+      })
+    } : null,
     { label: taskTitle || "New Task", href: "#", icon: Pencil },
   ].filter(Boolean);
 
+
+  if (!user) {
+    return <PageSkeleton type="task" />;
+  }
+
   if (isLoading) {
-    return <div className="loading-container">Loading...</div>;
+    return <PageSkeleton type="task" />;
   }
 
   return (
-    <div className="task-creation-module">
+    <div className="task-creation-module fade-in">
       <div className="BreadCrumb">
         <Breadcrumb items={breadcrumbItems} />
       </div>
@@ -510,7 +799,7 @@ const TaskDetailPage = () => {
       <div className="Top-Section">
         <TopSection
           title={taskTitle}
-          setTitle={setTaskTitle}
+          setTitle={handleTitleUpdate}
           status={taskStatus}
           setStatus={setTaskStatus}
           statusOptions={statusOptions}
@@ -526,6 +815,7 @@ const TaskDetailPage = () => {
               : selectedParticipantIds
           }
           permissions={permissions}
+          onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
         />
       </div>
 
@@ -534,8 +824,12 @@ const TaskDetailPage = () => {
           tabs={tabs}
           showEditButton={mode === "view" && permissions.canEdit && taskStatus.value !== "Approved"}
           isEditMode={mode === "edit"}
-          onEditClick={() => setMode("edit")}
-          onCancelClick={() => setMode("view")}
+          onEditClick={() => {
+            setMode("edit");
+          }}
+          onCancelClick={() => {
+            setMode("view");
+          }}
           activeTab={activeTab}
           setActiveTab={handleTabChange}
           disabledTabs={mode === "create" ? tabs.filter(t => t.disabled).map(t => t.label) : []}

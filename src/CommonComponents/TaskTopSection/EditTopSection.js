@@ -18,12 +18,17 @@ const TopSection = ({
   assignedTo = [],
   onParticipantsChange,
   permissions = {},
+  onClearError,
 }) => {
   const [editableTitle, setEditableTitle] = useState(title || "");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const titleRef = useRef(null);
   const [userSearch, setUserSearch] = useState("");
+  const isTitleManuallyEdited = useRef(false);
+  console.log("EditTopSection received status:", status);
+  console.log("Status type:", typeof status);
+  console.log("Status properties:", status ? Object.keys(status) : "No status object");
 
   // Local state for assigned user IDs
   const [assignedIds, setAssignedIds] = useState([]);
@@ -60,14 +65,26 @@ const TopSection = ({
   };
 
   useEffect(() => {
-    setEditableTitle(title || "");
-  }, [title]);
+    // Only update editableTitle if it's different from current value and not empty
+    // AND if the title hasn't been manually edited by the user
+    // This prevents clearing user input during validation
+    if (title !== editableTitle && title !== undefined && title !== "" && !isTitleManuallyEdited.current) {
+      setEditableTitle(title || "");
+    }
+  }, [title]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (mode === "create" && titleRef.current && !title) {
       titleRef.current.focus();
     }
   }, [mode, title]);
+
+  // Reset manual editing flag when title prop changes significantly (new task loaded)
+  useEffect(() => {
+    if (title && title !== editableTitle) {
+      isTitleManuallyEdited.current = false;
+    }
+  }, [title, editableTitle]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -112,6 +129,7 @@ const TopSection = ({
     const next = isUserSelected(id)
       ? assignedIds.filter((x) => x !== id)
       : [...assignedIds, id];
+    
     setAssignedIds(next);
     onParticipantsChange(next); // notify parent immediately
   };
@@ -122,10 +140,16 @@ const TopSection = ({
     return (a + b) || "?";
   };
 
+  // Handle title change and clear validation errors
   const handleTitleChange = (e) => {
-    const newTitle = e.target.innerText;
+    const newTitle = e.target.value;
     setEditableTitle(newTitle);
     setTitle(newTitle);
+    isTitleManuallyEdited.current = true; // Mark as manually edited
+    // Clear any validation errors for title when user starts typing
+    if (onClearError) {
+      onClearError('title');
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -147,20 +171,24 @@ const TopSection = ({
           <button className="header-back-button" onClick={onBackClick}>
             <ArrowLeft size={20} />
           </button>
-          <div className="header-title-container">
-            {mode === "edit" || mode === "create" ? (
-              <h2
-                className="header-title-input"
-                contentEditable
-                suppressContentEditableWarning
-                onBlur={handleTitleChange}
-                onKeyDown={handleKeyDown}
-                ref={titleRef}
-                dangerouslySetInnerHTML={{ __html: editableTitle }}
-                placeholder={mode === "create" ? "Enter title..." : ""}
-              />
+          <div className="header-titles">
+            {(mode === "edit" || mode === "create") ? (
+              <div className="edit-mode-fields">
+                <input
+                  type="text"
+                  className="editable-title-input"
+                  value={editableTitle}
+                  onChange={handleTitleChange}
+                  onKeyDown={handleKeyDown}
+                  ref={titleRef}
+                  placeholder="Enter task title"
+                  autoFocus={mode === "create"}
+                />
+              </div>
             ) : (
-              <h2 className="header-title">{editableTitle}</h2>
+              <div className="view-mode-fields">
+                <span className="header_title">{editableTitle}</span>
+              </div>
             )}
           </div>
         </div>
@@ -235,33 +263,58 @@ const TopSection = ({
           </div>
 
           <div className="header-dropdown-container">
-            <Dropdown
-              options={statusOptions}
-              selectedOption={status}
-              onSelect={handleDropdownSelect}
-              disabled={mode === "view" || !permissions.canChangeStatus}
-            />
+            {mode === "view" ? (
+              <div className="status-display">
+                <span className="status-label">Status:</span>
+                <div className={`status-badge status-${status?.color}`}>
+                  <div className="status-dot"></div>
+                  <span className="status-text">{status?.label || status?.value || "Unknown"}</span>
+                </div>
+                {console.log("Status display values:", { 
+                  label: status?.label, 
+                  value: status?.value, 
+                  color: status?.color,
+                  displayText: status?.label || status?.value || "Unknown"
+                })}
+              </div>
+            ) : (
+              <div className="status-dropdown-wrapper">
+                <span className="status-label">Status:</span>
+                {statusOptions && statusOptions.length > 0 ? (
+                  <Dropdown
+                    options={statusOptions}
+                    selectedOption={status}
+                    onSelect={handleDropdownSelect}
+                    disabled={!permissions.canChangeStatus}
+                  />
+                ) : (
+                  <div className="no-status-options">
+                    <span className="no-options-text">No status options available</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="header-right">
-        <div className="header-date-creator">
-          <div className="header-creator">
-            <span>
-              {creatorUser.firstName} {creatorUser.lastName}
-            </span>
-            <AvatarList
-              avatars={[creatorAvatar]}
-              showTooltip={false}
-              stack={false}
-            />
+      <div className="right-section">
+        <div className="date-creator-container">
+          <div className="creator-section">
+            <span>{creatorUser.firstName} {creatorUser.lastName}</span>
+            <div className="creator-avatar">
+              <AvatarList
+                avatars={[creatorAvatar]}
+                showTooltip={false}
+                stack={false}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="header-actions">
+        <div className="action-buttons">
           {(mode === "edit" || mode === "create") && permissions.canSave && (
-            <button className="header-save" onClick={onSaveClick}>
+            <button className="save-btn" onClick={onSaveClick}>
               <Save size={16} />
               Save
             </button>

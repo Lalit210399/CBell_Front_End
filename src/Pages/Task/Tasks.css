@@ -49,15 +49,38 @@
   margin: 1rem;
 }
 
-.loading-container,
 .error-container {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
   font-size: 1.2rem;
+  color: #dc3545;
 }
 
-.error-container {
-  color: #dc3545;
+/* Assigned users styling */
+.no-assigned-users {
+  color: #6c757d;
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+/* Ensure avatar list fits well in table cell */
+.avatar-list {
+  display: flex;
+  align-items: center;
+  /* gap: 4px; */
+}
+
+.avatar-list.stacked {
+  margin-left: 0px;
+}
+
+.avatar-list.stacked .avatar:not(:first-child) {
+  margin-left: -8px;
+}
+
+/* Table cell styling for assigned users */
+td .avatar-list {
+  padding: 4px 0;
 }

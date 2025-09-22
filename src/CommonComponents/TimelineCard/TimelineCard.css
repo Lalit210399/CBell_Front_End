@@ -103,6 +103,13 @@
   background: #c5e9e1;
   border-left-color: #14b8a6;
   transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.2);
+}
+
+/* Active state for better click feedback */
+.event-item:active {
+  transform: translateX(2px);
+  background: #a7f3d0;
 }
 
 .event-empty {

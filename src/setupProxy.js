@@ -5,7 +5,7 @@ module.exports = function (app) {
   app.use(
     '/apis',
     createProxyMiddleware({
-      target: 'https://devoted-mole-broadly.ngrok-free.app',
+      target: 'https://cbell.ai/apis',
       changeOrigin: true,
       pathRewrite: { '^/apis': '' },
     })

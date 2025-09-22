@@ -41,6 +41,8 @@ const Dashboard = () => {
         mode: "view",
         eventId: taskData.eventId || null, // eventId may not exist in new API
         organizationId: user?.organizationId,
+        eventName: taskData.eventName || taskData.event || "Unknown Event",
+        eventDate: taskData.eventDate || null,
       },
     });
   };
@@ -137,23 +139,30 @@ const Dashboard = () => {
         }
 
         // --- Pending Tasks from dashboard API ---
+        console.log("Dashboard API Response:", dashboardData);
+        console.log("Tasks from API:", dashboardData.tasks);
+        
         const allTasks =
-          dashboardData.pendingTasks?.map((task) => ({
-            id: task.id || Math.random().toString(36).substring(2, 9),
-            name: task.taskTitle,
-            event: task.eventName,
-            eventId: task.eventId || null, // may be missing
-            college: task.organizationName || organizationName,
-            status: task.taskStatus,
-            date: new Date(task.dueDate).toLocaleDateString(),
-            rawDate: new Date(task.dueDate),
-            statusClass: getStatusClass(task.taskStatus),
-            rawData: task,
-          })) || [];
+          dashboardData.tasks?.map((task) => {
+            const processedTask = {
+              id: task.id || Math.random().toString(36).substring(2, 9),
+              name: task.taskTitle,
+              event: task.eventName,
+              eventId: task.eventId || null, // may be missing
+              college: task.organizationName || organizationName,
+              status: task.taskStatusName || task.taskStatus, // Use taskStatusName from API
+              date: new Date(task.dueDate).toLocaleDateString(),
+              rawDate: new Date(task.dueDate),
+              statusClass: getStatusClass(task.taskStatusName || task.taskStatus),
+              rawData: task,
+            };
+            console.log("Processed task:", processedTask);
+            return processedTask;
+          }) || [];
 
         // --- State Update ---
         setActiveEvents(dashboardData.activeEventsCount || 0);
-        setPendingTasks(dashboardData.pendingTasksCount || allTasks.length);
+        setPendingTasks(dashboardData.pendingTasksCount || dashboardData.totalCount || allTasks.length);
         setDeadlines(dashboardData.upcomingDeadlinesCount || 0);
         setUpcomingEvents(processedUpcomingEvents);
         setPastEvents(processedPastEvents);
@@ -172,12 +181,16 @@ const Dashboard = () => {
     switch (status?.toLowerCase()) {
       case "approved":
         return "status-approved";
+      case "published":
+        return "status-published";
       case "pending":
         return "status-pending";
       case "rejected":
         return "status-rejected";
       case "approval":
         return "status-approval";
+      case "under review":
+        return "status-under-review";
       case "active":
         return "status-active";
       case "new":

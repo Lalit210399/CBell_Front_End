@@ -8,6 +8,7 @@ import Publish from "./Publish/Publish";
 import FileUploads from "./Files_Uploads/FilesUploads";
 import Breadcrumb from "../../CommonComponents/Breadcrumb/Breadcrumb";
 import TopSection from "../../CommonComponents/TaskTopSection/DetailTopSectionNew";
+import PageSkeleton from "../../CommonComponents/SkeletonLoading/PageSkeleton";
 import { useUser } from "../../Context/UserContext";
 import { useMessages } from "../../Context/MessageContext";
 import { getHierarchyUsers } from "../../Services/AuthN";
@@ -21,6 +22,7 @@ const EventDetail = () => {
   const [activeTab, setActiveTab] = useState("Details");
   const [mode, setMode] = useState("View");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [validationErrors, setValidationErrors] = useState({});
   const [usersList, setUsersList] = useState([]);
   const [assignedUsers, setAssignedUsers] = useState([]);
@@ -75,20 +77,46 @@ const EventDetail = () => {
           return; // Gracefully handle missing endpoint/data without throwing
         }
 
+        if (response.status === 500) {
+          console.error("Server error fetching tasks - likely backend data type mismatch");
+          addMessageRef.current({
+            text: "Unable to load tasks due to server error. Please try again later.",
+            type: "error",
+            duration: 5000,
+          });
+          setTasksData([]);
+          return;
+        }
+
         if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
         const data = await response.json();
 
         const safeArray = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+        
+        // Debug: Log the raw task data
+        console.log("=== RAW TASK DATA DEBUG ===");
+        console.log("Raw data:", data);
+        console.log("Safe array:", safeArray);
+        if (safeArray.length > 0) {
+          console.log("First task:", safeArray[0]);
+          console.log("First task assignedTo:", safeArray[0].assignedTo);
+          console.log("First task assignedTo type:", typeof safeArray[0].assignedTo);
+          console.log("First task assignedTo is array:", Array.isArray(safeArray[0].assignedTo));
+        }
+        
         const formattedTasks = safeArray.map((task) => ({
           id: task.id,
           creative_name: task.taskTitle,
           creative_type: task.creativeType,
-          assigned_to: Array.isArray(task.assignedTo) && task.assignedTo.length > 0
-            ? task.assignedTo.map(user => user.name).join(", ")
-            : "Unassigned",
+          // Pass the complete assignedTo array with user objects for avatar display
+          assigned_to: Array.isArray(task.assignedTo) ? task.assignedTo : [],
           due_date: task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "",
-          status: task.taskStatus,
+          status: task.taskStatusName,
+          // Pass the complete task data for any additional fields needed
+          ...task
         }));
+        
+        console.log("Formatted tasks:", formattedTasks);
 
         setTasksData(formattedTasks);
       } catch (error) {
@@ -162,14 +190,19 @@ const EventDetail = () => {
       };
 
       setFetchedEvent(newEvent);
+      setIsLoading(false);
       return;
     }
 
     // Always fetch full event data using API when eventId is available
     const fetchEvent = async () => {
-      if (!eventId) return;
+      if (!eventId) {
+        setIsLoading(false);
+        return;
+      }
       
       try {
+        setIsLoading(true);
         const organizationId = selectedOrganizationId || user?.organizationId;
         
         if (!organizationId) {
@@ -230,6 +263,8 @@ const EventDetail = () => {
           type: "error",
           duration: 3000,
         });
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -435,6 +470,7 @@ const EventDetail = () => {
         mode: "create",
         organizationId: selectedOrganizationId || user?.organizationId,
         eventDate: fetchedEvent?.eventDate || (selectedDate ? selectedDate.toISOString() : undefined),
+        eventName: fetchedEvent?.eventName || "New Event",
       },
     });
   };
@@ -582,25 +618,22 @@ const EventDetail = () => {
           : fetchedEvent?.eventName || "Event Details",
       href: "#",
       icon: FileText,
+      onClick: mode === "create" ? undefined : () => navigate("/events/eventDetailPage", {
+        state: {
+          eventId: eventId,
+          mode: "view",
+          eventData: fetchedEvent
+        }
+      }),
     },
-  ], [user?.organization?.name, mode, fetchedEvent?.eventName, navigate]);
+  ], [user?.organization?.name, mode, fetchedEvent?.eventName, navigate, eventId, fetchedEvent]);
 
-  // Add console log before passing data to DetailTopSectionNew
-  console.log("=== Data being passed to DetailTopSectionNew ===");
-  console.log("topSectionData:", topSectionData);
-  console.log("participants:", participants);
-  console.log("permissions:", permissions);
-  console.log("usersList:", usersList);
-  console.log("assignedUsers (full data):", assignedUsers);
-  console.log("mode:", mode);
-  console.log("isSubmitting:", isSubmitting);
-  console.log("validationErrors:", validationErrors);
-  console.log("selectedDate:", selectedDate);
-  console.log("fetchedEvent:", fetchedEvent);
-  console.log("================================================");
+  if (isLoading) {
+    return <PageSkeleton type="event" />;
+  }
 
   return (
-    <div className="event-detail-module">
+    <div className="event-detail-module fade-in">
       <div className="BreadCrumb">
         <Breadcrumb items={breadcrumbItems} />
       </div>

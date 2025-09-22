@@ -1,13 +1,10 @@
-import React, { useState } from "react";
+import React from "react";
 import Table from "../Table/TableNew";
 import AvatarList from "../Avatar/AvatarList";
-import Avatar from "../Avatar/Avatar";
-import CustomDropdown from "../Dropdown/CustomDropdown";
 import { Calendar } from "lucide-react";
 import "./ActiveEvents.css";
 
 const ActiveEvents = ({ events, onEventClick, title = "Active Events", loading = false }) => {
-  const [filter, setFilter] = useState("All");
 
   const columns = [
     { key: "eventName", label: "Event Name" },
@@ -16,19 +13,8 @@ const ActiveEvents = ({ events, onEventClick, title = "Active Events", loading =
     { key: "createdBy", label: "Created By" },
   ];
 
-  // dropdown options
-  const filterOptions = [
-    { label: "All" },
-    { label: "Active" },
-    { label: "Upcoming" },
-    { label: "Completed" },
-  ];
-
-  // 🔹 filter events
-  const filteredEvents =
-    filter === "All"
-      ? events
-      : events.filter((event) => event.status === filter);
+  // 🔹 filter events - show all events
+  const filteredEvents = events;
 
   const renderCell = (key, item) => {
     const handleClick = (e) => {
@@ -51,8 +37,8 @@ const ActiveEvents = ({ events, onEventClick, title = "Active Events", loading =
         );
       case "createdBy":
         return (
-          <div onClick={handleClick}>
-            <Avatar name={item.createdBy.name} src={item.createdBy.src} size="28px" />
+          <div onClick={handleClick} className="created-by-name">
+            {item.createdBy.name}
           </div>
         );
       default:

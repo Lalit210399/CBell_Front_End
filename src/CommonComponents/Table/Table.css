@@ -131,7 +131,7 @@ th:hover {
   display: flex;
   flex-direction: column;
   min-width: 120px;
-  z-index: 10;
+  z-index: 20;
 }
 
 .dropdown_item {

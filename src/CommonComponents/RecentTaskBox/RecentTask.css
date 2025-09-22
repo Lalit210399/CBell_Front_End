@@ -56,7 +56,8 @@
 
 .status-badge.new { background: #F2F2F2; color: #5D6D7E}
 .status-badge.active { background: #D6EAF8; color: #1F618D; }
-.status-badge.under-approval { background: #FDEBD0; color: #B9770E}
+.status-badge.under-review { background: #FDEBD0; color: #B9770E}  /* Updated for "Under Review" */
+.status-badge.under-approval { background: #FDEBD0; color: #B9770E}  /* Keep for backward compatibility */
 .status-badge.approved { background: #D5F5E3; color: #196F3D}
 .status-badge.published { background: #E8DAEF; color: #5B2C6F}
 

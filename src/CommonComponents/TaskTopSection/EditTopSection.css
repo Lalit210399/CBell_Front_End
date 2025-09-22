@@ -26,6 +26,8 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    flex: 1;
+    width: 100%;
 }
 
 /* 🔙 Back Button */
@@ -58,11 +60,24 @@
 }
 
 /* 🏆 Title: "Synapse Competition 2025" (Next to Back Button) */
-.header-title-container {
+.header-titles {
     display: flex;
     flex-direction: column;
+    flex: 1;
     min-width: 200px;
     border-radius: var(--radius-sm);
+}
+
+.edit-mode-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.view-mode-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .header-title {
@@ -77,38 +92,87 @@
     margin: 0;
 }
 
-.header-title-input {
-    border: 1px solid var(--grayBorder);
-    border-radius: var(--radius-sm);
+.editable-title-input {
+    border: 1px solid var(--grayLine);
+    border-radius: var(--radius-md);
     padding: 6px 10px;
     font-size: 16px;
     color: var(--textDark);
     background: var(--white);
     outline: none;
     width: 100%;
-}
-.header-title-input[placeholder]:empty:before {
-  content: attr(placeholder);
-  color: #999;
-  pointer-events: none;
-  display: block; /* For Firefox */
+    transition: border-color 0.3s ease;
 }
 
-.header-title-input:focus {
+.editable-title-input:empty {
+    color: #999;
+}
+
+.editable-title-input::placeholder {
+    color: #999;
+    font-style: italic;
+    opacity: 1;
+    font-size: 16px;
+}
+
+/* WebKit browsers (Chrome, Safari, Edge) */
+.editable-title-input::-webkit-input-placeholder {
+    color: #999;
+    font-style: italic;
+    opacity: 1;
+    font-size: 16px;
+}
+
+/* Firefox 19+ */
+.editable-title-input::-moz-placeholder {
+    color: #999;
+    font-style: italic;
+    opacity: 1;
+    font-size: 16px;
+}
+
+/* Firefox 4-18 */
+.editable-title-input:-moz-placeholder {
+    color: #999;
+    font-style: italic;
+    opacity: 1;
+    font-size: 16px;
+}
+
+/* Internet Explorer 10+ */
+.editable-title-input:-ms-input-placeholder {
+    color: #999;
+    font-style: italic;
+    opacity: 1;
+    font-size: 16px;
+}
+.editable-title-input:focus {
   outline: none;
-  border-bottom: 1px solid #ccc;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+/* Task type text removed - no longer needed */
+
+.header_title {
+    font-weight: 500;
+    font-size: 22px;
+    line-height: 100%;
+    color: var(--midGray);
+    margin: 0;
 }
 /* 👤 Avatar Container */
 .header-avatar-group {
     display: flex;
     align-items: center;
     margin-top: 10px;
-    border: 1px solid var(--grayBorder);
+    /* border: 1px solid var(--grayBorder); */
     border-radius: 16px;
-    padding: 0 12px 0 0;
+    padding: 0 12px 0 12px;
     background: var(--white);
     color: var(--midGray);
     justify-content: space-between;
+    width: 100px;
 }
 
 .avatar-add-button {
@@ -163,8 +227,144 @@
 .header-dropdown-container {
     margin-top: 9px;
     margin-left: 5px;
-    border: 1px solid var(--grayBorder);
+    /* border: 1px solid var(--grayBorder); */
     border-radius: 5px;
+}
+
+/* Status Display Styles */
+.status-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--white);
+}
+
+.status-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--midGray);
+    white-space: nowrap;
+}
+
+.status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.status-text {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* Status Color Variants */
+.status-badge.status-gray {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+/* Status dot colors removed for cleaner design */
+
+.status-badge.status-blue {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+}
+
+/* Blue status dot color removed */
+
+.status-badge.status-orange {
+    background-color: #fed7aa;
+    color: #ea580c;
+}
+
+/* Orange status dot color removed */
+
+.status-badge.status-yellow {
+    background-color: #fef3c7;
+    color: #d97706;
+}
+
+/* Yellow status dot color removed */
+
+.status-badge.status-green {
+    background-color: #dcfce7;
+    color: #16a34a;
+}
+
+/* Green status dot color removed */
+
+.status-badge.status-published {
+    background-color: #e0e7ff;
+    color: #3730a3;
+}
+
+.status-badge.status-published .status-dot {
+    background-color: #6366f1;
+}
+
+.status-badge.status-under-review {
+    background-color: #fef2f2;
+    color: #dc2626;
+}
+
+.status-badge.status-under-review .status-dot {
+    background-color: #ef4444;
+}
+
+.status-badge.status-default {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+.status-badge.status-default .status-dot {
+    background-color: #9ca3af;
+}
+
+/* Status Dropdown Wrapper */
+.status-dropdown-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--white);
+}
+
+.status-dropdown-wrapper .status-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--midGray);
+    white-space: nowrap;
+}
+
+/* No assigned users placeholder */
+.no-assigned-users-placeholder {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--placeholderGray);
+    font-size: 13px;
+    font-style: italic;
+}
+
+.placeholder-icon {
+    color: var(--placeholderGray);
+}
+
+.placeholder-text {
+    color: var(--placeholderGray);
 }
 
 /* New user dropdown styles */
@@ -205,9 +405,7 @@
   padding: 8px 10px;
   cursor: pointer;
 }
-.user-item:hover {
-  /* background: var(--darkHover); */
-}
+/* User item hover styles removed for cleaner design */
 .user-item.selected {
   background: rgba(74, 144, 226, 0.08);
 }
@@ -233,11 +431,42 @@
 }
 
 /* 📅 Right Section (Date + Created By + Buttons) */
-.header-right {
+.right-section {
     display: flex;
     flex-direction: column;
     align-items: end;
     gap: 10px;
+}
+
+.date-creator-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.creator-section {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--midGray);
+    border: 1px solid var(--grayBorder);
+    border-radius: 20px;
+    padding: 0 2px 0 2px;
+}
+
+.creator-avatar {
+    display: flex;
+    align-items: center;
+}
+
+.action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 /* 📆 Date Section */
@@ -333,7 +562,7 @@
     color: var(--white);
 }
 
-.header-save {
+.save-btn {
     background: var(--white);
     color: var(--midGray);
     margin-top: 17px;
@@ -350,13 +579,13 @@
 }
 
 /* Hover state for the save button */
-.header-save:hover {
+.save-btn:hover {
     background: var(--primary);
     color: var(--white);
 }
 
 /* Disabled state for the save button */
-.header-save:disabled {
+.save-btn:disabled {
     background: var(--lightGray);
     color: var(--placeholderGray);
     border: 1px solid var(--grayLine);
@@ -405,6 +634,23 @@
     }
 }
 
+/* No status options styling */
+.no-status-options {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    min-height: 40px;
+}
+
+.no-options-text {
+    color: #666;
+    font-style: italic;
+    font-size: 14px;
+}
+
 @media (max-width: 480px) {
     .header-wrapper {
         padding: 8px 5px;
@@ -419,4 +665,21 @@
         flex-direction: column;
         align-items: flex-start;
     }
+}
+
+/* No status options styling */
+.no-status-options {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    min-height: 40px;
+}
+
+.no-options-text {
+    color: #666;
+    font-style: italic;
+    font-size: 14px;
 }

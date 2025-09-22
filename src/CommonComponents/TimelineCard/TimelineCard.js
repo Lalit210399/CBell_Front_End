@@ -68,7 +68,7 @@ const EventCampaign = ({
                     className="event-item"
                     onClick={() => onItemClick && onItemClick(item)}
                   >
-                    {item}
+                    {typeof item === 'string' ? item : item.name}
                   </div>
                 ))}
               </div>

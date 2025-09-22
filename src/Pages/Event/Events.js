@@ -3,15 +3,28 @@ import { useNavigate } from "react-router-dom";
 import "./Events.css";
 import Table from "../../CommonComponents/Table/Table";
 import AvatarList from "../../CommonComponents/Avatar/AvatarList";
+import CustomDropdown from "../../CommonComponents/Dropdown/CustomDropdown";
 import { useMessages } from "../../Context/MessageContext";
 import { useUser } from "../../Context/UserContext";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
+import { Filter, X } from "lucide-react";
 
 const EventTable = () => {
   const [events, setEvents] = useState([]);
   const [originalEvents, setOriginalEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    eventName: "",
+    eventType: "",
+    status: "",
+    dateRange: "",
+    assignedUser: "",
+    createdBy: ""
+  });
+  const [availableTypes, setAvailableTypes] = useState([]);
+  const [availableUsers, setAvailableUsers] = useState([]);
   const navigate = useNavigate();
   const { addMessage } = useMessages();
   const { user, permissions: userPermissions, selectedOrganizationId, isViewingOwnOrganization } = useUser();
@@ -41,7 +54,64 @@ const EventTable = () => {
     return `${day}/${month}/${year}`;
   };
 
-  const fetchEvents = async () => {
+  // Filter options
+  const statusOptions = [
+    { label: "All Status", value: "" },
+    { label: "Upcoming", value: "upcoming" },
+    { label: "Ongoing", value: "ongoing" },
+    { label: "Completed", value: "completed" },
+    { label: "Cancelled", value: "cancelled" }
+  ];
+
+  const dateRangeOptions = [
+    { label: "All Dates", value: "" },
+    { label: "Today", value: "today" },
+    { label: "This Week", value: "thisWeek" },
+    { label: "This Month", value: "thisMonth" },
+    { label: "Next 30 Days", value: "next30Days" },
+    { label: "Past Events", value: "past" }
+  ];
+
+  // Helper function to determine event status
+  const getEventStatus = (eventDate) => {
+    if (!eventDate) return "unknown";
+    const now = new Date();
+    const event = new Date(eventDate);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const eventDay = new Date(event.getFullYear(), event.getMonth(), event.getDate());
+    
+    if (eventDay < today) return "completed";
+    if (eventDay.getTime() === today.getTime()) return "ongoing";
+    return "upcoming";
+  };
+
+  // Helper function to check if event matches date range filter
+  const matchesDateRange = (eventDate, dateRange) => {
+    if (!dateRange || !eventDate) return true;
+    
+    const now = new Date();
+    const event = new Date(eventDate);
+    
+    switch (dateRange) {
+      case "today":
+        return event.toDateString() === now.toDateString();
+      case "thisWeek":
+        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+        const endOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
+        return event >= startOfWeek && event <= endOfWeek;
+      case "thisMonth":
+        return event.getMonth() === now.getMonth() && event.getFullYear() === now.getFullYear();
+      case "next30Days":
+        const in30Days = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+        return event >= now && event <= in30Days;
+      case "past":
+        return event < now;
+      default:
+        return true;
+    }
+  };
+
+  const fetchEvents = React.useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -115,10 +185,18 @@ const EventTable = () => {
           date: event.eventDate ? formatDateTime(event.eventDate) : "N/A",
           createdBy: event.createdByName || event.createdBy?.name || event.createdBy || "Unknown",
           participants: allParticipants,
-          actions: "menu", // For the three dots menu
-          rawData: event
+          rawData: event,
+          eventDate: event.eventDate, // Keep original date for filtering
+          status: getEventStatus(event.eventDate)
         };
       });
+
+      // Extract unique types and users for filter options
+      const uniqueTypes = [...new Set(formatted.map(event => event.type).filter(type => type !== "N/A"))];
+      const uniqueUsers = [...new Set(formatted.map(event => event.createdBy).filter(user => user !== "Unknown"))];
+      
+      setAvailableTypes(uniqueTypes.map(type => ({ label: type, value: type })));
+      setAvailableUsers(uniqueUsers.map(user => ({ label: user, value: user })));
 
       setEvents(formatted);
       setOriginalEvents(formatted);
@@ -133,7 +211,7 @@ const EventTable = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedOrganizationId, user?.organizationId, user?.userId, addMessage]);
 
   useEffect(() => {
     if (permissions.canRead && selectedOrganizationId) {
@@ -145,7 +223,7 @@ const EventTable = () => {
       setLoading(false);
       setError("You don't have permission to view events");
     }
-  }, [permissions.canRead, selectedOrganizationId]);
+  }, [permissions.canRead, selectedOrganizationId, fetchEvents]);
 
   const handleRetry = () => {
     if (permissions.canRead) {
@@ -172,18 +250,82 @@ const EventTable = () => {
   };
 
   const handleSearch = (query) => {
-    if (!query) {
-      setEvents(originalEvents);
-      return;
+    setFilters(prev => ({ ...prev, eventName: query }));
+    applyFilters({ ...filters, eventName: query });
+  };
+
+  const applyFilters = (filterValues) => {
+    let filteredEvents = [...originalEvents];
+
+    // Filter by event name
+    if (filterValues.eventName) {
+      const lowerQuery = filterValues.eventName.toLowerCase();
+      filteredEvents = filteredEvents.filter(event =>
+        String(event.name).toLowerCase().includes(lowerQuery)
+      );
     }
-    const lowerQuery = query.toLowerCase();
-    setEvents(
-      originalEvents.filter(({ name, type, createdBy }) =>
-        String(name).toLowerCase().includes(lowerQuery) ||
-        String(type).toLowerCase().includes(lowerQuery) ||
-        String(createdBy).toLowerCase().includes(lowerQuery)
-      )
-    );
+
+    // Filter by event type
+    if (filterValues.eventType) {
+      filteredEvents = filteredEvents.filter(event =>
+        event.type === filterValues.eventType
+      );
+    }
+
+    // Filter by status
+    if (filterValues.status) {
+      filteredEvents = filteredEvents.filter(event =>
+        event.status === filterValues.status
+      );
+    }
+
+    // Filter by date range
+    if (filterValues.dateRange) {
+      filteredEvents = filteredEvents.filter(event =>
+        matchesDateRange(event.eventDate, filterValues.dateRange)
+      );
+    }
+
+    // Filter by created by
+    if (filterValues.createdBy) {
+      filteredEvents = filteredEvents.filter(event =>
+        event.createdBy === filterValues.createdBy
+      );
+    }
+
+    // Filter by assigned user (participants)
+    if (filterValues.assignedUser) {
+      filteredEvents = filteredEvents.filter(event =>
+        event.participants.some(participant =>
+          participant.name.toLowerCase().includes(filterValues.assignedUser.toLowerCase())
+        )
+      );
+    }
+
+    setEvents(filteredEvents);
+  };
+
+  const handleFilterChange = (filterKey, value) => {
+    const newFilters = { ...filters, [filterKey]: value };
+    setFilters(newFilters);
+    applyFilters(newFilters);
+  };
+
+  const clearFilters = () => {
+    const clearedFilters = {
+      eventName: "",
+      eventType: "",
+      status: "",
+      dateRange: "",
+      assignedUser: "",
+      createdBy: ""
+    };
+    setFilters(clearedFilters);
+    setEvents(originalEvents);
+  };
+
+  const getActiveFiltersCount = () => {
+    return Object.values(filters).filter(value => value !== "").length;
   };
 
   const handleDelete = async (id) => {
@@ -217,12 +359,11 @@ const EventTable = () => {
   };
 
   const columns = [
-    { key: "name", label: "Event Name", skeletonWidth: "60%", skeletonHeight: "20px" },
-    { key: "type", label: "Type", skeletonWidth: "25%", skeletonHeight: "20px" },
-    { key: "date", label: "Dates", skeletonWidth: "25%", skeletonHeight: "20px" },
-    { key: "participants", label: "Team Members", skeletonWidth: "100%", skeletonHeight: "40px" },
-    { key: "createdBy", label: "Created By", skeletonWidth: "30%", skeletonHeight: "20px" },
-    { key: "actions", label: "Action", skeletonWidth: "20%", skeletonHeight: "20px" },
+    { key: "name", label: "Event Name", skeletonWidth: "40%", skeletonHeight: "20px" },
+    { key: "type", label: "Type", skeletonWidth: "15%", skeletonHeight: "20px" },
+    { key: "date", label: "Date", skeletonWidth: "15%", skeletonHeight: "20px" },
+    { key: "participants", label: "Team Members", skeletonWidth: "20%", skeletonHeight: "40px" },
+    { key: "createdBy", label: "Created By", skeletonWidth: "10%", skeletonHeight: "20px" },
   ];
 
   return (
@@ -258,13 +399,82 @@ const EventTable = () => {
             />
           </div>
         </div>
-        <button className="filters-button">
-          <svg className="filter-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46 22,3"></polygon>
-          </svg>
+        <button 
+          className="filters-button"
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          <Filter className="filter-icon" size={16} />
           Filters
+          {getActiveFiltersCount() > 0 && (
+            <span className="filter-count">{getActiveFiltersCount()}</span>
+          )}
         </button>
       </div>
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="filter-panel">
+          <div className="filter-panel-header">
+            <h3>Filter Events</h3>
+            <button 
+              className="clear-filters-btn"
+              onClick={clearFilters}
+            >
+              <X size={16} />
+              Clear All
+            </button>
+          </div>
+          
+          <div className="filter-grid">
+            <div className="filter-group">
+              <label>Event Type</label>
+              <CustomDropdown
+                options={[{ label: "All Types", value: "" }, ...availableTypes]}
+                defaultLabel={filters.eventType || "All Types"}
+                onSelect={(option) => handleFilterChange("eventType", option.value)}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label>Status</label>
+              <CustomDropdown
+                options={statusOptions}
+                defaultLabel={filters.status || "All Status"}
+                onSelect={(option) => handleFilterChange("status", option.value)}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label>Date Range</label>
+              <CustomDropdown
+                options={dateRangeOptions}
+                defaultLabel={filters.dateRange || "All Dates"}
+                onSelect={(option) => handleFilterChange("dateRange", option.value)}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label>Created By</label>
+              <CustomDropdown
+                options={[{ label: "All Users", value: "" }, ...availableUsers]}
+                defaultLabel={filters.createdBy || "All Users"}
+                onSelect={(option) => handleFilterChange("createdBy", option.value)}
+              />
+            </div>
+
+            <div className="filter-group">
+              <label>Assigned User</label>
+              <input
+                type="text"
+                placeholder="Search by participant name..."
+                value={filters.assignedUser}
+                onChange={(e) => handleFilterChange("assignedUser", e.target.value)}
+                className="filter-input"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="Table_Container">
         <Table
@@ -293,22 +503,10 @@ const EventTable = () => {
               );
             }
             if (key === "createdBy") {
-              const initials = item.createdBy ? item.createdBy.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '??';
               return (
-                <div className="created-by-avatar">
-                  <span className="avatar-initials">{initials}</span>
+                <div className="created-by-name">
+                  {item.createdBy}
                 </div>
-              );
-            }
-            if (key === "actions") {
-              return (
-                <button className="action-menu-button">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="1"></circle>
-                    <circle cx="19" cy="12" r="1"></circle>
-                    <circle cx="5" cy="12" r="1"></circle>
-                  </svg>
-                </button>
               );
             }
             return item[key];

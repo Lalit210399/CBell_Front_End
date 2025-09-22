@@ -8,6 +8,7 @@ import RecentTasks from "../../CommonComponents/RecentTaskBox/RecentTask";
 import ActiveEvents from "../../CommonComponents/ActiveEvents/ActiveEvents";
 import EventAssignToMe from "../../CommonComponents/EventAssignToMe/EventAssignToMe";
 import CustomDropdown from "../../CommonComponents/Dropdown/CustomDropdown";
+import PageSkeleton from "../../CommonComponents/SkeletonLoading/PageSkeleton";
 import {
   CheckCircle,
   UserCheck,
@@ -27,18 +28,27 @@ import {
 import "./Dashboard.css";
 
 const Dashboard = () => {
-  const { user, scope, selectedOrganizationId, isViewingOwnOrganization } = useUser();
+  const { user, scope, selectedOrganizationId, isViewingOwnOrganization, loading: userLoading } = useUser();
   const navigate = useNavigate();
 
   // State for orgIdReady - now based on global selectedOrganizationId
   const [orgIdReady, setOrgIdReady] = useState(false);
 
-  // Initialize orgIdReady based on global state
+  // Initialize orgIdReady based on global state and user context
   useEffect(() => {
-    if (selectedOrganizationId) {
+    // Don't set orgIdReady until user context is fully loaded
+    if (userLoading) {
+      setOrgIdReady(false);
+      return;
+    }
+    
+    // Set orgIdReady to true when we have either selectedOrganizationId or user.organizationId
+    // This ensures data loads even if selectedOrganizationId is not set initially
+    const hasOrgId = selectedOrganizationId || user?.organizationId;
+    if (hasOrgId) {
       setOrgIdReady(true);
     }
-  }, [selectedOrganizationId]);
+  }, [selectedOrganizationId, user?.organizationId, userLoading]);
 
   // Handle new event button click
   const handleNewEvent = () => {
@@ -239,15 +249,19 @@ const Dashboard = () => {
         if (response.ok) {
           const data = await response.json();
 
-          // Transform API data into EventCampaign structure - only show eventName
+          // Transform API data into EventCampaign structure - include full event data
           const groupedEvents = data.events.map((ev) => ({
             date: new Date(ev.eventDate).toLocaleDateString("en-GB", {
               day: "numeric",
               month: "short",
               year: "numeric",
             }),
-            // Only include the event name in the items array
-            items: [ev.eventName],
+            // Include full event data for navigation
+            items: [{
+              name: ev.eventName,
+              id: ev.id,
+              eventData: ev
+            }],
           }));
 
           setAllEvents(groupedEvents);
@@ -294,12 +308,14 @@ const Dashboard = () => {
         "Overdue Tasks": "overdue",
         "New Tasks": "new",
         "Active Tasks": "active",
-        "Under Review Tasks": "under_review",
+        "Under Review Tasks": "under_review",  // This should match the API filter
         "Approved Tasks": "approved",
         "Published Tasks": "published",
       };
 
       apiFilter = filterMap[filterType] || "all";
+      console.log("Fetching tasks with filter:", filterType, "->", apiFilter);
+      console.log("Current filter state:", filter);
 
       const response = await fetchWithRefresh(
         `apis/dashboard/tasks?orgid=${organizationId}&filter=${apiFilter}`,
@@ -314,19 +330,30 @@ const Dashboard = () => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log("Tasks API Response:", data);
 
         // Transform API data to match the expected format for RecentTasks component
         const transformedTasks = data.tasks.map((task) => ({
+          id: task.id || task.taskId, // Ensure we have an id for navigation
           status: task.taskStatusName,
           taskName: task.taskTitle,
           eventName: task.eventName,
-          assignedTo: [], // This might need to be populated from the API if available
+          eventId: task.eventId, // Add eventId for navigation
+          assignedTo: task.assignedToNames?.map((name, index) => ({
+            name: name,
+            src: "", // Profile image not available in current API
+            id: task.assignedTo?.[index] || `user-${index}` // Use assignedTo ID if available
+          })) || [], // Transform assignedToNames to avatar format
           dueDate: new Date(task.dueDate).toLocaleDateString("en-GB"),
           description: task.description,
           creativeType: task.creativeType,
           daysUntilDue: task.daysUntilDue,
+          createdBy: task.createdByName || "Unknown",
+          updatedBy: task.updatedByName || "Unknown",
         }));
 
+        console.log("Transformed Tasks:", transformedTasks);
+        console.log("Setting tasksData to:", transformedTasks.slice(0, 5));
         setTasksData(transformedTasks.slice(0, 5));
       } else {
         console.warn("Tasks API failed");
@@ -366,15 +393,19 @@ const Dashboard = () => {
         // Transform API data to match the expected format for ActiveEvents component
         const transformedEvents = data.events.map((event) => ({
           status: "Active", // Assuming all events from this API are active
-        eventName: event.eventName,
-        assignTo: [], // This might need to be populated from the API if available
-        eventDate: new Date(event.eventDate).toLocaleDateString("en-GB"),
-        createdBy: { name: "Admin", src: "" }, // Default value, update if API provides this info
-        description: event.eventDescription,
-        location: event.locationDetails,
-        eventType: event.eventTypeDesc,
-        id: event.id, // add id for navigation
-      }));
+          eventName: event.eventName,
+          assignTo: [], // This field is not available in the current API response
+          displayDate: new Date(event.eventDate).toLocaleDateString("en-GB"), // Use displayDate for the table
+          eventDate: new Date(event.eventDate).toLocaleDateString("en-GB"), // Keep eventDate for compatibility
+          createdBy: { 
+            name: event.createdByUser?.fullName || "Unknown", 
+            src: "" // Profile image not available in current API
+          },
+          description: event.eventDescription,
+          location: event.locationDetails,
+          eventType: event.eventTypeDesc || "Event", // Use eventTypeDesc or default
+          id: event.id, // add id for navigation
+        }));
 
         setActiveEventsData(transformedEvents.slice(0, 5));
       } else {
@@ -404,8 +435,11 @@ const Dashboard = () => {
       setActiveEventsData([]);
       fetchActiveEventsData();
     } else if (activeComponent === "recent") {
-      setTasksData([]);
-      fetchTasksData(currentTitle);
+      // Only clear and refetch if we have a valid currentTitle
+      if (currentTitle && taskTiles.includes(currentTitle)) {
+        setTasksData([]);
+        fetchTasksData(currentTitle);
+      }
     }
   }, [selectedOrganizationId, user?.organizationId, orgIdReady]);
 
@@ -421,6 +455,11 @@ const Dashboard = () => {
       );
     });
   }, [allEvents, selectedMonth, selectedYear]);
+
+  // Debug: Log tasksData changes
+  useEffect(() => {
+    console.log("tasksData changed:", tasksData);
+  }, [tasksData]);
 
   // Define task tiles for reuse
   const taskTiles = [
@@ -595,14 +634,19 @@ const Dashboard = () => {
 
           // Transform API data to match EventAssignToMe component format
           const transformedData = data.events.map((event) => ({
+            id: event.id || event.eventId, // Ensure we have the event ID
             status: event.status || "Active",
             eventName: event.eventName,
             collegeName: event.organizationName || event.collegeName || event.college || "",
-            assignTo: event.assignTo || event.assignedTo || [],
+            assignTo: event.assignedUsers?.map((user, index) => ({
+              name: user.name || user.fullName || `User ${index + 1}`,
+              src: user.src || "",
+              id: user.id || `user-${index}`
+            })) || [], // Transform assignedUsers to avatar format
             eventDate: new Date(event.eventDate).toLocaleDateString("en-GB"),
             createdBy: {
-              name: event.createdBy?.name || "Unknown",
-              src: event.createdBy?.src || "",
+              name: event.createdByUser?.fullName || event.createdByUser?.name || "Unknown",
+              src: event.createdByUser?.src || "",
             },
           }));
 
@@ -638,6 +682,7 @@ const Dashboard = () => {
 
   // Handle tile click
   const handleTileClick = (tile) => {
+    console.log("Tile clicked:", tile.title);
     setCurrentTitle(tile.title);
 
     if (tile.title === "Active Events") {
@@ -648,15 +693,24 @@ const Dashboard = () => {
     } else {
       setActiveComponent("recent");
 
-      // Set filter based on tile title
-      if (tile.title === "Total Tasks") {
+      // Set filter based on tile title - default to "All" for most tiles
+      if (tile.title === "Total Tasks" || tile.title === "Tasks Due Next 7 Days" || tile.title === "Overdue Tasks") {
         setFilter("All");
       } else {
-        setFilter(tile.title);
+        // Map tile titles to filter values that match the actual API status values
+        const filterMap = {
+          "New Tasks": "New",
+          "Active Tasks": "Active", 
+          "Under Review Tasks": "Under Review",  // Match API status value
+          "Approved Tasks": "Approved",
+          "Published Tasks": "Published"
+        };
+        setFilter(filterMap[tile.title] || tile.title);
       }
 
       // Fetch tasks data for task-related tiles
       if (taskTiles.includes(tile.title)) {
+        console.log("Fetching tasks for:", tile.title);
         fetchTasksData(tile.title);
       }
     }
@@ -664,28 +718,55 @@ const Dashboard = () => {
 
   // Handle task click
   const handleTaskClick = (task, key) => {
-    console.log("Task clicked:", { task, clickedField: key });
+    console.log("Task clicked:", { task, clickedField: key, taskId: task.id });
+    navigate('/events/eventDetailPage/tasks', { 
+      state: { 
+        taskId: task.id, 
+        mode: "view", 
+        eventId: task.eventId || null,
+        eventName: task.eventName || null,
+        organizationId: selectedOrganizationId || user?.organizationId 
+      } 
+    });
   };
 
   // Handle event click
   const handleEventClick = (event, key) => {
     // Navigate to event detail page with event id and data
-    console.log(event);
-    if (event && event.eventName) {
+    console.log("Event clicked:", event);
+    if (event && (event.id || event.eventId)) {
       navigate("/events/eventDetailPage", {
         state: {
-          eventId: event.id || event.eventName, // fallback to eventName if id not present
+          eventId: event.id || event.eventId, // Use proper event ID
           mode: "view",
           eventData: event,
         },
       });
+    } else {
+      console.warn("Event missing required ID:", event);
     }
   };
 
   // Handle event campaign item click
   const handleEventCampaignClick = (item) => {
     console.log("Event campaign item clicked:", item);
+    if (item && (item.id || item.eventData?.id)) {
+      navigate("/events/eventDetailPage", {
+        state: {
+          eventId: item.id || item.eventData?.id,
+          mode: "view",
+          eventData: item.eventData || item,
+        },
+      });
+    } else {
+      console.warn("Event campaign item missing required ID:", item);
+    }
   };
+
+  // Show loading skeleton while user context is loading
+  if (userLoading || !orgIdReady) {
+    return <PageSkeleton type="event" />;
+  }
 
   return (
     <div className="dashboard-middle-container">
@@ -737,6 +818,15 @@ const Dashboard = () => {
           {/* Recent Tasks */}
           {activeComponent === "recent" && (
             <div className="recent-tasks">
+              {console.log("Rendering RecentTasks with data:", { 
+                tasksData, 
+                currentTitle, 
+                filter, 
+                loadingTasks, 
+                errorTasks,
+                tasksDataLength: tasksData?.length,
+                activeComponent
+              })}
               <RecentTasks
                 tasks={tasksData}
                 title={currentTitle}
