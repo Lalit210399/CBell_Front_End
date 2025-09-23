@@ -25,7 +25,7 @@ const Detail = ({
   const transformToOldFormat = (data) => {
     return data.map(item => ({
       name: item.name || "",
-      title: item.designation || ""
+      title: item.designation || item.title || ""
     }));
   };
 
@@ -56,15 +56,24 @@ const Detail = ({
   useEffect(() => {
     if (onSave) {
       onSave.current = () => {
+        const transformedGuests = transformToOldFormat(guests).filter(g => g.name && g.name.trim());
+        const transformedOrganizers = transformToOldFormat(organizers).filter(o => o.name && o.name.trim());
+        
+        console.log("EventDetail: Save handler called");
+        console.log("EventDetail: Raw guests:", guests);
+        console.log("EventDetail: Raw organizers:", organizers);
+        console.log("EventDetail: Transformed guests:", transformedGuests);
+        console.log("EventDetail: Transformed organizers:", transformedOrganizers);
+        
         return {
           description: editorRef.current,
           location: "Pune",
-          guests: transformToOldFormat(guests).filter(g => g.name && g.title),
-          organizers: transformToOldFormat(organizers).filter(o => o.name && o.title),
+          guests: transformedGuests,
+          organizers: transformedOrganizers,
         };
       };
     }
-  }, [onSave]); // Remove guests and organizers from dependencies to prevent infinite loop
+  }, [onSave, guests, organizers]); // Include guests and organizers to update when data changes
 
   return (
     <div className="detail_container">

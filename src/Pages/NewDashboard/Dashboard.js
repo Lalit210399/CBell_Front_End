@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../Context/UserContext";
+import useApi from "../../Hooks/useApi";
 import Tile from "../../CommonComponents/Tiles/Tiles";
 import EventCampaign from "../../CommonComponents/TimelineCard/TimelineCard";
 import RecentTasks from "../../CommonComponents/RecentTaskBox/RecentTask";
@@ -13,7 +14,6 @@ import {
   CheckCircle,
   UserCheck,
   ClipboardList,
-  Clock,
   AlertCircle,
   Plus,
   Zap,
@@ -23,12 +23,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar,
-  Building2,
 } from "lucide-react";
 import "./Dashboard.css";
 
 const Dashboard = () => {
-  const { user, scope, selectedOrganizationId, isViewingOwnOrganization, loading: userLoading } = useUser();
+  const { user, selectedOrganizationId, isViewingOwnOrganization, loading: userLoading, scopeChangeTrigger } = useUser();
   const navigate = useNavigate();
 
   // State for orgIdReady - now based on global selectedOrganizationId
@@ -60,14 +59,6 @@ const Dashboard = () => {
     navigate("/events/eventDetailPage", { state: { mode: "create" } });
   };
 
-  const handleNewTask = () => {
-    // Only allow task creation when viewing own organization
-    if (!isViewingOwnOrganization()) {
-      console.warn("Task creation is only allowed in your own organization");
-      return;
-    }
-    navigate("/events/eventDetailPage/tasks", { state: { mode: "create" } });
-  };
 
   // State for active component
   const [activeComponent, setActiveComponent] = useState("activeEvents");
@@ -78,111 +69,7 @@ const Dashboard = () => {
   // State for filter
   const [filter, setFilter] = useState("All");
 
-  // State for tasks data from API
-  const [tasksData, setTasksData] = useState([]);
-  const [loadingTasks, setLoadingTasks] = useState(false);
-  const [errorTasks, setErrorTasks] = useState(null);
-
-  // State for active events data from API
-  const [activeEventsData, setActiveEventsData] = useState([]);
-  const [loadingActiveEvents, setLoadingActiveEvents] = useState(false);
-  const [errorActiveEvents, setErrorActiveEvents] = useState(null);
-
-  /** -------------------- Dashboard Summary API -------------------- **/
-  const [summaryData, setSummaryData] = useState(null);
-  const [loadingSummary, setLoadingSummary] = useState(false);
-  const [errorSummary, setErrorSummary] = useState(null);
-
-  useEffect(() => {
-    if (!orgIdReady) return;
-
-    const organizationId = selectedOrganizationId || user?.organizationId;
-
-    const fetchSummaryData = async () => {
-      setLoadingSummary(true);
-      setErrorSummary(null);
-        try {
-          // Add includeChildren=true only when viewing own organization (parent scope)
-          const includeChildren = isViewingOwnOrganization() ? "&includeChildren=true" : "&includeChildren=false";
-          const response = await fetchWithRefresh(
-            `apis/dashboard/summary?orgid=${organizationId}&userid=${user?.userId}${includeChildren}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              "ngrok-skip-browser-warning": "1",
-            },
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          setSummaryData(data);
-        } else {
-          console.warn("Dashboard summary API failed");
-        }
-      } catch (error) {
-        setErrorSummary(error.message);
-        console.error("Error fetching dashboard summary:", error);
-      } finally {
-        setLoadingSummary(false);
-      }
-    };
-
-    if (organizationId) {
-      fetchSummaryData();
-    }
-  }, [selectedOrganizationId, user?.organizationId, orgIdReady]);
-
-  /** -------------------- Active Events Count -------------------- **/
-  const [activeEventsCount, setActiveEventsCount] = useState(null);
-  const [loadingCount, setLoadingCount] = useState(false);
-  const [errorCount, setErrorCount] = useState(null);
-
-  useEffect(() => {
-    if (!orgIdReady) return;
-
-    const organizationId =
-      selectedOrganizationId ||
-      user?.organizationId ||
-      "685eb18207416b9271b800b3";
-
-    const fetchActiveEventsCount = async () => {
-      setLoadingCount(true);
-      setErrorCount(null);
-      try {
-        const response = await fetchWithRefresh(
-          `apis/dashboard/active-events-count?organizationId=${organizationId}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              "ngrok-skip-browser-warning": "1",
-            },
-          }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setActiveEventsCount(data.count);
-        } else {
-          console.warn("Active events count API failed");
-        }
-      } catch (error) {
-        setErrorCount(error.message);
-        console.error("Error fetching active events count:", error);
-      } finally {
-        setLoadingCount(false);
-      }
-    };
-
-    if (organizationId) {
-      fetchActiveEventsCount();
-    }
-  }, [selectedOrganizationId, user?.organizationId, orgIdReady]);
-
-  /** -------------------- Events Campaign API -------------------- **/
-  const [allEvents, setAllEvents] = useState([]);
-  const [loadingEventsCampaign, setLoadingEventsCampaign] = useState(false);
+  /** -------------------- Month/Year Calculations -------------------- **/
   const [selectedMonthIndex, setSelectedMonthIndex] = useState(0); // index from current month
 
   // Dropdown options for months - next 12 months from current
@@ -221,20 +108,64 @@ const Dashboard = () => {
     currentDate.getFullYear() +
     Math.floor((currentDate.getMonth() + selectedMonthIndex) / 12);
 
-  /** -------------------- Events Campaign API -------------------- **/
+  /** -------------------- API Functions -------------------- **/
+  // Dashboard Summary API
+  const fetchSummaryData = useCallback(async () => {
+    if (!orgIdReady) return null;
+    
+    const organizationId = selectedOrganizationId || user?.organizationId;
+    const includeChildren = isViewingOwnOrganization() ? "&includeChildren=true" : "&includeChildren=false";
+    
+    const response = await fetchWithRefresh(
+      `apis/dashboard/summary?orgid=${organizationId}&userid=${user?.userId}${includeChildren}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1",
+        },
+      }
+    );
 
-  useEffect(() => {
-    if (!orgIdReady) return;
+    if (!response.ok) {
+      throw new Error("Dashboard summary API failed");
+    }
+    
+    return await response.json();
+  }, [orgIdReady, selectedOrganizationId, user?.organizationId, user?.userId, isViewingOwnOrganization]);
+
+  // Active Events Count API
+  const fetchActiveEventsCount = useCallback(async () => {
+    if (!orgIdReady) return null;
+    
+    const organizationId = selectedOrganizationId || user?.organizationId || "685eb18207416b9271b800b3";
+    
+    const response = await fetchWithRefresh(
+      `apis/dashboard/active-events-count?organizationId=${organizationId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Active events count API failed");
+    }
+    
+    const data = await response.json();
+    return data.count;
+  }, [orgIdReady, selectedOrganizationId, user?.organizationId]);
+
+  // Events Campaign API
+  const fetchEventsCampaign = useCallback(async () => {
+    if (!orgIdReady) return [];
 
     const organizationId = selectedOrganizationId || user?.organizationId;
-
-    const fetchEventsCampaign = async () => {
-      setLoadingEventsCampaign(true);
-      try {
-        const monthParam = `${selectedYear}-${String(selectedMonth).padStart(
-          2,
-          "0"
-        )}`;
+    const monthParam = `${selectedYear}-${String(selectedMonth).padStart(2, "0")}`;
+    
         const response = await fetchWithRefresh(
           `apis/dashboard/events?orgid=${organizationId}&filter=month&month=${monthParam}`,
           {
@@ -246,60 +177,32 @@ const Dashboard = () => {
           }
         );
 
-        if (response.ok) {
+    if (!response.ok) {
+      throw new Error("Events campaign API failed");
+    }
+    
           const data = await response.json();
 
-          // Transform API data into EventCampaign structure - include full event data
-          const groupedEvents = data.events.map((ev) => ({
+    // Transform API data into EventCampaign structure
+    return data.events.map((ev) => ({
             date: new Date(ev.eventDate).toLocaleDateString("en-GB", {
               day: "numeric",
               month: "short",
               year: "numeric",
             }),
-            // Include full event data for navigation
             items: [{
               name: ev.eventName,
               id: ev.id,
               eventData: ev
             }],
           }));
+  }, [orgIdReady, selectedOrganizationId, user?.organizationId, selectedMonth, selectedYear]);
 
-          setAllEvents(groupedEvents);
-        } else {
-          console.warn("Events campaign API failed");
-          setAllEvents([]);
-        }
-      } catch (error) {
-        console.error("Error fetching events campaign:", error);
-        setAllEvents([]);
-      } finally {
-        setLoadingEventsCampaign(false);
-      }
-    };
-
-    if (organizationId) {
-      fetchEventsCampaign();
-    }
-  }, [
-    selectedOrganizationId,
-    user?.organizationId,
-    selectedMonth,
-    selectedYear,
-    orgIdReady,
-  ]);
-
-  /** -------------------- Tasks API -------------------- **/
-  const fetchTasksData = async (filterType) => {
-    const organizationId =
-      selectedOrganizationId ||
-      user?.organizationId ||
-      "681460dcb8327b2e3417d8b1";
-
-    setLoadingTasks(true);
-    setErrorTasks(null);
-
-    try {
-      let apiFilter = "all";
+  // Tasks API
+  const fetchTasksData = useCallback(async (filterType = "all") => {
+    if (!orgIdReady) return [];
+    
+    const organizationId = selectedOrganizationId || user?.organizationId || "681460dcb8327b2e3417d8b1";
 
       // Map tile titles to API filter values
       const filterMap = {
@@ -308,14 +211,12 @@ const Dashboard = () => {
         "Overdue Tasks": "overdue",
         "New Tasks": "new",
         "Active Tasks": "active",
-        "Under Review Tasks": "under_review",  // This should match the API filter
+      "Under Review Tasks": "under_review",
         "Approved Tasks": "approved",
         "Published Tasks": "published",
       };
 
-      apiFilter = filterMap[filterType] || "all";
-      console.log("Fetching tasks with filter:", filterType, "->", apiFilter);
-      console.log("Current filter state:", filter);
+    const apiFilter = filterMap[filterType] || "all";
 
       const response = await fetchWithRefresh(
         `apis/dashboard/tasks?orgid=${organizationId}&filter=${apiFilter}`,
@@ -328,22 +229,24 @@ const Dashboard = () => {
         }
       );
 
-      if (response.ok) {
+    if (!response.ok) {
+      throw new Error("Tasks API failed");
+    }
+    
         const data = await response.json();
-        console.log("Tasks API Response:", data);
 
         // Transform API data to match the expected format for RecentTasks component
-        const transformedTasks = data.tasks.map((task) => ({
-          id: task.id || task.taskId, // Ensure we have an id for navigation
+    return data.tasks.map((task) => ({
+      id: task.id || task.taskId,
           status: task.taskStatusName,
           taskName: task.taskTitle,
           eventName: task.eventName,
-          eventId: task.eventId, // Add eventId for navigation
+      eventId: task.eventId,
           assignedTo: task.assignedToNames?.map((name, index) => ({
             name: name,
-            src: "", // Profile image not available in current API
-            id: task.assignedTo?.[index] || `user-${index}` // Use assignedTo ID if available
-          })) || [], // Transform assignedToNames to avatar format
+        src: "",
+        id: task.assignedTo?.[index] || `user-${index}`
+      })) || [],
           dueDate: new Date(task.dueDate).toLocaleDateString("en-GB"),
           description: task.description,
           creativeType: task.creativeType,
@@ -351,31 +254,14 @@ const Dashboard = () => {
           createdBy: task.createdByName || "Unknown",
           updatedBy: task.updatedByName || "Unknown",
         }));
+  }, [orgIdReady, selectedOrganizationId, user?.organizationId]);
 
-        console.log("Transformed Tasks:", transformedTasks);
-        console.log("Setting tasksData to:", transformedTasks.slice(0, 5));
-        setTasksData(transformedTasks.slice(0, 5));
-      } else {
-        console.warn("Tasks API failed");
-        setTasksData([]);
-      }
-    } catch (error) {
-      setErrorTasks(error.message);
-      console.error("Error fetching tasks:", error);
-      setTasksData([]);
-    } finally {
-      setLoadingTasks(false);
-    }
-  };
-
-  /** -------------------- Active Events API -------------------- **/
-  const fetchActiveEventsData = async () => {
+  // Active Events API
+  const fetchActiveEventsData = useCallback(async () => {
+    if (!orgIdReady) return [];
+    
     const organizationId = selectedOrganizationId || user?.organizationId;
 
-    setLoadingActiveEvents(true);
-    setErrorActiveEvents(null);
-
-    try {
       const response = await fetchWithRefresh(
         `apis/dashboard/events?orgid=${organizationId}&filter=active`,
         {
@@ -387,65 +273,165 @@ const Dashboard = () => {
         }
       );
 
-      if (response.ok) {
+    if (!response.ok) {
+      throw new Error("Active Events API failed");
+    }
+    
         const data = await response.json();
 
         // Transform API data to match the expected format for ActiveEvents component
-        const transformedEvents = data.events.map((event) => ({
-          status: "Active", // Assuming all events from this API are active
+    return data.events.map((event) => ({
+      status: "Active",
           eventName: event.eventName,
-          assignTo: [], // This field is not available in the current API response
-          displayDate: new Date(event.eventDate).toLocaleDateString("en-GB"), // Use displayDate for the table
-          eventDate: new Date(event.eventDate).toLocaleDateString("en-GB"), // Keep eventDate for compatibility
+      assignTo: [],
+      displayDate: new Date(event.eventDate).toLocaleDateString("en-GB"),
+      eventDate: new Date(event.eventDate).toLocaleDateString("en-GB"),
           createdBy: { 
             name: event.createdByUser?.fullName || "Unknown", 
-            src: "" // Profile image not available in current API
+        src: ""
           },
           description: event.eventDescription,
           location: event.locationDetails,
-          eventType: event.eventTypeDesc || "Event", // Use eventTypeDesc or default
-          id: event.id, // add id for navigation
-        }));
+      eventType: event.eventTypeDesc || "Event",
+      id: event.id,
+    }));
+  }, [orgIdReady, selectedOrganizationId, user?.organizationId]);
 
-        setActiveEventsData(transformedEvents.slice(0, 5));
-      } else {
-        console.warn("Active Events API failed");
-        setActiveEventsData([]);
+  // Assigned Events API
+  const fetchAssignedEvents = useCallback(async () => {
+    if (!orgIdReady) return [];
+    
+    const organizationId = selectedOrganizationId || user?.organizationId;
+    const userId = user?.userId;
+    
+    const includeChildren = isViewingOwnOrganization() ? "&includeChildren=true" : "&includeChildren=false";
+    
+    const response = await fetchWithRefresh(
+      `apis/dashboard/assigned-events?orgid=${organizationId}&userid=${userId}${includeChildren}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1",
+        },
       }
-    } catch (error) {
-      setErrorActiveEvents(error.message);
-      console.error("Error fetching active events:", error);
-      setActiveEventsData([]);
-    } finally {
-      setLoadingActiveEvents(false);
+    );
+
+    if (!response.ok) {
+      throw new Error("Assigned events API failed");
     }
-  };
+    
+    const data = await response.json();
+    
+    // Transform API data to match EventAssignToMe component format
+    return data.events.map((event) => ({
+      id: event.id || event.eventId,
+      status: event.status || "Active",
+      eventName: event.eventName,
+      collegeName: event.organizationName || event.collegeName || event.college || "",
+      assignTo: event.assignedUsers?.map((user, index) => ({
+        name: user.name || user.fullName || `User ${index + 1}`,
+        src: user.src || "",
+        id: user.id || `user-${index}`
+      })) || [],
+      eventDate: new Date(event.eventDate).toLocaleDateString("en-GB"),
+      createdBy: {
+        name: event.createdByUser?.fullName || event.createdByUser?.name || "Unknown",
+        src: event.createdByUser?.src || "",
+      },
+    }));
+  }, [orgIdReady, selectedOrganizationId, user?.organizationId, user?.userId, isViewingOwnOrganization]);
 
+  /** -------------------- Use API Hooks -------------------- **/
+  // Dashboard Summary
+  const {
+    data: summaryData,
+    loading: loadingSummary,
+    error: errorSummary,
+    execute: executeSummary
+  } = useApi(fetchSummaryData, [orgIdReady], false);
+
+  // Active Events Count
+  const {
+    execute: executeCount
+  } = useApi(fetchActiveEventsCount, [orgIdReady], false);
+
+  // Events Campaign
+  const {
+    data: allEvents,
+    loading: loadingEventsCampaign,
+    error: errorEventsCampaign,
+    execute: executeEventsCampaign
+  } = useApi(fetchEventsCampaign, [orgIdReady, selectedMonth, selectedYear], false);
+
+  // Tasks - Create a memoized function for tasks
+  const fetchTasksForCurrentTitle = useCallback(() => {
+    return fetchTasksData(currentTitle);
+  }, [fetchTasksData, currentTitle]);
+
+  const {
+    data: tasksData,
+    loading: loadingTasks,
+    error: errorTasks,
+    execute: executeTasks
+  } = useApi(fetchTasksForCurrentTitle, [orgIdReady, currentTitle], false);
+
+  // Active Events
+  const {
+    data: activeEventsData,
+    loading: loadingActiveEvents,
+    error: errorActiveEvents,
+    execute: executeActiveEvents
+  } = useApi(fetchActiveEventsData, [orgIdReady], false);
+
+  // Assigned Events
+  const {
+    data: eventAssignToMeData,
+    loading: loadingAssignToMe,
+    error: errorAssignToMe,
+    execute: executeAssignedEvents
+  } = useApi(fetchAssignedEvents, [orgIdReady], false);
+
+  // Execute APIs when orgIdReady changes or scope changes
   useEffect(() => {
-    if (!orgIdReady) return;
+    if (orgIdReady) {
+      executeSummary();
+      executeCount();
+      executeEventsCampaign();
+      executeActiveEvents();
+      executeAssignedEvents();
+    }
+  }, [orgIdReady, scopeChangeTrigger, executeSummary, executeCount, executeEventsCampaign, executeActiveEvents, executeAssignedEvents]);
 
-    fetchActiveEventsData();
-  }, [selectedOrganizationId, user?.organizationId, orgIdReady]);
+  // Define task tiles for reuse
+  const taskTiles = useMemo(() => [
+    "Total Tasks",
+    "Tasks Due Next 7 Days",
+    "Overdue Tasks",
+    "New Tasks",
+    "Active Tasks",
+    "Under Review Tasks",
+    "Approved Tasks",
+    "Published Tasks",
+  ], []);
 
   // Refetch data for current component on scope change
   useEffect(() => {
     if (!orgIdReady) return;
 
     if (activeComponent === "activeEvents") {
-      setActiveEventsData([]);
-      fetchActiveEventsData();
+      executeActiveEvents();
     } else if (activeComponent === "recent") {
-      // Only clear and refetch if we have a valid currentTitle
+      // Only refetch if we have a valid currentTitle
       if (currentTitle && taskTiles.includes(currentTitle)) {
-        setTasksData([]);
-        fetchTasksData(currentTitle);
+        executeTasks();
       }
     }
-  }, [selectedOrganizationId, user?.organizationId, orgIdReady]);
+  }, [activeComponent, currentTitle, orgIdReady, executeActiveEvents, executeTasks, taskTiles]);
 
   // Filter events by selected month
   const filteredEvents = useMemo(() => {
-    if (!allEvents.length) return [];
+    if (!allEvents || !allEvents.length) return [];
 
     return allEvents.filter((event) => {
       const eventDate = new Date(event.date);
@@ -460,18 +446,6 @@ const Dashboard = () => {
   useEffect(() => {
     console.log("tasksData changed:", tasksData);
   }, [tasksData]);
-
-  // Define task tiles for reuse
-  const taskTiles = [
-    "Total Tasks",
-    "Tasks Due Next 7 Days",
-    "Overdue Tasks",
-    "New Tasks",
-    "Active Tasks",
-    "Under Review Tasks",
-    "Approved Tasks",
-    "Published Tasks",
-  ];
 
   /** -------------------- Tiles Data -------------------- **/
   const summaryTiles = [
@@ -601,73 +575,6 @@ const Dashboard = () => {
     },
   ];
 
-  /** -------------------- Events Assigned to Me Data -------------------- **/
-  const [eventAssignToMeData, setEventAssignToMeData] = React.useState([]);
-  const [loadingAssignToMe, setLoadingAssignToMe] = React.useState(false);
-  const [errorAssignToMe, setErrorAssignToMe] = React.useState(null);
-
-  React.useEffect(() => {
-    if (!orgIdReady) return;
-
-    const organizationId = selectedOrganizationId || user?.organizationId;
-    const userId = user?.userId;
-
-    const fetchAssignedEvents = async () => {
-      setLoadingAssignToMe(true);
-      setErrorAssignToMe(null);
-        try {
-          // Add includeChildren=true only when viewing own organization (parent scope)
-          const includeChildren = isViewingOwnOrganization() ? "&includeChildren=true" : "&includeChildren=false";
-          const response = await fetchWithRefresh(
-            `apis/dashboard/assigned-events?orgid=${organizationId}&userid=${userId}${includeChildren}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              "ngrok-skip-browser-warning": "1",
-            },
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-
-          // Transform API data to match EventAssignToMe component format
-          const transformedData = data.events.map((event) => ({
-            id: event.id || event.eventId, // Ensure we have the event ID
-            status: event.status || "Active",
-            eventName: event.eventName,
-            collegeName: event.organizationName || event.collegeName || event.college || "",
-            assignTo: event.assignedUsers?.map((user, index) => ({
-              name: user.name || user.fullName || `User ${index + 1}`,
-              src: user.src || "",
-              id: user.id || `user-${index}`
-            })) || [], // Transform assignedUsers to avatar format
-            eventDate: new Date(event.eventDate).toLocaleDateString("en-GB"),
-            createdBy: {
-              name: event.createdByUser?.fullName || event.createdByUser?.name || "Unknown",
-              src: event.createdByUser?.src || "",
-            },
-          }));
-
-          setEventAssignToMeData(transformedData.slice(0, 5));
-        } else {
-          console.warn("Assigned events API failed");
-          setEventAssignToMeData([]);
-        }
-      } catch (error) {
-        setErrorAssignToMe(error.message);
-        console.error("Error fetching assigned events:", error);
-        setEventAssignToMeData([]);
-      } finally {
-        setLoadingAssignToMe(false);
-      }
-    };
-
-    if (organizationId && userId) {
-      fetchAssignedEvents();
-    }
-  }, [selectedOrganizationId, user?.organizationId, user?.userId, orgIdReady]);
 
   const tilesRef = useRef(null);
 
@@ -687,9 +594,10 @@ const Dashboard = () => {
 
     if (tile.title === "Active Events") {
       setActiveComponent("activeEvents");
-      fetchActiveEventsData(); // Fetch active events data when tile is clicked
+      executeActiveEvents(); // Execute active events API when tile is clicked
     } else if (tile.title === "Events Assigned to Me") {
       setActiveComponent("assignedToMe");
+      executeAssignedEvents(); // Execute assigned events API when tile is clicked
     } else {
       setActiveComponent("recent");
 
@@ -708,10 +616,10 @@ const Dashboard = () => {
         setFilter(filterMap[tile.title] || tile.title);
       }
 
-      // Fetch tasks data for task-related tiles
+      // Execute tasks API for task-related tiles
       if (taskTiles.includes(tile.title)) {
-        console.log("Fetching tasks for:", tile.title);
-        fetchTasksData(tile.title);
+        console.log("Executing tasks API for:", tile.title);
+        executeTasks();
       }
     }
   };
@@ -828,7 +736,7 @@ const Dashboard = () => {
                 activeComponent
               })}
               <RecentTasks
-                tasks={tasksData}
+                tasks={tasksData || []}
                 title={currentTitle}
                 filter={filter}
                 onFilterChange={setFilter}
@@ -848,7 +756,7 @@ const Dashboard = () => {
           {activeComponent === "activeEvents" && (
             <div className="active-events">
               <ActiveEvents
-                events={activeEventsData}
+                events={activeEventsData || []}
                 title="Active Events"
                 onEventClick={handleEventClick}
                 loading={loadingActiveEvents}
@@ -861,10 +769,11 @@ const Dashboard = () => {
           {activeComponent === "assignedToMe" && (
             <div className="event-assign-to-me">
               <EventAssignToMe
-                events={eventAssignToMeData.slice(0, 5)}
+                events={(eventAssignToMeData || []).slice(0, 5)}
                 title="Events Assigned to Me"
                 onEventClick={handleEventClick}
                 loading={loadingAssignToMe}
+                error={errorAssignToMe}
               />
             </div>
           )}
@@ -892,9 +801,10 @@ const Dashboard = () => {
           <EventCampaign
             title="Events Campaign"
             month={monthOptions[selectedMonthIndex]?.label}
-            events={filteredEvents}
+            events={filteredEvents || []}
             onItemClick={handleEventCampaignClick}
             loading={loadingEventsCampaign}
+            error={errorEventsCampaign}
           />
         </div>
       </div>

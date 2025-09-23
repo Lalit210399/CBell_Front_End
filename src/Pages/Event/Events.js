@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Events.css";
 import Table from "../../CommonComponents/Table/Table";
@@ -7,13 +7,10 @@ import CustomDropdown from "../../CommonComponents/Dropdown/CustomDropdown";
 import { useMessages } from "../../Context/MessageContext";
 import { useUser } from "../../Context/UserContext";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
+import useApi from "../../Hooks/useApi";
 import { Filter, X } from "lucide-react";
 
 const EventTable = () => {
-  const [events, setEvents] = useState([]);
-  const [originalEvents, setOriginalEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     eventName: "",
@@ -25,9 +22,10 @@ const EventTable = () => {
   });
   const [availableTypes, setAvailableTypes] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
+  const [filteredEvents, setFilteredEvents] = useState([]);
   const navigate = useNavigate();
   const { addMessage } = useMessages();
-  const { user, permissions: userPermissions, selectedOrganizationId, isViewingOwnOrganization } = useUser();
+  const { user, permissions: userPermissions, selectedOrganizationId, isViewingOwnOrganization, scopeChangeTrigger } = useUser();
 
   console.log("user", user?.roles[0]?.name);
 
@@ -111,123 +109,125 @@ const EventTable = () => {
     }
   };
 
-  const fetchEvents = React.useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  /** -------------------- API Function -------------------- **/
+  const fetchEvents = useCallback(async () => {
+    // Use global selectedOrganizationId instead of user.organizationId
+    const organizationId = selectedOrganizationId || user?.organizationId;
 
-      // Use global selectedOrganizationId instead of user.organizationId
-      const organizationId = selectedOrganizationId || user?.organizationId;
+    if (!organizationId) {
+      throw new Error("No organization selected");
+    }
 
-      if (!organizationId) {
-        throw new Error("No organization selected");
+    // Determine if we need to include X-Context-Organization header
+    const isViewingOwnOrg = organizationId === user?.organizationId;
+    
+    // Prepare headers
+    const headers = {
+      "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "1",
+    };
+
+    // Only add X-Context-Organization header when viewing a different organization
+    if (!isViewingOwnOrg) {
+      headers["X-Context-Organization"] = organizationId;
+    }
+
+    // Use the new hierarchy endpoint
+    const res = await fetchWithRefresh(`/apis/event/hierarchy/${organizationId}?userId=${user?.userId}`,
+      {
+        method: "GET",
+        headers,
       }
+    );
 
-      // Determine if we need to include X-Context-Organization header
-      const isViewingOwnOrganization = organizationId === user?.organizationId;
-      
-      // Prepare headers
-      const headers = {
-        "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "1",
-      };
+    if (!res.ok) {
+      throw new Error(`Failed to fetch events: ${res.status}`);
+    }
 
-      // Only add X-Context-Organization header when viewing a different organization
-      if (!isViewingOwnOrganization) {
-        headers["X-Context-Organization"] = organizationId;
-      }
+    const response = await res.json();
+    const data = response.data;
 
-      // Use the new hierarchy endpoint
-      const res = await fetchWithRefresh(`/apis/event/hierarchy/${organizationId}?userId=${user?.userId}`,
-        {
-          method: "GET",
-          headers,
+    if (!Array.isArray(data)) {
+      throw new Error("Expected an array of events but got something else");
+    }
+
+    const formatted = data.map(event => {
+      const coordinators = event.coordinators || [];
+      const specialGuests = event.specialGuests || [];
+
+      const allParticipants = [...coordinators, ...specialGuests].map((person) => {
+        let participantName = "Unknown";
+        if (typeof person === "string") {
+          participantName = person;
+        } else if (person && person.name) {
+          participantName = person.name;
         }
-      );
-
-      if (!res.ok) {
-        throw new Error(`Failed to fetch events: ${res.status}`);
-      }
-
-      const response = await res.json();
-      const data = response.data;
-
-      if (!Array.isArray(data)) {
-        throw new Error("Expected an array of events but got something else");
-      }
-
-      const formatted = data.map(event => {
-        const coordinators = event.coordinators || [];
-        const specialGuests = event.specialGuests || [];
-
-        const allParticipants = [...coordinators, ...specialGuests].map((person) => {
-          let participantName = "Unknown";
-          if (typeof person === "string") {
-            participantName = person;
-          } else if (person && person.name) {
-            participantName = person.name;
-          }
-
-          return {
-            name: participantName,
-            src: participantName,
-            fallback: participantName.charAt(0).toUpperCase() || "?",
-            size: "32px",
-            shape: "circle",
-          };
-        });
 
         return {
-          id: event.id || Date.now().toString(),
-          name: event.eventName || "Unnamed Event",
-          type: event.eventTypeDesc || event.eventTypeName || "N/A",
-          // ✅ Use formatted date
-          date: event.eventDate ? formatDateTime(event.eventDate) : "N/A",
-          createdBy: event.createdByName || event.createdBy?.name || event.createdBy || "Unknown",
-          participants: allParticipants,
-          rawData: event,
-          eventDate: event.eventDate, // Keep original date for filtering
-          status: getEventStatus(event.eventDate)
+          name: participantName,
+          src: participantName,
+          fallback: participantName.charAt(0).toUpperCase() || "?",
+          size: "32px",
+          shape: "circle",
         };
       });
 
-      // Extract unique types and users for filter options
-      const uniqueTypes = [...new Set(formatted.map(event => event.type).filter(type => type !== "N/A"))];
-      const uniqueUsers = [...new Set(formatted.map(event => event.createdBy).filter(user => user !== "Unknown"))];
-      
-      setAvailableTypes(uniqueTypes.map(type => ({ label: type, value: type })));
-      setAvailableUsers(uniqueUsers.map(user => ({ label: user, value: user })));
+      return {
+        id: event.id || Date.now().toString(),
+        name: event.eventName || "Unnamed Event",
+        type: event.eventTypeDesc || event.eventTypeName || "N/A",
+        // ✅ Use formatted date
+        date: event.eventDate ? formatDateTime(event.eventDate) : "N/A",
+        createdBy: event.createdByName || event.createdBy?.name || event.createdBy || "Unknown",
+        participants: allParticipants,
+        rawData: event,
+        eventDate: event.eventDate, // Keep original date for filtering
+        status: getEventStatus(event.eventDate)
+      };
+    });
 
-      setEvents(formatted);
-      setOriginalEvents(formatted);
-    } catch (err) {
-      console.error("Error fetching events:", err);
-      setError(err.message);
-      addMessage({
-        text: `Failed to load events: ${err.message}`,
-        type: "error",
-        duration: 5000,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedOrganizationId, user?.organizationId, user?.userId, addMessage]);
+    return formatted;
+  }, [selectedOrganizationId, user?.organizationId, user?.userId]);
 
+  /** -------------------- Use API Hook -------------------- **/
+  const {
+    data: eventsData,
+    loading,
+    error,
+    execute: executeFetchEvents
+  } = useApi(fetchEvents, [selectedOrganizationId], false);
+
+  // Execute API when permissions and organization are ready or scope changes
   useEffect(() => {
     if (permissions.canRead && selectedOrganizationId) {
-      fetchEvents();
-    } else if (permissions.canRead && !selectedOrganizationId) {
-      setLoading(false);
-      setError("No organization selected");
-    } else {
-      setLoading(false);
-      setError("You don't have permission to view events");
+      executeFetchEvents();
     }
-  }, [permissions.canRead, selectedOrganizationId, fetchEvents]);
+  }, [permissions.canRead, selectedOrganizationId, executeFetchEvents, scopeChangeTrigger]);
+
+  // Process events data and extract filter options
+  const originalEvents = useMemo(() => {
+    if (!eventsData) {
+      return [];
+    }
+
+    // Extract unique types and users for filter options
+    const uniqueTypes = [...new Set(eventsData.map(event => event.type).filter(type => type !== "N/A"))];
+    const uniqueUsers = [...new Set(eventsData.map(event => event.createdBy).filter(user => user !== "Unknown"))];
+    
+    setAvailableTypes(uniqueTypes.map(type => ({ label: type, value: type })));
+    setAvailableUsers(uniqueUsers.map(user => ({ label: user, value: user })));
+
+    return eventsData;
+  }, [eventsData]);
+
+  // Initialize filtered events when originalEvents changes
+  useEffect(() => {
+    setFilteredEvents(originalEvents);
+  }, [originalEvents]);
 
   const handleRetry = () => {
     if (permissions.canRead) {
-      fetchEvents();
+      executeFetchEvents();
     }
   };
 
@@ -236,7 +236,7 @@ const EventTable = () => {
   };
 
   const handleSort = (key, direction) => {
-    const sorted = [...events].sort((a, b) => {
+    const sorted = [...filteredEvents].sort((a, b) => {
       if (key === "date") {
         const dateA = a.date === "N/A" ? new Date(0) : new Date(a.date);
         const dateB = b.date === "N/A" ? new Date(0) : new Date(b.date);
@@ -246,7 +246,7 @@ const EventTable = () => {
         ? String(a[key]).localeCompare(String(b[key]))
         : String(b[key]).localeCompare(String(a[key]));
     });
-    setEvents(sorted);
+    setFilteredEvents(sorted);
   };
 
   const handleSearch = (query) => {
@@ -255,54 +255,54 @@ const EventTable = () => {
   };
 
   const applyFilters = (filterValues) => {
-    let filteredEvents = [...originalEvents];
+    let filtered = [...originalEvents];
 
     // Filter by event name
     if (filterValues.eventName) {
       const lowerQuery = filterValues.eventName.toLowerCase();
-      filteredEvents = filteredEvents.filter(event =>
+      filtered = filtered.filter(event =>
         String(event.name).toLowerCase().includes(lowerQuery)
       );
     }
 
     // Filter by event type
     if (filterValues.eventType) {
-      filteredEvents = filteredEvents.filter(event =>
+      filtered = filtered.filter(event =>
         event.type === filterValues.eventType
       );
     }
 
     // Filter by status
     if (filterValues.status) {
-      filteredEvents = filteredEvents.filter(event =>
+      filtered = filtered.filter(event =>
         event.status === filterValues.status
       );
     }
 
     // Filter by date range
     if (filterValues.dateRange) {
-      filteredEvents = filteredEvents.filter(event =>
+      filtered = filtered.filter(event =>
         matchesDateRange(event.eventDate, filterValues.dateRange)
       );
     }
 
     // Filter by created by
     if (filterValues.createdBy) {
-      filteredEvents = filteredEvents.filter(event =>
+      filtered = filtered.filter(event =>
         event.createdBy === filterValues.createdBy
       );
     }
 
     // Filter by assigned user (participants)
     if (filterValues.assignedUser) {
-      filteredEvents = filteredEvents.filter(event =>
+      filtered = filtered.filter(event =>
         event.participants.some(participant =>
           participant.name.toLowerCase().includes(filterValues.assignedUser.toLowerCase())
         )
       );
     }
 
-    setEvents(filteredEvents);
+    setFilteredEvents(filtered);
   };
 
   const handleFilterChange = (filterKey, value) => {
@@ -321,37 +321,49 @@ const EventTable = () => {
       createdBy: ""
     };
     setFilters(clearedFilters);
-    setEvents(originalEvents);
+    setFilteredEvents(originalEvents);
   };
 
   const getActiveFiltersCount = () => {
     return Object.values(filters).filter(value => value !== "").length;
   };
 
+  // Delete API function
+  const deleteEvent = useCallback(async (id) => {
+    // Get the user ID for the API call
+    const userId = user?.userId || user?.id || user?._id || user?.user_id || user?.uid;
+    
+    if (!userId) {
+      throw new Error("User ID not available for delete operation");
+    }
+    
+    const res = await fetchWithRefresh(`/apis/event/delete/${id}?userId=${userId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "1",
+      },
+    });
+
+    if (!res.ok) throw new Error(`Failed to delete event: ${res.status}`);
+
+    return id; // Return the deleted event ID
+  }, [user?.userId, user?.id, user?._id, user?.user_id, user?.uid]);
+
+  // Use API hook for delete operation
+  const {
+    execute: executeDeleteEvent,
+    loading: deleteLoading
+  } = useApi(deleteEvent, [], false);
+
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this event?")) return;
+    
     try {
-      setLoading(true);
+      await executeDeleteEvent(id);
       
-      // Get the user ID for the API call
-      const userId = user?.userId || user?.id || user?._id || user?.user_id || user?.uid;
-      
-      if (!userId) {
-        throw new Error("User ID not available for delete operation");
-      }
-      
-      const res = await fetchWithRefresh(`/apis/event/delete/${id}?userId=${userId}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "1",
-        },
-      });
-
-      if (!res.ok) throw new Error(`Failed to delete event: ${res.status}`);
-
-      setEvents(prev => prev.filter(event => event.id !== id));
-      setOriginalEvents(prev => prev.filter(event => event.id !== id));
+      // Refresh the events list after successful deletion
+      executeFetchEvents();
 
       addMessage({
         text: "Event deleted successfully.",
@@ -365,8 +377,6 @@ const EventTable = () => {
         type: "error",
         duration: 5000,
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -491,8 +501,8 @@ const EventTable = () => {
       <div className="Table_Container">
         <Table
           columns={columns}
-          data={events}
-          loading={loading}
+          data={filteredEvents}
+          loading={loading || deleteLoading}
           error={error}
           onRetry={handleRetry}
           onSort={handleSort}

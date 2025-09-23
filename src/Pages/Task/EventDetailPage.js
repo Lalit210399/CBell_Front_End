@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useNavigate, useLocation } from "react-router-dom";
 import TabMenu from "../../CommonComponents/TabMenu/TabMenu";
@@ -11,27 +11,28 @@ import TopSection from "../../CommonComponents/TaskTopSection/DetailTopSectionNe
 import PageSkeleton from "../../CommonComponents/SkeletonLoading/PageSkeleton";
 import { useUser } from "../../Context/UserContext";
 import { useMessages } from "../../Context/MessageContext";
+import { useEventTypes } from "../../Hooks/useEventTypes";
 import { getHierarchyUsers } from "../../Services/AuthN";
+import useApi from "../../Hooks/useApi";
 import { Building, Calendar, FileText } from "lucide-react";
 import "./Tasks.css";
 
 const EventDetail = () => {
   const [showEdit] = useState(true);
   const [fetchedEvent, setFetchedEvent] = useState(null);
-  const [tasksData, setTasksData] = useState([]);
   const [activeTab, setActiveTab] = useState("Details");
   const [mode, setMode] = useState("View");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [validationErrors, setValidationErrors] = useState({});
   const [usersList, setUsersList] = useState([]);
   const [assignedUsers, setAssignedUsers] = useState([]);
   const detailSaveRef = useRef(null);
-  const { user, selectedOrganizationId, isViewingOwnOrganization } = useUser();
+  const { user, selectedOrganizationId, isViewingOwnOrganization, scopeChangeTrigger } = useUser();
   const { addMessage } = useMessages();
   const addMessageRef = useRef(addMessage);
   addMessageRef.current = addMessage;
   const { permissions: userPermissions } = useUser();
+  const { eventTypes, getEventTypeById, getEventTypeByName, getActiveEventTypes } = useEventTypes();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -40,7 +41,6 @@ const EventDetail = () => {
     mode: initialMode,
     eventType,
     eventTypeId,
-    eventData,
     formData,
     selectedDate: locationSelectedDate
   } = location.state || {};
@@ -56,10 +56,8 @@ const EventDetail = () => {
     }
   }, [initialMode]);
 
-  useEffect(() => {
-    const abortController = new AbortController();
-    const fetchTasks = async () => {
-      try {
+  /** -------------------- API Functions -------------------- **/
+  const fetchTasks = useCallback(async () => {
         const organizationId = selectedOrganizationId || user?.organizationId;
         
         const response = await fetchWithRefresh(`/apis/task/by-event/${eventId}?organizationId=${organizationId}`, {
@@ -69,12 +67,10 @@ const EventDetail = () => {
             Accept: "application/json",
             "ngrok-skip-browser-warning": "1",
           },
-          signal: abortController.signal,
         });
 
         if (response.status === 404) {
-          setTasksData([]);
-          return; // Gracefully handle missing endpoint/data without throwing
+      return []; // Gracefully handle missing endpoint/data without throwing
         }
 
         if (response.status === 500) {
@@ -84,8 +80,7 @@ const EventDetail = () => {
             type: "error",
             duration: 5000,
           });
-          setTasksData([]);
-          return;
+      return [];
         }
 
         if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
@@ -118,91 +113,14 @@ const EventDetail = () => {
         
         console.log("Formatted tasks:", formattedTasks);
 
-        setTasksData(formattedTasks);
-      } catch (error) {
-        if (error.name === 'AbortError') return;
-        console.error("Error fetching tasks:", error);
-        addMessageRef.current({
-          text: "Failed to load tasks. Please try again.",
-          type: "error",
-          duration: 3000,
-        });
-      }
-    };
+    return formattedTasks;
+  }, [eventId, selectedOrganizationId, user?.organizationId]);
 
-    if (activeTab === "Task" && eventId) {
-      fetchTasks();
+  const fetchEvent = useCallback(async () => {
+    if (!eventId) {
+      return null;
     }
-
-    return () => abortController.abort();
-  }, [activeTab, eventId, selectedOrganizationId, user?.organizationId]);
-
-  const fetchUsers = useCallback(async () => {
-    try {
-      const organizationId = selectedOrganizationId || user?.organizationId;
-      
-      if (!organizationId) {
-        console.warn("No organizationId available for user fetch");
-        return;
-      }
-
-      const response = await getHierarchyUsers(organizationId);
-
-      const formattedUsers = response.users.map(user => ({
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        fullName: `${user.firstName} ${user.lastName}`,
-        organizationId: user.organizationId,
-        organizationCode: user.organizationCode || "ORG001"
-      }));
-
-      setUsersList(formattedUsers);
-    } catch (error) {
-      console.error("Error fetching hierarchy users:", error);
-      addMessageRef.current({
-        text: "Failed to load users list",
-        type: "error",
-        duration: 3000
-      });
-    }
-  }, [selectedOrganizationId, user?.organizationId]);
-
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-
-  useEffect(() => {
-    if (mode === "create") {
-      const newEvent = {
-        eventName: formData?.eventName || "",
-        eventDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
-        eventDescription: formData?.eventDescription || "",
-        coordinators: [],
-        specialGuests: [],
-        organizationId: selectedOrganizationId || user?.organizationId,
-        eventType: eventType || "",
-        eventTypeId: eventTypeId || "",
-        typeName: fetchedEvent?.typeName || "",
-        location: formData?.location || "",
-        assignedUsers: [],
-      };
-
-      setFetchedEvent(newEvent);
-      setIsLoading(false);
-      return;
-    }
-
-    // Always fetch full event data using API when eventId is available
-    const fetchEvent = async () => {
-      if (!eventId) {
-        setIsLoading(false);
-        return;
-      }
-      
-      try {
-        setIsLoading(true);
+    
         const organizationId = selectedOrganizationId || user?.organizationId;
         
         if (!organizationId) {
@@ -210,7 +128,7 @@ const EventDetail = () => {
         }
 
         // Determine if we need to include X-Context-Organization header
-        const isViewingOwnOrganization = organizationId === user?.organizationId;
+    const isViewingOwnOrg = organizationId === user?.organizationId;
         
         // Prepare headers
         const headers = {
@@ -220,7 +138,7 @@ const EventDetail = () => {
         };
 
         // Only add X-Context-Organization header when viewing a different organization
-        if (!isViewingOwnOrganization) {
+    if (!isViewingOwnOrg) {
           headers["X-Context-Organization"] = organizationId;
         }
 
@@ -251,25 +169,106 @@ const EventDetail = () => {
           assignedUsers: Array.isArray(eventData.assignedUsers) ? eventData.assignedUsers : []
         };
 
-        setFetchedEvent(transformedData);
+    return transformedData;
+  }, [eventId, selectedOrganizationId, user?.organizationId, user?.userId]);
+
+  /** -------------------- Use API Hooks -------------------- **/
+  const {
+    data: tasksData,
+    execute: executeFetchTasks
+  } = useApi(fetchTasks, [eventId, selectedOrganizationId], false);
+
+  const {
+    data: eventData,
+    loading: eventLoading,
+    execute: executeFetchEvent
+  } = useApi(fetchEvent, [eventId, selectedOrganizationId], false);
+
+  // Execute tasks API when activeTab is "Task" and eventId is available
+  useEffect(() => {
+    if (activeTab === "Task" && eventId) {
+      executeFetchTasks();
+    }
+  }, [activeTab, eventId, executeFetchTasks, scopeChangeTrigger]);
+
+  // Execute event API when eventId is available and not in create mode
+  useEffect(() => {
+    if (eventId && mode !== "create") {
+      executeFetchEvent();
+    }
+  }, [eventId, mode, executeFetchEvent, scopeChangeTrigger]);
+
+  const fetchUsers = useCallback(async () => {
+    const organizationId = selectedOrganizationId || user?.organizationId;
+    
+    if (!organizationId) {
+      console.warn("No organizationId available for user fetch");
+      return [];
+    }
+
+    const response = await getHierarchyUsers(organizationId);
+
+    const formattedUsers = response.users.map(user => ({
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      fullName: `${user.firstName} ${user.lastName}`,
+      organizationId: user.organizationId,
+      organizationCode: user.organizationCode || "ORG001"
+    }));
+
+    return formattedUsers;
+  }, [selectedOrganizationId, user?.organizationId]);
+
+  const {
+    data: usersData,
+    loading: usersLoading,
+    execute: executeFetchUsers
+  } = useApi(fetchUsers, [selectedOrganizationId], false);
+
+  // Execute users API when component mounts or scope changes
+  useEffect(() => {
+    executeFetchUsers();
+  }, [executeFetchUsers, scopeChangeTrigger]);
+
+  // Update usersList when usersData changes
+  useEffect(() => {
+    if (usersData) {
+      setUsersList(usersData);
+    }
+  }, [usersData]);
+
+  // Handle create mode and event data updates
+  useEffect(() => {
+    if (mode === "create") {
+      const newEvent = {
+        eventName: formData?.eventName || "",
+        eventDate: selectedDate ? selectedDate.toISOString() : new Date().toISOString(),
+        eventDescription: formData?.eventDescription || "",
+        coordinators: [],
+        specialGuests: [],
+        organizationId: selectedOrganizationId || user?.organizationId,
+        eventType: eventType || "",
+        eventTypeId: eventTypeId || "",
+        typeName: fetchedEvent?.typeName || "",
+        location: formData?.location || "",
+        assignedUsers: [],
+      };
+
+      setFetchedEvent(newEvent);
+      return;
+    }
+
+    // Update fetchedEvent when eventData changes
+    if (eventData) {
+      setFetchedEvent(eventData);
         // Initialize assignedUsers from fetched data - pass full user objects instead of just IDs
         if (eventData.assignedUsers && Array.isArray(eventData.assignedUsers)) {
           setAssignedUsers(eventData.assignedUsers);
         }
-      } catch (error) {
-        console.error("Error fetching event:", error);
-        addMessageRef.current({
-          text: "Failed to load event. Please try again.",
-          type: "error",
-          duration: 3000,
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchEvent();
-  }, [eventId, mode, selectedDate, selectedOrganizationId, user?.organizationId, user?.userId, formData, eventType, eventTypeId]);
+    }
+  }, [mode, formData, selectedDate, eventData, selectedOrganizationId, user?.organizationId, eventType, eventTypeId, fetchedEvent?.typeName]);
 
   const permissions = React.useMemo(() => {
     const userCanEdit = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false;
@@ -288,7 +287,7 @@ const EventDetail = () => {
     };
   }, [mode, userPermissions?.permissions?.Events, userPermissions?.permissions?.Tasks, fetchedEvent?.canCRUD, isViewingOwnOrganization]);
 
-  const handleSaveEvent = async (topSectionData, getDetailData) => {
+  const handleSaveEvent = async (topSectionData, detailData) => {
     setIsSubmitting(true);
     // Basic validation for required fields: name/title and date
     const errors = {};
@@ -305,12 +304,19 @@ const EventDetail = () => {
       addMessage({ text: "Please fix the highlighted fields", type: "error", duration: 2500 });
       return;
     }
-    const detailData = getDetailData ? getDetailData() : {
+    
+    // Use provided detailData or fallback to defaults
+    const finalDetailData = detailData || {
       description: "",
       location: "Pune",
       guests: [],
       organizers: []
     };
+    
+    console.log("EventDetailPage: handleSaveEvent called");
+    console.log("EventDetailPage: topSectionData:", topSectionData);
+    console.log("EventDetailPage: detailData received:", detailData);
+    console.log("EventDetailPage: finalDetailData:", finalDetailData);
 
     // Prepare assignedUsers array - assignedUsers already contains full user objects
     const assignedUsersPayload = assignedUsers.map(assignedUser => {
@@ -340,13 +346,13 @@ const EventDetail = () => {
       organizationId: selectedOrganizationId || user?.organizationId,
       eventTypeId: topSectionData.eventTypeId || eventTypeId || fetchedEvent?.eventTypeId,
       eventTypeName: (topSectionData.typeName || fetchedEvent?.typeName || "").trim(),
-      eventDescription: detailData.description || "",
-      locationDetails: detailData.location || "Pune",
-      coordinators: (detailData.organizers || []).map(org => ({
+      eventDescription: finalDetailData.description || "",
+      locationDetails: finalDetailData.location || "Pune",
+      coordinators: (finalDetailData.organizers || []).map(org => ({
         name: org.name,
         title: org.title || "Coordinator"
       })),
-      specialGuests: (detailData.guests || []).map(guest => ({
+      specialGuests: (finalDetailData.guests || []).map(guest => ({
         name: guest.name,
         title: guest.title || "Guest"
       })),
@@ -517,7 +523,13 @@ const EventDetail = () => {
     })),
   ], [fetchedEvent?.coordinators, fetchedEvent?.specialGuests, fetchedEvent?.assignedUsers]);
 
-  const topSectionData = React.useMemo(() => ({
+  const topSectionData = React.useMemo(() => {
+    // Get event type name from cached event types
+    const eventTypeName = mode === "create" 
+      ? (eventType || "")
+      : (fetchedEvent?.typeName || getEventTypeById(fetchedEvent?.eventTypeId)?.name || "");
+
+    return {
     title: mode === "create" ? formData?.eventName || "" : fetchedEvent?.eventName || "",
     date: mode === "create"
       ? selectedDate
@@ -526,8 +538,8 @@ const EventDetail = () => {
       : fetchedEvent?.eventDate
         ? formatDateTimeLocal(fetchedEvent.eventDate)
         : formatDateTimeLocal(new Date()),
-    type: fetchedEvent?.typeName || eventType || "",
-        typeDesc: fetchedEvent?.typeName || "",
+      type: eventTypeName,
+      typeDesc: eventTypeName,
     createdBy: mode === "create"
       ? (user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.userName || "Current User" : "Current User")
       : (fetchedEvent?.createdByName || `User ID ${fetchedEvent?.createdBy || ""}`),
@@ -540,7 +552,8 @@ const EventDetail = () => {
       shape: "circle",
     },
     participants,
-  }), [mode, formData?.eventName, fetchedEvent?.eventName, selectedDate, fetchedEvent?.eventDate, fetchedEvent?.typeName, eventType, user?.firstName, fetchedEvent?.createdBy, participants]);
+    };
+  }, [mode, formData?.eventName, fetchedEvent?.eventName, selectedDate, fetchedEvent?.eventDate, fetchedEvent?.typeName, fetchedEvent?.eventTypeId, eventType, user, fetchedEvent?.createdBy, fetchedEvent?.createdByName, participants, getEventTypeById]);
 
   const guestsData = React.useMemo(() =>
     mode === "create" ? [] : fetchedEvent?.specialGuests || [],
@@ -571,7 +584,7 @@ const EventDetail = () => {
     },
     {
       label: "Task",
-      component: <Task tasksData={tasksData} eventId={eventId} eventName={fetchedEvent?.eventName || ""} />,
+      component: <Task tasksData={tasksData || []} eventId={eventId} eventName={fetchedEvent?.eventName || ""} />,
     },
     {
       label: "Files & Uploads",
@@ -594,7 +607,7 @@ const EventDetail = () => {
         />
       ),
     },
-  ], [mode, detailSaveRef, guestsData, organizersData, formData?.eventDescription, fetchedEvent?.eventDescription, formData?.location, fetchedEvent?.locationDetails, tasksData, eventId, selectedOrganizationId, user?.organizationId, handleDownload, handleSendMail]);
+  ], [mode, detailSaveRef, guestsData, organizersData, formData?.eventDescription, fetchedEvent?.eventDescription, formData?.location, fetchedEvent?.locationDetails, tasksData, eventId, selectedOrganizationId, user?.organizationId, handleDownload, handleSendMail, fetchedEvent?.eventName]);
 
   const filteredTabs = React.useMemo(() =>
     mode === "create"
@@ -626,7 +639,13 @@ const EventDetail = () => {
         }
       }),
     },
-  ], [user?.organization?.name, mode, fetchedEvent?.eventName, navigate, eventId, fetchedEvent]);
+  ], [user?.organization?.name, mode, navigate, eventId, fetchedEvent]);
+
+  // Determine loading state
+  const isLoading = useMemo(() => {
+    if (mode === "create") return false;
+    return eventLoading || usersLoading;
+  }, [mode, eventLoading, usersLoading]);
 
   if (isLoading) {
     return <PageSkeleton type="event" />;
@@ -644,7 +663,7 @@ const EventDetail = () => {
           onNewTaskClick={permissions.canCreateTask ? handleNewTaskClick : undefined}
           onSaveClick={permissions.canSave ? ((topData) => {
             const detailData = detailSaveRef.current ? detailSaveRef.current() : null;
-            handleSaveEvent(topData, () => detailData);
+            handleSaveEvent(topData, detailData);
           }) : undefined}
           data={topSectionData}
           participants={participants}
@@ -656,6 +675,10 @@ const EventDetail = () => {
           users={usersList}
           assignedTo={assignedUsers}
           onParticipantsChange={handleParticipantsChange}
+          eventTypes={eventTypes}
+          getEventTypeById={getEventTypeById}
+          getEventTypeByName={getEventTypeByName}
+          getActiveEventTypes={getActiveEventTypes}
         />
       </div>
       <div className="Inner-Content">

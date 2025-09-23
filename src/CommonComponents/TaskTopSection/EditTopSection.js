@@ -19,6 +19,8 @@ const TopSection = ({
   onParticipantsChange,
   permissions = {},
   onClearError,
+  onStatusChange, // New prop for handling status changes
+  isUpdatingStatus = false, // Loading state for status updates
 }) => {
   const [editableTitle, setEditableTitle] = useState(title || "");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -29,17 +31,72 @@ const TopSection = ({
   console.log("EditTopSection received status:", status);
   console.log("Status type:", typeof status);
   console.log("Status properties:", status ? Object.keys(status) : "No status object");
+  
+  // Console log task statuses from API
+  console.log("Task Statuses from API (statusOptions):", statusOptions);
+  console.log("Number of status options:", statusOptions?.length || 0);
+  console.log("Status options details:", statusOptions?.map(option => ({
+    id: option.id,
+    label: option.label,
+    value: option.value,
+    color: option.color
+  })));
+  
+  // Log current status details
+  console.log("Current task status:", {
+    id: status?.id,
+    label: status?.label,
+    value: status?.value,
+    color: status?.color
+  });
+
+  // Log assignedTo data for debugging
+  console.log("EditTopSection assignedTo data:", assignedTo);
+  console.log("EditTopSection users list:", users);
+  
+  // Get CSS class for status badge based on status value
+  const getStatusClass = (statusValue) => {
+    if (!statusValue) return 'default';
+    
+    const statusMap = {
+      'New': 'new',
+      'Active': 'active', 
+      'Under Review': 'under-review',
+      'Approved': 'approved',
+      'Published': 'published'
+    };
+    
+    return statusMap[statusValue] || 'default';
+  };
+
+  // Log status data for debugging
+  console.log("EditTopSection status data:", {
+    status,
+    statusValue: status?.value,
+    statusLabel: status?.label,
+    statusColor: status?.color,
+    statusClass: getStatusClass(status?.value)
+  });
+
+  // Note: Status automatically changes to 'Active' when users are assigned
+  // and back to 'New' when all users are removed (handled in TaskDetailPage)
 
   // Local state for assigned user IDs
   const [assignedIds, setAssignedIds] = useState([]);
+  
+  // Log assignedIds after state declaration
+  console.log("EditTopSection assignedIds:", assignedIds);
 
   // Sync local assignedIds with incoming prop
   useEffect(() => {
     const ids = (assignedTo || [])
-      .map((item) =>
-        typeof item === "string" || typeof item === "number" ? item : item?.id
-      )
+      .map((item) => {
+        const id = typeof item === "string" || typeof item === "number" ? item : item?.id;
+        console.log("Extracting ID from assignedTo item:", item, "-> ID:", id);
+        return id;
+      })
       .filter(Boolean);
+    console.log("Extracted assignedIds:", ids);
     setAssignedIds(ids);
   }, [assignedTo]);
 
@@ -97,23 +154,48 @@ const TopSection = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Prepare selected participants (from local assignedIds so avatars update instantly)
-  const selectedParticipants = assignedIds.map((assignedId) => {
-    const fullUser = users.find((u) => u.id === assignedId);
-    const firstName = fullUser?.firstName || "User";
-    const lastName = fullUser?.lastName || "";
-    const fullName = `${firstName} ${lastName}`.trim();
+  // Prepare selected participants (handle both API assignedTo data and users list lookup)
+  const selectedParticipants = React.useMemo(() => {
+    return assignedIds.map((assignedId) => {
+      // First, try to find in the assignedTo prop (from API) which has name field
+      const assignedUser = assignedTo.find((u) => u.id === assignedId);
+      
+      if (assignedUser && assignedUser.name) {
+        // Use the name directly from assignedTo (API data)
+        const fullName = assignedUser.name;
+        const nameParts = fullName.split(" ");
+        const firstName = nameParts[0] || "User";
+        const lastName = nameParts.slice(1).join(" ") || "";
+        
+        return {
+          id: assignedId,
+          name: fullName,
+          fallback: (firstName?.charAt(0) || "?").toUpperCase(),
+          size: "20px",
+          shape: "circle",
+        };
+      }
+      
+      // Fallback: try to find in users list
+      const fullUser = users.find((u) => u.id === assignedId);
+      const firstName = fullUser?.firstName || "User";
+      const lastName = fullUser?.lastName || "";
+      const fullName = `${firstName} ${lastName}`.trim();
 
-    return {
-      id: assignedId,
-      name: fullName,
-      fallback: (firstName?.charAt(0) || "?").toUpperCase(),
-      size: "20px",
-      shape: "circle",
-    };
-  });
+      return {
+        id: assignedId,
+        name: fullName,
+        fallback: (firstName?.charAt(0) || "?").toUpperCase(),
+        size: "20px",
+        shape: "circle",
+      };
+    });
+  }, [assignedIds, assignedTo, users]);
 
   const hasAssignedUsers = selectedParticipants && selectedParticipants.length > 0;
+  
+  // Log selectedParticipants for debugging
+  console.log("EditTopSection selectedParticipants:", selectedParticipants);
 
   const filteredUsers = React.useMemo(() => {
     const q = userSearch.trim().toLowerCase();
@@ -162,6 +244,17 @@ const TopSection = ({
 
   const handleAddButtonClick = () => {
     setIsDropdownOpen((prev) => !prev);
+  };
+
+  // Handle status change button clicks
+  const handleStatusChange = (newStatusValue) => {
+    if (onStatusChange) {
+      const newStatus = statusOptions.find(option => option.value === newStatusValue);
+      if (newStatus) {
+        console.log(`Changing status to ${newStatusValue}:`, newStatus);
+        onStatusChange(newStatus);
+      }
+    }
   };
 
   return (
@@ -263,7 +356,27 @@ const TopSection = ({
           </div>
 
           <div className="header-dropdown-container">
-            {mode === "view" ? (
+            {/* Status badge display - always show in view mode */}
+            <div className="status-display">
+              <span className="status-label">Status:</span>
+              <div 
+                className={`status-badge status-${getStatusClass(status?.value)}`}
+                data-status={status?.value || status?.label}
+              >
+                {/* <div className="status-dot"></div> */}
+                <span className="status-text">{status?.label || status?.value || "Unknown"}</span>
+              </div>
+              {console.log("Status display values:", { 
+                label: status?.label, 
+                value: status?.value, 
+                color: status?.color,
+                cssClass: `status-${getStatusClass(status?.value)}`,
+                displayText: status?.label || status?.value || "Unknown"
+              })}
+            </div>
+            
+            {/* TaskStatus dropdown functionality temporarily disabled */}
+            {/* {mode === "view" ? (
               <div className="status-display">
                 <span className="status-label">Status:</span>
                 <div className={`status-badge status-${status?.color}`}>
@@ -293,7 +406,7 @@ const TopSection = ({
                   </div>
                 )}
               </div>
-            )}
+            )} */}
           </div>
         </div>
       </div>
@@ -313,11 +426,44 @@ const TopSection = ({
         </div>
 
         <div className="action-buttons">
-          {(mode === "edit" || mode === "create") && permissions.canSave && (
-            <button className="save-btn" onClick={onSaveClick}>
-              <Save size={16} />
-              Save
-            </button>
+          {/* Hide all buttons (Save, Under Review, Approved) when status is Approved */}
+          {status?.value !== "Approved" && (
+            <>
+              {(mode === "edit" || mode === "create") && permissions.canSave && (
+                <button className="save-btn" onClick={onSaveClick}>
+                  <Save size={16} />
+                  Save
+                </button>
+              )}
+              
+              {/* Status change buttons - only show in view mode */}
+              {mode === "view" && permissions.canChangeStatus && (
+                <div className="status-change-buttons">
+                  {/* Under Review button - show for all statuses except Under Review */}
+                  {status?.value !== "Under Review" && (
+                    <button 
+                      className="status-btn under-review-btn"
+                      onClick={() => handleStatusChange("Under Review")}
+                      title="Move to Under Review"
+                      disabled={isUpdatingStatus}
+                    >
+                      {isUpdatingStatus ? "Updating..." : "Under Review"}
+                    </button>
+                  )}
+                  {/* Approved button - show only when status is Under Review */}
+                  {status?.value === "Under Review" && (
+                    <button 
+                      className="status-btn approved-btn"
+                      onClick={() => handleStatusChange("Approved")}
+                      title="Approve Task (requires file selection)"
+                      disabled={isUpdatingStatus}
+                    >
+                      {isUpdatingStatus ? "Updating..." : "Approve"}
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

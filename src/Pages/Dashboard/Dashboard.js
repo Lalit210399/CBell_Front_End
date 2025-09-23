@@ -5,10 +5,12 @@ import StatusCard from "../../CommonComponents/Status_Card/Status_Card";
 import EventList from "../../CommonComponents/EventsList/EventsList";
 import { CirclePlus } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
+import { useTaskStatus } from "../../Hooks/useTaskStatus";
 import "./Dashboard.css";
 
 const Dashboard = () => {
   const { user, isViewingOwnOrganization } = useUser();
+  const { getTaskStatusByName } = useTaskStatus();
   const navigate = useNavigate();
 
   const [activeEvents, setActiveEvents] = useState(0);
@@ -178,6 +180,13 @@ const Dashboard = () => {
   }, [user?.organizationId, user?.organization?.name]);
 
   const getStatusClass = (status) => {
+    // Try to get status from context first
+    const taskStatus = getTaskStatusByName(status);
+    if (taskStatus?.color) {
+      return `status-${taskStatus.color}`;
+    }
+    
+    // Fallback to hardcoded mapping for backward compatibility
     switch (status?.toLowerCase()) {
       case "approved":
         return "status-approved";

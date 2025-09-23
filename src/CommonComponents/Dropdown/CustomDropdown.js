@@ -52,31 +52,30 @@ const CustomDropdown = ({
         <ChevronDown size={18} color="#8B8B8B"/>
       </button>
 
-      {isOpen && options.length > 0 && (
+      {isOpen && (
         <ul className="dropdown_menu">
-          {options.map((option, index) => (
-            <li
-              key={index}
-              className={`dropdown-item ${
-                option.label === selected ? "selected" : ""
-              }`}
-              onClick={() => handleSelect(option)}
-            >
-              {showDot && (
-                <span
-                  className="dot"
-                  style={{ backgroundColor: option.color || "#111827" }}
-                />
-              )}
-              {option.label}
-            </li>
-          ))}
+          {options.length > 0 ? (
+            options.map((option, index) => (
+              <li
+                key={index}
+                className={`dropdown-item ${
+                  option.label === selected ? "selected" : ""
+                }`}
+                onClick={() => handleSelect(option)}
+              >
+                {showDot && (
+                  <span
+                    className="dot"
+                    style={{ backgroundColor: option.color || "#111827" }}
+                  />
+                )}
+                {option.label}
+              </li>
+            ))
+          ) : (
+            <li className="dropdown-item">No options available</li>
+          )}
         </ul>
-      )}
-
-      {/* Show a fallback if no options */}
-      {isOpen && options.length === 0 && (
-        <div className="dropdown-empty">No options available</div>
       )}
     </div>
   );

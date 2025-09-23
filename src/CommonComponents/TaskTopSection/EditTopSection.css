@@ -276,6 +276,52 @@
     color: #6b7280;
 }
 
+/* Status-specific colors for all 5 stages */
+.status-badge.status-new {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+.status-badge.status-new .status-dot {
+    background-color: #9ca3af;
+}
+
+.status-badge.status-active {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+}
+
+.status-badge.status-active .status-dot {
+    background-color: #3b82f6;
+}
+
+.status-badge.status-under-review {
+    background-color: #fed7aa;
+    color: #ea580c;
+}
+
+.status-badge.status-under-review .status-dot {
+    background-color: #f97316;
+}
+
+.status-badge.status-approved {
+    background-color: #dcfce7;
+    color: #16a34a;
+}
+
+.status-badge.status-approved .status-dot {
+    background-color: #22c55e;
+}
+
+.status-badge.status-published {
+    background-color: #e0e7ff;
+    color: #3730a3;
+}
+
+.status-badge.status-published .status-dot {
+    background-color: #6366f1;
+}
+
 /* Status dot colors removed for cleaner design */
 
 .status-badge.status-blue {
@@ -315,6 +361,15 @@
     background-color: #6366f1;
 }
 
+.status-badge.status-purple {
+    background-color: #e0e7ff;
+    color: #3730a3;
+}
+
+.status-badge.status-purple .status-dot {
+    background-color: #6366f1;
+}
+
 .status-badge.status-under-review {
     background-color: #fef2f2;
     color: #dc2626;
@@ -330,6 +385,16 @@
 }
 
 .status-badge.status-default .status-dot {
+    background-color: #9ca3af;
+}
+
+/* Fallback for any missing color classes */
+.status-badge:not([class*="status-"]) {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+.status-badge:not([class*="status-"]) .status-dot {
     background-color: #9ca3af;
 }
 
@@ -682,4 +747,71 @@
     color: #666;
     font-style: italic;
     font-size: 14px;
+}
+
+/* 🔄 Status Change Buttons */
+.status-change-buttons {
+    display: flex;
+    gap: 8px;
+    margin-left: 12px;
+}
+
+.status-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.under-review-btn {
+    background: #02968A;
+    color: white;
+}
+
+.under-review-btn:hover {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+.approved-btn {
+    background: #02968A;
+    color: white;
+}
+
+.approved-btn:hover {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+.status-btn:active {
+    transform: translateY(0);
+}
+
+.status-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.status-btn:disabled:hover {
+    transform: none;
+    background: #10b981;
+}
+
+/* Mobile responsive for status buttons */
+@media (max-width: 768px) {
+    .status-change-buttons {
+        margin-left: 0;
+        margin-top: 8px;
+        justify-content: center;
+    }
+    
+    .status-btn {
+        flex: 1;
+        min-width: 120px;
+    }
 }

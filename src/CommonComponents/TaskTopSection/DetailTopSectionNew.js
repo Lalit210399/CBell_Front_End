@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { ArrowLeft, Save, Users } from "lucide-react";
 import AvatarList from "../Avatar/index";
 import CustomDropdown from "../Dropdown/CustomDropdown";
 import { useUser } from "../../Context/UserContext";
+import { useEventTypes } from "../../Hooks/useEventTypes";
 import "./DetailTopSectionNew.css";
 
 function formatDateTimeLocal(date) {
@@ -29,8 +30,13 @@ const DetailTopSectionNew = ({
   users = [],
   assignedTo = [],
   onParticipantsChange,
+  eventTypes: propEventTypes,
+  getEventTypeById: propGetEventTypeById,
+  getEventTypeByName: propGetEventTypeByName,
+  getActiveEventTypes: propGetActiveEventTypes,
 }) => {
   const { user } = useUser();
+  const { eventTypes: contextEventTypes, getEventTypeByName: contextGetEventTypeByName } = useEventTypes();
   const [editableTitle, setEditableTitle] = useState(data?.title || "");
   const [editableDate, setEditableDate] = useState("");
   const [editableTime, setEditableTime] = useState("");
@@ -40,8 +46,16 @@ const DetailTopSectionNew = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [assignedIds, setAssignedIds] = useState([]);
-  const [eventTypes, setEventTypes] = useState([]);
   const [fetchedUsers, setFetchedUsers] = useState([]);
+
+  // Use event types from props or context
+  const eventTypes = useMemo(() => {
+    return propEventTypes || contextEventTypes || [];
+  }, [propEventTypes, contextEventTypes]);
+
+  const getEventTypeByName = useMemo(() => {
+    return propGetEventTypeByName || contextGetEventTypeByName;
+  }, [propGetEventTypeByName, contextGetEventTypeByName]);
 
   useEffect(() => {
     setEditableTitle(data?.title || "");
@@ -75,34 +89,7 @@ const DetailTopSectionNew = ({
     }
   }, [assignedTo, assignedIds]);
 
-  useEffect(() => {
-    const fetchEventTypes = async () => {
-      try {
-        const response = await fetch("/apis/eventtype/get_all_event-types", {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            "ngrok-skip-browser-warning": "1",
-          },
-        });
-
-        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-        const data = await response.json();
-        const formattedEventTypes = data.map((event) => ({
-          id: event?.id || event?._id || null,
-          name: event.typeName,
-          desc: event.typeDescription,
-        }));
-
-        setEventTypes(formattedEventTypes);
-      } catch (error) {
-        console.error("Error fetching event types:", error);
-      }
-    };
-
-    fetchEventTypes();
-  }, []);
+  // Event types are now provided via props or context - no need to fetch
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -226,7 +213,20 @@ const DetailTopSectionNew = ({
     return (a + b) || "?";
   };
 
-  const eventTypeOptions = eventTypes.map(event => ({ value: event.name, label: event.name }));
+  const eventTypeOptions = useMemo(() => {
+    if (eventTypes && eventTypes.length > 0) {
+      return eventTypes.map(event => ({ value: event.name, label: event.name }));
+    } else {
+      // Fallback options if no event types are available
+      return [
+        { value: 'Conference', label: 'Conference' },
+        { value: 'Workshop', label: 'Workshop' },
+        { value: 'Meeting', label: 'Meeting' },
+        { value: 'Training', label: 'Training' },
+        { value: 'Seminar', label: 'Seminar' }
+      ];
+    }
+  }, [eventTypes]);
 
   return (
     <div className="detail-top-section-new-container">
@@ -338,7 +338,7 @@ const DetailTopSectionNew = ({
               "Select Event Type"
             }
             onSelect={(option) => {
-              const selectedEvent = eventTypes.find(et => et.name === option.value);
+              const selectedEvent = getEventTypeByName ? getEventTypeByName(option.value) : eventTypes.find(et => et.name === option.value);
               setSelectedEventType(option.value);
               setSelectedEventTypeId(selectedEvent?.id || "");
               setSelectedTypeName((selectedEvent?.name || "").trim());

@@ -8,6 +8,7 @@ export const UserProvider = ({ children }) => {
   const [scope, setScope] = useState(null);
   const [selectedOrganizationId, setSelectedOrganizationId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [scopeChangeTrigger, setScopeChangeTrigger] = useState(0);
 
   useEffect(() => {
     // simulate restoring session from localStorage
@@ -60,6 +61,8 @@ export const UserProvider = ({ children }) => {
         } else {
           localStorage.removeItem("dashboard-selected-organization");
         }
+        // Trigger scope change for components to refetch data
+        setScopeChangeTrigger(prev => prev + 1);
         // Then redirect to dashboard
         window.location.href = '/dashboard';
         return;
@@ -73,6 +76,9 @@ export const UserProvider = ({ children }) => {
     } else {
       localStorage.removeItem("dashboard-selected-organization");
     }
+    
+    // Trigger scope change for components to refetch data
+    setScopeChangeTrigger(prev => prev + 1);
   };
 
   return (
@@ -86,7 +92,8 @@ export const UserProvider = ({ children }) => {
       selectedOrganizationId,
       handleScopeChange,
       isViewingOwnOrganization,
-      loading 
+      loading,
+      scopeChangeTrigger
     }}>
       {children}
     </UserContext.Provider>
