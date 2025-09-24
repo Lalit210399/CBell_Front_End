@@ -258,7 +258,7 @@ export const TaskStatusProvider = ({ children }) => {
     refreshTaskStatuses,
     isCacheValid,
     fetchTaskStatuses,
-    forceFetch // Add this for testing
+    forceFetch
   };
 
   return (

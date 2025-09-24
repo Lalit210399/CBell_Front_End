@@ -28,7 +28,7 @@ const TaskDetailPage = () => {
   
   const [taskTitle, setTaskTitle] = useState("");
   const [taskStatus, setTaskStatus] = useState({
-    id: "",
+    id: null,
     label: "New",
     value: "New",
     color: "gray",
@@ -257,7 +257,19 @@ const TaskDetailPage = () => {
       // Find the "New" status specifically, or use the first one as fallback
       const newStatus = statusOptions.find(status => status.value === "New") || statusOptions[0];
       console.log("Setting default status for create mode:", newStatus);
-      setTaskStatus(newStatus);
+      if (newStatus && newStatus.id) {
+        setTaskStatus(newStatus);
+      } else {
+        console.warn("No valid status found with ID, using fallback");
+        // Create a fallback status with a temporary ID
+        const fallbackStatus = {
+          id: "temp-new",
+          label: "New",
+          value: "New",
+          color: "gray"
+        };
+        setTaskStatus(fallbackStatus);
+      }
     }
   }, [statusOptions, mode]);
 
@@ -412,19 +424,24 @@ const TaskDetailPage = () => {
   }, [taskData.assignedTo]);
 
   // Handle title updates separately to prevent interference
-  const handleTitleUpdate = (newTitle) => {
+  const handleTitleUpdate = React.useCallback((newTitle) => {
     setTaskTitle(newTitle);
     setFormData(prev => ({ ...prev, title: newTitle }));
     setTaskData(prev => ({ ...prev, taskTitle: newTitle }));
     
     // Clear title validation error
-    if (validationErrors.title) {
-      setValidationErrors(prev => ({ ...prev, title: undefined }));
-    }
-  };
+    setValidationErrors(prev => {
+      if (prev.title) {
+        const newErrors = { ...prev };
+        delete newErrors.title;
+        return newErrors;
+      }
+      return prev;
+    });
+  }, []);
 
   // Handle form field updates with better isolation
-  const handleFormFieldUpdate = (field, value) => {
+  const handleFormFieldUpdate = React.useCallback((field, value) => {
     // Update formData for immediate UI updates
     setFormData(prev => {
       if (field === 'checklist') {
@@ -458,10 +475,15 @@ const TaskDetailPage = () => {
     });
     
     // Clear validation error for this field when user starts typing
-    if (validationErrors[field]) {
-      setValidationErrors(prev => ({ ...prev, [field]: undefined }));
-    }
-  };
+    setValidationErrors(prev => {
+      if (prev[field]) {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      }
+      return prev;
+    });
+  }, []);
 
 
   const handleBackClick = () => {
@@ -499,8 +521,13 @@ const TaskDetailPage = () => {
     }
     // Only validate status if status options are available from API
     if (statusOptions.length > 0) {
-      if (!taskStatus?.id || taskStatus.id === "") {
+      if (!taskStatus?.id || taskStatus.id === "" || taskStatus.id === null) {
         errors.status = "Please select a valid task status";
+      }
+    } else if (mode === "create") {
+      // For create mode, ensure we have a valid status even if API is not available
+      if (!taskStatus?.id || taskStatus.id === "" || taskStatus.id === null) {
+        errors.status = "Task status is not properly initialized";
       }
     }
     
@@ -628,10 +655,24 @@ const TaskDetailPage = () => {
         return;
       }
       
+      // Ensure we have a valid status ID
+      let statusId = taskStatus?.id;
+      if (!statusId || statusId === "" || statusId === null) {
+        // Try to find a matching status from the options
+        const matchingStatus = statusOptions.find(opt => opt.value === taskStatus?.value);
+        if (matchingStatus && matchingStatus.id) {
+          statusId = matchingStatus.id;
+          console.log("Using matching status ID from options:", statusId);
+        } else {
+          console.error("No valid status ID found, using null");
+          statusId = null;
+        }
+      }
+
       const payload = {
         EventId: mode === "edit" ? currentFormData.eventId : eventId,
         TaskTitle: taskTitle,
-        taskStatusId: taskStatus?.id || null, // Use the actual status ID from the selected status
+        taskStatusId: statusId, // Use the validated status ID
         AssignedTo: (selectedParticipantIds || []).map((item) =>
           typeof item === "object" ? item?.id : item
         ),
@@ -652,7 +693,9 @@ const TaskDetailPage = () => {
         fullStatus: taskStatus,
         assignedUsers: selectedParticipantIds,
         hasAssignees: selectedParticipantIds.length > 0,
-        mode: mode
+        mode: mode,
+        statusOptions: statusOptions,
+        statusOptionsLength: statusOptions.length
       });
 
 
@@ -767,11 +810,25 @@ const TaskDetailPage = () => {
           return;
         }
         
+        // Ensure we have a valid status ID for the new status
+        let statusId = newStatus.id;
+        if (!statusId || statusId === "" || statusId === null) {
+          // Try to find a matching status from the options
+          const matchingStatus = statusOptions.find(opt => opt.value === newStatus.value);
+          if (matchingStatus && matchingStatus.id) {
+            statusId = matchingStatus.id;
+            console.log("Using matching status ID from options for update:", statusId);
+          } else {
+            console.error("No valid status ID found for update, using null");
+            statusId = null;
+          }
+        }
+
         // Prepare payload for status update
         const payload = {
           EventId: currentFormData.eventId,
           TaskTitle: taskTitle,
-          taskStatusId: newStatus.id, // Use the new status ID
+          taskStatusId: statusId, // Use the validated status ID
           AssignedTo: (selectedParticipantIds || []).map((item) =>
             typeof item === "object" ? item?.id : item
           ),
@@ -843,7 +900,7 @@ const TaskDetailPage = () => {
           throw new Error(errorData.message || "Status update failed");
         }
 
-        const result = await response.json();
+        await response.json();
         
         // Show success message with file approval info if applicable
         const successMessage = newStatus.value === "Approved" && selectedFiles.length > 0

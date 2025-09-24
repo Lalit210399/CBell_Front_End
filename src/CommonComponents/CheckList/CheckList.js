@@ -19,6 +19,7 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
 
   const [checklist, setChecklist] = useState(() => transformItems(initialItems));
   const inputRefs = useRef([]);
+  const prevChecklistRef = useRef(null);
 
   const normalizeItems = (items) =>
     (items || [])
@@ -36,21 +37,23 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
     }
   }, [initialItems]);
 
-  // Notify parent only when editable and checklist actually changes
-  useEffect(() => {
-    if (mode === "view") return;
-    onChecklistChange(
-      checklist.filter(item => item.text.trim() && !item.isPlaceholder)
-    );
-  }, [checklist, mode]);
+  // Notify parent when user makes changes (not on initial render or external updates)
+  const notifyParent = React.useCallback((newChecklist) => {
+    if (mode === "view" || !onChecklistChange) return;
+    
+    const filteredChecklist = newChecklist.filter(item => item.text.trim() && !item.isPlaceholder);
+    onChecklistChange(filteredChecklist);
+  }, [mode, onChecklistChange]);
 
   const toggleCheck = (index) => {
     if (mode === "view") return;
-    setChecklist(prev =>
-      prev.map((item, i) =>
+    setChecklist(prev => {
+      const updated = prev.map((item, i) =>
         i === index ? { ...item, checked: !item.checked } : item
-      )
-    );
+      );
+      notifyParent(updated);
+      return updated;
+    });
   };
 
   const handleInputChange = (index, value) => {
@@ -62,6 +65,7 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
       if (!updated.some(item => item.isPlaceholder)) {
         updated.push(createPlaceholderItem());
       }
+      notifyParent(updated);
       return updated;
     });
   };
@@ -86,6 +90,7 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
             inputRefs.current[index + 1]?.focus();
           }, 0);
         }
+        notifyParent(newList);
         return newList;
       });
     }
@@ -99,6 +104,7 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
         setTimeout(() => {
           inputRefs.current[Math.max(0, index - 1)]?.focus();
         }, 0);
+        notifyParent(newList);
         return newList;
       });
     }

@@ -114,13 +114,13 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
 
   // These sync effects are now handled in the main initialization useEffect above
 
-  const handleTypeChange = (option) => {
+  const handleTypeChange = React.useCallback((option) => {
     setSelectedType(option);
     onUpdate("type", option?.value || "");
     if (errors?.type && onClearError) onClearError('type');
-  };
+  }, [onUpdate, errors?.type, onClearError]);
 
-  const handleDateChange = (e) => {
+  const handleDateChange = React.useCallback((e) => {
     const newDate = e.target.value;
     setLocalDate(newDate);
     
@@ -135,9 +135,9 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
     if (!isDateTimeValid(newDate, localTime)) {
       if (onClearError) onClearError('time');
     }
-  };
+  }, [localTime, onUpdate, errors?.date, onClearError]);
 
-  const handleTimeChange = (e) => {
+  const handleTimeChange = React.useCallback((e) => {
     const newTime = e.target.value;
     setLocalTime(newTime);
     
@@ -152,24 +152,24 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
     if (!isDateTimeValid(localDate, newTime)) {
       if (onClearError) onClearError('time');
     }
-  };
+  }, [localDate, onUpdate, errors?.time, onClearError]);
 
-  const handleQuantityChange = (e) => {
+  const handleQuantityChange = React.useCallback((e) => {
     const val = parseInt(e.target.value, 10);
     const newQty = isNaN(val) ? 1 : val;
     setQuantity(newQty);
     onUpdate("quantity", newQty);
-  };
+  }, [onUpdate]);
 
-  const handleChecklistChange = (newChecklist) => {
+  const handleChecklistChange = React.useCallback((newChecklist) => {
     setChecklistData(newChecklist);
     onUpdate("checklist", newChecklist);
-  };
+  }, [onUpdate]);
 
-  const handleContentChange = (newContent) => {
+  const handleContentChange = React.useCallback((newContent) => {
     setContent(newContent);
     onUpdate("description", newContent);
-  };
+  }, [onUpdate]);
 
   const minDate = (() => {
     const now = new Date();
