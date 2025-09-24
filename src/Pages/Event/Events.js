@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Events.css";
 import TableHeader from "../../CommonComponents/TableHeader/TableHeader";
@@ -7,6 +7,7 @@ import AvatarList from "../../CommonComponents/Avatar/AvatarList";
 import { useMessages } from "../../Context/MessageContext";
 import { useUser } from "../../Context/UserContext";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
+<<<<<<< HEAD
 
 const EventTable = () => {
   const [events, setEvents] = useState([]);
@@ -16,6 +17,27 @@ const EventTable = () => {
   const navigate = useNavigate();
   const { addMessage } = useMessages();
   const { user, permissions: userPermissions } = useUser();
+=======
+import useApi from "../../Hooks/useApi";
+import { Filter, X } from "lucide-react";
+
+const EventTable = () => {
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    eventName: "",
+    eventType: "",
+    status: "",
+    dateRange: "",
+    assignedUser: "",
+    createdBy: ""
+  });
+  const [availableTypes, setAvailableTypes] = useState([]);
+  const [availableUsers, setAvailableUsers] = useState([]);
+  const [filteredEvents, setFilteredEvents] = useState([]);
+  const navigate = useNavigate();
+  const { addMessage } = useMessages();
+  const { user, permissions: userPermissions, selectedOrganizationId, isViewingOwnOrganization, scopeChangeTrigger } = useUser();
+>>>>>>> a3951b3e1e8c4af6b88d0d22f94bb6251b86cdd9
 
   console.log("user", user?.roles[0]?.name);
 
@@ -40,6 +62,7 @@ const EventTable = () => {
     return `${day}/${month}/${year}`;
   };
 
+<<<<<<< HEAD
   const fetchEvents = async () => {
     try {
       setLoading(true);
@@ -52,42 +75,121 @@ const EventTable = () => {
             "Content-Type": "application/json",
             "ngrok-skip-browser-warning": "1",
           },
+=======
+  // Filter options
+  const statusOptions = [
+    { label: "All Status", value: "" },
+    { label: "Upcoming", value: "upcoming" },
+    { label: "Ongoing", value: "ongoing" },
+    { label: "Completed", value: "completed" },
+    { label: "Cancelled", value: "cancelled" }
+  ];
+
+  const dateRangeOptions = [
+    { label: "All Dates", value: "" },
+    { label: "Today", value: "today" },
+    { label: "This Week", value: "thisWeek" },
+    { label: "This Month", value: "thisMonth" },
+    { label: "Next 30 Days", value: "next30Days" },
+    { label: "Past Events", value: "past" }
+  ];
+
+  // Helper function to determine event status
+  const getEventStatus = (eventDate) => {
+    if (!eventDate) return "unknown";
+    const now = new Date();
+    const event = new Date(eventDate);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const eventDay = new Date(event.getFullYear(), event.getMonth(), event.getDate());
+    
+    if (eventDay < today) return "completed";
+    if (eventDay.getTime() === today.getTime()) return "ongoing";
+    return "upcoming";
+  };
+
+  // Helper function to check if event matches date range filter
+  const matchesDateRange = (eventDate, dateRange) => {
+    if (!dateRange || !eventDate) return true;
+    
+    const now = new Date();
+    const event = new Date(eventDate);
+    
+    switch (dateRange) {
+      case "today":
+        return event.toDateString() === now.toDateString();
+      case "thisWeek":
+        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+        const endOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
+        return event >= startOfWeek && event <= endOfWeek;
+      case "thisMonth":
+        return event.getMonth() === now.getMonth() && event.getFullYear() === now.getFullYear();
+      case "next30Days":
+        const in30Days = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+        return event >= now && event <= in30Days;
+      case "past":
+        return event < now;
+      default:
+        return true;
+    }
+  };
+
+  /** -------------------- API Function -------------------- **/
+  const fetchEvents = useCallback(async () => {
+    // Use global selectedOrganizationId instead of user.organizationId
+    const organizationId = selectedOrganizationId || user?.organizationId;
+
+    if (!organizationId) {
+      throw new Error("No organization selected");
+    }
+
+    // Determine if we need to include X-Context-Organization header
+    const isViewingOwnOrg = organizationId === user?.organizationId;
+    
+    // Prepare headers
+    const headers = {
+      "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "1",
+    };
+
+    // Only add X-Context-Organization header when viewing a different organization
+    if (!isViewingOwnOrg) {
+      headers["X-Context-Organization"] = organizationId;
+    }
+
+    // Use the new hierarchy endpoint
+    const res = await fetchWithRefresh(`/apis/event/hierarchy/${organizationId}?userId=${user?.userId}`,
+      {
+        method: "GET",
+        headers,
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch events: ${res.status}`);
+    }
+
+    const response = await res.json();
+    const data = response.data;
+
+    if (!Array.isArray(data)) {
+      throw new Error("Expected an array of events but got something else");
+    }
+
+    const formatted = data.map(event => {
+      const coordinators = event.coordinators || [];
+      const specialGuests = event.specialGuests || [];
+
+      const allParticipants = [...coordinators, ...specialGuests].map((person) => {
+        let participantName = "Unknown";
+        if (typeof person === "string") {
+          participantName = person;
+        } else if (person && person.name) {
+          participantName = person.name;
+>>>>>>> a3951b3e1e8c4af6b88d0d22f94bb6251b86cdd9
         }
-      );
-
-      if (!res.ok) {
-        throw new Error(`Failed to fetch events: ${res.status}`);
-      }
-
-      const response = await res.json();
-      const data = response.data;
-
-      if (!Array.isArray(data)) {
-        throw new Error("Expected an array of events but got something else");
-      }
-
-      const formatted = data.map(event => {
-        const coordinators = event.coordinators || [];
-        const specialGuests = event.specialGuests || [];
-
-        const allParticipants = [...coordinators, ...specialGuests].map((person) => {
-          let participantName = "Unknown";
-          if (typeof person === "string") {
-            participantName = person;
-          } else if (person && person.name) {
-            participantName = person.name;
-          }
-
-          return {
-            name: participantName,
-            src: participantName,
-            fallback: participantName.charAt(0).toUpperCase() || "?",
-            size: "32px",
-            shape: "circle",
-          };
-        });
 
         return {
+<<<<<<< HEAD
           id: event.id || Date.now().toString(),
           name: event.eventName || "Unnamed Event",
           // ✅ Use formatted date
@@ -112,8 +214,44 @@ const EventTable = () => {
     }
   };
 
+=======
+          name: participantName,
+          src: participantName,
+          fallback: participantName.charAt(0).toUpperCase() || "?",
+          size: "32px",
+          shape: "circle",
+        };
+      });
 
+      return {
+        id: event.id || Date.now().toString(),
+        name: event.eventName || "Unnamed Event",
+        type: event.eventTypeDesc || event.eventTypeName || "N/A",
+        // ✅ Use formatted date
+        date: event.eventDate ? formatDateTime(event.eventDate) : "N/A",
+        createdBy: event.createdByName || event.createdBy?.name || event.createdBy || "Unknown",
+        participants: allParticipants,
+        rawData: event,
+        eventDate: event.eventDate, // Keep original date for filtering
+        status: getEventStatus(event.eventDate)
+      };
+    });
+
+    return formatted;
+  }, [selectedOrganizationId, user?.organizationId, user?.userId]);
+>>>>>>> a3951b3e1e8c4af6b88d0d22f94bb6251b86cdd9
+
+  /** -------------------- Use API Hook -------------------- **/
+  const {
+    data: eventsData,
+    loading,
+    error,
+    execute: executeFetchEvents
+  } = useApi(fetchEvents, [selectedOrganizationId], false);
+
+  // Execute API when permissions and organization are ready or scope changes
   useEffect(() => {
+<<<<<<< HEAD
     if (permissions.canRead) {
       fetchEvents();
     } else {
@@ -121,17 +259,44 @@ const EventTable = () => {
       setError("You don't have permission to view events");
     }
   }, [permissions.canRead]);
+=======
+    if (permissions.canRead && selectedOrganizationId) {
+      executeFetchEvents();
+    }
+  }, [permissions.canRead, selectedOrganizationId, executeFetchEvents, scopeChangeTrigger]);
+
+  // Process events data and extract filter options
+  const originalEvents = useMemo(() => {
+    if (!eventsData) {
+      return [];
+    }
+
+    // Extract unique types and users for filter options
+    const uniqueTypes = [...new Set(eventsData.map(event => event.type).filter(type => type !== "N/A"))];
+    const uniqueUsers = [...new Set(eventsData.map(event => event.createdBy).filter(user => user !== "Unknown"))];
+    
+    setAvailableTypes(uniqueTypes.map(type => ({ label: type, value: type })));
+    setAvailableUsers(uniqueUsers.map(user => ({ label: user, value: user })));
+
+    return eventsData;
+  }, [eventsData]);
+
+  // Initialize filtered events when originalEvents changes
+  useEffect(() => {
+    setFilteredEvents(originalEvents);
+  }, [originalEvents]);
+>>>>>>> a3951b3e1e8c4af6b88d0d22f94bb6251b86cdd9
 
   const handleRetry = () => {
     if (permissions.canRead) {
-      fetchEvents();
+      executeFetchEvents();
     }
   };
 
   const handleNewEvent = () => navigate("/events/stepForm");
 
   const handleSort = (key, direction) => {
-    const sorted = [...events].sort((a, b) => {
+    const sorted = [...filteredEvents].sort((a, b) => {
       if (key === "date") {
         const dateA = a.date === "N/A" ? new Date(0) : new Date(a.date);
         const dateB = b.date === "N/A" ? new Date(0) : new Date(b.date);
@@ -141,10 +306,11 @@ const EventTable = () => {
         ? String(a[key]).localeCompare(String(b[key]))
         : String(b[key]).localeCompare(String(a[key]));
     });
-    setEvents(sorted);
+    setFilteredEvents(sorted);
   };
 
   const handleSearch = (query) => {
+<<<<<<< HEAD
     if (!query) {
       setEvents(originalEvents);
       return;
@@ -155,11 +321,119 @@ const EventTable = () => {
         String(name).toLowerCase().includes(lowerQuery)
       )
     );
+=======
+    setFilters(prev => ({ ...prev, eventName: query }));
+    applyFilters({ ...filters, eventName: query });
   };
+
+  const applyFilters = (filterValues) => {
+    let filtered = [...originalEvents];
+
+    // Filter by event name
+    if (filterValues.eventName) {
+      const lowerQuery = filterValues.eventName.toLowerCase();
+      filtered = filtered.filter(event =>
+        String(event.name).toLowerCase().includes(lowerQuery)
+      );
+    }
+
+    // Filter by event type
+    if (filterValues.eventType) {
+      filtered = filtered.filter(event =>
+        event.type === filterValues.eventType
+      );
+    }
+
+    // Filter by status
+    if (filterValues.status) {
+      filtered = filtered.filter(event =>
+        event.status === filterValues.status
+      );
+    }
+
+    // Filter by date range
+    if (filterValues.dateRange) {
+      filtered = filtered.filter(event =>
+        matchesDateRange(event.eventDate, filterValues.dateRange)
+      );
+    }
+
+    // Filter by created by
+    if (filterValues.createdBy) {
+      filtered = filtered.filter(event =>
+        event.createdBy === filterValues.createdBy
+      );
+    }
+
+    // Filter by assigned user (participants)
+    if (filterValues.assignedUser) {
+      filtered = filtered.filter(event =>
+        event.participants.some(participant =>
+          participant.name.toLowerCase().includes(filterValues.assignedUser.toLowerCase())
+        )
+      );
+    }
+
+    setFilteredEvents(filtered);
+  };
+
+  const handleFilterChange = (filterKey, value) => {
+    const newFilters = { ...filters, [filterKey]: value };
+    setFilters(newFilters);
+    applyFilters(newFilters);
+  };
+
+  const clearFilters = () => {
+    const clearedFilters = {
+      eventName: "",
+      eventType: "",
+      status: "",
+      dateRange: "",
+      assignedUser: "",
+      createdBy: ""
+    };
+    setFilters(clearedFilters);
+    setFilteredEvents(originalEvents);
+  };
+
+  const getActiveFiltersCount = () => {
+    return Object.values(filters).filter(value => value !== "").length;
+>>>>>>> a3951b3e1e8c4af6b88d0d22f94bb6251b86cdd9
+  };
+
+  // Delete API function
+  const deleteEvent = useCallback(async (id) => {
+    // Get the user ID for the API call
+    const userId = user?.userId || user?.id || user?._id || user?.user_id || user?.uid;
+    
+    if (!userId) {
+      throw new Error("User ID not available for delete operation");
+    }
+    
+    const res = await fetchWithRefresh(`/apis/event/delete/${id}?userId=${userId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "1",
+      },
+    });
+
+    if (!res.ok) throw new Error(`Failed to delete event: ${res.status}`);
+
+    return id; // Return the deleted event ID
+  }, [user?.userId, user?.id, user?._id, user?.user_id, user?.uid]);
+
+  // Use API hook for delete operation
+  const {
+    execute: executeDeleteEvent,
+    loading: deleteLoading
+  } = useApi(deleteEvent, [], false);
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this event?")) return;
+    
     try {
+<<<<<<< HEAD
       setLoading(true);
       const res = await fetchWithRefresh(`/apis/event/delete/${id}`, {
         method: "DELETE",
@@ -169,6 +443,12 @@ const EventTable = () => {
 
       setEvents(prev => prev.filter(event => event.id !== id));
       setOriginalEvents(prev => prev.filter(event => event.id !== id));
+=======
+      await executeDeleteEvent(id);
+      
+      // Refresh the events list after successful deletion
+      executeFetchEvents();
+>>>>>>> a3951b3e1e8c4af6b88d0d22f94bb6251b86cdd9
 
       addMessage({
         text: "Event deleted successfully.",
@@ -182,8 +462,6 @@ const EventTable = () => {
         type: "error",
         duration: 5000,
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -210,8 +488,8 @@ const EventTable = () => {
       <div className="Table_Container">
         <Table
           columns={columns}
-          data={events}
-          loading={loading}
+          data={filteredEvents}
+          loading={loading || deleteLoading}
           error={error}
           onRetry={handleRetry}
           onSort={handleSort}

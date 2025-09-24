@@ -6,6 +6,7 @@ export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [permissions, setPermissions] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [scopeChangeTrigger, setScopeChangeTrigger] = useState(0);
 
   useEffect(() => {
     // simulate restoring session from localStorage
@@ -18,8 +19,81 @@ export const UserProvider = ({ children }) => {
     setLoading(false); // ✅ auth state resolved
   }, []);
 
+<<<<<<< HEAD
   return (
     <UserContext.Provider value={{ user, setUser, permissions, setPermissions, loading }}>
+=======
+  // Initialize selected organization when user and scope are available
+  useEffect(() => {
+    if (user?.organizationId && scope?.accessibleOrganizations && !selectedOrganizationId) {
+      // Check if saved org is still accessible
+      const savedOrgId = localStorage.getItem("dashboard-selected-organization");
+      if (savedOrgId && scope.accessibleOrganizations.some(org => org.id === savedOrgId)) {
+        setSelectedOrganizationId(savedOrgId);
+      } else {
+        // Default to user's organization
+        setSelectedOrganizationId(user.organizationId);
+        localStorage.setItem("dashboard-selected-organization", user.organizationId);
+      }
+    }
+  }, [user?.organizationId, scope?.accessibleOrganizations, selectedOrganizationId]);
+
+  // Helper function to check if user is viewing their own organization
+  const isViewingOwnOrganization = () => {
+    return selectedOrganizationId === user?.organizationId;
+  };
+
+  const handleScopeChange = (organizationId, currentLocation = null) => {
+    // Check if scope change is allowed on current page
+    if (currentLocation) {
+      // Only allow scope changes on the exact main pages, not sub-paths
+      const allowedPages = ['/dashboard', '/events', '/schedule'];
+      const isAllowedPage = allowedPages.includes(currentLocation.pathname);
+      
+      // If not on an allowed page, change scope and redirect to dashboard
+      if (!isAllowedPage) {
+        // Change the scope first
+        setSelectedOrganizationId(organizationId);
+        if (organizationId) {
+          localStorage.setItem("dashboard-selected-organization", organizationId);
+        } else {
+          localStorage.removeItem("dashboard-selected-organization");
+        }
+        // Trigger scope change for components to refetch data
+        setScopeChangeTrigger(prev => prev + 1);
+        // Then redirect to dashboard
+        window.location.href = '/dashboard';
+        return;
+      }
+    }
+    
+    // Normal scope change for allowed pages
+    setSelectedOrganizationId(organizationId);
+    if (organizationId) {
+      localStorage.setItem("dashboard-selected-organization", organizationId);
+    } else {
+      localStorage.removeItem("dashboard-selected-organization");
+    }
+    
+    // Trigger scope change for components to refetch data
+    setScopeChangeTrigger(prev => prev + 1);
+  };
+
+  return (
+    <UserContext.Provider value={{ 
+      user, 
+      setUser, 
+      permissions, 
+      setPermissions, 
+      scope, 
+      setScope, 
+      selectedOrganizationId,
+      handleScopeChange,
+      isViewingOwnOrganization,
+      loading,
+      scopeChangeTrigger
+    }}>
+>>>>>>> a3951b3e1e8c4af6b88d0d22f94bb6251b86cdd9
       {children}
     </UserContext.Provider>
   );

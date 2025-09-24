@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useMemo } from "react";
 import Table from "../Table/TableNew";
 import AvatarList from "../Avatar/AvatarList";
 import CustomDropdown from "../Dropdown/CustomDropdown"; // import your reusable dropdown
 import { ListTodo } from "lucide-react";
+import { useTaskStatus } from "../../Hooks/useTaskStatus";
 import "./RecentTask.css";
 
+<<<<<<< HEAD
 const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChange }) => {
   // dropdown options
   const filterOptions = [
@@ -15,6 +17,22 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
     { label: "Approved" },
     { label: "Published" },
   ];
+=======
+const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChange, showDropdown = true, loading = false }) => {
+  const { getActiveTaskStatuses } = useTaskStatus();
+  
+  // Generate filter options from task status context
+  const filterOptions = useMemo(() => {
+    const activeStatuses = getActiveTaskStatuses();
+    return [
+      { label: "All" },
+      ...activeStatuses.map(status => ({
+        label: status.statusName || status.name,
+        value: status.statusName || status.name
+      }))
+    ];
+  }, [getActiveTaskStatuses]);
+>>>>>>> a3951b3e1e8c4af6b88d0d22f94bb6251b86cdd9
 
   // 🔹 filter tasks
   const filteredTasks =

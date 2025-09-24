@@ -16,6 +16,24 @@ const Detail = ({
   const [organizerForm, setOrganizerForm] = useState({ name: "", title: "" });
   const editorRef = useRef(initialDescription);
 
+<<<<<<< HEAD
+=======
+  // Transform data between old format (name/title) and new format (name/designation)
+  const transformToNewFormat = (data) => {
+    return data.map(item => ({
+      name: item.name || "",
+      designation: item.title || item.designation || ""
+    }));
+  };
+
+  const transformToOldFormat = (data) => {
+    return data.map(item => ({
+      name: item.name || "",
+      title: item.designation || item.title || ""
+    }));
+  };
+
+>>>>>>> a3951b3e1e8c4af6b88d0d22f94bb6251b86cdd9
   useEffect(() => {
   if ((mode === "view" || mode === "edit")) {
     if (JSON.stringify(guests) !== JSON.stringify(guestsData)) {
@@ -75,15 +93,33 @@ const Detail = ({
   useEffect(() => {
     if (onSave) {
       onSave.current = () => {
+        const transformedGuests = transformToOldFormat(guests).filter(g => g.name && g.name.trim());
+        const transformedOrganizers = transformToOldFormat(organizers).filter(o => o.name && o.name.trim());
+        
+        console.log("EventDetail: Save handler called");
+        console.log("EventDetail: Raw guests:", guests);
+        console.log("EventDetail: Raw organizers:", organizers);
+        console.log("EventDetail: Transformed guests:", transformedGuests);
+        console.log("EventDetail: Transformed organizers:", transformedOrganizers);
+        
         return {
           description: editorRef.current,
           location: "Pune",
+<<<<<<< HEAD
           guests: [...guests].filter(g => g.name && g.title),
           organizers: [...organizers].filter(o => o.name && o.title),
         };
       };
     }
   }, [guests, organizers, onSave]);
+=======
+          guests: transformedGuests,
+          organizers: transformedOrganizers,
+        };
+      };
+    }
+  }, [onSave, guests, organizers]); // Include guests and organizers to update when data changes
+>>>>>>> a3951b3e1e8c4af6b88d0d22f94bb6251b86cdd9
 
   return (
     <div className="detail_container">
