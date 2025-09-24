@@ -6,13 +6,27 @@ import Signup from "./CommonComponents/UserAuth/Signup";
 import AuthN from "./Pages/AuthN";
 import Event from "./Pages/Event/Events";
 import Dashboard from "./Pages/NewDashboard/Dashboard";
+import DesignerDashboard from "./Pages/NewDashboard/DesignerDashboard";
 import Schedule from "./Pages/Schedules/Schedule";
 import StepForm from "./CommonComponents/MultiStepForm";
 import EventDetailPage from "./Pages/Task/EventDetailPage";
 import ForgotPassword from "./CommonComponents/UserAuth/ForgotPassword";
 import TasksDetail from "./Pages/Task/TaskDetailPage";
 import Instagram from "./InstagramPost";
-import ProtectedRoute, { RequirePermission } from "./Context/ProtectedRoute"; 
+import ProtectedRoute, { RequirePermission } from "./Context/ProtectedRoute";
+import { useUser } from "./Context/UserContext"; 
+
+// Component to render appropriate dashboard based on user role
+const DashboardRouter = () => {
+  const { user } = useUser();
+  const userRole = user?.roles[0]?.name;
+  
+  if (userRole === "Designer") {
+    return <DesignerDashboard />;
+  }
+  
+  return <Dashboard />;
+};
 
 function App() {
   return (
@@ -36,7 +50,7 @@ function App() {
                     path="/dashboard"
                     element={
                       <RequirePermission resource="Dashboard" managementKey="Dashboard Management" action="Read">
-                        <Dashboard />
+                        <DashboardRouter />
                       </RequirePermission>
                     }
                   />

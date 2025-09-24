@@ -5,7 +5,7 @@ import Dropdown from "../../../CommonComponents/Dropdown/Dropdown";
 import { Wand } from "lucide-react";
 import "./TaskDetail.css";
 
-const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", permissions = {}, eventDate: eventDateProp, errors = {}, onClearError }) => {
+const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDate: eventDateProp, errors = {}, onClearError }) => {
   const prevModeRef = React.useRef(mode);
   
   // Merge taskData and formData for display using useMemo to prevent infinite re-renders
@@ -43,7 +43,7 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", permissi
     { label: "certificates/trophies", value: "certificates/trophies" },
   ], []);
 
-  const isDisabled = mode === "view" || !permissions.canEdit;
+  const isDisabled = mode === "view";
 
   // Reset form when switching to view mode only - but preserve user input during validation
   useEffect(() => {
@@ -61,13 +61,11 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", permissi
       setContent(taskData.description || "");
     }
     prevModeRef.current = mode;
-  }, [mode, taskData.id]); // Only depend on mode and taskData.id to prevent infinite loops
+  }, [mode, taskData.id, taskData]); // Include taskData to satisfy dependencies
 
   // Initialize form data when taskData changes (only for existing tasks)
   useEffect(() => {
     if (taskData.id && mode !== "create") {
-      console.log("TaskDetail: Initializing form data from taskData:", taskData);
-      
       const dateTime = taskData.date ? new Date(taskData.date) : new Date();
       setLocalDate(dateTime.toISOString().slice(0, 10));
       setLocalTime(dateTime.toISOString().slice(11, 16));
@@ -87,15 +85,13 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", permissi
       
       // Handle checklist data
       const checklistArray = Array.isArray(taskData.checklist) ? taskData.checklist : [];
-      console.log("TaskDetail: Setting checklist data:", checklistArray);
       setChecklistData(checklistArray);
       
       // Handle description content
       const descriptionContent = taskData.description || "";
-      console.log("TaskDetail: Setting description content:", descriptionContent);
       setContent(descriptionContent);
     }
-  }, [taskData.id, taskData.checklist, taskData.description, taskData.type, taskData.quantity, taskData.date, mode, taskTypes]);
+  }, [taskData, mode, taskTypes]);
 
   // Initialize form data for create mode
   useEffect(() => {
@@ -314,7 +310,7 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", permissi
             initialItems={checklistData}
             onChecklistChange={handleChecklistChange}
             mode={mode}
-            canEdit={permissions.canEdit}
+            canEdit={mode !== "view"}
           />
           {eventDateProp && (
             <div className="event-date-hint">Event date: {new Date(eventDateProp).toLocaleString()}</div>
@@ -328,7 +324,7 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", permissi
           onContentChange={handleContentChange}
           isFullWidth={true}
           mode={mode}
-          canEdit={permissions.canEdit}
+          canEdit={mode !== "view"}
         />
       </div>
     </div>

@@ -25,7 +25,7 @@ const EventTable = () => {
   const [filteredEvents, setFilteredEvents] = useState([]);
   const navigate = useNavigate();
   const { addMessage } = useMessages();
-  const { user, permissions: userPermissions, selectedOrganizationId, isViewingOwnOrganization, scopeChangeTrigger } = useUser();
+  const { user, permissions: userPermissions, selectedOrganizationId, isViewingOwnOrganization, scopeChangeTrigger, loading: userLoading } = useUser();
 
   console.log("user", user?.roles[0]?.name);
 
@@ -118,6 +118,13 @@ const EventTable = () => {
       throw new Error("No organization selected");
     }
 
+    console.log("fetchEvents called with:", { 
+      organizationId, 
+      userId: user?.userId, 
+      selectedOrganizationId, 
+      userOrgId: user?.organizationId 
+    });
+
     // Determine if we need to include X-Context-Organization header
     const isViewingOwnOrg = organizationId === user?.organizationId;
     
@@ -132,6 +139,9 @@ const EventTable = () => {
       headers["X-Context-Organization"] = organizationId;
     }
 
+    console.log("Making API call to:", `/apis/event/hierarchy/${organizationId}?userId=${user?.userId}`);
+    console.log("Headers:", headers);
+
     // Use the new hierarchy endpoint
     const res = await fetchWithRefresh(`/apis/event/hierarchy/${organizationId}?userId=${user?.userId}`,
       {
@@ -141,7 +151,14 @@ const EventTable = () => {
     );
 
     if (!res.ok) {
-      throw new Error(`Failed to fetch events: ${res.status}`);
+      console.error("Events API failed:", { 
+        status: res.status, 
+        statusText: res.statusText,
+        url: res.url,
+        organizationId,
+        userId: user?.userId
+      });
+      throw new Error(`Failed to fetch events: ${res.status} - ${res.statusText}`);
     }
 
     const response = await res.json();
@@ -195,14 +212,15 @@ const EventTable = () => {
     loading,
     error,
     execute: executeFetchEvents
-  } = useApi(fetchEvents, [selectedOrganizationId], false);
+  } = useApi(fetchEvents, [userLoading, permissions.canRead, selectedOrganizationId, user?.userId], false);
 
   // Execute API when permissions and organization are ready or scope changes
   useEffect(() => {
-    if (permissions.canRead && selectedOrganizationId) {
+    if (!userLoading && permissions.canRead && selectedOrganizationId && user?.userId) {
+      console.log("Executing fetchEvents with:", { selectedOrganizationId, userId: user?.userId });
       executeFetchEvents();
     }
-  }, [permissions.canRead, selectedOrganizationId, executeFetchEvents, scopeChangeTrigger]);
+  }, [userLoading, permissions.canRead, selectedOrganizationId, user?.userId, executeFetchEvents, scopeChangeTrigger]);
 
   // Process events data and extract filter options
   const originalEvents = useMemo(() => {

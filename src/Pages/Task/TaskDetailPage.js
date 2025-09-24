@@ -19,7 +19,7 @@ import "./Tasks.css";
 const TaskDetailPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, permissions: userPermissions, scopeChangeTrigger } = useUser();
+  const { user, scopeChangeTrigger } = useUser();
   const { addMessage } = useMessages();
   
   const { taskId, mode: initialMode = "view", eventId, organizationId, eventDate: navEventDate, eventName } = location.state || {};
@@ -63,7 +63,7 @@ const TaskDetailPage = () => {
     const colorMap = {
       "New": "gray",
       "Active": "blue", 
-      "Under Review": "orange",
+      "Under Approval": "orange",
       "Approved": "green",
       "Published": "purple"
     };
@@ -79,7 +79,6 @@ const TaskDetailPage = () => {
       value: status.statusName || status.name,
       color: status.color || getDefaultColor(status.statusName || status.name)
     }));
-    console.log("Transformed status options:", transformed);
     return transformed;
   }, [getActiveTaskStatuses, getDefaultColor]);
 
@@ -98,24 +97,12 @@ const TaskDetailPage = () => {
     description: "",
     checklist: [{ text: "", checked: false, isPlaceholder: false }],
     organizationId: "",
-    canCRUD: false, // Add canCRUD field
   });
 
   // No default status options - only use API data
 
-  const permissions = {
-    canEdit: (userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Update") ?? false) && taskData.canCRUD,
-    canSave: (userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Update") ?? false) && taskData.canCRUD,
-    canChangeStatus: (userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Update") ?? false) && taskData.canCRUD,
-    canAssignUsers: (userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Update") ?? false) && taskData.canCRUD,
-  };
-
-  // Log permissions for debugging
-  console.log("TaskDetailPage: Permissions calculation:", {
-    userHasUpdatePermission: userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Update") ?? false,
-    taskCanCRUD: taskData.canCRUD,
-    finalPermissions: permissions
-  });
+  // Mode-based permissions - no complex permission system needed
+  const canSave = mode === "edit" || mode === "create";
 
   // Memoize the organization ID to prevent unnecessary re-renders
   const currentOrgId = useMemo(() => {
@@ -387,12 +374,8 @@ const TaskDetailPage = () => {
         checklist: formattedChecklist,
         description: data.description || "",
         organizationId: data.organizationId || organizationId || "",
-        canCRUD: data.canCRUD || false, // Include canCRUD from API response
       };
       
-      console.log("TaskDetailPage: Setting taskData:", newTaskData);
-      console.log("TaskDetailPage: canCRUD from API:", data.canCRUD);
-      console.log("TaskDetailPage: accessLevel from API:", data.accessLevel);
       setTaskData(newTaskData);
       
       // Also update formData to ensure consistency
@@ -487,9 +470,9 @@ const TaskDetailPage = () => {
 
   const handleSaveClick = async () => {
     
-    if (!permissions.canSave) {
+    if (!canSave) {
       addMessage({
-        text: "You don't have permission to save tasks",
+        text: "Cannot save in current mode",
         type: "error",
         duration: 3000
       });
@@ -744,11 +727,8 @@ const TaskDetailPage = () => {
 
   // Handle status change from buttons
   const handleStatusChange = async (newStatus) => {
-    console.log("Status change requested:", newStatus);
-    
     // Prevent multiple clicks while updating
     if (isUpdatingStatus) {
-      console.log("Status update already in progress, ignoring click");
       return;
     }
     
@@ -763,8 +743,6 @@ const TaskDetailPage = () => {
         setActiveTab("Files & Uploads");
         return;
       }
-      
-      console.log("Files selected for approval:", selectedFiles.length, "files");
     }
     
     // Update local state immediately for UI feedback
@@ -813,18 +791,10 @@ const TaskDetailPage = () => {
           OrganizationId: organizationId || currentFormData.organizationId
         };
 
-        console.log("Updating task status via API:", {
-          taskId,
-          newStatusId: newStatus.id,
-          newStatusValue: newStatus.value,
-          payload,
-          selectedFiles: selectedFiles.length
-        });
 
         // If approving task, first approve the selected files
         if (newStatus.value === "Approved" && selectedFiles.length > 0) {
           try {
-            console.log("Approving files before task approval:", selectedFiles);
             const approvalResults = await Promise.allSettled(
               selectedFiles.map(async (file) => {
                 const response = await fetchWithRefresh(`/apis/document/approve/${file.documentId}`, {
@@ -847,8 +817,6 @@ const TaskDetailPage = () => {
                 console.error(`Failed to approve file ${selectedFiles[index].documentId}:`, result.reason);
               }
             });
-            
-            console.log("File approval completed");
           } catch (fileError) {
             console.error("Error in file approval process:", fileError);
             addMessage({
@@ -876,7 +844,6 @@ const TaskDetailPage = () => {
         }
 
         const result = await response.json();
-        console.log("Status update successful:", result);
         
         // Show success message with file approval info if applicable
         const successMessage = newStatus.value === "Approved" && selectedFiles.length > 0
@@ -918,7 +885,6 @@ const TaskDetailPage = () => {
           formData={formData}
           onUpdate={handleFormFieldUpdate}
           mode={mode}
-          permissions={permissions}
           eventDate={eventDate}
           errors={validationErrors}
           onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
@@ -937,7 +903,6 @@ const TaskDetailPage = () => {
           taskId={taskId}
           eventId={eventId}
           isActive={activeTab === "Comments and Preview"}
-          permissions={permissions}
         />
       ),
       disabled: mode === "create",
@@ -1026,7 +991,6 @@ const TaskDetailPage = () => {
               ? taskData.assignedTo
               : selectedParticipantIds
           }
-          permissions={permissions}
           onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
           onStatusChange={handleStatusChange}
           isUpdatingStatus={isUpdatingStatus}
@@ -1036,7 +1000,7 @@ const TaskDetailPage = () => {
       <div className="Inner-Content">
         <TabMenu
           tabs={tabs}
-          showEditButton={mode === "view" && permissions.canEdit && taskStatus.value !== "Approved" && taskData.canCRUD} // Show edit button only if user has permission AND task allows CRUD operations
+          showEditButton={mode === "view" && taskStatus.value !== "Approved"} // Show edit button only in view mode and when status is not Approved
           isEditMode={mode === "edit"}
           onEditClick={() => {
             setMode("edit");

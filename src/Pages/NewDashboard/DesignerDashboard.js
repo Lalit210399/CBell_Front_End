@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../Context/UserContext";
@@ -6,27 +6,19 @@ import useApi from "../../Hooks/useApi";
 import Tile from "../../CommonComponents/Tiles/Tiles";
 import EventCampaign from "../../CommonComponents/TimelineCard/TimelineCard";
 import RecentTasks from "../../CommonComponents/RecentTaskBox/RecentTask";
-import ActiveEvents from "../../CommonComponents/ActiveEvents/ActiveEvents";
 import EventAssignToMe from "../../CommonComponents/EventAssignToMe/EventAssignToMe";
 import CustomDropdown from "../../CommonComponents/Dropdown/CustomDropdown";
 import PageSkeleton from "../../CommonComponents/SkeletonLoading/PageSkeleton";
 import {
-  CheckCircle,
   UserCheck,
   ClipboardList,
-  AlertCircle,
-  Plus,
-  Zap,
   Clock as ClockIcon,
   CheckCircle as CheckCircleIcon,
-  Star,
-  ChevronLeft,
-  ChevronRight,
   Calendar,
 } from "lucide-react";
-import "./Dashboard.css";
+import "./DesignerDashboard.css";
 
-const Dashboard = () => {
+const DesignerDashboard = () => {
   const { user, selectedOrganizationId, isViewingOwnOrganization, loading: userLoading, scopeChangeTrigger } = useUser();
   const navigate = useNavigate();
 
@@ -49,22 +41,12 @@ const Dashboard = () => {
     }
   }, [selectedOrganizationId, user?.organizationId, userLoading]);
 
-  // Handle new event button click
-  const handleNewEvent = () => {
-    // Only allow event creation when viewing own organization
-    if (!isViewingOwnOrganization()) {
-      console.warn("Event creation is only allowed in your own organization");
-      return;
-    }
-    navigate("/events/eventDetailPage", { state: { mode: "create" } });
-  };
-
 
   // State for active component
-  const [activeComponent, setActiveComponent] = useState("activeEvents");
+  const [activeComponent, setActiveComponent] = useState("recent");
 
   // State for current title
-  const [currentTitle, setCurrentTitle] = useState("Active Events");
+  const [currentTitle, setCurrentTitle] = useState("Total Tasks");
 
   // State for filter
   const [filter, setFilter] = useState("All");
@@ -134,30 +116,6 @@ const Dashboard = () => {
     return await response.json();
   }, [orgIdReady, selectedOrganizationId, user?.organizationId, user?.userId, isViewingOwnOrganization]);
 
-  // Active Events Count API
-  const fetchActiveEventsCount = useCallback(async () => {
-    if (!orgIdReady) return null;
-    
-    const organizationId = selectedOrganizationId || user?.organizationId || "685eb18207416b9271b800b3";
-    
-    const response = await fetchWithRefresh(
-      `apis/dashboard/active-events-count?organizationId=${organizationId}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "1",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Active events count API failed");
-    }
-    
-    const data = await response.json();
-    return data.count;
-  }, [orgIdReady, selectedOrganizationId, user?.organizationId]);
 
   // Events Campaign API
   const fetchEventsCampaign = useCallback(async () => {
@@ -207,13 +165,8 @@ const Dashboard = () => {
       // Map tile titles to API filter values
       const filterMap = {
         "Total Tasks": "all",
-        "Tasks Due Next 7 Days": "due_soon",
-        "Overdue Tasks": "overdue",
-        "New Tasks": "new",
-        "Active Tasks": "active",
-      "Under Review Tasks": "under_review",
+        "Tasks Under Approval": "under_review",
         "Approved Tasks": "approved",
-        "Published Tasks": "published",
       };
 
     const apiFilter = filterMap[filterType] || "all";
@@ -256,50 +209,57 @@ const Dashboard = () => {
         }));
   }, [orgIdReady, selectedOrganizationId, user?.organizationId]);
 
-  // Active Events API
-  const fetchActiveEventsData = useCallback(async () => {
+  // My Tasks API - for "Tasks Assigned to Me" tile
+  const fetchMyTasksData = useCallback(async () => {
     if (!orgIdReady) return [];
     
     const organizationId = selectedOrganizationId || user?.organizationId;
-
-      const response = await fetchWithRefresh(
-        `apis/dashboard/events?orgid=${organizationId}&filter=active`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "1",
-          },
-        }
-      );
+    const userId = user?.userId;
+    const includeChildren = isViewingOwnOrganization() ? "true" : "false";
+    
+    const response = await fetchWithRefresh(
+      `apis/dashboard/my-tasks?orgid=${organizationId}&userid=${userId}&includeChildren=${includeChildren}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1",
+        },
+      }
+    );
 
     if (!response.ok) {
-      throw new Error("Active Events API failed");
+      throw new Error("My Tasks API failed");
     }
     
-        const data = await response.json();
+    const data = await response.json();
 
-        // Transform API data to match the expected format for ActiveEvents component
-    return data.events.map((event) => ({
-      status: "Active",
-          eventName: event.eventName,
-      assignTo: event.assignedUsers?.map((user, index) => ({
-        name: user.userName || user.name || user.fullName || `User ${index + 1}`,
-        src: user.src || "",
-        id: user.userId || user.id || `user-${index}`
+    // Transform API data to match the expected format for RecentTasks component
+    return data.tasks.map((task) => ({
+      id: task.id,
+      status: task.statusName,
+      taskName: task.taskName,
+      eventName: task.eventName,
+      eventId: task.eventId,
+      assignedTo: task.assignedTo?.map((name, index) => ({
+        name: name,
+        src: "",
+        id: `user-${index}`
       })) || [],
-      displayDate: new Date(event.eventDate).toLocaleDateString("en-GB"),
-      eventDate: new Date(event.eventDate).toLocaleDateString("en-GB"),
-          createdBy: { 
-            name: event.createdByUser?.fullName || "Unknown", 
-        src: ""
-          },
-          description: event.eventDescription,
-          location: event.locationDetails,
-      eventType: event.eventTypeDesc || "Event",
-      id: event.id,
+      dueDate: new Date(task.dueDate).toLocaleDateString("en-GB"),
+      description: task.taskDescription,
+      creativeType: task.priority,
+      daysUntilDue: task.isDueSoon ? "Due Soon" : task.isDueToday ? "Due Today" : task.isOverdue ? "Overdue" : "",
+      createdBy: "Unknown", // Not provided in API response
+      updatedBy: "Unknown", // Not provided in API response
+      isOverdue: task.isOverdue,
+      isDueSoon: task.isDueSoon,
+      isDueToday: task.isDueToday,
+      eventDate: task.eventDate ? new Date(task.eventDate).toLocaleDateString("en-GB") : "",
+      organizationId: task.organizationId,
     }));
-  }, [orgIdReady, selectedOrganizationId, user?.organizationId]);
+  }, [orgIdReady, selectedOrganizationId, user?.organizationId, user?.userId, isViewingOwnOrganization]);
+
 
   // Assigned Events API
   const fetchAssignedEvents = useCallback(async () => {
@@ -350,15 +310,9 @@ const Dashboard = () => {
   // Dashboard Summary
   const {
     data: summaryData,
-    loading: loadingSummary,
-    error: errorSummary,
     execute: executeSummary
   } = useApi(fetchSummaryData, [orgIdReady], false);
 
-  // Active Events Count
-  const {
-    execute: executeCount
-  } = useApi(fetchActiveEventsCount, [orgIdReady], false);
 
   // Events Campaign
   const {
@@ -378,15 +332,16 @@ const Dashboard = () => {
     loading: loadingTasks,
     error: errorTasks,
     execute: executeTasks
-  } = useApi(fetchTasksForCurrentTitle, [orgIdReady, currentTitle], false);
+  } = useApi(fetchTasksForCurrentTitle, [orgIdReady], false);
 
-  // Active Events
+  // My Tasks - for "Tasks Assigned to Me" tile
   const {
-    data: activeEventsData,
-    loading: loadingActiveEvents,
-    error: errorActiveEvents,
-    execute: executeActiveEvents
-  } = useApi(fetchActiveEventsData, [orgIdReady], false);
+    data: myTasksData,
+    loading: loadingMyTasks,
+    error: errorMyTasks,
+    execute: executeMyTasks
+  } = useApi(fetchMyTasksData, [orgIdReady], false);
+
 
   // Assigned Events
   const {
@@ -400,38 +355,21 @@ const Dashboard = () => {
   useEffect(() => {
     if (orgIdReady) {
       executeSummary();
-      executeCount();
       executeEventsCampaign();
-      executeActiveEvents();
       executeAssignedEvents();
+      // Execute tasks API for Total Tasks by default
+      executeTasks();
     }
-  }, [orgIdReady, scopeChangeTrigger, executeSummary, executeCount, executeEventsCampaign, executeActiveEvents, executeAssignedEvents]);
+  }, [orgIdReady, scopeChangeTrigger, executeSummary, executeEventsCampaign, executeAssignedEvents, executeTasks]);
 
   // Define task tiles for reuse
   const taskTiles = useMemo(() => [
     "Total Tasks",
-    "Tasks Due Next 7 Days",
-    "Overdue Tasks",
-    "New Tasks",
-    "Active Tasks",
-    "Under Review Tasks",
+    "Tasks Assigned to Me",
+    "Tasks Under Approval",
     "Approved Tasks",
-    "Published Tasks",
   ], []);
 
-  // Refetch data for current component on scope change
-  useEffect(() => {
-    if (!orgIdReady) return;
-
-    if (activeComponent === "activeEvents") {
-      executeActiveEvents();
-    } else if (activeComponent === "recent") {
-      // Only refetch if we have a valid currentTitle
-      if (currentTitle && taskTiles.includes(currentTitle)) {
-        executeTasks();
-      }
-    }
-  }, [activeComponent, currentTitle, orgIdReady, executeActiveEvents, executeTasks, taskTiles]);
 
   // Filter events by selected month
   const filteredEvents = useMemo(() => {
@@ -450,103 +388,33 @@ const Dashboard = () => {
   /** -------------------- Tiles Data -------------------- **/
   const summaryTiles = [
     {
-      icon: <CheckCircle size={24} color="rgba(52, 168, 83, 1)" />,
-      count: loadingSummary
-        ? "..."
-        : errorSummary
-        ? "!"
-        : summaryData?.activeEvents ?? 0,
-      title: "Active Events",
-      subtitle: "Active Institute events",
+      icon: <ClipboardList size={24} color="rgba(52, 168, 83, 1)" />,
+      count: summaryData?.totalTasks ?? 0,
+      title: "Total Tasks",
+      subtitle: "Current Organization Tasks",
       bgcolor: "rgba(181, 224, 194, 0.2)",
-      // bgcolor: "#ffff",
       iconBgColor: "rgba(52, 168, 83, 0.2)",
       borderColor: "rgba(92, 185, 117, 1)",
-      // borderColor: "#E4E6E9",
       textColor: "rgba(20, 83, 45, 1)",
     },
     {
       icon: <UserCheck size={24} color="rgba(60, 131, 246, 1)" />,
-      count: summaryData?.assignedEvents,
-      title: "Events Assigned to Me",
-      subtitle: "Events I'm Managing",
+      count: summaryData?.taskAssignedToMeCount ?? 0,
+      title: "Tasks Assigned to Me",
+      subtitle: "Tasks I'm Managing",
       bgcolor: "rgba(185, 210, 251, 0.2)",
-      // bgcolor: "#ffff",
       iconBgColor: "rgba(60, 131, 246, 0.2)",
       borderColor: "rgba(60, 131, 246, 1)",
-      // borderColor: "#E4E6E9",
-      textColor: "rgba(30, 58, 138, 1)", // Blue
-    },
-    {
-      icon: <ClipboardList size={24} color="rgba(168, 85, 247, 1)" />,
-      count: summaryData?.totalTasks ?? 0,
-      title: "Total Tasks",
-      subtitle: "All Tasks Across Events",
-      bgcolor: "rgba(224, 194, 251, 0.2)",
-      // bgcolor: "#ffff",
-      iconBgColor: "rgba(168, 85, 247, 0.2)",
-      borderColor: "rgba(168, 85, 247, 1)",
-      // borderColor: "#E4E6E9",
-      textColor: "rgba(88, 28, 135, 1)", // Purple
-    },
-    {
-      icon: <ClockIcon size={24} color="#F59F0A" />,
-      count: summaryData?.dueSoonTasks ?? 0,
-      title: "Tasks Due Next 7 Days",
-      subtitle: "Tasks Due Soon",
-      bgcolor: "rgba(245, 159, 10, 0.1)",
-      // bgcolor: "#ffff",
-      iconBgColor: "rgba(245, 159, 10, 0.2)",
-      borderColor: "rgba(245, 159, 10, 1)",
-      // borderColor: "#E4E6E9",
-      textColor: "rgba(172, 123, 38, 1)", // Orange
-    },
-    {
-      icon: <AlertCircle size={24} color="rgba(220, 38, 38, 1)" />,
-      count: summaryData?.overdueTasks ?? 0,
-      title: "Overdue Tasks",
-      subtitle: "For Institute Level",
-      bgcolor: "rgba(242, 178, 178, 0.2)",
-      // bgcolor: "#ffff",
-      iconBgColor: "rgba(220, 38, 38, 0.2)",
-      borderColor: "rgba(220, 38, 38, 1)",
-      // borderColor: "#E4E6E9",
-      textColor: "rgba(129, 15, 40, 1)", // Red
-    },
-    {
-      icon: <Plus size={24} color="rgba(156, 163, 175, 1)" />,
-      count: summaryData?.newTasks ?? 0,
-      title: "New Tasks",
-      subtitle: "Awaiting Assignment",
-      bgcolor: "rgba(219, 223, 226, 0.2)",
-      // bgcolor: "#ffff",
-      iconBgColor: "rgba(156, 163, 175, 0.2)",
-      borderColor: "rgba(156, 163, 175, 1)",
-      // borderColor: "#E4E6E9",
-      textColor: "rgba(17, 24, 39, 1)", // Gray
-    },
-    {
-      icon: <Zap size={24} color="rgba(59, 130, 246, 1)" />,
-      count: summaryData?.activeTasks ?? 0,
-      title: "Active Tasks",
-      subtitle: "Currently In Progress",
-      bgcolor: "rgba(216, 230, 253, 0.2)",
-      // bgcolor: "#ffff",
-      iconBgColor: "rgba(59, 130, 246, 0.2)",
-      borderColor: "rgba(59, 130, 246, 1)",
-      // borderColor: "#E4E6E9",
       textColor: "rgba(30, 58, 138, 1)", // Blue
     },
     {
       icon: <ClockIcon size={24} color="rgba(249, 115, 22, 1)" />,
       count: summaryData?.underApprovalTasks ?? 0,
-      title: "Under Review Tasks",
-      subtitle: "Awaiting Review",
+      title: "Tasks Under Approval",
+      subtitle: "Awaiting Approval",
       bgcolor: "rgba(253, 205, 170, 0.2)",
-      // bgcolor: "#ffff",
       iconBgColor: "rgba(249, 115, 22, 0.2)",
       borderColor: "rgba(249, 115, 22, 1)",
-      // borderColor: "#E4E6E9",
       textColor: "rgba(124, 45, 18, 1)", // Orange
     },
     {
@@ -555,75 +423,50 @@ const Dashboard = () => {
       title: "Approved Tasks",
       subtitle: "Ready To Publish",
       bgcolor: "rgba(176, 233, 197, 0.2)",
-      // bgcolor: "#ffff",
       iconBgColor: "rgba(34, 197, 94, 0.2)",
       borderColor: "rgba(34, 197, 94, 1)",
-      // borderColor: "#E4E6E9",
       textColor: "rgba(20, 83, 45, 1)", // Green
-    },
-    {
-      icon: <Star size={24} color="rgba(168, 85, 247, 1)" />,
-      count: summaryData?.publishedTasks ?? 0,
-      title: "Published Tasks",
-      subtitle: "Completed Tasks",
-      bgcolor: "rgba(224, 194, 251, 0.2)",
-      // bgcolor: "#ffff",
-      iconBgColor: "rgba(168, 85, 247, 0.2)",
-      borderColor: "rgba(168, 85, 247, 1)",
-      // borderColor: "#E4E6E9",
-      textColor: "rgba(88, 28, 135, 1)", // Purple
     },
   ];
 
-
-  const tilesRef = useRef(null);
-
-  const scrollTiles = (direction) => {
-    if (!tilesRef.current) return;
-    const scrollAmount = tilesRef.current.offsetWidth; // scroll one viewport width
-    tilesRef.current.scrollBy({
-      left: direction === "left" ? -scrollAmount : scrollAmount,
-      behavior: "smooth",
-    });
-  };
-
   // Handle tile click
-  const handleTileClick = (tile) => {
+  const handleTileClick = useCallback((tile) => {
+    console.log("Tile clicked:", tile.title);
     setCurrentTitle(tile.title);
 
-    if (tile.title === "Active Events") {
-      setActiveComponent("activeEvents");
-      executeActiveEvents(); // Execute active events API when tile is clicked
-    } else if (tile.title === "Events Assigned to Me") {
+    if (tile.title === "Events Assigned to Me") {
       setActiveComponent("assignedToMe");
       executeAssignedEvents(); // Execute assigned events API when tile is clicked
+    } else if (tile.title === "Tasks Assigned to Me") {
+      setActiveComponent("recent");
+      setFilter("All");
+      executeMyTasks(); // Execute my tasks API when tile is clicked
     } else {
       setActiveComponent("recent");
 
-      // Set filter based on tile title - default to "All" for most tiles
-      if (tile.title === "Total Tasks" || tile.title === "Tasks Due Next 7 Days" || tile.title === "Overdue Tasks") {
+      // Set filter based on tile title - default to "All" for Total Tasks
+      if (tile.title === "Total Tasks") {
         setFilter("All");
       } else {
         // Map tile titles to filter values that match the actual API status values
         const filterMap = {
-          "New Tasks": "New",
-          "Active Tasks": "Active", 
-          "Under Review Tasks": "Under Review",  // Match API status value
+          "Tasks Under Approval": "Under Review",  // Match API status value
           "Approved Tasks": "Approved",
-          "Published Tasks": "Published"
         };
         setFilter(filterMap[tile.title] || tile.title);
       }
 
       // Execute tasks API for task-related tiles
       if (taskTiles.includes(tile.title)) {
+        console.log("Executing tasks API for:", tile.title);
         executeTasks();
       }
     }
-  };
+  }, [executeAssignedEvents, executeMyTasks, executeTasks, taskTiles]);
 
   // Handle task click
   const handleTaskClick = (task, key) => {
+    console.log("Task clicked:", { task, clickedField: key, taskId: task.id });
     navigate('/events/eventDetailPage/tasks', { 
       state: { 
         taskId: task.id, 
@@ -638,6 +481,7 @@ const Dashboard = () => {
   // Handle event click
   const handleEventClick = (event, key) => {
     // Navigate to event detail page with event id and data
+    console.log("Event clicked:", event);
     if (event && (event.id || event.eventId)) {
       navigate("/events/eventDetailPage", {
         state: {
@@ -653,6 +497,7 @@ const Dashboard = () => {
 
   // Handle event campaign item click
   const handleEventCampaignClick = (item) => {
+    console.log("Event campaign item clicked:", item);
     if (item && (item.id || item.eventData?.id)) {
       navigate("/events/eventDetailPage", {
         state: {
@@ -672,47 +517,24 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="dashboard-middle-container">
+    <div className="designer-dashboard-middle-container">
       {/* Welcome Section */}
       <div className="welcome-section">
-        <h2>Welcome {user?.firstName}, Plan Your Day Ahead</h2>
+        <h2>Welcome {user?.firstName}, here's your creative dashboard.</h2>
         <div className="welcome-controls">
-          {/* Scope section removed - now in navbar */}
-          {/* Only show New Event button when viewing own organization */}
-          {isViewingOwnOrganization() && (
-            <button
-              className="dashboard-btn dashboard-btn-primary"
-              onClick={handleNewEvent}
-            >
-              + New Event
-            </button>
-          )}
         </div>
       </div>
 
-      {/* Summary Tiles */}
-      <div className="tiles-container">
-        <button className="scroll-btn left" onClick={() => scrollTiles("left")}>
-          <ChevronLeft size={24} />
-        </button>
-
-        <div className="summary-tiles" ref={tilesRef}>
-          {summaryTiles.map((tile, idx) => (
-            <Tile
-              key={idx}
-              {...tile}
-              onClick={() => handleTileClick(tile)}
-              isSelected={tile.title === currentTitle}
-            />
-          ))}
-        </div>
-
-        <button
-          className="scroll-btn right"
-          onClick={() => scrollTiles("right")}
-        >
-          <ChevronRight size={24} />
-        </button>
+      {/* Summary Tiles - No scroll functionality */}
+      <div className="designer-summary-tiles">
+        {summaryTiles.map((tile, idx) => (
+          <Tile
+            key={idx}
+            {...tile}
+            onClick={() => handleTileClick(tile)}
+            isSelected={tile.title === currentTitle}
+          />
+        ))}
       </div>
 
       {/* Bottom Section */}
@@ -722,34 +544,20 @@ const Dashboard = () => {
           {activeComponent === "recent" && (
             <div className="recent-tasks">
               <RecentTasks
-                tasks={tasksData || []}
+                tasks={currentTitle === "Tasks Assigned to Me" ? (myTasksData || []) : (tasksData || [])}
                 title={currentTitle}
                 filter={filter}
                 onFilterChange={setFilter}
                 onTaskClick={handleTaskClick}
-                loading={loadingTasks}
-                error={errorTasks}
+                loading={currentTitle === "Tasks Assigned to Me" ? loadingMyTasks : loadingTasks}
+                error={currentTitle === "Tasks Assigned to Me" ? errorMyTasks : errorTasks}
                 showDropdown={[
                   "Total Tasks",
-                  "Tasks Due Next 7 Days",
-                  "Overdue Tasks",
                 ].includes(currentTitle)}
               />
             </div>
           )}
 
-          {/* Active Events */}
-          {activeComponent === "activeEvents" && (
-            <div className="active-events">
-              <ActiveEvents
-                events={activeEventsData || []}
-                title="Active Events"
-                onEventClick={handleEventClick}
-                loading={loadingActiveEvents}
-                error={errorActiveEvents}
-              />
-            </div>
-          )}
 
           {/* Events Assigned to Me */}
           {activeComponent === "assignedToMe" && (
@@ -798,4 +606,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default DesignerDashboard;
