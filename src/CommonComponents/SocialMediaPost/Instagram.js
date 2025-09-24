@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { FaInstagram, FaFacebook } from 'react-icons/fa';
+import { useUser } from '../../Context/UserContext';
 import './instagram.css';
 
 const SocialMediaUploader = ({
-  igUserId,
-  fbPageId,
-  accessToken,
   open,
   onClose,
   defaultImageUrl = '',
@@ -14,6 +12,7 @@ const SocialMediaUploader = ({
   onSuccess,
   platform: forcedPlatform = null, // 🔐 From FileShareModel
 }) => {
+  const { user, selectedOrganizationId } = useUser();
   const fileName = fileDetail?.name || '';
   const documentId = fileDetail?.url ? fileDetail.url.split('/').pop() : defaultImageUrl || '';
   const [imageUrl, setImageUrl] = useState('');
@@ -21,7 +20,9 @@ const SocialMediaUploader = ({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [platform, setPlatform] = useState(forcedPlatform || 'instagram');
-  const defaultLink = 'https://cbell.ai/apis/document/view/';
+  
+  // Get organization ID the same way as Events.js
+  const organizationId = selectedOrganizationId || user?.organizationId;
 
   useEffect(() => {
     if (open) {
@@ -39,52 +40,42 @@ const SocialMediaUploader = ({
       setLoading(true);
       setMessage('');
 
-      if (platform === 'instagram') {
-        const mediaResponse = await fetch(`https://graph.facebook.com/v19.0/${igUserId}/media`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            image_url: `${defaultLink}${imageUrl}`,
-            caption,
-            access_token: accessToken,
-          }),
-        });
-        const mediaData = await mediaResponse.json();
-        if (!mediaResponse.ok) throw new Error(mediaData.error?.message || 'Instagram media creation failed');
-
-        const publishResponse = await fetch(
-          `https://graph.facebook.com/v19.0/${igUserId}/media_publish`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              creation_id: mediaData.id,
-              access_token: accessToken,
-            }),
-          }
-        );
-        const publishData = await publishResponse.json();
-        if (!publishResponse.ok) throw new Error(publishData.error?.message || 'Instagram publish failed');
-
-        setMessage('✅ Instagram post successful!');
-        onSuccess?.('Instagram');
-      } else {
-        const response = await fetch(`https://graph.facebook.com/v19.0/${fbPageId}/photos`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            url: `${defaultLink}${imageUrl}`,
-            message: caption,
-            access_token: accessToken,
-          }),
-        });
-
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error?.message || 'Facebook post failed');
-
-        setMessage('✅ Facebook post successful!');
-        onSuccess?.('Facebook');
+      if (!organizationId) {
+        throw new Error('Organization ID is required');
       }
+
+      if (!documentId) {
+        throw new Error('Document ID is required');
+      }
+
+      const requestBody = {
+        organizationId,
+        documentId,
+        caption: caption.trim()
+      };
+
+      let apiEndpoint;
+      if (platform === 'instagram') {
+        apiEndpoint = '/socialmedia/post/instagram';
+      } else {
+        apiEndpoint = '/socialmedia/post/facebook';
+      }
+
+      const response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || data.error || `${platform} post failed`);
+      }
+
+      setMessage(`✅ ${platform} post successful!`);
+      onSuccess?.(platform);
     } catch (error) {
       setMessage(`❌ ${platform} error: ${error.message}`);
     } finally {
@@ -125,15 +116,11 @@ const SocialMediaUploader = ({
 
         <div style={{ marginBottom: '1rem' }}>
           {fileName ? (
-            <a
-              href={`${defaultLink}${documentId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="file-link"
-              title={fileName}
-            >
-              {fileName}
-            </a>
+            <div className="file-info">
+              <span className="file-name" title={fileName}>
+                File: {fileName}
+              </span>
+            </div>
           ) : (
             <input type="text" placeholder="File Name" value="" readOnly />
           )}

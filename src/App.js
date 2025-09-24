@@ -8,7 +8,7 @@ import Event from "./Pages/Event/Events";
 import Dashboard from "./Pages/NewDashboard/Dashboard";
 import DesignerDashboard from "./Pages/NewDashboard/DesignerDashboard";
 import Schedule from "./Pages/Schedules/Schedule";
-import StepForm from "./CommonComponents/MultiStepForm";
+// import StepForm from "./CommonComponents/MultiStepForm";
 import EventDetailPage from "./Pages/Task/EventDetailPage";
 import ForgotPassword from "./CommonComponents/UserAuth/ForgotPassword";
 import TasksDetail from "./Pages/Task/TaskDetailPage";
@@ -70,9 +70,9 @@ function App() {
                       </RequirePermission>
                     }
                   />
-                  <Route path="/events/stepForm" element={<StepForm />} />
-                  <Route path="/dashboard/stepForm" element={<StepForm />} />
-                  <Route path="/schedule/stepForm" element={<StepForm />} />
+                  {/* <Route path="/events/stepForm" element={<StepForm />} /> */}
+                  {/* <Route path="/dashboard/stepForm" element={<StepForm />} /> */}
+                  {/* <Route path="/schedule/stepForm" element={<StepForm />} /> */}
                   <Route path="/events/eventDetailPage" element={<EventDetailPage />} />
                   <Route path="/events/eventDetailPage/tasks" element={<TasksDetail />} />
                   <Route path="/instagram" element={<Instagram />} />
