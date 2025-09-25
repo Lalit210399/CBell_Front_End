@@ -27,6 +27,8 @@
   transition: all 0.3s ease;
   background-color: var(--message-bg);
   position: relative;
+  min-height: 200px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .file-card:hover {
@@ -41,15 +43,17 @@
 }
 
 .file-name {
-  width: 100%;
+  flex: 1;
   padding: 8px;
-  text-align: center;
-  font-size: 0.9em;
+  text-align: left;
+  font-size: 0.85em;
   color: var(--text-color);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   background-color: var(--message-bg);
+  font-weight: 500;
+  line-height: 1.2;
 }
 
 /* Header with Icons */
@@ -61,6 +65,8 @@
   padding: 12px;
   border-bottom: 1px solid var(--border-color);
   background-color: var(--background-color);
+  min-height: 50px;
+  gap: 8px;
 }
 
 .files-header {
@@ -303,16 +309,17 @@
 /* File Actions */
 .file-actions {
   display: flex;
-  justify-content: space-around;
+  justify-content: center;
   width: 100%;
-  padding: 8px;
+  padding: 12px;
   background-color: var(--background-color);
   border-top: 1px solid var(--border-color);
+  gap: 8px;
 }
 
 .file-action-btn {
-  padding: 6px 12px;
-  border-radius: 4px;
+  padding: 8px 12px;
+  border-radius: 6px;
   border: none;
   cursor: pointer;
   font-size: 12px;
@@ -320,6 +327,9 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  font-weight: 500;
+  min-width: 40px;
+  justify-content: center;
 }
 
 .delete-btn {
@@ -329,6 +339,8 @@
 
 .delete-btn:hover {
   background-color: rgba(198, 40, 40, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(198, 40, 40, 0.2);
 }
 
 .social-upload-btn {
@@ -338,6 +350,15 @@
 
 .social-upload-btn:hover {
   background-color: rgba(21, 101, 192, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(21, 101, 192, 0.2);
+}
+
+.social-upload-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Upload Modal */
@@ -560,13 +581,28 @@
 /* File Selection and Status */
 .file-selection-radio {
   position: absolute;
-  top: -14px;
-  right: -12px;
+  top: 8px;
+  left: 8px;
   z-index: 10;
   width: 20px;
   height: 20px;
   cursor: pointer;
   accent-color: var(--primary-color);
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.file-selection-radio:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.file-selection-radio:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .file-card-wrapper {
@@ -592,11 +628,27 @@
 .approved-badge {
   background-color: #4CAF50;
   color: white;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 16px;
+  font-size: 11px;
   font-weight: bold;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  animation: approvedPulse 2s infinite;
+}
+
+@keyframes approvedPulse {
+  0% {
+    box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+  }
+  50% {
+    box-shadow: 0 2px 6px rgba(76, 175, 80, 0.6);
+  }
+  100% {
+    box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+  }
 }
 
 .pending-badge {
@@ -607,6 +659,20 @@
   font-size: 12px;
   font-weight: bold;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.published-badge {
+  background: #E8DAEF;
+  color: #5B2C6F;
+  padding: 6px 10px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(91, 44, 111, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
 }
 
 .approval-notice {
@@ -662,5 +728,26 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+.file-card-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 150px;
+  background-color: var(--background-color);
+  color: var(--text-light);
+  font-size: 14px;
+  border-radius: var(--small-border-radius);
+  animation: loadingPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes loadingPulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
   }
 }

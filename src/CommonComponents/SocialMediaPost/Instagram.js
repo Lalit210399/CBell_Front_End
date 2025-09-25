@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { FaInstagram, FaFacebook } from 'react-icons/fa';
-import { useUser } from '../../Context/UserContext';
 import './instagram.css';
 
 const SocialMediaUploader = ({
@@ -10,28 +9,23 @@ const SocialMediaUploader = ({
   defaultCaption = '',
   fileDetail = null,
   onSuccess,
+  onPlatformPublish, // 🔐 API call function from parent (Publish.js)
   platform: forcedPlatform = null, // 🔐 From FileShareModel
 }) => {
-  const { user, selectedOrganizationId } = useUser();
   const fileName = fileDetail?.name || '';
   const documentId = fileDetail?.url ? fileDetail.url.split('/').pop() : defaultImageUrl || '';
-  const [imageUrl, setImageUrl] = useState('');
   const [caption, setCaption] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [platform, setPlatform] = useState(forcedPlatform || 'instagram');
-  
-  // Get organization ID the same way as Events.js
-  const organizationId = selectedOrganizationId || user?.organizationId;
 
   useEffect(() => {
     if (open) {
-      setImageUrl(documentId);
-      setCaption('');
+      setCaption(defaultCaption || '');
       setMessage('');
       if (forcedPlatform) setPlatform(forcedPlatform);
     }
-  }, [open, documentId, forcedPlatform]);
+  }, [open, defaultCaption, forcedPlatform]);
 
   if (!open) return null;
 
@@ -40,39 +34,18 @@ const SocialMediaUploader = ({
       setLoading(true);
       setMessage('');
 
-      if (!organizationId) {
-        throw new Error('Organization ID is required');
-      }
-
       if (!documentId) {
         throw new Error('Document ID is required');
       }
 
-      const requestBody = {
-        organizationId,
-        documentId,
+      if (!onPlatformPublish) {
+        throw new Error('Platform publish function not available');
+      }
+
+      // Use the parent's API call function (from Publish.js)
+      await onPlatformPublish(documentId, platform, {
         caption: caption.trim()
-      };
-
-      let apiEndpoint;
-      if (platform === 'instagram') {
-        apiEndpoint = '/socialmedia/post/instagram';
-      } else {
-        apiEndpoint = '/socialmedia/post/facebook';
-      }
-
-      const response = await fetch(apiEndpoint, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
       });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || data.error || `${platform} post failed`);
-      }
 
       setMessage(`✅ ${platform} post successful!`);
       onSuccess?.(platform);

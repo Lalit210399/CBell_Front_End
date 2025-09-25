@@ -6,14 +6,12 @@ import {
   Clapperboard,
   File as FileIcon,
   FileText,
-  PlusCircle,
   Loader2,
   X,
   Trash2,
   Share2,
   Check,
 } from 'lucide-react';
-import InstagramMediaUploader from '../SocialMediaPost/Instagram';
 import './FilesandUploads.css';
 
 const FilesUploads = ({
@@ -35,9 +33,6 @@ const FilesUploads = ({
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [currentFile, setCurrentFile] = useState(null);
   const [description, setDescription] = useState('');
-  const [documentId, setDocumentId] = useState('');
-  const [socialPlatform, setSocialPlatform] = useState('twitter');
-  const [open, setOpen] = useState(false);
   const [approvedFiles, setApprovedFiles] = useState([]);
 
   //console.log('files in FilesUploads:', files);
@@ -53,7 +48,7 @@ const FilesUploads = ({
         onFileSelect(file.documentId, true);
       });
     }
-  }, [files]);
+  }, [files, onFileSelect]);
 
   useEffect(() => {
     return () => {
@@ -67,7 +62,7 @@ const FilesUploads = ({
 
   useEffect(() => {
     onDataChange?.({ uploadedFiles });
-  }, [ uploadedFiles]);
+  }, [uploadedFiles, onDataChange]);
 
   const getFileTypeFromMime = (mime) => {
     if (!mime) return 'file';
@@ -76,6 +71,12 @@ const FilesUploads = ({
     if (mime.startsWith('audio')) return 'audio';
     if (mime === 'application/pdf') return 'pdf';
     return 'file';
+  };
+
+
+  const isFilePublished = (file) => {
+    return file.publishedTo && file.publishedTo.length > 0 && 
+           file.publishedTo.some(p => p.isPublished === true);
   };
 
   // const handleAddLink = () => {
@@ -190,7 +191,8 @@ const FilesUploads = ({
     const isApproved = approvedFiles.includes(file.documentId);
     const isSelected = isApproved || selectedFiles.includes(file.documentId);
     const hasApprovedFile = approvedFiles.length > 0;
-    const canSelect = !isApproved && !hasApprovedFile;
+    const isPublished = isFilePublished(file);
+    const canSelect = !isApproved && !hasApprovedFile && !isPublished;
 
     useEffect(() => {
       const observer = new IntersectionObserver(
@@ -212,13 +214,13 @@ const FilesUploads = ({
         ref={ref}
         className={`file-card-wrapper ${mode === 'edit' ? 'edit-mode' : ''}`}
         onClick={() => {
-          if (mode === 'edit' && onFileSelect && canSelect) {
+          if (onFileSelect && canSelect) {
             onFileSelect(file.documentId, !isSelected);
           }
         }}
       >
-        {/* Only show checkbox if NOT approved, and (no approved files & edit mode) */}
-        {enableSelectionCheckbox && (!isApproved && approvedFiles.length === 0 && mode === 'edit') && (
+        {/* Show checkbox when selection is enabled and file is not published */}
+        {enableSelectionCheckbox && !isPublished && (
           <input
             type="checkbox"
             className="file-selection-radio"
@@ -237,6 +239,25 @@ const FilesUploads = ({
         <div className={`file-card ${isSelected ? 'selected' : ''}`}>
           {isVisible ? (
             <>
+              {/* Status indicator for approved files */}
+              {isApproved && (
+                <div className="file-status-indicator">
+                  <div className="approved-badge">
+                    <Check size={12} />
+                    Approved
+                  </div>
+                </div>
+              )}
+
+              {/* Published badge */}
+              {isPublished && (
+                <div className="file-status-indicator">
+                  <div className="published-badge">
+                    Published
+                  </div>
+                </div>
+              )}
+              
               <div className="file-header">
                 {file.type === 'image' && <ImageIcon size={20} />}
                 {file.type === 'video' && <Clapperboard size={20} />}
@@ -252,6 +273,7 @@ const FilesUploads = ({
                       e.stopPropagation();
                       handleDeleteFile(file.documentId);
                     }}
+                    title="Delete file"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -279,17 +301,17 @@ const FilesUploads = ({
                   </div>
                 )}
               </div>
-              {!readOnly && mode === 'edit' && (
+              {!readOnly && (
                 <div className="file-actions">
                   <button
                     className="file-action-btn social-upload-btn"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setDescription(file.description || file.name || '');
-                      setDocumentId(file.documentId);
-                      setOpen(true);
+                      // TODO: Implement social media sharing functionality
+                      alert('Social media sharing feature coming soon!');
                     }}
                     disabled={isApproved}
+                    title="Share to social media"
                   >
                     <Share2 size={14} />
                   </button>
@@ -445,15 +467,6 @@ const FilesUploads = ({
           </div>
         </div>
       )}
-      {/* <InstagramMediaUploader
-        igUserId="17841474808473956"
-        fbPageId="648945998310294"
-        accessToken="ewqerqw"
-        open={open}
-        onClose={() => setOpen(false)}
-        defaultImageUrl={documentId || ''}
-        defaultCaption={description || ''}
-      /> */}
     </div>
   );
 };
