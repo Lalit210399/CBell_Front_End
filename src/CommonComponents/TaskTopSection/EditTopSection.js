@@ -3,6 +3,16 @@ import { ArrowLeft, Save, Users } from "lucide-react";
 import AvatarList from "../Avatar/index";
 import "./EditTopSection.css";
 
+// Hardcoded status IDs from backend data - moved outside component to prevent re-creation
+const HARDCODED_STATUS_IDS = {
+  "New": "68baab0b9a31a52d62646ca1",
+  "Active": "68bee09b522caf6ac9f65bdc", 
+  "Under Approval": "68bee0b1522caf6ac9f65bdd",
+  "Under Review": "68bee0b1522caf6ac9f65bdd", // Use same ID as Under Approval
+  "Approved": "68bee0c2522caf6ac9f65bde",
+  "Published": "68bee0d1522caf6ac9f65bdf"
+};
+
 const TopSection = ({
   mode,
   title,
@@ -19,6 +29,7 @@ const TopSection = ({
   onClearError,
   onStatusChange, // New prop for handling status changes
   isUpdatingStatus = false, // Loading state for status updates
+  user, // Add user prop to check role
 }) => {
   const [editableTitle, setEditableTitle] = useState(title || "");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -27,6 +38,13 @@ const TopSection = ({
   const [userSearch, setUserSearch] = useState("");
   const isTitleManuallyEdited = useRef(false);
 
+  console.log(user);
+  console.log("Status in EditTopSection:", status);
+  console.log("AssignedTo in EditTopSection:", assignedTo);
+
+  // Check if user is a Designer based on the roles array
+  const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
+  console.log("EditTopSection - isDesigner:", isDesigner, "user roles:", user?.roles);
   
   // Get CSS class for status badge based on status value
   const getStatusClass = (statusValue) => {
@@ -36,11 +54,14 @@ const TopSection = ({
       'New': 'new',
       'Active': 'active', 
       'Under Approval': 'under-approval',
+      'Under Review': 'under-approval', // Map Under Review to under-approval class
       'Approved': 'approved',
       'Published': 'published'
     };
     
-    return statusMap[statusValue] || 'default';
+    const cssClass = statusMap[statusValue] || 'default';
+    console.log("getStatusClass:", statusValue, "->", cssClass);
+    return cssClass;
   };
 
   // Get default color for status
@@ -49,6 +70,7 @@ const TopSection = ({
       "New": "gray",
       "Active": "blue", 
       "Under Approval": "orange",
+      "Under Review": "orange", // Map Under Review to orange color
       "Approved": "green",
       "Published": "purple"
     };
@@ -219,9 +241,9 @@ const TopSection = ({
       if (newStatus) {
         onStatusChange(newStatus);
       } else {
-        // Create a fallback status object if not found
+        // Create a fallback status object with hardcoded ID
         const fallbackStatus = {
-          id: newStatusValue.toLowerCase().replace(/\s+/g, '_'),
+          id: HARDCODED_STATUS_IDS[newStatusValue] || "",
           label: newStatusValue,
           value: newStatusValue,
           color: getDefaultColor(newStatusValue)
@@ -396,33 +418,33 @@ const TopSection = ({
                 </button>
               )}
               
-              {/* Status change buttons - only show in view mode */}
-              {mode === "view" && (
-                <div className="status-change-buttons">
-                  {/* Under Approval button - show for all statuses except Under Approval */}
-                  {status?.value !== "Under Approval" && (
-                    <button 
-                      className="status-btn under-approval-btn"
-                      onClick={() => handleStatusChange("Under Approval")}
-                      title="Move to Under Approval"
-                      disabled={isUpdatingStatus}
-                    >
-                      {isUpdatingStatus ? "Updating..." : "Under Approval"}
-                    </button>
-                  )}
-                  {/* Approved button - show only when status is Under Approval */}
-                  {status?.value === "Under Approval" && (
-                    <button 
-                      className="status-btn approved-btn"
-                      onClick={() => handleStatusChange("Approved")}
-                      title="Approve Task (requires file selection)"
-                      disabled={isUpdatingStatus}
-                    >
-                      {isUpdatingStatus ? "Updating..." : "Approve"}
-                    </button>
-                  )}
-                </div>
-              )}
+               {/* Status change buttons - only show in view mode */}
+               {mode === "view" && (
+                 <div className="status-change-buttons">
+                   {/* Under Approval button - show only for Designers and for all statuses except Under Approval/Under Review */}
+                   {isDesigner && status?.value !== "Under Approval" && status?.value !== "Under Review" && (
+                     <button 
+                       className="status-btn under-approval-btn"
+                       onClick={() => handleStatusChange("Under Approval")}
+                       title="Move to Under Approval"
+                       disabled={isUpdatingStatus}
+                     >
+                       {isUpdatingStatus ? "Updating..." : "Under Approval"}
+                     </button>
+                   )}
+                   {/* Approved button - show to everyone EXCEPT Designers when status is Under Approval or Under Review */}
+                   {!isDesigner && (status?.value === "Under Approval" || status?.value === "Under Review") && (
+                     <button 
+                       className="status-btn approved-btn"
+                       onClick={() => handleStatusChange("Approved")}
+                       title="Approve Task (requires file selection)"
+                       disabled={isUpdatingStatus}
+                     >
+                       {isUpdatingStatus ? "Updating..." : "Approve"}
+                     </button>
+                   )}
+                 </div>
+               )}
             </>
           )}
         </div>

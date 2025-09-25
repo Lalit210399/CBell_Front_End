@@ -16,11 +16,25 @@ import useApi from "../../Hooks/useApi";
 import { Building, Calendar, Pencil } from "lucide-react";
 import "./Tasks.css";
 
+// Hardcoded status IDs from backend data - moved outside component to prevent re-creation
+const HARDCODED_STATUS_IDS = {
+  "New": "68baab0b9a31a52d62646ca1",
+  "Active": "68bee09b522caf6ac9f65bdc", 
+  "Under Approval": "68bee0b1522caf6ac9f65bdd",
+  "Under Review": "68bee0b1522caf6ac9f65bdd", // Use same ID as Under Approval
+  "Approved": "68bee0c2522caf6ac9f65bde",
+  "Published": "68bee0d1522caf6ac9f65bdf"
+};
+
 const TaskDetailPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, scopeChangeTrigger } = useUser();
   const { addMessage } = useMessages();
+  
+  // Check if user is a Designer
+  const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
+  console.log("TaskDetailPage - isDesigner:", isDesigner, "user roles:", user?.roles);
   
   const { taskId, mode: initialMode = "view", eventId, organizationId, eventDate: navEventDate, eventName } = location.state || {};
   const eventDate = React.useMemo(() => navEventDate ? new Date(navEventDate) : null, [navEventDate]);
@@ -57,30 +71,61 @@ const TaskDetailPage = () => {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   
   // Use task status context
-  const { loading: statusLoading, getActiveTaskStatuses } = useTaskStatus();
-  
+  const { loading: statusLoading } = useTaskStatus();
+
   const getDefaultColor = useCallback((statusValue) => {
     const colorMap = {
       "New": "gray",
       "Active": "blue", 
       "Under Approval": "orange",
+      "Under Review": "orange", // Map Under Review to orange color
       "Approved": "green",
       "Published": "purple"
     };
     return colorMap[statusValue] || "gray";
   }, []);
   
-  // Transform task statuses to the format expected by the component
+  // Use hardcoded status options instead of API data
   const statusOptions = React.useMemo(() => {
-    const activeStatuses = getActiveTaskStatuses();
-    const transformed = activeStatuses.map(status => ({
-      id: status.id,
-      label: status.statusName || status.name,
-      value: status.statusName || status.name,
-      color: status.color || getDefaultColor(status.statusName || status.name)
-    }));
-    return transformed;
-  }, [getActiveTaskStatuses, getDefaultColor]);
+    return [
+      {
+        id: HARDCODED_STATUS_IDS["New"],
+        label: "New",
+        value: "New",
+        color: "gray"
+      },
+      {
+        id: HARDCODED_STATUS_IDS["Active"],
+        label: "Active", 
+        value: "Active",
+        color: "blue"
+      },
+      {
+        id: HARDCODED_STATUS_IDS["Under Approval"],
+        label: "Under Approval",
+        value: "Under Approval", 
+        color: "orange"
+      },
+      {
+        id: HARDCODED_STATUS_IDS["Under Approval"], // Use same ID as Under Approval
+        label: "Under Review",
+        value: "Under Review", 
+        color: "orange"
+      },
+      {
+        id: HARDCODED_STATUS_IDS["Approved"],
+        label: "Approved",
+        value: "Approved",
+        color: "green"
+      },
+      {
+        id: HARDCODED_STATUS_IDS["Published"],
+        label: "Published",
+        value: "Published",
+        color: "purple"
+      }
+    ];
+  }, []);
 
   const [taskData, setTaskData] = useState({
     id: "",
@@ -254,21 +299,11 @@ const TaskDetailPage = () => {
   // Initialize status when statusOptions are loaded and we're in create mode
   useEffect(() => {
     if (mode === "create" && statusOptions.length > 0) {
-      // Find the "New" status specifically, or use the first one as fallback
-      const newStatus = statusOptions.find(status => status.value === "New") || statusOptions[0];
+      // Find the "New" status specifically
+      const newStatus = statusOptions.find(status => status.value === "New");
       console.log("Setting default status for create mode:", newStatus);
-      if (newStatus && newStatus.id) {
+      if (newStatus) {
         setTaskStatus(newStatus);
-      } else {
-        console.warn("No valid status found with ID, using fallback");
-        // Create a fallback status with a temporary ID
-        const fallbackStatus = {
-          id: "temp-new",
-          label: "New",
-          value: "New",
-          color: "gray"
-        };
-        setTaskStatus(fallbackStatus);
       }
     }
   }, [statusOptions, mode]);
@@ -345,10 +380,16 @@ const TaskDetailPage = () => {
         );
       }
       
-      // If still not found, create a fallback status
+      // Special handling for "Under Review" - map to "Under Approval" if not found
+      if (!matchedStatus && (apiStatusName.toLowerCase() === "under review" || apiStatusName.toLowerCase() === "underapproval")) {
+        matchedStatus = currentStatusOptions.find(opt => opt.value === "Under Review");
+      }
+      
+      // If still not found, create a fallback status with hardcoded ID
       if (!matchedStatus) {
+        const hardcodedId = HARDCODED_STATUS_IDS[apiStatusName] || "";
         matchedStatus = {
-          id: data.taskStatusId || "",
+          id: hardcodedId,
           label: apiStatusName,
           value: apiStatusName,
           color: getDefaultColor(apiStatusName)
@@ -387,6 +428,8 @@ const TaskDetailPage = () => {
         description: data.description || "",
         organizationId: data.organizationId || organizationId || "",
       };
+      
+      console.log("Setting taskData with assignedTo:", data.assignedTo);
       
       setTaskData(newTaskData);
       
@@ -519,13 +562,13 @@ const TaskDetailPage = () => {
     if (!currentDate) {
       errors.date = "Due date is required";
     }
-    // Only validate status if status options are available from API
+    // Validate status using hardcoded status options
     if (statusOptions.length > 0) {
       if (!taskStatus?.id || taskStatus.id === "" || taskStatus.id === null) {
         errors.status = "Please select a valid task status";
       }
     } else if (mode === "create") {
-      // For create mode, ensure we have a valid status even if API is not available
+      // For create mode, ensure we have a valid status
       if (!taskStatus?.id || taskStatus.id === "" || taskStatus.id === null) {
         errors.status = "Task status is not properly initialized";
       }
@@ -655,18 +698,12 @@ const TaskDetailPage = () => {
         return;
       }
       
-      // Ensure we have a valid status ID
+      // Ensure we have a valid status ID using hardcoded mapping
       let statusId = taskStatus?.id;
       if (!statusId || statusId === "" || statusId === null) {
-        // Try to find a matching status from the options
-        const matchingStatus = statusOptions.find(opt => opt.value === taskStatus?.value);
-        if (matchingStatus && matchingStatus.id) {
-          statusId = matchingStatus.id;
-          console.log("Using matching status ID from options:", statusId);
-        } else {
-          console.error("No valid status ID found, using null");
-          statusId = null;
-        }
+        // Use hardcoded status ID mapping
+        statusId = HARDCODED_STATUS_IDS[taskStatus?.value] || null;
+        console.log("Using hardcoded status ID:", statusId, "for status:", taskStatus?.value);
       }
 
       const payload = {
@@ -810,18 +847,12 @@ const TaskDetailPage = () => {
           return;
         }
         
-        // Ensure we have a valid status ID for the new status
+        // Ensure we have a valid status ID for the new status using hardcoded mapping
         let statusId = newStatus.id;
         if (!statusId || statusId === "" || statusId === null) {
-          // Try to find a matching status from the options
-          const matchingStatus = statusOptions.find(opt => opt.value === newStatus.value);
-          if (matchingStatus && matchingStatus.id) {
-            statusId = matchingStatus.id;
-            console.log("Using matching status ID from options for update:", statusId);
-          } else {
-            console.error("No valid status ID found for update, using null");
-            statusId = null;
-          }
+          // Use hardcoded status ID mapping
+          statusId = HARDCODED_STATUS_IDS[newStatus.value] || null;
+          console.log("Using hardcoded status ID for update:", statusId, "for status:", newStatus.value);
         }
 
         // Prepare payload for status update
@@ -1051,13 +1082,14 @@ const TaskDetailPage = () => {
           onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
           onStatusChange={handleStatusChange}
           isUpdatingStatus={isUpdatingStatus}
+          user={user}
         />
       </div>
 
       <div className="Inner-Content">
         <TabMenu
           tabs={tabs}
-          showEditButton={mode === "view" && taskStatus.value !== "Approved"} // Show edit button only in view mode and when status is not Approved
+          showEditButton={mode === "view" && taskStatus.value !== "Approved" && !isDesigner} // Show edit button only in view mode, when status is not Approved, and user is not a Designer
           isEditMode={mode === "edit"}
           onEditClick={() => {
             setMode("edit");

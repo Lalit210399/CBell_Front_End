@@ -295,12 +295,12 @@
     background-color: #3b82f6;
 }
 
-.status-badge.status-under-review {
+.status-badge.status-under-approval {
     background-color: #fed7aa;
     color: #ea580c;
 }
 
-.status-badge.status-under-review .status-dot {
+.status-badge.status-under-approval .status-dot {
     background-color: #f97316;
 }
 
