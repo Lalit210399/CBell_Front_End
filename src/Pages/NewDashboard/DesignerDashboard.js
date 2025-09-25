@@ -161,7 +161,7 @@ const DesignerDashboard = () => {
     if (!orgIdReady) return [];
     
     const organizationId = selectedOrganizationId || user?.organizationId || "681460dcb8327b2e3417d8b1";
-
+    const includeChildren = isViewingOwnOrganization() ? "&includeChildren=true" : "&includeChildren=false";
       // Map tile titles to API filter values
       const filterMap = {
         "Total Tasks": "all",
@@ -172,7 +172,7 @@ const DesignerDashboard = () => {
     const apiFilter = filterMap[filterType] || "all";
 
       const response = await fetchWithRefresh(
-        `apis/dashboard/tasks?orgid=${organizationId}&filter=${apiFilter}`,
+        `apis/dashboard/tasks?orgid=${organizationId}&filter=${apiFilter}${includeChildren}`,
         {
           method: "GET",
           headers: {
@@ -355,12 +355,18 @@ const DesignerDashboard = () => {
   useEffect(() => {
     if (orgIdReady) {
       executeSummary();
-      executeEventsCampaign();
       executeAssignedEvents();
       // Execute tasks API for Total Tasks by default
       executeTasks();
     }
-  }, [orgIdReady, scopeChangeTrigger, executeSummary, executeEventsCampaign, executeAssignedEvents, executeTasks]);
+  }, [orgIdReady, scopeChangeTrigger, executeSummary, executeAssignedEvents, executeTasks]);
+
+  // Separate useEffect for Events Campaign to prevent unnecessary re-execution
+  useEffect(() => {
+    if (orgIdReady) {
+      executeEventsCampaign();
+    }
+  }, [selectedMonth, selectedYear, orgIdReady, executeEventsCampaign]);
 
   // Define task tiles for reuse
   const taskTiles = useMemo(() => [
@@ -456,13 +462,14 @@ const DesignerDashboard = () => {
         setFilter(filterMap[tile.title] || tile.title);
       }
 
-      // Execute tasks API for task-related tiles
-      if (taskTiles.includes(tile.title)) {
+      // Only execute tasks API if the current title is different from the clicked tile
+      // This prevents unnecessary API calls when clicking the same tile
+      if (taskTiles.includes(tile.title) && currentTitle !== tile.title) {
         console.log("Executing tasks API for:", tile.title);
         executeTasks();
       }
     }
-  }, [executeAssignedEvents, executeMyTasks, executeTasks, taskTiles]);
+  }, [executeAssignedEvents, executeMyTasks, executeTasks, taskTiles, currentTitle]);
 
   // Handle task click
   const handleTaskClick = (task, key) => {
