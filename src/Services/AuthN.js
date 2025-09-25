@@ -232,3 +232,28 @@ export const getTaskTypeOptions = async () => {
   }
 };
 
+// Delete Task
+export const deleteTask = async (taskId) => {
+  try {
+    const response = await fetch(`/apis/task/delete/${taskId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: "application/json",
+        "ngrok-skip-browser-warning": "1",
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete task: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error deleting task:', error);
+    throw error.message || 'Error deleting task';
+  }
+};
+
