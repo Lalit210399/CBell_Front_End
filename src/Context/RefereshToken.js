@@ -5,6 +5,8 @@ let isRefreshing = false;
 let refreshPromise = null;
 let refreshTokenExpired = false;
 let pendingRequests = new Set();
+let refreshAttempts = 0;
+const MAX_REFRESH_ATTEMPTS = 3;
 
 // Utility function to get cookie value
 function getCookieValue(name) {
@@ -62,6 +64,14 @@ async function performTokenRefresh() {
     return refreshPromise;
   }
 
+  // Check if we've exceeded max refresh attempts
+  if (refreshAttempts >= MAX_REFRESH_ATTEMPTS) {
+    console.error('Maximum refresh attempts exceeded, logging out');
+    await handleTokenExpired();
+    throw new Error('Maximum refresh attempts exceeded');
+  }
+
+  refreshAttempts++;
   isRefreshing = true;
   
   const refreshToken = getCookieValue('LocalRefreshToken');
@@ -102,6 +112,7 @@ async function performTokenRefresh() {
       // Reset refresh state
       isRefreshing = false;
       refreshPromise = null;
+      refreshAttempts = 0; // Reset attempts on successful refresh
       
       return newToken;
     })
@@ -127,7 +138,11 @@ export async function fetchWithRefresh(input, init = {}) {
   
   // Validate access token format
   if (!isValidToken(accessToken)) {
-    console.warn('Invalid access token format, attempting refresh');
+    console.warn('Invalid access token format, attempting refresh', {
+      token: accessToken ? `${accessToken.substring(0, 20)}...` : 'null',
+      length: accessToken?.length || 0,
+      parts: accessToken?.split('.').length || 0
+    });
     accessToken = null;
   }
 
@@ -176,6 +191,7 @@ export function resetRefreshTokenState() {
   refreshPromise = null;
   refreshTokenExpired = false;
   pendingRequests.clear();
+  refreshAttempts = 0;
 }
 
 // Function to check if refresh token is expired (for debugging)

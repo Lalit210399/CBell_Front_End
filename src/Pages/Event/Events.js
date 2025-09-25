@@ -169,15 +169,16 @@ const EventTable = () => {
     }
 
     const formatted = data.map(event => {
-      const coordinators = event.coordinators || [];
-      const specialGuests = event.specialGuests || [];
+      const assignedUsers = event.assignedUsers || [];
 
-      const allParticipants = [...coordinators, ...specialGuests].map((person) => {
+      const allParticipants = assignedUsers.map((user) => {
         let participantName = "Unknown";
-        if (typeof person === "string") {
-          participantName = person;
-        } else if (person && person.name) {
-          participantName = person.name;
+        if (typeof user === "string") {
+          participantName = user;
+        } else if (user && user.userName) {
+          participantName = user.userName;
+        } else if (user && user.name) {
+          participantName = user.name;
         }
 
         return {

@@ -161,7 +161,6 @@ const DesignerDashboard = () => {
     if (!orgIdReady) return [];
     
     const organizationId = selectedOrganizationId || user?.organizationId || "681460dcb8327b2e3417d8b1";
-    const includeChildren = isViewingOwnOrganization() ? "&includeChildren=true" : "&includeChildren=false";
       // Map tile titles to API filter values
       const filterMap = {
         "Total Tasks": "all",
@@ -172,7 +171,7 @@ const DesignerDashboard = () => {
     const apiFilter = filterMap[filterType] || "all";
 
       const response = await fetchWithRefresh(
-        `apis/dashboard/tasks?orgid=${organizationId}&filter=${apiFilter}${includeChildren}`,
+        `apis/dashboard/tasks?orgid=${organizationId}&filter=${apiFilter}`,
         {
           method: "GET",
           headers: {
@@ -551,7 +550,7 @@ const DesignerDashboard = () => {
           {activeComponent === "recent" && (
             <div className="recent-tasks">
               <RecentTasks
-                tasks={currentTitle === "Tasks Assigned to Me" ? (myTasksData || []) : (tasksData || [])}
+                tasks={currentTitle === "Tasks Assigned to Me" ? (myTasksData || []).slice(0, 5) : (tasksData || []).slice(0, 5)}
                 title={currentTitle}
                 filter={filter}
                 onFilterChange={setFilter}

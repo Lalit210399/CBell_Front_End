@@ -722,7 +722,7 @@ const Dashboard = () => {
           {activeComponent === "recent" && (
             <div className="recent-tasks">
               <RecentTasks
-                tasks={tasksData || []}
+                tasks={(tasksData || []).slice(0, 5)}
                 title={currentTitle}
                 filter={filter}
                 onFilterChange={setFilter}
@@ -731,8 +731,7 @@ const Dashboard = () => {
                 error={errorTasks}
                 showDropdown={[
                   "Total Tasks",
-                  "Tasks Due Next 7 Days",
-                  "Overdue Tasks",
+            
                 ].includes(currentTitle)}
               />
             </div>
@@ -742,7 +741,7 @@ const Dashboard = () => {
           {activeComponent === "activeEvents" && (
             <div className="active-events">
               <ActiveEvents
-                events={activeEventsData || []}
+                events={(activeEventsData || []).slice(0, 5)}
                 title="Active Events"
                 onEventClick={handleEventClick}
                 loading={loadingActiveEvents}

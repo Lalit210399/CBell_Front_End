@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Table from "../../../CommonComponents/Table/Table";
 import AvatarList from "../../../CommonComponents/Avatar/AvatarList";
 import { useUser } from "../../../Context/UserContext";
+import { deleteTask } from "../../../Services/AuthN";
 import "../Tasks.css";
 
 const columns = [
@@ -148,6 +149,33 @@ const Task = ({ tasksData, eventId, eventName }) => {
     });
   };
 
+  const handleDeleteTask = async (task) => {
+    if (!permissions.canDelete) {
+      alert("You don't have permission to delete tasks");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete the task "${task.creative_name || 'Untitled Task'}"?`
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      await deleteTask(task.id);
+      
+      // Remove the deleted task from the local state
+      setTasks(prevTasks => prevTasks.filter(t => t.id !== task.id));
+      
+      alert("Task deleted successfully");
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      alert(`Failed to delete task: ${error.message || 'Unknown error'}`);
+    }
+  };
+
   return (
     <div className="Publish_Section">
       <Table
@@ -160,9 +188,9 @@ const Task = ({ tasksData, eventId, eventName }) => {
         noDataText="No Tasks Scheduled at this time"
         addEventText="Click here to add a New Task"
         onRowClick={handleRowClick}
-        onDelete={permissions.canDelete ? () => alert("Delete Press") : undefined}
-          onArchive={permissions.canArchive ? () => alert("Archive pressed") : undefined}
-          onDuplicate={permissions.canDuplicate ? () => alert("Duplicate pressed") : undefined}
+        onDelete={permissions.canDelete ? handleDeleteTask : undefined}
+        onArchive={permissions.canArchive ? () => alert("Archive pressed") : undefined}
+        onDuplicate={permissions.canDuplicate ? () => alert("Duplicate pressed") : undefined}
       />
 
     </div>
