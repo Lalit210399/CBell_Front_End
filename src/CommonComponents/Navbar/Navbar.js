@@ -16,7 +16,8 @@ function Navbar() {
     setPermissions, 
     scope, 
     selectedOrganizationId, 
-    handleScopeChange 
+    handleScopeChange,
+    resetUserState
   } = useUser();
   const [dropdownVisible, setDropdownVisible] = useState(false);
 
@@ -29,9 +30,9 @@ function Navbar() {
       // ✅ clear frontend state
       localStorage.removeItem("user");
       localStorage.removeItem("permissions");
+      localStorage.removeItem("scope");
       localStorage.removeItem("dashboard-selected-organization");
-      setUser(null);
-      setPermissions(null);
+      resetUserState();
 
       // ✅ redirect after state cleared
       navigate("/login", { replace: true });
@@ -41,9 +42,9 @@ function Navbar() {
       // still force clear on failure
       localStorage.removeItem("user");
       localStorage.removeItem("permissions");
+      localStorage.removeItem("scope");
       localStorage.removeItem("dashboard-selected-organization");
-      setUser(null);
-      setPermissions(null);
+      resetUserState();
 
       navigate("/login", { replace: true });
     }

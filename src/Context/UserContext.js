@@ -30,12 +30,12 @@ export const UserProvider = ({ children }) => {
     if (user?.organizationId && scope?.accessibleOrganizations && !selectedOrganizationId) {
       // Check if saved org is still accessible
       const savedOrgId = localStorage.getItem("dashboard-selected-organization");
-      if (savedOrgId && scope.accessibleOrganizations.some(org => org.id === savedOrgId)) {
+      if (savedOrgId && scope.accessibleOrganizations.some(org => String(org.id) === String(savedOrgId))) {
         setSelectedOrganizationId(savedOrgId);
       } else {
         // Default to user's organization
-        setSelectedOrganizationId(user.organizationId);
-        localStorage.setItem("dashboard-selected-organization", user.organizationId);
+        setSelectedOrganizationId(String(user.organizationId));
+        localStorage.setItem("dashboard-selected-organization", String(user.organizationId));
       }
     }
   }, [user?.organizationId, scope?.accessibleOrganizations, selectedOrganizationId]);
@@ -55,9 +55,9 @@ export const UserProvider = ({ children }) => {
       // If not on an allowed page, change scope and redirect to dashboard
       if (!isAllowedPage) {
         // Change the scope first
-        setSelectedOrganizationId(organizationId);
+        setSelectedOrganizationId(String(organizationId));
         if (organizationId) {
-          localStorage.setItem("dashboard-selected-organization", organizationId);
+          localStorage.setItem("dashboard-selected-organization", String(organizationId));
         } else {
           localStorage.removeItem("dashboard-selected-organization");
         }
@@ -70,15 +70,24 @@ export const UserProvider = ({ children }) => {
     }
     
     // Normal scope change for allowed pages
-    setSelectedOrganizationId(organizationId);
+    setSelectedOrganizationId(String(organizationId));
     if (organizationId) {
-      localStorage.setItem("dashboard-selected-organization", organizationId);
+      localStorage.setItem("dashboard-selected-organization", String(organizationId));
     } else {
       localStorage.removeItem("dashboard-selected-organization");
     }
     
     // Trigger scope change for components to refetch data
     setScopeChangeTrigger(prev => prev + 1);
+  };
+
+  // Reset all user-related state (to be called on logout)
+  const resetUserState = () => {
+    setUser(null);
+    setPermissions(null);
+    setScope(null);
+    setSelectedOrganizationId(null);
+    setScopeChangeTrigger(0);
   };
 
   return (
@@ -93,7 +102,8 @@ export const UserProvider = ({ children }) => {
       handleScopeChange,
       isViewingOwnOrganization,
       loading,
-      scopeChangeTrigger
+      scopeChangeTrigger,
+      resetUserState
     }}>
       {children}
     </UserContext.Provider>

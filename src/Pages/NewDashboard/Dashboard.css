@@ -142,6 +142,8 @@
   /* background-color: white; */
   border-radius: 12px;
   height: 380px;
+  display: flex;
+  flex-direction: column;
   
   /* border: 1px solid; */
   top: -37px
@@ -255,4 +257,54 @@
 
 .scroll-btn.right {
   right: -15px;
+}
+
+/* Table height consistency fixes */
+.active-events,
+.event-assign-to-me {
+  flex: 2 1 600px;
+  min-width: 600px;
+  border-radius: 12px;
+  height: 380px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure table containers maintain consistent height */
+.recent-tasks > *,
+.active-events > *,
+.event-assign-to-me > * {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Empty state styling */
+.empty-state-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 200px;
+  color: #6b7280;
+  font-size: 14px;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state-message {
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.empty-state-subtitle {
+  font-size: 12px;
+  opacity: 0.7;
 }

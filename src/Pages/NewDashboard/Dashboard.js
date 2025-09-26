@@ -134,30 +134,7 @@ const Dashboard = () => {
     return await response.json();
   }, [orgIdReady, selectedOrganizationId, user?.organizationId, user?.userId, isViewingOwnOrganization]);
 
-  // Active Events Count API
-  const fetchActiveEventsCount = useCallback(async () => {
-    if (!orgIdReady) return null;
-    
-    const organizationId = selectedOrganizationId || user?.organizationId || "685eb18207416b9271b800b3";
-    
-    const response = await fetchWithRefresh(
-      `apis/dashboard/active-events-count?organizationId=${organizationId}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "1",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Active events count API failed");
-    }
-    
-    const data = await response.json();
-    return data.count;
-  }, [orgIdReady, selectedOrganizationId, user?.organizationId]);
+  // Active Events Count API (removed; summary provides this number)
 
   // Events Campaign API
   const fetchEventsCampaign = useCallback(async () => {
@@ -202,7 +179,7 @@ const Dashboard = () => {
   const fetchTasksData = useCallback(async (filterType = "all") => {
     if (!orgIdReady) return [];
     
-    const organizationId = selectedOrganizationId || user?.organizationId || "681460dcb8327b2e3417d8b1";
+    const organizationId = selectedOrganizationId || user?.organizationId;
 
       // Map tile titles to API filter values
       const filterMap = {
@@ -211,7 +188,7 @@ const Dashboard = () => {
         "Overdue Tasks": "overdue",
         "New Tasks": "new",
         "Active Tasks": "active",
-      "Under Review Tasks": "under_review",
+        "Under Approval Tasks": "under_review",
         "Approved Tasks": "approved",
         "Published Tasks": "published",
       };
@@ -355,10 +332,7 @@ const Dashboard = () => {
     execute: executeSummary
   } = useApi(fetchSummaryData, [orgIdReady], false);
 
-  // Active Events Count
-  const {
-    execute: executeCount
-  } = useApi(fetchActiveEventsCount, [orgIdReady], false);
+  // Active Events Count (removed)
 
   // Events Campaign
   const {
@@ -400,12 +374,11 @@ const Dashboard = () => {
   useEffect(() => {
     if (orgIdReady) {
       executeSummary();
-      executeCount();
       executeEventsCampaign();
       executeActiveEvents();
       executeAssignedEvents();
     }
-  }, [orgIdReady, scopeChangeTrigger, executeSummary, executeCount, executeEventsCampaign, executeActiveEvents, executeAssignedEvents]);
+  }, [orgIdReady, scopeChangeTrigger, executeSummary, executeEventsCampaign, executeActiveEvents, executeAssignedEvents]);
 
   // Define task tiles for reuse
   const taskTiles = useMemo(() => [
@@ -414,7 +387,7 @@ const Dashboard = () => {
     "Overdue Tasks",
     "New Tasks",
     "Active Tasks",
-    "Under Review Tasks",
+    "Under Approval Tasks",
     "Approved Tasks",
     "Published Tasks",
   ], []);
@@ -467,7 +440,7 @@ const Dashboard = () => {
     },
     {
       icon: <UserCheck size={24} color="rgba(60, 131, 246, 1)" />,
-      count: summaryData?.assignedEvents,
+      count: summaryData?.assignedEvents ?? 0,
       title: "Events Assigned to Me",
       subtitle: "Events I'm Managing",
       bgcolor: "rgba(185, 210, 251, 0.2)",
@@ -540,8 +513,8 @@ const Dashboard = () => {
     {
       icon: <ClockIcon size={24} color="rgba(249, 115, 22, 1)" />,
       count: summaryData?.underApprovalTasks ?? 0,
-      title: "Under Review Tasks",
-      subtitle: "Awaiting Review",
+      title: "Under Approval Tasks",
+      subtitle: "Awaiting Approvals",
       bgcolor: "rgba(253, 205, 170, 0.2)",
       // bgcolor: "#ffff",
       iconBgColor: "rgba(249, 115, 22, 0.2)",
@@ -593,10 +566,10 @@ const Dashboard = () => {
 
     if (tile.title === "Active Events") {
       setActiveComponent("activeEvents");
-      executeActiveEvents(); // Execute active events API when tile is clicked
+      // executeActiveEvents() will be called by the effect when activeComponent changes
     } else if (tile.title === "Events Assigned to Me") {
       setActiveComponent("assignedToMe");
-      executeAssignedEvents(); // Execute assigned events API when tile is clicked
+      // executeAssignedEvents() will be called by the effect when activeComponent changes
     } else {
       setActiveComponent("recent");
 
@@ -608,17 +581,15 @@ const Dashboard = () => {
         const filterMap = {
           "New Tasks": "New",
           "Active Tasks": "Active", 
-          "Under Review Tasks": "Under Review",  // Match API status value
+          "Under Approval Tasks": "Under Approval",  // Match API status value
           "Approved Tasks": "Approved",
           "Published Tasks": "Published"
         };
         setFilter(filterMap[tile.title] || tile.title);
       }
 
-      // Execute tasks API for task-related tiles
-      if (taskTiles.includes(tile.title)) {
-        executeTasks();
-      }
+      // Do not execute here; a dedicated effect will run when
+      // currentTitle/activeComponent change to avoid stale state
     }
   };
 
@@ -731,8 +702,8 @@ const Dashboard = () => {
                 error={errorTasks}
                 showDropdown={[
                   "Total Tasks",
-            
                 ].includes(currentTitle)}
+                emptyStateMessage={`No ${currentTitle.toLowerCase()} found`}
               />
             </div>
           )}
@@ -746,6 +717,7 @@ const Dashboard = () => {
                 onEventClick={handleEventClick}
                 loading={loadingActiveEvents}
                 error={errorActiveEvents}
+                emptyStateMessage="No active events found"
               />
             </div>
           )}
@@ -759,6 +731,7 @@ const Dashboard = () => {
                 onEventClick={handleEventClick}
                 loading={loadingAssignToMe}
                 error={errorAssignToMe}
+                emptyStateMessage="No events assigned to you"
               />
             </div>
           )}
@@ -790,6 +763,7 @@ const Dashboard = () => {
             onItemClick={handleEventCampaignClick}
             loading={loadingEventsCampaign}
             error={errorEventsCampaign}
+            emptyStateMessage={`No events scheduled for ${monthOptions[selectedMonthIndex]?.label}`}
           />
         </div>
       </div>
