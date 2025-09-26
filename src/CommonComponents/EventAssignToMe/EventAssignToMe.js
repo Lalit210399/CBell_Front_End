@@ -33,7 +33,11 @@ const EventAssignToMe = ({ events, onEventClick, title = "Events Assigned to Me"
       case "assignTo":
         return (
           <div onClick={handleClick}>
-            <AvatarList avatars={item.assignTo} maxVisible={2} stack={true} />
+            {(!item.assignTo || item.assignTo.length === 0) ? (
+              <span>-</span>
+            ) : (
+              <AvatarList avatars={item.assignTo} maxVisible={2} stack={true} />
+            )}
           </div>
         );
       case "createdBy":

@@ -1,33 +1,48 @@
-# Organization Scope Refactoring Progress
+# Task & UI Fixes
 
-## ✅ Completed Tasks
-- [x] Refactored Dashboard.js to use centralized `useOrganizationScope` hook
-- [x] Removed redundant localStorage management from Dashboard
-- [x] Added proper organization scope synchronization
+## Assign To column: If empty, show -.
+- [ ] Update renderCell in EventAssignToMe.js for "assignTo" case to show "-" if empty
+- [ ] Update renderCell in ActiveEvents.js for "assignTo" case to show "-" if empty
+- [ ] Test the tables on events pages to confirm empty "Assign To" shows "-"
+- [ ] Mark task as completed in TODO.md
+## Events Campaign: Fix scrolling issue.
+## Avatar: Set proper background.
+## Events "Assign To Me" column: Hide in New Task.
+## Tiles: Require double-click to reflect data in the table.
+## API Calls: Avoid duplicate calls (currently triggered twice on single Tile click).
+## Created By column: Fix tooltip.
 
-## 🔄 In Progress
-- [ ] Critical-path testing of Dashboard changes
-- [ ] Refactor EventDetailPage to use organization scope hook
-- [ ] Refactor other components using manual localStorage
+## Table:
+### Implement lazy loading.
+### Fix column width.
+### Add filter functionality.
 
-## 📋 Pending Tasks
-- [ ] Add utility functions for organization scope management
-- [ ] Create context provider for organization scope (if needed)
-- [ ] Update all components to use centralized hook
-- [ ] Test organization scope changes across all components
-- [ ] Verify localStorage synchronization works correctly
-- [ ] Test organization switching functionality
+## Events Handling
+### Completed Events: Show only events from the last 7 days.
+### Event Creation: Prevent multiple API calls on single click.
+### Event Organizer / Event Input: Dropdown issues need fixing.
 
-## 🧪 Testing Checklist
-- [ ] Dashboard loads with correct organization scope
-- [ ] Organization dropdown shows correct selected value
-- [ ] Organization change updates all dashboard data
-- [ ] localStorage persists organization selection
-- [ ] Organization scope syncs across browser tabs
-- [ ] API calls use correct organization ID
-- [ ] Error handling for invalid organization IDs
+## Task Management
+### Task Name: Validate / fix binding.
+### Tabs: Hide tabs during task creation.
+### Approval Button: Change color and update text to "Submit for Approval".
+### New Task Button: Hide for users with Designer role.
+### Scope Dropdown: Fix issue.
+### Next / Default Task: Set proper handling.
 
-## 📝 Notes
-- Current implementation uses `useOrganizationScope` hook for centralized management
-- Dashboard component successfully refactored to remove manual localStorage calls
-- Need to test organization switching and data refresh functionality
+## UI Enhancements
+### Checkbox → Radio Button conversion where required.
+### Status: Use badges for files and status indicators.
+### Tiles: Update names as per requirement.
+### Input Dropdown: Fix styling/behavior.
+### Ctrl + Enter: Add shortcut functionality.
+
+## File & Media Handling
+### YouTube Button: Hide if file type is an image (YouTube should not accept images).
+### File Icons: Display based on file type.
+
+## Notifications & Logs
+### Success & Failure: Show popup messages.
+### Console Logs: Remove unnecessary logs.
+### Email: Improve error handling.
+### Facebook Integration: Fix related issues.

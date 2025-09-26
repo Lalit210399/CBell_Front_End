@@ -304,58 +304,219 @@
 }
 
 .circle-bg {
-    position: absolute;
-    border-radius: 50%;
-    /* filter: blur(60px); */
-    /* opacity: 0.15; */
-    z-index: 0;
+  position: fixed;
+  border-radius: 50%;
+  z-index: 0;
+  opacity: 0.15;
+  animation: floatCircle 20s ease-in-out infinite;
 }
 
 .circle-1 {
   width: 85px;
   height: 85px;
   background: #96DDA5;
-  bottom: -7%;
-  right: 26%;
+  top: 10%;
+  left: 15%;
+  animation-delay: 0s;
 }
 
 .circle-2 {
-    width: 200px;
-    height: 200px;
-    background: #96DDA5;
-    top: -75px;
-    left: -84px;
+  width: 200px;
+  height: 200px;
+  background: #96DDA5;
+  top: 40%;
+  left: 70%;
+  animation-delay: 5s;
 }
 
 .circle-3 {
-    width: 38px;
-    height: 38px;
-    background: #02968A;
-    top: 3%;
-    left: 12%;
-
+  width: 38px;
+  height: 38px;
+  background: #02968A;
+  top: 75%;
+  left: 20%;
+  animation-delay: 10s;
 }
 
 .circle-4 {
   width: 212px;
   height: 212px;
   background: #02968A;
-  bottom: -4%;
-  right: 1%;
+  top: 80%;
+  left: 80%;
+  animation-delay: 15s;
 }
 
 .circle-5 {
-    width: 127px;
-    height: 127px;
-    background: #00C7B7;
-    top: 63%;
-    left: 71%;
+  width: 127px;
+  height: 127px;
+  background: #00C7B7;
+  top: 60%;
+  left: 50%;
+  animation-delay: 20s;
+}
+
+.circle-6 {
+  width: 100px;
+  height: 100px;
+  background: #7ED6A3;
+  top: 30%;
+  left: 40%;
+  animation-delay: 3s;
+}
+
+.circle-7 {
+  width: 150px;
+  height: 150px;
+  background: #4ABDAC;
+  top: 90%;
+  left: 10%;
+  animation-delay: 7s;
+}
+
+.circle-8 {
+  width: 60px;
+  height: 60px;
+  background: #3A9D9B;
+  top: 50%;
+  left: 75%;
+  animation-delay: 12s;
+}
+
+.circle-9 {
+  width: 90px;
+  height: 90px;
+  background: #5A9F7E;
+  top: 15%;
+  left: 85%;
+  animation-delay: 6s;
+}
+
+.circle-10 {
+  width: 140px;
+  height: 140px;
+  background: #7ABF9E;
+  top: 85%;
+  left: 60%;
+  animation-delay: 9s;
+}
+
+.circle-11 {
+  width: 50px;
+  height: 50px;
+  background: #4A8F7E;
+  top: 55%;
+  left: 30%;
+  animation-delay: 14s;
+}
+
+.circle-12 {
+  width: 110px;
+  height: 110px;
+  background: #6ABF9E;
+  top: 25%;
+  left: 65%;
+  animation-delay: 18s;
+}
+
+.circle-13 {
+  width: 80px;
+  height: 80px;
+  background: #5FAF8E;
+  top: 10%;
+  left: 90%;
+  animation-delay: 4s;
+}
+
+.circle-14 {
+  width: 130px;
+  height: 130px;
+  background: #4F9F7E;
+  top: 5%;
+  left: 75%;
+  animation-delay: 8s;
+}
+
+.circle-15 {
+  width: 90px;
+  height: 90px;
+  background: #3F8F6E;
+  top: 90%;
+  left: 5%;
+  animation-delay: 11s;
+}
+
+.circle-16 {
+  width: 140px;
+  height: 140px;
+  background: #2F7F5E;
+  top: 95%;
+  left: 20%;
+  animation-delay: 13s;
+}
+
+.circle-17 {
+  width: 70px;
+  height: 70px;
+  background: #8FD6A5;
+  top: 35%;
+  left: 10%;
+  animation-delay: 2s;
+}
+
+.circle-18 {
+  width: 180px;
+  height: 180px;
+  background: #3A9D9B;
+  top: 70%;
+  left: 90%;
+  animation-delay: 16s;
+}
+
+.circle-19 {
+  width: 55px;
+  height: 55px;
+  background: #6ABF9E;
+  top: 20%;
+  left: 55%;
+  animation-delay: 8s;
+}
+
+.circle-20 {
+  width: 120px;
+  height: 120px;
+  background: #4F9F7E;
+  top: 85%;
+  left: 35%;
+  animation-delay: 22s;
 }
 
 /* Make sure content stays above circles */
 .left-right-section {
   position: relative;
   z-index: 1;
+}
+
+/* Floating circle animation */
+@keyframes floatCircle {
+  0% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(40px, -30px);
+  }
+  40% {
+    transform: translate(-30px, 40px);
+  }
+  60% {
+    transform: translate(50px, 20px);
+  }
+  80% {
+    transform: translate(-40px, -50px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
 }
 
 /* Forgot Password specific styles */

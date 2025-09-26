@@ -139,6 +139,21 @@ const Login = () => {
       <div className="circle-bg circle-3"></div>
       <div className="circle-bg circle-4"></div>
       <div className="circle-bg circle-5"></div>
+      <div className="circle-bg circle-6"></div>
+      <div className="circle-bg circle-7"></div>
+      <div className="circle-bg circle-8"></div>
+      <div className="circle-bg circle-9"></div>
+      <div className="circle-bg circle-10"></div>
+      <div className="circle-bg circle-11"></div>
+      <div className="circle-bg circle-12"></div>
+      <div className="circle-bg circle-13"></div>
+      <div className="circle-bg circle-14"></div>
+      <div className="circle-bg circle-15"></div>
+      <div className="circle-bg circle-16"></div>
+      <div className="circle-bg circle-17"></div>
+      <div className="circle-bg circle-18"></div>
+      <div className="circle-bg circle-19"></div>
+      <div className="circle-bg circle-20"></div>
       <div className="left-right-section">
         {/* Left Section */}
         <div className="left-section">

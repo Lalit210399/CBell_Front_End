@@ -401,6 +401,7 @@ const Dashboard = () => {
     if (orgIdReady) {
       executeSummary();
       executeCount();
+      
       executeEventsCampaign();
       executeActiveEvents();
       executeAssignedEvents();

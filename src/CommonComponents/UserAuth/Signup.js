@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+                                                                                                                                                                                                                                                                                                                                                                                                                          import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { AlertCircle } from "lucide-react";
 import { signup } from "../../Services/AuthN"; // Adjust the import path as necessary
@@ -88,6 +88,18 @@ const Signup = () => {
         <div className="left-right-section">
         <div className="left-section">
           <img src="/nobackgroundimage.svg" alt="Auth" className="auth-image" />
+        <div className="circle-bg circle-9"></div>
+        <div className="circle-bg circle-10"></div>
+        <div className="circle-bg circle-11"></div>
+        <div className="circle-bg circle-12"></div>
+        <div className="circle-bg circle-13"></div>
+        <div className="circle-bg circle-14"></div>
+        <div className="circle-bg circle-15"></div>
+        <div className="circle-bg circle-16"></div>
+        <div className="circle-bg circle-17"></div>
+        <div className="circle-bg circle-18"></div>
+        <div className="circle-bg circle-19"></div>
+        <div className="circle-bg circle-20"></div>
           <div className="left-section-text">Welcome!</div>
           <p className="left-down-text">Create your account to continue</p>
         </div>
