@@ -7,6 +7,7 @@ import { ArrowBigRight, ArrowBigLeft } from "lucide-react";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "./Calendar.css";
 import { useMessages } from "../../Context/MessageContext";
+import { useUser } from "../../Context/UserContext";
 
 const localizer = momentLocalizer(moment);
 
@@ -18,12 +19,39 @@ const CustomToolbar = ({ label, onNavigate }) => (
   </div>
 );
 
-const CustomCalendar = ({ events = [], loading = true, error = null }) => {
+const CustomCalendar = ({ events = [], loading = true, error = null, isViewingOwnOrganization = null }) => {
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const { addMessage } = useMessages();
+  const { permissions: userPermissions } = useUser();
+
+  // ✅ Permissions (same as EventTable)
+  const permissions = {
+    canRead: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false,
+    canCreate: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Create") ?? false,
+  };
 
   const handleSelectSlot = ({ start }) => {
+    // Check if user has permission to create events
+    if (!permissions.canCreate) {
+      addMessage({
+        text: "You don't have permission to create events.",
+        type: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
+    // Check if user is viewing their own organization
+    if (isViewingOwnOrganization && !isViewingOwnOrganization()) {
+      addMessage({
+        text: "Event creation is only allowed in your own organization.",
+        type: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const selectedDate = new Date(start);
@@ -37,10 +65,12 @@ const CustomCalendar = ({ events = [], loading = true, error = null }) => {
       });
       return;
     }
-    navigate("/schedule/stepForm", {
+
+    navigate("/events/eventDetailPage", {
       state: {
+        mode: "create",
         selectedDate: start,
-        fromCalendar: true
+        fromCalendar: true,
       },
     });
   };
@@ -134,11 +164,24 @@ const CustomCalendar = ({ events = [], loading = true, error = null }) => {
         date={currentDate}
         onNavigate={(date) => setCurrentDate(date)}
         onSelectSlot={handleSelectSlot}
-        onSelectEvent={(event) =>
+        onSelectEvent={(event) => {
+          if (!permissions.canRead) {
+            addMessage({
+              text: "You don't have permission to view events.",
+              type: "error",
+              duration: 3000,
+            });
+            return;
+          }
+
           navigate("/events/eventDetailPage", {
-            state: { eventId: event.id, mode: "view" },
-          })
-        }
+            state: {
+              eventId: event.id,
+              mode: "view",
+              eventData: event.rawData, // ✅ pass full event data
+            },
+          });
+        }}
         eventPropGetter={eventStyleGetter}
         components={{ toolbar: CustomToolbar }}
       />

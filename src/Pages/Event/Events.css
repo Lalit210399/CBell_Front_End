@@ -1,37 +1,272 @@
 .Events {
-  padding: 20px;
+  padding: 12px;
 }
-.Table_Container {
-    height: 100%;
-    width: 100%;
-    /* max-width: 1169px; */
-    /* box-sizing: border-box; */
-    /* border: 1px solid  red; */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
 
-  .Welcome-to-AISSMS-IOIT-College {
-    width: 415px;
-    height: 40px;
-    flex-grow: 0;
-    /* font-family: Jost; */
-    font-size: 28px;
-    font-weight: 500;
-    font-stretch: normal;
-    font-style: normal;
-    line-height: normal;
-    letter-spacing: normal;
-    text-align: center;
-    color: #505050;
+/* New Events Header Styles */
+.events-header {
+  margin-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 10px;
+}
+
+.events-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.events-title-section {
+  flex: 1;
+}
+
+.events-main-title {
+  font-family: 'Lato', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #374151;
+  margin: 0 0 6px 0;
+  line-height: 1.2;
+}
+
+.events-subtitle {
+  font-family: 'Lato', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.events-new-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #02968A;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-family: 'Lato', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.events-new-button:hover {
+  background-color: #059669;
+}
+
+.events-new-button:active {
+  background-color: #155e75;
+}
+
+.plus-icon {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Events Controls */
+.events-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 12px;
+}
+
+.search-container {
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  color: #6b7280;
+  z-index: 1;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 10px 10px 36px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-family: 'Lato', sans-serif;
+  font-size: 14px;
+  background-color: white;
+  transition: border-color 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #0891b2;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
+}
+
+.filters-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background-color: white;
+  color: #374151;
+  font-family: 'Lato', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filters-button:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.filter-icon {
+  color: #6b7280;
+}
+
+/* Table Styling */
+.type-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-radius: 12px;
+  font-family: 'Lato', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.created-by-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background-color: #0891b2;
+  border-radius: 50%;
+  color: white;
+  font-family: 'Lato', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.avatar-initials {
+  line-height: 1;
+}
+
+.action-menu-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background-color: transparent;
+  color: #6b7280;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-menu-button:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+  .events-header-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
   }
   
-  /* .Welcome-to-AISSMS-IOIT-College .text-style-1 {
-    font-style: italic;
-  } */
+  .events-main-title {
+    font-size: 28px;
+  }
+  
+  .events-new-button {
+    align-self: flex-start;
+  }
+  
+  .events-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .search-container {
+    max-width: none;
+  }
+}
 
-  /* Loading overlay for table */
+.Table_Container {
+  height: 100%;
+  width: 100%;
+  /* max-width: 1169px; */
+  /* box-sizing: border-box; */
+  /* border: 1px solid red; */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.Welcome-to-AISSMS-IOIT-College {
+  width: 415px;
+  height: 40px;
+  flex-grow: 0;
+  /* font-family: Lato; */
+  font-size: 28px;
+  font-weight: 500;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: normal;
+  letter-spacing: normal;
+  text-align: center;
+  color: #505050;
+}
+
+.scope-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 20px 0;
+  gap: 10px;
+}
+
+.scope-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #505050;
+}
+
+.scope-dropdown {
+  min-width: 200px;
+}
+
+/* .Welcome-to-AISSMS-IOIT-College .text-style-1 {
+  font-style: italic;
+} */
+
+/* Loading overlay for table */
 .Table_Container.loading {
   position: relative;
 }
@@ -72,5 +307,134 @@
 /* Disabled state for header during loading */
 .table-header.disabled {
   opacity: 0.6;
-  pointer-events: none
+  pointer-events: none;
+}
+
+/* Filter Panel Styles */
+.filter-panel {
+  background: #fff;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 16px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.filter-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e1e5e9;
+}
+
+.filter-panel-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.clear-filters-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.clear-filters-btn:hover {
+  background: #c0392b;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-group label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #34495e;
+  margin-bottom: 4px;
+}
+
+.filter-input {
+  padding: 8px 12px;
+  border: 1px solid #bdc3c7;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.filters-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #bdc3c7;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #2c3e50;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filters-button:hover {
+  border-color: #3498db;
+  color: #3498db;
+}
+
+.filter-count {
+  background: #e74c3c;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.created-by-name {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.created-by-name:hover {
+  background: #bbdefb;
+  transform: translateY(-1px);
 }

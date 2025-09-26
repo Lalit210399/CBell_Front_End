@@ -1,41 +1,52 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { BellRing } from "lucide-react";
+import { BellRing, Building2 } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
 import { logout } from "../../Services/AuthN";
+import CustomDropdown from "../Dropdown/CustomDropdown";
 import "./Navbar.css";
 
 function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, permissions: userPermissions } = useUser();
+  const { 
+    user, 
+    permissions: userPermissions, 
+    setUser, 
+    setPermissions, 
+    scope, 
+    selectedOrganizationId, 
+    handleScopeChange,
+    resetUserState
+  } = useUser();
   const [dropdownVisible, setDropdownVisible] = useState(false);
-  const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
-  const [notificationsError, setNotificationsError] = useState("");
 
-  // Close drawer on Escape key
-  useEffect(() => {
-    if (!notificationDrawerOpen) return;
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        setNotificationDrawerOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [notificationDrawerOpen]);
+  const dropdownRef = useRef(null);
 
   const handleLogout = async () => {
     try {
-      await logout();
-      navigate("/");
+      await logout(); // call backend logout (clear cookies)
+
+      // ✅ clear frontend state
+      localStorage.removeItem("user");
+      localStorage.removeItem("permissions");
+      localStorage.removeItem("scope");
+      localStorage.removeItem("dashboard-selected-organization");
+      resetUserState();
+
+      // ✅ redirect after state cleared
+      navigate("/login", { replace: true });
     } catch (error) {
       console.error("Logout failed:", error);
-      navigate("/");
+
+      // still force clear on failure
+      localStorage.removeItem("user");
+      localStorage.removeItem("permissions");
+      localStorage.removeItem("scope");
+      localStorage.removeItem("dashboard-selected-organization");
+      resetUserState();
+
+      navigate("/login", { replace: true });
     }
   };
 
@@ -43,65 +54,40 @@ function Navbar() {
     setDropdownVisible((prev) => !prev);
   };
 
-  // Fetch notifications when the drawer opens
+  // ✅ Close dropdown on outside click
   useEffect(() => {
-    if (!notificationDrawerOpen) return;
-    const fetchNotifications = async () => {
-      try {
-        setIsLoadingNotifications(true);
-        setNotificationsError("");
-        // Placeholder: replace with API integration
-        // Example:
-        // const result = await NotificationsService.list();
-        // setNotifications(result);
-        await new Promise((r) => setTimeout(r, 400));
-        const mock = [
-          { id: "1", text: "New comment on Task Alpha", time: "Just now", read: false },
-          { id: "2", text: "File \"brief.pdf\" uploaded", time: "10m ago", read: false },
-          { id: "3", text: "Event \"Sprint Planning\" tomorrow", time: "1h ago", read: true },
-        ];
-        setNotifications(mock);
-      } catch (err) {
-        setNotificationsError("Failed to load notifications");
-      } finally {
-        setIsLoadingNotifications(false);
+    const handleClickOutside = (event) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        setDropdownVisible(false);
       }
     };
-    fetchNotifications();
-  }, [notificationDrawerOpen]);
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
-
-  const markAsRead = (id) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-  };
-
-  const refreshNotifications = async () => {
-    // Trigger re-fetch by briefly toggling state
-    setNotificationDrawerOpen((prev) => {
-      const next = !prev;
-      return next;
-    });
-    setNotificationDrawerOpen(true);
-  };
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Check permissions for each tab
   const hasDashboardPermission =
-    userPermissions?.permissions?.Dashboard?.["Dashboard Management"]?.includes(
-      "Read"
-    ) ?? false;
+    userPermissions?.permissions?.Dashboard?.["Dashboard Management"]?.includes("Read") ?? false;
   const hasEventsPermission =
-    userPermissions?.permissions?.Events?.["Event Management"]?.includes(
-      "Read"
-    ) ?? false;
+    userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
   const hasSchedulePermission =
-    userPermissions?.permissions?.Events?.["Event Management"]?.includes(
-      "Read"
-    ) ?? false;
+    userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
+
+  // Prepare scope options
+  const scopeOptions = scope?.accessibleOrganizations?.map((org) => ({
+    label: org.data.organizationCode,
+    value: org.id,
+  })) || [];
+
+  const currentScopeLabel = scope?.accessibleOrganizations?.find(
+    (org) => org.id === selectedOrganizationId
+  )?.data.organizationCode || "Select Organization";
 
   return (
     <>
@@ -133,43 +119,26 @@ function Navbar() {
         )}
       </div>
       <div className="nav-right">
-        <button
-          className="bell-icon-button"
-          aria-label="Open notifications"
-          onClick={() => {
-            setNotificationDrawerOpen(true);
-            markAllAsRead();
-          }}
-        >
-          <BellRing
-            size={18}
-            className={`bell-icon ${unreadCount > 0 ? "ringing" : ""}`}
-          />
-          {unreadCount > 0 && <span className="notification-badge" />}
-        </button>
-       
-        <div className="user-profile">
-          <div className="user-info">
-            <div className="user-details">
-              <span className="user-name">
-                {user?.firstName || "Selma Knight"}
-              </span>
-              <span className="user-email">
-                {user?.email || "selma@gmail.com"}
-              </span>
-            </div>
-            <button className="chevron-button" onClick={toggleDropdown}>
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M6 9l6 6 6-6" />
-              </svg>
-            </button>
+        {/* Scope Selection */}
+        <div className="scope-section">
+          <span className="scope-label">
+            <Building2 size={16} />
+            Scope:
+          </span>
+          <div className="scope-dropdown">
+            <CustomDropdown
+              options={scopeOptions}
+              defaultLabel={currentScopeLabel}
+              onSelect={(option) => handleScopeChange(option.value, location)}
+            />
+          </div>
+        </div>
+        
+        <BellRing size={22} className="bell-icon" />
+        <div className="user-info" ref={dropdownRef}>
+          <div className="user-details">
+            <span className="user-name">{user?.firstName}</span>
+            <span className="user-role">{user?.roles[0]?.name}</span>
           </div>
           <img
             src="https://randomuser.me/api/portraits/men/1.jpg"

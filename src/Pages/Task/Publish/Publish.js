@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Table from "../../../CommonComponents/Table/Table";
 import { Download, Share2 } from "lucide-react";
 import { useUser } from "../../../Context/UserContext";
-import { FaInstagram, FaFacebook, FaEnvelope } from 'react-icons/fa';
+import { FaInstagram, FaFacebook, FaEnvelope, FaYoutube } from 'react-icons/fa';
 import FileShareModel from '../../../CommonComponents/FileShareModal/FileShareModel';
 import "./Publish.css";
 
@@ -22,6 +22,8 @@ const getPlatformIcon = (platform) => {
       return <FaInstagram size={size} color="#E1306C" title="Published on Instagram" />;
     case 'facebook':
       return <FaFacebook size={size} color="#4267B2" title="Published on Facebook" />;
+    case 'youtube':
+      return <FaYoutube size={size} color="#FF0000" title="Published on YouTube" />;
     case 'mail':
       return <FaEnvelope size={size} color="#0072C6" title="Published via Email" />;
     default:
@@ -38,8 +40,6 @@ const Publish = ({ eventId }) => {
   const [showShareModal, setShowShareModal] = useState(false);
   const { user } = useUser();
 
-  //console.log('fileDetail in Publish' ,fileDetail, );
-
   const handleDownload = (files) => {
     files.forEach(file => {
       const docId = file.url.split('/').pop();
@@ -52,8 +52,54 @@ const Publish = ({ eventId }) => {
     });
   };
 
-  const handlePlatformPublish = (docId, platform) => {
-    handlePublishRecord(docId, platform);
+  const handlePlatformPublish = async (docId, platform, publishData = {}) => {
+    const organizationId = user?.organizationId || '681460dcb8327b2e3417d8b1';
+    
+    let payload;
+    let endpoint;
+
+    if (platform === 'youtube') {
+      endpoint = '/apis/youtube/upload';
+      payload = {
+        organizationId,
+        documentId: docId,
+        title: publishData.title || `${fileDetail?.name || 'Video'}`,
+        description: publishData.description || '',
+        tags: publishData.tags || [],
+        privacyStatus: publishData.privacyStatus || 'public'
+      };
+    } else {
+      endpoint = platform === 'instagram' 
+        ? '/apis/socialmedia/post/instagram' 
+        : '/apis/socialmedia/post/facebook';
+      payload = {
+        organizationId,
+        documentId: docId,
+        caption: publishData.caption || `${fileDetail?.name || 'Creative'} shared via platform`
+      };
+    }
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': '1',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to post to ${platform}`);
+      }
+
+      await handlePublishRecord(docId, platform);
+      fetchPublishedTasks();
+    } catch (err) {
+      console.error(`Error posting to ${platform}:`, err);
+      alert(`Error posting to ${platform}: ${err.message}`);
+    }
   };
 
   const handlePublishRecord = async (docId, platform) => {
@@ -75,16 +121,12 @@ const Publish = ({ eventId }) => {
         body: JSON.stringify(payload),
       });
       if (!response.ok) throw new Error('Failed to record publish');
-      fetchPublishedTasks(); // Refresh after publish
     } catch (err) {
       console.error('Error calling publish-record:', err);
     }
   };
 
   const handleShare = (file, fullTask) => {
-    // debugger;
-    // console.log('Publish Share Button Pressed. File data:', file, 'Full Task data:', fullTask);
-    // console.log('File URL:', file.document.fileId);
     setDescription(file.name || '');
     setDocumentId(file.document.fileId);
     setFileDetail({ ...file, fullTask });
@@ -105,15 +147,14 @@ const Publish = ({ eventId }) => {
       if (!response.ok) throw new Error("Failed to fetch published tasks");
 
       const data = await response.json();
-      //console.log('Fetched published tasks:', data);
       const formatted = data.map(task => {
         const fileLinks = (task.documents || []).map(doc => ({
           name: doc.filename,
           url: `/apis/task/download_document/${doc.documentId}`,
           status: doc.status || "Not Published",
           publishedTo: doc.publishedTo || [],
-          fullTask: task, // Attach the whole task object here
-          document: doc    // Attach the full document object as well
+          fullTask: task,
+          document: doc
         }));
 
         return {
@@ -140,7 +181,7 @@ const Publish = ({ eventId }) => {
   const renderCell = (key, item) => {
     if (key === 'download') {
       return (
-        <button className="icon-btn" onClick={() => handleDownload(item.files)} title="Download File">
+        <button type="button" className="icon-btn" onClick={() => handleDownload(item.files)} title="Download File">
           <Download size={18} />
         </button>
       );
@@ -149,6 +190,7 @@ const Publish = ({ eventId }) => {
       return item.files?.map((file, idx) => (
         <button
           key={idx}
+          type="button"
           className="icon-btn"
           onClick={() => handleShare(file, file.fullTask)}
           title="Publish"

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { AlertCircle } from "lucide-react";
 import { signup } from "../../Services/AuthN"; // Adjust the import path as necessary
 import ERROR_MESSAGES from "../../Resources/ResourceFiles/ResourceFiles"; // Import error messages
@@ -20,6 +21,9 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
 
   const handleChange = (e) => {
     setFormData({
@@ -229,117 +233,73 @@ const Signup = () => {
                       />
                       {errors.lastName}
                     </div>
-                  )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className={`input-group ${errors.email ? "error" : ""}`}>
+              <input
+                type="text"
+                name="email"
+                placeholder="Email"
+                value={formData.email}
+                onChange={handleChange}
+              />
+              {errors.email && (
+                <div className="signup-error-icon-wrapper">
+                  <AlertCircle size={18} />
+                  <div className="signup-error-tooltip">{errors.email}</div>
                 </div>
-              </div>
-              {/* Email Field */}
-              <div className={`input-group${errors.email ? " error" : ""}`}>
-                <label htmlFor="email" className="visually-hidden">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  name="email"
-                  placeholder="Email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  aria-invalid={!!errors.email}
-                  aria-describedby="email-error"
-                  autoComplete="email"
-                />
-                {errors.email && (
-                  <div
-                    className="error-text"
-                    id="email-error"
-                    role="alert"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      marginTop: 4,
-                    }}
-                  >
-                    <AlertCircle
-                      size={16}
-                      aria-hidden="true"
-                      style={{ marginRight: 4 }}
-                    />
-                    {errors.email}
-                  </div>
-                )}
-              </div>
-              {/* Password Field */}
-              <div className={`input-group${errors.password ? " error" : ""}`}>
-                <label htmlFor="password" className="visually-hidden">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  name="password"
-                  placeholder="Password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  aria-invalid={!!errors.password}
-                  aria-describedby="password-error"
-                  autoComplete="new-password"
-                />
-                {errors.password && (
-                  <div
-                    className="error-text"
-                    id="password-error"
-                    role="alert"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      marginTop: 4,
-                    }}
-                  >
-                    <AlertCircle
-                      size={16}
-                      aria-hidden="true"
-                      style={{ marginRight: 4 }}
-                    />
-                    {errors.password}
-                  </div>
-                )}
-              </div>
-              {/* Confirm Password Field */}
-              <div
-                className={`input-group${
-                  errors.confirmPassword ? " error" : ""
-                }`}
+              )}
+            </div>
+
+            <div className={`input-group with-toggle ${errors.password ? "error" : ""}`}>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleChange}
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                onClick={() => setShowPassword((prev) => !prev)}
               >
-                <label htmlFor="confirmPassword" className="visually-hidden">
-                  Confirm Password
-                </label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  name="confirmPassword"
-                  placeholder="Confirm Password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  aria-invalid={!!errors.confirmPassword}
-                  aria-describedby="confirmPassword-error"
-                  autoComplete="new-password"
-                />
-                {errors.confirmPassword && (
-                  <div
-                    className="error-text"
-                    id="confirmPassword-error"
-                    role="alert"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      marginTop: 4,
-                    }}
-                  >
-                    <AlertCircle
-                      size={16}
-                      aria-hidden="true"
-                      style={{ marginRight: 4 }}
-                    />
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+              {errors.password && (
+                <div className="signup-error-icon-wrapper">
+                  <AlertCircle size={18} />
+                  <div className="signup-error-tooltip">{errors.password}</div>
+                </div>
+              )}
+            </div>
+
+            <div
+              className={`input-group with-toggle ${errors.confirmPassword ? "error" : ""}`}
+            >
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                placeholder="Confirm Password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+              {errors.confirmPassword && (
+                <div className="signup-error-icon-wrapper">
+                  <AlertCircle size={18} />
+                  <div className="signup-error-tooltip">
                     {errors.confirmPassword}
                   </div>
                 )}

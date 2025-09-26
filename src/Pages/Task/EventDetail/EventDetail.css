@@ -3,12 +3,22 @@
     height: 100%; 
     display: flex;
     width: 100%;
-    gap: 10px;
+    gap: 15px;
+    align-items: flex-start;
 }
 
-.Section {
-    /* border: red solid 1px; */
-    width: 50%;
+/* Base section styles - specific widths defined below */
+
+.ED_Right_Section {
+    width: 70%;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.ED_Left_Section {
+    width: 30%;
+    padding: 10px;
+    box-sizing: border-box;
 }
 
 /* Container for input fields to align them side by side */
@@ -64,4 +74,41 @@
     justify-content: space-between;
     margin: 10px 0 10px 0; /* Space below each entry */
     gap: 10px;
+}
+
+/* Styles for NewList components in EventDetail */
+.Special_Guest,
+.Event_Organizer {
+    margin-bottom: 20px;
+}
+
+.Special_Guest .special-guests-wrapper,
+.Event_Organizer .special-guests-wrapper {
+    max-height: 200px;
+    margin: 0;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Ensure the Left_Section content fits well in 30% width */
+/*  */
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+    .detail_container {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .Right_Section,
+    .Left_Section {
+        width: 100%;
+    }
+    
+    .Left_Section {
+        margin-top: 20px;
+    }
 }

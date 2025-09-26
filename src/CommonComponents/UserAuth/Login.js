@@ -1,30 +1,51 @@
 // Pages/Auth/Login.js
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import "./Auth.css";
 import Button from "../Button/Button";
-import { signin, getPermissions } from "../../Services/AuthN";
+import { signin, getPermissions, getAccessibleOrganizations } from "../../Services/AuthN";
 import { useUser } from "../../Context/UserContext";
 import ERROR_MESSAGES from "../../Resources/ResourceFiles/ResourceFiles";
 
 const Login = () => {
-  const { setUser, setPermissions } = useUser();
+  const { user, setUser, setPermissions, setScope } = useUser();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    // Clear error for the field being edited
-    if (errors[e.target.name]) {
-      setErrors({ ...errors, [e.target.name]: undefined });
-    }
   };
+
+  useEffect(() => {
+    if (user) {
+      try {
+        const stored = localStorage.getItem("permissions");
+        const perms = stored ? JSON.parse(stored) : null;
+        const p = perms?.permissions || {};
+        const canDashboard =
+          Array.isArray(p?.Dashboard?.["Dashboard Management"]) &&
+          p.Dashboard["Dashboard Management"].includes("Read");
+        const canEvents =
+          Array.isArray(p?.Events?.["Event Management"]) &&
+          p.Events["Event Management"].includes("Read");
+        const target = canDashboard
+          ? "/dashboard"
+          : canEvents
+          ? "/events"
+          : "/login";
+        navigate(target, { replace: true });
+      } catch {
+        navigate("/dashboard", { replace: true });
+      }
+    }
+  }, [user, navigate]);
 
   const validate = () => {
     const validationErrors = {};
@@ -60,19 +81,13 @@ const Login = () => {
 
     try {
       const response = await signin(formData);
+
       if (response.message === "Login successful") {
-        const loggedInUser = {
-          email: response.email,
-          firstName: response.firstName,
-          lastName: response.lastName,
-          organization: response.organization,
-          organizationId: response.organizationId,
-          userID: response.userId,
-          roleIds: response.roleids,
-          message: response.message,
-        };
-        localStorage.setItem("user", JSON.stringify(loggedInUser));
-        setUser(loggedInUser);
+        // ✅ Store full login response
+        localStorage.setItem("user", JSON.stringify(response));
+        setUser(response);
+
+        // ✅ Fetch and store permissions
         try {
           const permissionResponse = await getPermissions();
           localStorage.setItem(
@@ -80,11 +95,35 @@ const Login = () => {
             JSON.stringify(permissionResponse)
           );
           setPermissions(permissionResponse);
-          navigate("/dashboard");
+
+          // ✅ Fetch and store accessible organizations (Scope)
+          try {
+            const scopeResponse = await getAccessibleOrganizations();
+            localStorage.setItem("scope", JSON.stringify(scopeResponse));
+            setScope(scopeResponse);
+          } catch (scopeError) {
+            console.error("Scope fetch failed:", scopeError);
+            setMessage("Login successful, but couldn't load accessible organizations");
+          }
+
+          // Redirect to first allowed page
+          const p = permissionResponse?.permissions || {};
+          const canDashboard =
+            Array.isArray(p?.Dashboard?.["Dashboard Management"]) &&
+            p.Dashboard["Dashboard Management"].includes("Read");
+          const canEvents =
+            Array.isArray(p?.Events?.["Event Management"]) &&
+            p.Events["Event Management"].includes("Read");
+          const target = canDashboard
+            ? "/dashboard"
+            : canEvents
+            ? "/events"
+            : "/login";
+          navigate(target);
         } catch (permissionError) {
           console.error("Permission fetch failed:", permissionError);
           setMessage("Login successful, but couldn't load permissions");
-          navigate("/dashboard");
+          navigate("/dashboard"); // fallback
         }
       } else {
         throw new Error(response.message || "Unexpected response from server");
@@ -134,6 +173,7 @@ const Login = () => {
       setLoading(false);
     }
   };
+
   return (
     <div className="auth-container">
       <div className="circle-bg circle-1"></div>
@@ -160,88 +200,55 @@ const Login = () => {
         {/* Right Section (Login Form) */}
         <div className="sign-up-card">
           <h2 className="auth-title">Login</h2>
-          <form className="auth-form" onSubmit={handleSubmit} noValidate>
+          <form className="auth-form" onSubmit={handleSubmit}>
+            {/* Email Field */}
+            <div className={`input-group ${errors.email ? "error" : ""}`}>
+              <input
+                type="text"
+                name="email"
+                placeholder="Email"
+                value={formData.email}
+                onChange={handleChange}
+              />
+              {errors.email && (
+                <div className="signup-error-icon-wrapper">
+                  <AlertCircle size={18} />
+                  <div className="signup-error-tooltip">{errors.email}</div>
+                </div>
+              )}
+            </div>
+
+            {/* Password Field */}
             <div
-              className="input-fields-group"
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 16,
-                marginBottom: 30,
-              }}
+              className={`input-group with-toggle ${
+                errors.password ? "error" : ""
+              }`}
             >
-              {/* Email Field */}
-              <div className={`input-group${errors.email ? " error" : ""}`}>
-                <label htmlFor="email" className="visually-hidden">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  name="email"
-                  placeholder="Email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  aria-invalid={!!errors.email}
-                  aria-describedby="email-error"
-                  autoComplete="email"
-                />
-                {errors.email && (
-                  <div
-                    className="error-text"
-                    id="email-error"
-                    role="alert"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      marginTop: 4,
-                    }}
-                  >
-                    <AlertCircle
-                      size={16}
-                      aria-hidden="true"
-                      style={{ marginRight: 4 }}
-                    />
-                    {errors.email}
-                  </div>
-                )}
-              </div>
-              {/* Password Field */}
-              <div className={`input-group${errors.password ? " error" : ""}`}>
-                <label htmlFor="password" className="visually-hidden">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  name="password"
-                  placeholder="Password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  aria-invalid={!!errors.password}
-                  aria-describedby="password-error"
-                  autoComplete="current-password"
-                />
-                {errors.password && (
-                  <div
-                    className="error-text"
-                    id="password-error"
-                    role="alert"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      marginTop: 4,
-                    }}
-                  >
-                    <AlertCircle
-                      size={16}
-                      aria-hidden="true"
-                      style={{ marginRight: 4 }}
-                    />
-                    {errors.password}
-                  </div>
-                )}
-              </div>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleChange}
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                aria-label="Show password"
+                onMouseDown={() => setShowPassword(true)}
+                onMouseUp={() => setShowPassword(false)}
+                onMouseLeave={() => setShowPassword(false)}
+                onTouchStart={() => setShowPassword(true)}
+                onTouchEnd={() => setShowPassword(false)}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+              {errors.password && (
+                <div className="signup-error-icon-wrapper">
+                  <AlertCircle size={18} />
+                  <div className="signup-error-tooltip">{errors.password}</div>
+                </div>
+              )}
             </div>
 
             <div
@@ -256,24 +263,10 @@ const Login = () => {
               >
                 {loading ? "Logging in..." : "Login"}
               </Button>
-              <Button className="google-button">
-                <img src="/Google_Logo.svg" alt="Google" />
-                Login with Google
-              </Button>
             </div>
-
-            {message && (
-              <div
-                className={`auth-message ${
-                  message.includes("Invalid") ? "error" : "success"
-                }`}
-                role="alert"
-              >
-                {message}
-              </div>
-            )}
           </form>
-          <div className="login-links-group">
+
+          <div className="forgot-password-link">
             <Link to="/forgot-password" className="forgot-password-text">
               Forgot Password?
             </Link>
@@ -284,6 +277,16 @@ const Login = () => {
               </Link>
             </span>
           </div>
+
+          {message && <p className="auth-message">{message}</p>}
+
+          <p className="switch-text">
+            Don’t have an account?
+            <Link to="/signup" className="login-text">
+              {" "}
+              Register{" "}
+            </Link>
+          </p>
         </div>
       </div>
     </div>

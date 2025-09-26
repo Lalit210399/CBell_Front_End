@@ -149,7 +149,7 @@ const CommentsPreview = ({ onFilesChange = () => {}, taskId, eventId, isActive, 
   };
 
   const currentUser = {
-    id: user?.userID,
+    id: user?.userId,
     firstName: user?.firstName,
     lastName: user?.lastName,
     avatar: getInitials(user?.firstName, user?.lastName),

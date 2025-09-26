@@ -15,14 +15,40 @@ const TextEditor = ({ initialContent = "", onContentChange, isFullWidth, mode = 
         readOnly: mode === "view",
         modules: {
           toolbar: [
-            ['bold', 'italic', 'underline', 'strike'],
-            [{ 'font': [] }, { 'size': [] }],
-            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-            [{ 'align': [] }],
-            ['clean']
+            // Text styles
+            ["bold", "italic", "underline", "strike"],
+            ["blockquote", "code-block"],
+
+            // Headers
+            [{ header: 1 }, { header: 2 }],
+            [{ header: [1, 2, 3, 4, 5, 6, false] }],
+
+            // Lists
+            [{ list: "ordered" }, { list: "bullet" }],
+            [{ indent: "-1" }, { indent: "+1" }],
+
+            // Scripts
+            [{ script: "sub" }, { script: "super" }],
+
+            // Alignment
+            [{ align: [] }],
+
+            // Fonts and sizes
+            [{ font: [] }],
+            [{ size: ["small", false, "large", "huge"] }],
+
+            // Colors & backgrounds
+            [{ color: [] }, { background: [] }],
+
+            // Links, images, video
+            ["link", "image", "video"],
+
+            // Remove formatting
+            ["clean"]
           ]
         }
       });
+
 
       quillInstance.current.root.innerHTML = initialContent;
 

@@ -1,6 +1,6 @@
 /* Custom Scrollbar for the whole application */
 body {
-  font-family: 'Jost', sans-serif;
+  font-family: 'Lato', sans-serif;
 }
 
 ::-webkit-scrollbar {

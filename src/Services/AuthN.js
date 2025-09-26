@@ -152,3 +152,108 @@ export const resetPassword = async (email, newPassword, otp) => {
     throw error;
   }
 };
+
+// Fetch Hierarchy Users
+export const getHierarchyUsers = async (organizationId) => {
+  try {
+    const response = await fetch(`/apis/auth/hierarchy-users/${organizationId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: "application/json",
+        "ngrok-skip-browser-warning": "1",
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch hierarchy users');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    throw error.message || 'Error fetching hierarchy users';
+  }
+};
+
+// Fetch Accessible Organizations
+export const getAccessibleOrganizations = async () => {
+  try {
+    const response = await fetch('/apis/organization/accessible-organizations', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: "application/json",
+        "ngrok-skip-browser-warning": "1",
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch accessible organizations');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    throw error.message || 'Error fetching accessible organizations';
+  }
+};
+
+
+// Fetch Task Type Options
+export const getTaskTypeOptions = async () => {
+  try {
+    const response = await fetch('/apis/tasksType/get-all', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: "application/json",
+        "ngrok-skip-browser-warning": "1",
+      },
+      credentials: 'include',
+    });
+
+    if (response.status === 404) {
+      console.warn('Task types API endpoint not found, using default values');
+      return null; // Return null to indicate API not available
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch task type options: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching task types:', error);
+    throw error.message || 'Error fetching task type options';
+  }
+};
+
+// Delete Task
+export const deleteTask = async (taskId) => {
+  try {
+    const response = await fetch(`/apis/task/delete/${taskId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: "application/json",
+        "ngrok-skip-browser-warning": "1",
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete task: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error deleting task:', error);
+    throw error.message || 'Error deleting task';
+  }
+};
+

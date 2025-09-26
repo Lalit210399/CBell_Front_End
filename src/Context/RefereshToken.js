@@ -1,10 +1,14 @@
-// RefreshToken.js
-import { logout } from "../Services/AuthN";
+import { logout } from '../Services/AuthN';
 
+// State management for token refresh
 let isRefreshing = false;
 let refreshPromise = null;
-let refreshFailed = false; // gate to prevent storms after hard failure
+let refreshTokenExpired = false;
+let pendingRequests = new Set();
+let refreshAttempts = 0;
+const MAX_REFRESH_ATTEMPTS = 3;
 
+// Utility function to get cookie value
 function getCookieValue(name) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
@@ -12,133 +16,204 @@ function getCookieValue(name) {
   return null;
 }
 
-function buildHeaders(initHeaders = {}, token) {
-  const h = new Headers(initHeaders);
-  // Only set Authorization if token exists
-  if (token) h.set("Authorization", `Bearer ${token}`);
-  if (!h.has("Accept")) h.set("Accept", "application/json");
-  // Only set content type if caller didn’t provide; for GETs this is unnecessary
-  if (!h.has("Content-Type") && !["GET", "HEAD"].includes((initHeaders.method || "").toUpperCase())) {
-    h.set("Content-Type", "application/json");
-  }
-  h.set("ngrok-skip-browser-warning", "1");
-  return h;
+// Utility function to validate token format
+function isValidToken(token) {
+  if (!token || typeof token !== 'string') return false;
+  // Basic JWT format validation (3 parts separated by dots)
+  const parts = token.split('.');
+  return parts.length === 3;
 }
 
-// You may need to switch between cookie-based refresh (credentials) vs. token in cookie body
-async function doRefreshToken() {
-  // If your server uses cookies (httpOnly) for refresh, you may not need a body at all.
-  // Example #1: cookies only
-  // const res = await fetch("/apis/auth/refresh-token", {
-  //   method: "POST",
-  //   credentials: "include",
-  // });
-
-  // Example #2: refresh token from non-httpOnly cookie (your current approach)
-  const refreshToken = getCookieValue("LocalRefreshToken");
-  if (!refreshToken) throw new Error("NO_REFRESH_TOKEN");
-
-  // If your backend expects JSON, keep JSON headers/body. If OAuth2 style, use form-encoded.
-  // Form-encoded (commonly required by OAuth2 servers):
-  const body = new URLSearchParams({
-    grant_type: "refresh_token",
-    refresh_token: refreshToken,
-  });
-
-  const res = await fetch("/apis/auth/refresh-token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    credentials: "include", // needed if server uses cookies for session/CSRF
-    body,
-  });
-
-  if (!res.ok) {
-    throw new Error(`REFRESH_FAILED_${res.status}`);
+// Centralized function to handle token expiration
+async function handleTokenExpired() {
+  if (refreshTokenExpired) {
+    return; // Already handled
   }
-
-  const data = await res.json();
-  // Save new tokens; backend may rotate refresh tokens
-  if (data?.accessToken) localStorage.setItem("accessToken", data.accessToken);
-  if (data?.refreshToken) document.cookie = `LocalRefreshToken=${data.refreshToken}; path=/; SameSite=Lax`;
-  return data?.accessToken || null;
+  
+  refreshTokenExpired = true;
+  isRefreshing = false;
+  refreshPromise = null;
+  
+  // Reject all pending requests
+  pendingRequests.forEach(reject => {
+    reject(new Error('Refresh token expired'));
+  });
+  pendingRequests.clear();
+  
+  try {
+    await logout();
+  } catch (logoutErr) {
+    console.error('Logout after refresh token failure failed:', logoutErr);
+  }
+  
+  // Clear all auth-related data
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('user');
+  localStorage.removeItem('permissions');
+  localStorage.removeItem('dashboard-selected-organization');
+  
+  // Redirect to login page
+  if (typeof window !== 'undefined') {
+    window.location.href = '/login';
+  }
 }
 
-async function runRefreshOnce() {
-  if (refreshPromise) return refreshPromise;
+// Function to perform token refresh
+async function performTokenRefresh() {
+  if (isRefreshing) {
+    return refreshPromise;
+  }
+
+  // Check if we've exceeded max refresh attempts
+  if (refreshAttempts >= MAX_REFRESH_ATTEMPTS) {
+    console.error('Maximum refresh attempts exceeded, logging out');
+    await handleTokenExpired();
+    throw new Error('Maximum refresh attempts exceeded');
+  }
+
+  refreshAttempts++;
   isRefreshing = true;
-  refreshPromise = doRefreshToken()
-    .then((newAccess) => {
-      isRefreshing = false;
-      refreshPromise = null;
-      refreshFailed = false;
-      return newAccess;
+  
+  const refreshToken = getCookieValue('LocalRefreshToken');
+  
+  if (!refreshToken) {
+    isRefreshing = false;
+    await handleTokenExpired();
+    throw new Error('No refresh token available');
+  }
+
+  refreshPromise = fetch('/apis/auth/refresh-token', {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': '1'
+    },
+    body: JSON.stringify({ refreshToken }),
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          // Refresh token is invalid/expired
+          await handleTokenExpired();
+          throw new Error('Refresh token expired');
+        }
+        throw new Error(`Refresh token failed with status ${res.status}`);
+      }
+      return res.json();
     })
-    .catch((err) => {
+    .then((data) => {
+      if (!data.accessToken || !isValidToken(data.accessToken)) {
+        throw new Error('Invalid access token in refresh response');
+      }
+      
+      const newToken = data.accessToken;
+      localStorage.setItem('accessToken', newToken);
+      
+      // Reset refresh state
       isRefreshing = false;
       refreshPromise = null;
-      refreshFailed = true;
+      refreshAttempts = 0; // Reset attempts on successful refresh
+      
+      return newToken;
+    })
+    .catch(async (err) => {
+      isRefreshing = false;
+      refreshPromise = null;
+      await handleTokenExpired();
       throw err;
     });
+
   return refreshPromise;
 }
 
-async function handleHardLogout(reason = "SESSION_EXPIRED") {
+// Main function to handle API calls with automatic token refresh
+export async function fetchWithRefresh(input, init = {}) {
+  // If refresh token has already expired, don't attempt any requests
+  if (refreshTokenExpired) {
+    throw new Error('Refresh token expired');
+  }
+
+  // Get current access token
+  let accessToken = localStorage.getItem('accessToken');
+  
+  // Validate access token format
+  if (!isValidToken(accessToken)) {
+    console.warn('Invalid access token format, attempting refresh', {
+      token: accessToken ? `${accessToken.substring(0, 20)}...` : 'null',
+      length: accessToken?.length || 0,
+      parts: accessToken?.split('.').length || 0
+    });
+    accessToken = null;
+  }
+
+  // Prepare headers
+  const headers = {
+    ...(init.headers || {}),
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    'ngrok-skip-browser-warning': '1',
+  };
+
+  // Add authorization header if we have a valid token
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  // Make the initial request
+  const response = await fetch(input, { ...init, headers });
+
+  // If request is successful, return response
+  if (response.status !== 401) {
+    return response;
+  }
+
+  // If we get 401, we need to refresh the token
   try {
-    await logout();
-  } catch (e) {
-    // non-fatal
-    console.warn("Logout failed:", e);
-  } finally {
-    // Clear local tokens as a fallback
-    try {
-      localStorage.removeItem("accessToken");
-    } catch {}
-    // Global event for a single toast (optional)
-    try {
-      window.dispatchEvent(new CustomEvent("app:auth-expired", { detail: { reason } }));
-    } catch {}
-    // Redirect to login
-    if (typeof window !== "undefined") {
-      window.location.assign("/login?reason=session_expired");
-    }
+    // Wait for token refresh (this will handle concurrent requests properly)
+    const newToken = await performTokenRefresh();
+    
+    // Retry the original request with the new token
+    const retryHeaders = {
+      ...headers,
+      Authorization: `Bearer ${newToken}`,
+    };
+
+    return fetch(input, { ...init, headers: retryHeaders });
+  } catch (err) {
+    // If refresh fails, the error is already handled in performTokenRefresh
+    throw err;
   }
 }
 
-export async function fetchWithRefresh(input, init = {}) {
-  // Stopstorm: if refresh already failed, short-circuit
-  if (refreshFailed) return Promise.reject(new Error("AUTH_REFRESH_FAILED"));
+// Function to reset refresh token state (call after successful login)
+export function resetRefreshTokenState() {
+  isRefreshing = false;
+  refreshPromise = null;
+  refreshTokenExpired = false;
+  pendingRequests.clear();
+  refreshAttempts = 0;
+}
 
-  const method = (init.method || "GET").toUpperCase();
-  const initialToken = localStorage.getItem("accessToken");
-  const headers = buildHeaders(init.headers, initialToken);
+// Function to check if refresh token is expired (for debugging)
+export function isRefreshTokenExpired() {
+  return refreshTokenExpired;
+}
 
-  const makeRequest = (tokenToUse) => {
-    const h = buildHeaders(init.headers, tokenToUse);
-    return fetch(input, { ...init, method, headers: h });
+// Function to get current refresh state (for debugging)
+export function getRefreshState() {
+  return {
+    isRefreshing,
+    refreshTokenExpired,
+    hasRefreshPromise: !!refreshPromise,
+    pendingRequestsCount: pendingRequests.size
   };
+}
 
-  let res = await makeRequest(initialToken);
-
-  // Only attempt refresh on 401/403 from protected endpoints
-  if (![401, 403].includes(res.status)) {
-    return res;
+// Function to manually trigger token refresh (for testing/debugging)
+export async function manualTokenRefresh() {
+  if (refreshTokenExpired) {
+    throw new Error('Refresh token has expired');
   }
-
-  try {
-    // If a refresh is ongoing, wait for it; else start one
-    const newToken = await runRefreshOnce();
-
-    if (!newToken) {
-      // No token returned but refresh succeeded (rare); try once without token
-      return makeRequest(null);
-    }
-
-    // Retry original request with the new token
-    const retryRes = await makeRequest(newToken);
-    return retryRes;
-  } catch (err) {
-    // Hard failure: logout once and surface controlled error
-    await handleHardLogout();
-    throw err;
-  }
+  
+  return performTokenRefresh();
 }

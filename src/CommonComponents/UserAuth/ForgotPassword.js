@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { AlertCircle } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { sendOTP, verifyOTP, resetPassword } from "../../Services/AuthN";
@@ -16,6 +17,8 @@ const ForgotPassword = () => {
   const [message, setMessage] = useState("");
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validateEmail = () => {
     const newErrors = {};
@@ -210,16 +213,22 @@ const ForgotPassword = () => {
 
           {step === 3 && (
             <form className="auth-form" onSubmit={handleResetPassword}>
-              <div
-                className={`input-group ${errors.newPassword ? "error" : ""}`}
-              >
+              <div className={`input-group with-toggle ${errors.newPassword ? "error" : ""}`}>
                 <input
-                  type="password"
+                  type={showNewPassword ? "text" : "password"}
                   name="newPassword"
                   placeholder="New Password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  aria-label={showNewPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowNewPassword((prev) => !prev)}
+                >
+                  {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
                 {errors.newPassword && (
                   <div className="signup-error-icon-wrapper">
                     <AlertCircle size={18} />
@@ -230,18 +239,22 @@ const ForgotPassword = () => {
                 )}
               </div>
 
-              <div
-                className={`input-group ${
-                  errors.confirmPassword ? "error" : ""
-                }`}
-              >
+              <div className={`input-group with-toggle ${errors.confirmPassword ? "error" : ""}`}>
                 <input
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   name="confirmPassword"
                   placeholder="Confirm New Password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
                 {errors.confirmPassword && (
                   <div className="signup-error-icon-wrapper">
                     <AlertCircle size={18} />
