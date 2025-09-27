@@ -94,6 +94,12 @@
   background: #374151;
 }
 
+.empty-field {
+  color: #9CA3AF;
+  font-style: italic;
+  font-size: 14px;
+}
+
 /* Skeleton styles */
 .skeleton-row-cell {
   width: 100%;

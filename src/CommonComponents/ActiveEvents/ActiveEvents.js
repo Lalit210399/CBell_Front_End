@@ -26,25 +26,29 @@ const ActiveEvents = ({ events, onEventClick, title = "Active Events", loading =
       case "eventName":
         return (
           <span className="event-link" onClick={handleClick}>
-            {item.eventName}
+            {item.eventName || "--"}
           </span>
         );
       case "assignTo":
         return (
           <div onClick={handleClick}>
-            <AvatarList avatars={item.assignTo} maxVisible={2} stack={true} />
+            {item.assignTo && item.assignTo.length > 0 ? (
+              <AvatarList avatars={item.assignTo} maxVisible={2} stack={true} />
+            ) : (
+              <span>--</span>
+            )}
           </div>
         );
       case "createdBy":
         return (
           <div onClick={handleClick} className="created-by-name">
-            {item.createdBy.name}
+            {item.createdBy?.name || "--"}
           </div>
         );
       default:
         return (
           <span className="clickable-cell" onClick={handleClick}>
-            {item[key]}
+            {item[key] || "--"}
           </span>
         );
     }
