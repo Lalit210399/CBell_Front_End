@@ -55,7 +55,7 @@ const TaskDetailPage = () => {
   const [formData, setFormData] = useState({
     title: "",
     type: "",
-    date: new Date().toISOString().split("T")[0],
+    date: "", // Empty date by default
     quantity: 1,
     description: "",
     checklist: [{ text: "", checked: false, isPlaceholder: false }],
@@ -285,7 +285,7 @@ const TaskDetailPage = () => {
       createdBy: user ? `${user.firstName} ${user.lastName}` : "User",
       updatedBy: "",
       type: "",
-      date: new Date().toISOString().split("T")[0],
+      date: "", // Empty date for create mode
       quantity: 1,
       description: "",
       checklist: [{ text: "", checked: false, isPlaceholder: false }],
@@ -611,6 +611,11 @@ const TaskDetailPage = () => {
     
     // Validate task date and time
     try {
+      if (!currentFormData.date) {
+        addMessage({ text: "Please select a due date and time.", type: "error", duration: 3000 });
+        return;
+      }
+      
       const now = new Date();
       const selected = new Date(currentFormData.date);
       const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
@@ -629,8 +634,8 @@ const TaskDetailPage = () => {
         return;
       }
       
-      if (eventDate && selected >= new Date(eventDate)) {
-        addMessage({ text: "Task date must be earlier than the event date.", type: "error", duration: 3000 });
+      if (eventDate && selected > new Date(eventDate)) {
+        addMessage({ text: "Task date cannot be after the event date.", type: "error", duration: 3000 });
         return;
       }
     } catch (error) {
@@ -866,7 +871,7 @@ const TaskDetailPage = () => {
           CreatedBy: userId,
           UpdatedBy: userId,
           CreativeType: currentFormData.type,
-          DueDate: new Date(currentFormData.date).toISOString(),
+          DueDate: currentFormData.date ? new Date(currentFormData.date).toISOString() : new Date().toISOString(),
           CreativeNumbers: currentFormData.quantity,
           checklistDetails: Array.isArray(currentFormData.checklist)
             ? currentFormData.checklist.map(item => ({

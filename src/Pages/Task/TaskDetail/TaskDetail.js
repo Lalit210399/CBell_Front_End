@@ -15,17 +15,17 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
   console.log("TaskDetail - formData:", formData);
   console.log("TaskDetail - mergedData:", mergedData);
   
-  // Parse initial datetime from merged data or use current datetime
+  // Parse initial datetime from merged data or use empty for create mode
   const initialDateTime = mergedData.date 
     ? new Date(mergedData.date)
-    : new Date();
+    : null;
   
-  // Format for datetime-local input (YYYY-MM-DDTHH:mm)
+  // Format for datetime-local input (YYYY-MM-DDTHH:mm) - empty for create mode
   const [localDate, setLocalDate] = useState(
-    initialDateTime.toISOString().slice(0, 10)
+    initialDateTime ? initialDateTime.toISOString().slice(0, 10) : ""
   );
   const [localTime, setLocalTime] = useState(
-    initialDateTime.toISOString().slice(11, 16)
+    initialDateTime ? initialDateTime.toISOString().slice(11, 16) : ""
   );
   const [quantity, setQuantity] = useState(mergedData.quantity || 1);
   const [selectedType, setSelectedType] = useState(
@@ -100,19 +100,15 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
   // Initialize form data for create mode
   useEffect(() => {
     if (mode === "create") {
-      const now = new Date();
-      const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
-      
-      setLocalDate(now.toISOString().slice(0, 10));
-      setLocalTime(oneHourLater.toISOString().slice(11, 16));
+      setLocalDate("");
+      setLocalTime("");
       setQuantity(1);
       setSelectedType(null);
       setChecklistData([{ text: "", checked: false, isPlaceholder: false }]);
       setContent("");
       
-      // Set the initial due date to 1 hour from now
-      const initialDateTime = oneHourLater.toISOString();
-      onUpdate("date", initialDateTime);
+      // Don't set any initial date - let user choose
+      onUpdate("date", "");
     }
   }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -128,15 +124,28 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
     const newDate = e.target.value;
     setLocalDate(newDate);
     
-    // Combine with existing time
-    const combinedDateTime = new Date(`${newDate}T${localTime}`).toISOString();
-    onUpdate("date", combinedDateTime);
+    // Only combine with time if both are provided
+    if (newDate && localTime) {
+      const combinedDateTime = new Date(`${newDate}T${localTime}`).toISOString();
+      onUpdate("date", combinedDateTime);
+    } else if (newDate) {
+      // If only date is provided, set date with default time (current time + 1 hour)
+      const now = new Date();
+      const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+      const defaultTime = oneHourLater.toISOString().slice(11, 16);
+      setLocalTime(defaultTime);
+      const combinedDateTime = new Date(`${newDate}T${defaultTime}`).toISOString();
+      onUpdate("date", combinedDateTime);
+    } else {
+      // If date is cleared, clear the date
+      onUpdate("date", "");
+    }
     
     // Clear date error if it exists
     if (errors?.date && onClearError) onClearError('date');
     
     // Check if the new date/time combination is valid
-    if (!isDateTimeValid(newDate, localTime)) {
+    if (newDate && localTime && !isDateTimeValid(newDate, localTime)) {
       if (onClearError) onClearError('time');
     }
   }, [localTime, onUpdate, errors?.date, onClearError]);
@@ -145,15 +154,26 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
     const newTime = e.target.value;
     setLocalTime(newTime);
     
-    // Combine with existing date
-    const combinedDateTime = new Date(`${localDate}T${newTime}`).toISOString();
-    onUpdate("date", combinedDateTime);
+    // Only combine with date if both are provided
+    if (localDate && newTime) {
+      const combinedDateTime = new Date(`${localDate}T${newTime}`).toISOString();
+      onUpdate("date", combinedDateTime);
+    } else if (newTime && !localDate) {
+      // If only time is provided, set today's date with the selected time
+      const today = new Date().toISOString().slice(0, 10);
+      setLocalDate(today);
+      const combinedDateTime = new Date(`${today}T${newTime}`).toISOString();
+      onUpdate("date", combinedDateTime);
+    } else if (!newTime) {
+      // If time is cleared, clear the date
+      onUpdate("date", "");
+    }
     
     // Clear time error if it exists
     if (errors?.time && onClearError) onClearError('time');
     
     // Check if the new date/time combination is valid
-    if (!isDateTimeValid(localDate, newTime)) {
+    if (localDate && newTime && !isDateTimeValid(localDate, newTime)) {
       if (onClearError) onClearError('time');
     }
   }, [localDate, onUpdate, errors?.time, onClearError]);
@@ -203,8 +223,7 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
     if (!eventDateProp) return undefined;
     const end = new Date(eventDateProp);
     end.setMinutes(end.getMinutes() - end.getTimezoneOffset());
-    // Task must be earlier than event date → set max to event date minus 1 day
-    end.setDate(end.getDate() - 1);
+    // Task can be on the same day as event but not after
     return end.toISOString().slice(0, 10);
   })();
 
@@ -252,6 +271,7 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
                   min={minDate}
                   max={maxDate}
                   disabled={isDisabled}
+                  placeholder="Select date"
                 />
               )}
             </div>
@@ -274,6 +294,7 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
                   onChange={handleTimeChange}
                   disabled={isDisabled}
                   min={localDate === new Date().toISOString().slice(0, 10) ? getMinTime() : undefined}
+                  placeholder="Select time"
                 />
               )}
             </div>
