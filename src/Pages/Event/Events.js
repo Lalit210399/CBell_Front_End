@@ -526,31 +526,50 @@ const EventTable = () => {
           onRetry={handleRetry}
           onSort={handleSort}
           renderCell={(key, item) => {
+            const getEmptyText = (key) => {
+              switch (key) {
+                case "name":
+                  return "Untitled Event";
+                case "type":
+                  return "No Type";
+                case "date":
+                  return "No Date";
+                case "participants":
+                  return "No Team Members";
+                case "createdBy":
+                  return "Unknown Creator";
+                default:
+                  return "N/A";
+              }
+            };
+
             if (key === "participants") {
-              return (
+              return item.participants && item.participants.length > 0 ? (
                 <AvatarList
                   avatars={item.participants}
                   stack={true}
                   maxVisible={3}
                   showTooltip={true}
                 />
+              ) : (
+                <span className="empty-field">{getEmptyText(key)}</span>
               );
             }
             if (key === "type") {
               return (
                 <span className="type-pill">
-                  {item.type}
+                  {item.type || getEmptyText(key)}
                 </span>
               );
             }
             if (key === "createdBy") {
               return (
                 <div className="created-by-name">
-                  {item.createdBy}
+                  {item.createdBy || getEmptyText(key)}
                 </div>
               );
             }
-            return item[key];
+            return item[key] || getEmptyText(key);
           }}
           noDataText="No Events Scheduled at this time"
           addEventText="Click here to add a New Event"

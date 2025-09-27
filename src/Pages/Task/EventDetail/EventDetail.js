@@ -9,6 +9,8 @@ const Detail = ({
   mode,
   onSave,
   initialDescription = "",
+  validationErrors = {},
+  onClearError,
 }) => {
   const [guests, setGuests] = useState([]);
   const [organizers, setOrganizers] = useState([]);
@@ -82,9 +84,16 @@ const Detail = ({
           initialContent={initialDescription}
           onContentChange={(val) => {
             editorRef.current = val;
+            // Clear description error when user starts typing
+            if (validationErrors.description && onClearError) {
+              onClearError('description');
+            }
           }}
           isFullWidth={true}
           mode={mode}
+          hasError={!!validationErrors.description}
+          errorMessage={validationErrors.description}
+          showRequiredAsterisk={mode === "create" || mode === "edit"}
         />
       </div>
       <div className="ED_Left_Section">

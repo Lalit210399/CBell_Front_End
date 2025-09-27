@@ -59,9 +59,18 @@ const DetailTopSectionNew = ({
 
   useEffect(() => {
     setEditableTitle(data?.title || "");
-    const dt = formatDateTimeLocal(data?.date || new Date());
-    setEditableDate(dt.date);
-    setEditableTime(dt.time);
+    
+    // Only set date/time if data exists and has a valid date
+    if (data?.date && data.date !== "") {
+      const dt = formatDateTimeLocal(data.date);
+      setEditableDate(dt.date);
+      setEditableTime(dt.time);
+    } else {
+      // Set empty values for create mode or when no date is available
+      setEditableDate("");
+      setEditableTime("");
+    }
+    
     setSelectedEventType(data?.type || "");
     setSelectedEventTypeId(data?.eventTypeId || "");
     setSelectedTypeName(data?.typeName || "");
@@ -117,7 +126,7 @@ const DetailTopSectionNew = ({
     } else {
       setFetchedUsers(users);
     }
-  }, [mode, users]);
+  }, [mode, users, user?.organizationId]);
 
   const handleTitleChange = (e) => {
     setEditableTitle(e.target.value);
@@ -131,6 +140,7 @@ const DetailTopSectionNew = ({
 
   const handleTimeChange = (e) => {
     setEditableTime(e.target.value);
+    if (errors && errors.time && onClearError) onClearError("time");
   };
 
 
@@ -200,9 +210,10 @@ const DetailTopSectionNew = ({
     const payload = {
       title: editableTitle,
       date: combinedDateTime,
+      time: editableTime || "", // Include time separately for validation, empty string if not set
       type: selectedEventType,
+      typeName: selectedTypeName.trim(),
       eventTypeId: selectedEventTypeId,
-      eventTypeName: selectedTypeName.trim(),
     };
     onSaveClick(payload);
   };
@@ -234,15 +245,18 @@ const DetailTopSectionNew = ({
         <button className="back-button" onClick={onBackClick}>
           <ArrowLeft size={18} />
         </button>
-        <input
-          type="text"
-          className={`editable-title-input-new ${errors && errors.title ? "error" : ""}`}
-          value={editableTitle}
-          onChange={handleTitleChange}
-          placeholder="Enter event name ..."
-          autoFocus={mode === "create"}
-          readOnly={mode === "view"}
-        />
+        <div className="title-input-container">
+          <input
+            type="text"
+            className={`editable-title-input-new ${errors && errors.title ? "error" : ""}`}
+            value={editableTitle}
+            onChange={handleTitleChange}
+            placeholder="Enter event name ..."
+            autoFocus={mode === "create"}
+            readOnly={mode === "view"}
+          />
+          {(mode === "create" || mode === "edit") && <span className="required-asterisk">*</span>}
+        </div>
         <div className="created-by">
           <span className="creator-name">{data.createdBy}</span>
           <div className="creator-avatar-new">
@@ -330,25 +344,39 @@ const DetailTopSectionNew = ({
 
         <div className="right_section">
           <div className="type-section">
-            <label className="label">Type:</label>
-          <CustomDropdown
-            options={eventTypeOptions}
-            defaultLabel={
-              eventTypeOptions.find((opt) => opt.value === selectedEventType)?.label ||
-              "Select Event Type"
-            }
+            <label className="label">
+              Type: {(mode === "create" || mode === "edit") && <span className="required-asterisk">*</span>}
+            </label>
+            {mode === "view" ? (
+              <div className="event-type-badge">
+                {selectedEventType || "No Type Selected"}
+              </div>
+            ) : (
+              <CustomDropdown
+                options={eventTypeOptions}
+                defaultLabel={
+                  eventTypeOptions.find((opt) => opt.value === selectedEventType)?.label ||
+                  "Select Event Type"
+                }
             onSelect={(option) => {
               const selectedEvent = getEventTypeByName ? getEventTypeByName(option.value) : eventTypes.find(et => et.name === option.value);
               setSelectedEventType(option.value);
               setSelectedEventTypeId(selectedEvent?.id || "");
-              setSelectedTypeName((selectedEvent?.name || "").trim());
+              setSelectedTypeName(option.value.trim());
+              if (errors && errors.eventType && onClearError) onClearError("eventType");
             }}
-            disabled={mode === "view"}
-          />
+              />
+            )}
+            {errors && errors.eventType && (
+              <div className="field-error-message">{errors.eventType}</div>
+            )}
           </div>
 
           <div className="date-section">
-            <label htmlFor="date-input" className="label">Date:</label>
+            <label htmlFor="date-input" className="label">
+              Date: {(mode === "create" || mode === "edit") && <span className="required-asterisk">*</span>}
+              {/* <span className="date-hint">(Today or future dates only)</span> */}
+            </label>
             <input
               id="date-input"
               type="date"
@@ -356,18 +384,28 @@ const DetailTopSectionNew = ({
               value={editableDate}
               onChange={handleDateChange}
               min={new Date().toISOString().slice(0, 10)}
+              placeholder="Select date"
             />
+            {errors && errors.date && (
+              <div className="field-error-message">{errors.date}</div>
+            )}
           </div>
 
           <div className="time-section">
-            <label htmlFor="time-input" className="label">Time:</label>
+            <label htmlFor="time-input" className="label">
+              Time: {(mode === "create" || mode === "edit") && <span className="required-asterisk">*</span>}
+            </label>
             <input
               id="time-input"
               type="time"
-              className="time-input-new"
+              className={`time-input-new ${errors && errors.time ? "error" : ""}`}
               value={editableTime}
               onChange={handleTimeChange}
+              placeholder="Select time"
             />
+            {errors && errors.time && (
+              <div className="field-error-message">{errors.time}</div>
+            )}
           </div>
 
           <div className="save-button-section" style={{ display: "flex", gap: "8px" }}>

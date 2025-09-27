@@ -5,7 +5,7 @@
   background: var(--white);
   border-radius: 8px;
   padding: 12px 16px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--colourBorder);
   font-family: 'Lato', sans-serif;
   overflow: visible;
@@ -68,39 +68,40 @@
 }
 
 .created-by {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 500;
-    font-size: 14px;
-    color: var(--textLight);
-    white-space: nowrap;
-    border: 1px solid;
-    height: 32px;
-    padding: 0px 3px;
-    border-radius: 20px;
-  }
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--textLight);
+  white-space: nowrap;
+  border: 1px solid;
+  height: 24px;
+  padding: 8px 4px;
+  border-radius: 20px
+}
 
 .creator-avatar-new {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: var(--primary);
-    color: var(--white);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 14px;
-    -webkit-user-select: none;
-    user-select: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  -webkit-user-select: none;
+  user-select: none;
+  margin-right: -8px;
 }
 
 .creator-name {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--textDark);
-    margin-left: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--textDark);
+  margin-left: 4px;
 }
 
 .avatar-initials {
@@ -201,16 +202,16 @@
 }
 
 .inline-dropdown-new {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 9999;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    min-width: 280px;
-    margin-top: 4px;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 9999;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 280px;
+  margin-top: 4px;
 
 }
 
@@ -340,13 +341,13 @@
 
 .date-input-new,
 .time-input-new {
-    padding: 4px 12px;
-    font-size: 14px;
-    height: 32px;
-    border-radius: 20px;
-    border: 1px solid var(--grayLine);
-    outline: none;
-    transition: border-color 0.3s ease;
+  padding: 4px 12px;
+  font-size: 14px;
+  height: 32px;
+  border-radius: 20px;
+  border: 1px solid var(--grayLine);
+  outline: none;
+  transition: border-color 0.3s ease;
 }
 
 .date-input-new.error,
@@ -394,17 +395,156 @@
     align-items: stretch;
     gap: 12px;
   }
+
   .left_section,
   .right_section {
     flex: none;
     min-width: 100%;
   }
+
   .right_section {
     justify-content: flex-start;
     gap: 12px;
   }
+
   .save-button-section {
     width: 100%;
     margin-top: 8px;
   }
+}
+
+/* Event Type Badge Styles */
+.event-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  background: #e3f2fd ;
+  color: #1976d2;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  min-height: 32px;
+  box-sizing: border-box;
+  /* border: 1px solid var(--primary); */
+  transition: all 0.2s ease;
+}
+
+.event-type-badge:hover {
+  background: #282d28;
+  border-color: #282d28;
+}
+
+/* Required field indicators */
+.required-asterisk {
+  color: #d32f2f;
+  font-weight: bold;
+  margin-left: 2px;
+}
+
+.title-input-container {
+  position: relative;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+}
+
+.title-input-container .required-asterisk {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Error message styles */
+.field-error-message {
+  color: #d32f2f;
+  font-size: 12px;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* Error state for inputs */
+.error {
+  border-color: #d32f2f !important;
+  box-shadow: 0 0 0 1px #d32f2f !important;
+}
+
+.error:focus {
+  border-color: #d32f2f !important;
+  box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.2) !important;
+}
+
+/* Placeholder styles for date and time inputs */
+.date-input-new:invalid {
+  color: #999;
+}
+
+.time-input-new:invalid {
+  color: #999;
+}
+
+.date-input-new::-webkit-datetime-edit-text {
+  color: #999;
+}
+
+.time-input-new::-webkit-datetime-edit-text {
+  color: #999;
+}
+
+/* Custom placeholder for empty date/time inputs */
+.date-input-new:not(:focus):invalid::-webkit-datetime-edit-text {
+  color: #999;
+}
+
+.time-input-new:not(:focus):invalid::-webkit-datetime-edit-text {
+  color: #999;
+}
+
+/* Ensure empty date/time inputs show placeholder text */
+.date-input-new:not([value]) {
+  color: #999;
+}
+
+.time-input-new:not([value]) {
+  color: #999;
+}
+
+.date-input-new:not([value])::-webkit-datetime-edit-text {
+  color: #999;
+}
+
+.time-input-new:not([value])::-webkit-datetime-edit-text {
+  color: #999;
+}
+
+/* Date input restrictions and styling */
+.date-input-new::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
+.date-input-new::-webkit-datetime-edit {
+  color: inherit;
+}
+
+/* Ensure past dates are visually disabled */
+.date-input-new:invalid {
+  border-color: #d32f2f;
+}
+
+/* Focus state for date input */
+.date-input-new:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* Date hint styling */
+.date-hint {
+  font-size: 11px;
+  color: #666;
+  font-weight: normal;
+  margin-left: 4px;
+  font-style: italic;
 }

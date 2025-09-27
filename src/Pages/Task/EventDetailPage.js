@@ -289,15 +289,45 @@ const EventDetail = () => {
 
   const handleSaveEvent = async (topSectionData, detailData) => {
     setIsSubmitting(true);
-    // Basic validation for required fields: name/title and date
+    // Comprehensive validation for all required fields
     const errors = {};
+    
+    // Validate Event Name
     const titleValue = (topSectionData?.title || "").trim();
     if (!titleValue) {
       errors.title = "Event name is required";
     }
+    
+    // Validate Event Type
+    const eventTypeValue = (topSectionData?.type || topSectionData?.typeName || "").trim();
+    if (!eventTypeValue) {
+      errors.eventType = "Event type is required";
+    }
+    
+    // Validate Date
     if (!topSectionData?.date) {
       errors.date = "Event date is required";
+    } else {
+      // Additional validation: date should not be in the past
+      const selectedDate = new Date(topSectionData.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        errors.date = "Event date cannot be in the past";
+      }
     }
+    
+    // Validate Time
+    if (!topSectionData?.time) {
+      errors.time = "Event time is required";
+    }
+    
+    // Validate Description
+    const descriptionValue = (detailData?.description || "").trim();
+    if (!descriptionValue) {
+      errors.description = "Event description is required";
+    }
+    
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       setIsSubmitting(false);
@@ -341,31 +371,31 @@ const EventDetail = () => {
       };
     });
 
-    const payload = {
-      eventName: titleValue,
-      organizationId: selectedOrganizationId || user?.organizationId,
-      eventTypeId: topSectionData.eventTypeId || eventTypeId || fetchedEvent?.eventTypeId,
-      eventTypeName: (topSectionData.typeName || fetchedEvent?.typeName || "").trim(),
-      eventDescription: finalDetailData.description || "",
-      locationDetails: finalDetailData.location || "Pune",
-      coordinators: (finalDetailData.organizers || []).map(org => ({
-        name: org.name,
-        title: org.title || "Coordinator"
-      })),
-      specialGuests: (finalDetailData.guests || []).map(guest => ({
-        name: guest.name,
-        title: guest.title || "Guest"
-      })),
-      assignedUsers: assignedUsersPayload,
-      // Expect topSectionData.date to be a datetime-local value; convert to ISO
-      eventDate: topSectionData?.date
-        ? new Date(topSectionData.date).toISOString()
-        : (selectedDate ? selectedDate.toISOString() : new Date().toISOString()),
-      createdBy: user?.userId,
-      createdByName: user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.userName || "Unknown User" : "Unknown User",
-      isPrivate: false,
-      updatedBy: user?.userId
-    };
+     const payload = {
+       eventName: titleValue,
+       organizationId: selectedOrganizationId || user?.organizationId,
+       eventTypeId: topSectionData.eventTypeId || eventTypeId || fetchedEvent?.eventTypeId,
+       eventTypeName: (topSectionData.typeName || topSectionData.type || fetchedEvent?.typeName || "").trim(),
+       eventDescription: finalDetailData.description || "",
+       locationDetails: finalDetailData.location || "Pune",
+       coordinators: (finalDetailData.organizers || []).map(org => ({
+         name: org.name,
+         title: org.title || "Coordinator"
+       })),
+       specialGuests: (finalDetailData.guests || []).map(guest => ({
+         name: guest.name,
+         title: guest.title || "Guest"
+       })),
+       assignedUsers: assignedUsersPayload,
+       // Expect topSectionData.date to be a datetime-local value; convert to ISO
+       eventDate: topSectionData?.date
+         ? new Date(topSectionData.date).toISOString()
+         : (selectedDate ? selectedDate.toISOString() : new Date().toISOString()),
+       createdBy: user?.userId,
+       createdByName: user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.userName || "Unknown User" : "Unknown User",
+       isPrivate: false,
+       updatedBy: user?.userId
+     };
 
     try {
       const url = mode === "create"
@@ -529,31 +559,32 @@ const EventDetail = () => {
       ? (eventType || "")
       : (fetchedEvent?.typeName || getEventTypeById(fetchedEvent?.eventTypeId)?.name || "");
 
-    return {
-    title: mode === "create" ? formData?.eventName || "" : fetchedEvent?.eventName || "",
-    date: mode === "create"
-      ? selectedDate
-        ? formatDateTimeLocal(selectedDate)
-        : formatDateTimeLocal(new Date())
-      : fetchedEvent?.eventDate
-        ? formatDateTimeLocal(fetchedEvent.eventDate)
-        : formatDateTimeLocal(new Date()),
-      type: eventTypeName,
-      typeDesc: eventTypeName,
-    createdBy: mode === "create"
-      ? (user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.userName || "Current User" : "Current User")
-      : (fetchedEvent?.createdByName || `User ID ${fetchedEvent?.createdBy || ""}`),
-    creatorAvatar: {
-      id: 0,
-      name: mode === "create" 
-        ? (user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.userName || "Current User" : "Current User")
-        : (fetchedEvent?.createdByName || `User ID ${fetchedEvent?.createdBy || ""}`),
-      size: "24px",
-      shape: "circle",
-    },
-    participants,
-    };
-  }, [mode, formData?.eventName, fetchedEvent?.eventName, selectedDate, fetchedEvent?.eventDate, fetchedEvent?.typeName, fetchedEvent?.eventTypeId, eventType, user, fetchedEvent?.createdBy, fetchedEvent?.createdByName, participants, getEventTypeById]);
+     return {
+     title: mode === "create" ? formData?.eventName || "" : fetchedEvent?.eventName || "",
+     date: mode === "create"
+       ? selectedDate
+         ? formatDateTimeLocal(selectedDate)
+         : null
+       : fetchedEvent?.eventDate
+         ? formatDateTimeLocal(fetchedEvent.eventDate)
+         : null,
+       type: eventTypeName,
+       typeName: eventTypeName,
+       eventTypeId: mode === "create" ? eventTypeId : fetchedEvent?.eventTypeId,
+     createdBy: mode === "create"
+       ? (user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.userName || "Current User" : "Current User")
+       : (fetchedEvent?.createdByName || `User ID ${fetchedEvent?.createdBy || ""}`),
+     creatorAvatar: {
+       id: 0,
+       name: mode === "create" 
+         ? (user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.userName || "Current User" : "Current User")
+         : (fetchedEvent?.createdByName || `User ID ${fetchedEvent?.createdBy || ""}`),
+       size: "24px",
+       shape: "circle",
+     },
+     participants,
+     };
+  }, [mode, formData?.eventName, fetchedEvent?.eventName, selectedDate, fetchedEvent?.eventDate, fetchedEvent?.typeName, fetchedEvent?.eventTypeId, eventType, eventTypeId, user, fetchedEvent?.createdBy, fetchedEvent?.createdByName, participants, getEventTypeById]);
 
   const guestsData = React.useMemo(() =>
     mode === "create" ? [] : fetchedEvent?.specialGuests || [],
@@ -579,6 +610,8 @@ const EventDetail = () => {
           initialLocation={
             mode === "create" ? formData?.location || "" : fetchedEvent?.locationDetails || ""
           }
+          validationErrors={validationErrors}
+          onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
         />
       ),
     },
@@ -607,7 +640,7 @@ const EventDetail = () => {
         />
       ),
     },
-  ], [mode, detailSaveRef, guestsData, organizersData, formData?.eventDescription, fetchedEvent?.eventDescription, formData?.location, fetchedEvent?.locationDetails, tasksData, eventId, selectedOrganizationId, user?.organizationId, handleDownload, handleSendMail, fetchedEvent?.eventName]);
+  ], [mode, detailSaveRef, guestsData, organizersData, formData?.eventDescription, fetchedEvent?.eventDescription, formData?.location, fetchedEvent?.locationDetails, tasksData, eventId, selectedOrganizationId, user?.organizationId, handleDownload, handleSendMail, fetchedEvent?.eventName, validationErrors]);
 
   const filteredTabs = React.useMemo(() =>
     mode === "create"

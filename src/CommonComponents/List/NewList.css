@@ -10,6 +10,22 @@
     height: 80vh;
     max-height: 600px;
   }
+
+  /* Override for EventDetail usage */
+  .Special_Guest .special-guests-wrapper,
+  .Event_Organizer .special-guests-wrapper {
+    max-width: none;
+    margin: 0;
+    height: 100%;
+    max-height: none;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #fff;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
   
   .header {
     display: flex;
@@ -19,19 +35,20 @@
     font-size: 1.25rem;
     font-weight: 600;
     border-bottom: 1px solid #ddd;
-    /* gap: 10px; Added gap between left and right */
+    margin-bottom: 10px;
   }
   
   .header-left {
     color: #333;
+    font-weight: bold;
+    font-size: 16px;
   }
   
   .add-guest-btn {
-    background-color: transparent;
+    background: none;
     border: none;
-    color: #000000; /* dark teal */
-    font-weight: 600;
-    font-size: 14px;
+    color: #000;
+    font-weight: bold;
     cursor: pointer;
     padding: 5px 10px;
     border-radius: 6px;
@@ -46,39 +63,42 @@
   .guests-list-container {
     overflow-y: auto;
     padding: 10px 15px;
-    flex-grow: 1;
+    flex: 1;
+    min-height: 0; /* Important for flex scrolling */
+    scrollbar-color: #ccc transparent;
+    scrollbar-width: thin;
   }
   
   .guest-card {
     display: flex;
     align-items: center;
-    background-color: #f9f9f9;
-    border-radius: 12px;
-    border: 1px solid #ccc; /* Added grey border */
+    background-color: #fff;
+    border-radius: 8px;
+    border: 1px solid #eee;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-    padding: 10px 15px;
-    margin-bottom: 12px;
+    padding: 8px;
+    margin-bottom: 8px;
     position: relative;
   }
   
   .avatar-circle {
-    width: 48px;
-    height: 48px;
-    background-color: #113443; /* dark teal */
+    width: 40px;
+    height: 40px;
+    background-color: #004d61;
     color: white;
     border-radius: 50%;
-    font-weight: 700;
-    font-size: 1.2rem;
+    font-weight: bold;
+    font-size: 14px;
     display: flex;
     justify-content: center;
     align-items: center;
     user-select: none;
     flex-shrink: 0;
+    margin-right: 12px;
   }
   
   .guest-info {
-    flex-grow: 1;
-    margin-left: 15px;
+    flex: 1;
     display: flex;
     flex-direction: column;
   }
@@ -92,8 +112,15 @@
     outline: none;
     color: #333;
     width: 100%;
-    border-bottom: 1px solid #ffffff;
+    border-bottom: 1px solid #ccc;
     transition: border-color 0.2s ease;
+    margin-bottom: 4px;
+  }
+  
+  .guest-designation-input {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 0;
   }
   
   .guest-name-input::placeholder,
@@ -121,6 +148,10 @@
 
   .placeholder-card {
     transition: all 0.2s ease;
+    border: 2px dashed #ccc !important;
+    background-color: #f8f9fa !important;
+    opacity: 0.7;
+    cursor: pointer;
   }
 
   .placeholder-card:hover {
@@ -135,12 +166,12 @@
   }
   
   .delete-guest-btn {
-    background: transparent;
+    background: none;
     border: none;
-    color: #999;
-    font-size: 1.5rem;
+    color: #888;
+    font-size: 20px;
     cursor: pointer;
-    margin-left: 15px;
+    margin-left: 8px;
     flex-shrink: 0;
     transition: color 0.2s ease;
     user-select: none;
@@ -148,6 +179,59 @@
   
   .delete-guest-btn:hover {
     color: #d32f2f;
+  }
+  
+  /* Additional styles for inline replacements */
+  .input-field-container {
+    position: relative;
+  }
+  
+  .guest-name-text {
+    margin: 0;
+    font-weight: bold;
+    font-size: 14px;
+    color: #000;
+  }
+  
+  .guest-designation-text {
+    margin: 0;
+    font-size: 12px;
+    color: #888;
+  }
+  
+  .placeholder-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #6c757d;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 14px;
+    margin-right: 12px;
+  }
+  
+  .placeholder-text-name {
+    width: 100%;
+    border: none;
+    border-bottom: 1px dashed #ccc;
+    outline: none;
+    font-size: 14px;
+    margin-bottom: 4px;
+    color: #6c757d;
+    font-style: italic;
+  }
+  
+  .placeholder-text-designation {
+    width: 100%;
+    border: none;
+    border-bottom: 1px dashed #ccc;
+    outline: none;
+    font-size: 12px;
+    color: #6c757d;
+    font-style: italic;
   }
   
   @media (max-width: 640px) {
