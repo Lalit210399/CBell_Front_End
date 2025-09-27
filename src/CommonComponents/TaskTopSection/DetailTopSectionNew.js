@@ -171,7 +171,10 @@ const DetailTopSectionNew = ({
     const q = userSearch.trim().toLowerCase();
     if (!q) return fetchedUsers;
     return fetchedUsers.filter((u) =>
-      `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase().includes(q)
+      `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase().includes(q) ||
+      (u.email || "").toLowerCase().includes(q) ||
+      (u.organizationCode || "").toLowerCase().includes(q) ||
+      (u.role || "").toLowerCase().includes(q)
     );
   }, [fetchedUsers, userSearch]);
 
@@ -286,7 +289,7 @@ const DetailTopSectionNew = ({
                           <input
                             type="text"
                             className="user-search-new"
-                            placeholder="Search users..."
+                            placeholder="Search by name, email, org, or role..."
                             value={userSearch}
                             onChange={(e) => setUserSearch(e.target.value)}
                           />
@@ -314,7 +317,18 @@ const DetailTopSectionNew = ({
                                 <span className="user-avatar-new">
                                   {getUserInitials(u.firstName, u.lastName)}
                                 </span>
-                                <span className="user-name-new">{`${u.firstName || "User"} ${u.lastName || ""}`}</span>
+                                <div className="user-info-new">
+                                  <div className="user-name-new">{`${u.firstName || "User"} ${u.lastName || ""}`}</div>
+                                  <div className="user-details-new">
+                                    <span className="user-email-new">{u.email || "No email"}</span>
+                                    {u.organizationCode && (
+                                      <span className="user-org-new">• {u.organizationCode}</span>
+                                    )}
+                                    {u.role && (
+                                      <span className="user-role-new">• {u.role}</span>
+                                    )}
+                                  </div>
+                                </div>
                               </label>
                             ))
                           )}

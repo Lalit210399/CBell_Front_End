@@ -209,9 +209,9 @@
     border: 1px solid #ddd;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    min-width: 280px;
+    min-width: 350px;
+    max-width: 400px;
     margin-top: 4px;
-
 }
 
 .user-dropdown-new {
@@ -256,20 +256,23 @@
 
 .user-item-new {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
-  padding: 8px;
+  padding: 12px;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: background 0.2s ease;
+  border: 1px solid transparent;
 }
 
 .user-item-new:hover {
   background: #f8f9fa;
+  border-color: #e0e0e0;
 }
 
 .user-item-new.selected {
   background: #e3f2fd;
+  border-color: #2196f3;
 }
 
 .user-item-new input[type="checkbox"] {
@@ -289,10 +292,44 @@
   font-weight: 500;
 }
 
-.user-name-new {
+.user-info-new {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-name-new {
   font-size: 14px;
+  font-weight: 600;
   color: #333;
+  line-height: 1.2;
+}
+
+.user-details-new {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #666;
+  flex-wrap: wrap;
+}
+
+.user-email-new {
+  color: #666;
+  font-size: 12px;
+}
+
+.user-org-new {
+  color: #007bff;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.user-role-new {
+  color: #28a745;
+  font-weight: 500;
+  font-size: 12px;
 }
 
 .user-empty-new {
@@ -406,5 +443,16 @@
   .save-button-section {
     width: 100%;
     margin-top: 8px;
+  }
+  
+  .inline-dropdown-new {
+    min-width: 300px;
+    max-width: 90vw;
+  }
+  
+  .user-details-new {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
   }
 }
