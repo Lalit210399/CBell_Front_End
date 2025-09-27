@@ -28,6 +28,12 @@ const Table = ({
       return;
     }
 
+    // If no event is provided (e.g., when closing menu), just close it
+    if (!event) {
+      setMenuOpenIndex(null);
+      return;
+    }
+
     // Calculate dropdown position to prevent overflow
     const buttonRect = event.currentTarget.getBoundingClientRect();
     const tableContainer = event.currentTarget.closest('.table-container');

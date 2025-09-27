@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useLocation, useNavigate } from "react-router-dom";
 import TabMenu from "../../CommonComponents/TabMenu/TabMenu";
@@ -12,7 +12,6 @@ import { useUser } from "../../Context/UserContext";
 import { useMessages } from "../../Context/MessageContext";
 import { useTaskStatus } from "../../Hooks/useTaskStatus";
 import { getHierarchyUsers } from "../../Services/AuthN";
-import useApi from "../../Hooks/useApi";
 import { Building, Calendar, Pencil } from "lucide-react";
 import "./Tasks.css";
 
@@ -261,18 +260,15 @@ const TaskDetailPage = () => {
     }
   }, [taskId, mode, organizationId, user?.organizationId, addMessage]);
 
-  // Use API Hooks
-  const {
-    data: usersData,
-    loading: usersLoading,
-    execute: executeFetchUsers
-  } = useApi(fetchUsers, [mode, currentOrgId], false);
-
-  const {
-    data: taskDataFromAPI,
-    loading: taskLoading,
-    execute: executeFetchTask
-  } = useApi(fetchTask, [taskId, mode], false);
+  // State Management
+  const [usersData, setUsersData] = useState(null);
+  const [taskDataFromAPI, setTaskDataFromAPI] = useState(null);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [taskLoading, setTaskLoading] = useState(false);
+  const [usersError, setUsersError] = useState(null);
+  const [taskError, setTaskError] = useState(null);
+  const isFetchingUsersRef = useRef(false);
+  const isFetchingTaskRef = useRef(false);
 
   const initializeCreateMode = React.useCallback(() => {
     setTaskData({
@@ -330,18 +326,58 @@ const TaskDetailPage = () => {
   }, [selectedParticipantIds, statusOptions, taskStatus?.value]);
 
   // Execute users API when component mounts or scope changes
-  useEffect(() => {
-    if (mode === "edit" || mode === "create") {
-      executeFetchUsers();
+  const executeFetchUsers = useCallback(async () => {
+    if ((mode === "edit" || mode === "create") && !isFetchingUsersRef.current) {
+      console.log("Executing fetchUsers for TaskDetailPage with:", { mode, currentOrgId });
+      
+      isFetchingUsersRef.current = true;
+      setUsersLoading(true);
+      setUsersError(null);
+      
+      try {
+        const data = await fetchUsers();
+        setUsersData(data);
+      } catch (err) {
+        console.error("Error fetching users for TaskDetailPage:", err);
+        setUsersError(err.message);
+      } finally {
+        setUsersLoading(false);
+        isFetchingUsersRef.current = false;
+      }
     }
-  }, [executeFetchUsers, mode, scopeChangeTrigger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, currentOrgId, fetchUsers]);
 
   // Execute task API when taskId is available and not in create mode
-  useEffect(() => {
-    if (taskId && mode !== "create") {
-      executeFetchTask();
+  const executeFetchTask = useCallback(async () => {
+    if (taskId && mode !== "create" && !isFetchingTaskRef.current) {
+      console.log("Executing fetchTask for TaskDetailPage with:", { taskId, mode });
+      
+      isFetchingTaskRef.current = true;
+      setTaskLoading(true);
+      setTaskError(null);
+      
+      try {
+        const data = await fetchTask();
+        setTaskDataFromAPI(data);
+      } catch (err) {
+        console.error("Error fetching task for TaskDetailPage:", err);
+        setTaskError(err.message);
+      } finally {
+        setTaskLoading(false);
+        isFetchingTaskRef.current = false;
+      }
     }
-  }, [executeFetchTask, taskId, mode, scopeChangeTrigger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taskId, mode, fetchTask]);
+
+  useEffect(() => {
+    executeFetchUsers();
+  }, [executeFetchUsers, scopeChangeTrigger]);
+
+  useEffect(() => {
+    executeFetchTask();
+  }, [executeFetchTask, scopeChangeTrigger]);
 
   // Update usersList when usersData changes
   useEffect(() => {
@@ -766,16 +802,27 @@ const TaskDetailPage = () => {
       const result = await response.json();
 
       if (mode === "create") {
+        // Handle both possible response formats: result.taskId or result.id
+        const newTaskId = result.taskId || result.id;
+        
+        if (!newTaskId) {
+          throw new Error("No task ID returned from server");
+        }
+        
         setMode("view");
-        setTaskData(prev => ({ ...prev, id: result.taskId }));
+        setTaskData(prev => ({ ...prev, id: newTaskId }));
         navigate(location.pathname, {
-          state: { ...location.state, taskId: result.taskId, mode: "view" },
+          state: { ...location.state, taskId: newTaskId, mode: "view" },
           replace: true
         });
+        
+        // Switch to Files & Uploads tab to encourage file upload
+        setActiveTab("Files & Uploads");
+        
         addMessage({
-          text: "Task created successfully",
+          text: "Task created successfully! You can now add files and comments.",
           type: "success",
-          duration: 3000
+          duration: 4000
         });
       } else {
         setMode("view");

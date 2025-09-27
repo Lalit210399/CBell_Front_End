@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Table from "../../../CommonComponents/Table/Table";
 import { Download, Share2 } from "lucide-react";
 import { useUser } from "../../../Context/UserContext";
@@ -39,6 +39,7 @@ const Publish = ({ eventId }) => {
   const [fileDetail, setFileDetail] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const { user } = useUser();
+  const isFetchingRef = useRef(false);
 
   const handleDownload = (files) => {
     files.forEach(file => {
@@ -133,7 +134,12 @@ const Publish = ({ eventId }) => {
     setShowShareModal(true);
   };
 
-  const fetchPublishedTasks = async () => {
+  const fetchPublishedTasks = useCallback(async () => {
+    if (!eventId || isFetchingRef.current) return;
+    
+    console.log("Executing fetchPublishedTasks for Publish with:", { eventId });
+    
+    isFetchingRef.current = true;
     setLoading(true);
     try {
       const response = await fetch(`/apis/task/get_published_tasks_with_documents/${eventId}`, {
@@ -171,12 +177,13 @@ const Publish = ({ eventId }) => {
       console.error("Error fetching published tasks:", err);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
-  };
+  }, [eventId]);
 
   useEffect(() => {
-    if (eventId) fetchPublishedTasks();
-  }, [eventId]);
+    fetchPublishedTasks();
+  }, [fetchPublishedTasks]);
 
   const renderCell = (key, item) => {
     if (key === 'download') {

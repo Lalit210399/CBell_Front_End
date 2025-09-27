@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Events.css";
 import Table from "../../CommonComponents/Table/Table";
@@ -231,21 +231,39 @@ const EventTable = () => {
     return formatted;
   }, [selectedOrganizationId, user?.organizationId, user?.userId]);
 
-  /** -------------------- Use API Hook -------------------- **/
-  const {
-    data: eventsData,
-    loading,
-    error,
-    execute: executeFetchEvents
-  } = useApi(fetchEvents, [userLoading, permissions.canRead, selectedOrganizationId, user?.userId], false);
+  /** -------------------- State Management -------------------- **/
+  const [eventsData, setEventsData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const isFetchingRef = useRef(false);
 
   // Execute API when permissions and organization are ready or scope changes
-  useEffect(() => {
-    if (!userLoading && permissions.canRead && selectedOrganizationId && user?.userId) {
+  const executeFetchEvents = useCallback(async () => {
+    if (!userLoading && permissions.canRead && selectedOrganizationId && user?.userId && !isFetchingRef.current) {
       console.log("Executing fetchEvents with:", { selectedOrganizationId, userId: user?.userId });
-      executeFetchEvents();
+      
+      isFetchingRef.current = true;
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Call fetchEvents directly without including it in dependencies
+        const data = await fetchEvents();
+        setEventsData(data);
+      } catch (err) {
+        console.error("Error fetching events:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+        isFetchingRef.current = false;
+      }
     }
-  }, [userLoading, permissions.canRead, selectedOrganizationId, user?.userId, executeFetchEvents, scopeChangeTrigger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userLoading, permissions.canRead, selectedOrganizationId, user?.userId]);
+
+  useEffect(() => {
+    executeFetchEvents();
+  }, [executeFetchEvents, scopeChangeTrigger]);
 
   // Process events data and extract filter options
   const originalEvents = useMemo(() => {

@@ -13,7 +13,6 @@ import { useUser } from "../../Context/UserContext";
 import { useMessages } from "../../Context/MessageContext";
 import { useEventTypes } from "../../Hooks/useEventTypes";
 import { getHierarchyUsers } from "../../Services/AuthN";
-import useApi from "../../Hooks/useApi";
 import { Building, Calendar, FileText } from "lucide-react";
 import "./Tasks.css";
 
@@ -26,6 +25,8 @@ const EventDetail = () => {
   const [validationErrors, setValidationErrors] = useState({});
   const [usersList, setUsersList] = useState([]);
   const [assignedUsers, setAssignedUsers] = useState([]);
+  const [currentEventId, setCurrentEventId] = useState(null);
+  const [eventJustCreated, setEventJustCreated] = useState(false);
   const detailSaveRef = useRef(null);
   const { user, selectedOrganizationId, isViewingOwnOrganization, scopeChangeTrigger } = useUser();
   const { addMessage } = useMessages();
@@ -49,6 +50,13 @@ const EventDetail = () => {
     locationSelectedDate ? new Date(locationSelectedDate) : null
   ), [locationSelectedDate]);
 
+  // Initialize currentEventId from location state or use eventId
+  React.useEffect(() => {
+    if (eventId) {
+      setCurrentEventId(eventId);
+    }
+  }, [eventId]);
+
   // Only sync from navigation when initialMode changes; don't override local edits
   useEffect(() => {
     if (initialMode) {
@@ -59,8 +67,13 @@ const EventDetail = () => {
   /** -------------------- API Functions -------------------- **/
   const fetchTasks = useCallback(async () => {
         const organizationId = selectedOrganizationId || user?.organizationId;
+        const taskEventId = currentEventId || eventId;
         
-        const response = await fetchWithRefresh(`/apis/task/by-event/${eventId}?organizationId=${organizationId}`, {
+        if (!taskEventId) {
+          return [];
+        }
+        
+        const response = await fetchWithRefresh(`/apis/task/by-event/${taskEventId}?organizationId=${organizationId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -114,10 +127,11 @@ const EventDetail = () => {
         console.log("Formatted tasks:", formattedTasks);
 
     return formattedTasks;
-  }, [eventId, selectedOrganizationId, user?.organizationId]);
+  }, [currentEventId, eventId, selectedOrganizationId, user?.organizationId]);
 
   const fetchEvent = useCallback(async () => {
-    if (!eventId) {
+    const eventIdToUse = currentEventId || eventId;
+    if (!eventIdToUse) {
       return null;
     }
     
@@ -144,7 +158,7 @@ const EventDetail = () => {
 
         // Use the new event details API endpoint
         const response = await fetchWithRefresh(
-          `/apis/event/get_event/${eventId}?organizationId=${organizationId}&userId=${user?.userId}`,
+          `/apis/event/get_event/${eventIdToUse}?organizationId=${organizationId}&userId=${user?.userId}`,
           {
             method: "GET",
             headers,
@@ -170,33 +184,73 @@ const EventDetail = () => {
         };
 
     return transformedData;
-  }, [eventId, selectedOrganizationId, user?.organizationId, user?.userId]);
+  }, [currentEventId, eventId, selectedOrganizationId, user?.organizationId, user?.userId]);
 
-  /** -------------------- Use API Hooks -------------------- **/
-  const {
-    data: tasksData,
-    execute: executeFetchTasks
-  } = useApi(fetchTasks, [eventId, selectedOrganizationId], false);
-
-  const {
-    data: eventData,
-    loading: eventLoading,
-    execute: executeFetchEvent
-  } = useApi(fetchEvent, [eventId, selectedOrganizationId], false);
+  /** -------------------- State Management -------------------- **/
+  const [tasksData, setTasksData] = useState(null);
+  const [eventData, setEventData] = useState(null);
+  const [eventLoading, setEventLoading] = useState(false);
+  const [tasksLoading, setTasksLoading] = useState(false);
+  const [eventError, setEventError] = useState(null);
+  const [tasksError, setTasksError] = useState(null);
+  const isFetchingEventRef = useRef(false);
+  const isFetchingTasksRef = useRef(false);
 
   // Execute tasks API when activeTab is "Task" and eventId is available
-  useEffect(() => {
-    if (activeTab === "Task" && eventId) {
-      executeFetchTasks();
+  const executeFetchTasks = useCallback(async () => {
+    const taskEventId = currentEventId || eventId;
+    if (activeTab === "Task" && taskEventId && !isFetchingTasksRef.current) {
+      console.log("Executing fetchTasks for EventDetailPage with:", { taskEventId, activeTab });
+      
+      isFetchingTasksRef.current = true;
+      setTasksLoading(true);
+      setTasksError(null);
+      
+      try {
+        const data = await fetchTasks();
+        setTasksData(data);
+      } catch (err) {
+        console.error("Error fetching tasks for EventDetailPage:", err);
+        setTasksError(err.message);
+      } finally {
+        setTasksLoading(false);
+        isFetchingTasksRef.current = false;
+      }
     }
-  }, [activeTab, eventId, executeFetchTasks, scopeChangeTrigger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, currentEventId, eventId, fetchTasks]);
 
   // Execute event API when eventId is available and not in create mode
-  useEffect(() => {
-    if (eventId && mode !== "create") {
-      executeFetchEvent();
+  const executeFetchEvent = useCallback(async () => {
+    const taskEventId = currentEventId || eventId;
+    if (taskEventId && mode !== "create" && !isFetchingEventRef.current) {
+      console.log("Executing fetchEvent for EventDetailPage with:", { taskEventId, mode });
+      
+      isFetchingEventRef.current = true;
+      setEventLoading(true);
+      setEventError(null);
+      
+      try {
+        const data = await fetchEvent();
+        setEventData(data);
+      } catch (err) {
+        console.error("Error fetching event for EventDetailPage:", err);
+        setEventError(err.message);
+      } finally {
+        setEventLoading(false);
+        isFetchingEventRef.current = false;
+      }
     }
-  }, [eventId, mode, executeFetchEvent, scopeChangeTrigger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentEventId, eventId, mode, fetchEvent]);
+
+  useEffect(() => {
+    executeFetchTasks();
+  }, [executeFetchTasks, scopeChangeTrigger]);
+
+  useEffect(() => {
+    executeFetchEvent();
+  }, [executeFetchEvent, scopeChangeTrigger]);
 
   const fetchUsers = useCallback(async () => {
     const organizationId = selectedOrganizationId || user?.organizationId;
@@ -221,13 +275,35 @@ const EventDetail = () => {
     return formattedUsers;
   }, [selectedOrganizationId, user?.organizationId]);
 
-  const {
-    data: usersData,
-    loading: usersLoading,
-    execute: executeFetchUsers
-  } = useApi(fetchUsers, [selectedOrganizationId], false);
+  const [usersData, setUsersData] = useState(null);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState(null);
+  const isFetchingUsersRef = useRef(false);
 
   // Execute users API when component mounts or scope changes
+  const executeFetchUsers = useCallback(async () => {
+    const organizationId = selectedOrganizationId || user?.organizationId;
+    if (organizationId && !isFetchingUsersRef.current) {
+      console.log("Executing fetchUsers for EventDetailPage with:", { organizationId });
+      
+      isFetchingUsersRef.current = true;
+      setUsersLoading(true);
+      setUsersError(null);
+      
+      try {
+        const data = await fetchUsers();
+        setUsersData(data);
+      } catch (err) {
+        console.error("Error fetching users for EventDetailPage:", err);
+        setUsersError(err.message);
+      } finally {
+        setUsersLoading(false);
+        isFetchingUsersRef.current = false;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedOrganizationId, user?.organizationId, fetchUsers]);
+
   useEffect(() => {
     executeFetchUsers();
   }, [executeFetchUsers, scopeChangeTrigger]);
@@ -418,15 +494,22 @@ const EventDetail = () => {
       const result = await response.json();
 
       // For new events, get the ID from the response and update the state
-      if (mode === "create" && result.id) {
+      // Handle both possible response formats: result.id or result.eventId
+      const newEventId = result.eventId || result.id;
+      if (mode === "create" && newEventId) {
+        // Update the current event ID state
+        setCurrentEventId(newEventId);
+        // Mark that event was just created
+        setEventJustCreated(true);
+        
         // Update the URL state to include the new event ID
         navigate(location.pathname, {
           state: {
             ...location.state,
-            eventId: result.id,
+            eventId: newEventId,
             eventData: {
               ...payload,
-              id: result.id,
+              id: newEventId,
               coordinators: payload.coordinators,
               specialGuests: payload.specialGuests,
               assignedUsers: payload.assignedUsers
@@ -439,7 +522,7 @@ const EventDetail = () => {
       // Update the local state with the saved data
       const updatedEvent = {
         ...payload,
-        id: mode === "create" ? result.id : eventId,
+        id: mode === "create" ? newEventId : eventId,
         coordinators: payload.coordinators,
         specialGuests: payload.specialGuests,
         assignedUsers: payload.assignedUsers
@@ -450,10 +533,19 @@ const EventDetail = () => {
       // Switch to view mode after successful save/create
       setMode("view");
       addMessageRef.current({
-        text: `Event ${mode === "create" ? "created" : "updated"} successfully!`,
+        text: mode === "create" 
+          ? "Event created successfully! You can now create tasks for this event." 
+          : "Event updated successfully!",
         type: "success",
-        duration: 3000,
+        duration: 4000,
       });
+
+      // Reset the eventJustCreated flag after a delay
+      if (mode === "create") {
+        setTimeout(() => {
+          setEventJustCreated(false);
+        }, 10000); // Reset after 10 seconds
+      }
 
     } catch (error) {
       console.error(`Error ${mode === "create" ? "creating" : "updating"} event:`, error);
@@ -500,9 +592,21 @@ const EventDetail = () => {
   };
 
   const handleNewTaskClick = () => {
+    // Use currentEventId if available, otherwise fall back to eventId from location state
+    const taskEventId = currentEventId || eventId;
+    
+    if (!taskEventId) {
+      addMessageRef.current({
+        text: "Event ID not available. Please save the event first.",
+        type: "error",
+        duration: 3000,
+      });
+      return;
+    }
+    
     navigate("/events/eventDetailPage/tasks", {
       state: {
-        eventId,
+        eventId: taskEventId,
         mode: "create",
         organizationId: selectedOrganizationId || user?.organizationId,
         eventDate: fetchedEvent?.eventDate || (selectedDate ? selectedDate.toISOString() : undefined),
@@ -617,14 +721,14 @@ const EventDetail = () => {
     },
     {
       label: "Task",
-      component: <Task tasksData={tasksData || []} eventId={eventId} eventName={fetchedEvent?.eventName || ""} />,
+      component: <Task tasksData={tasksData || []} eventId={currentEventId || eventId} eventName={fetchedEvent?.eventName || ""} />,
     },
     {
       label: "Files & Uploads",
       component: (
         <FileUploads
           filesFromTasks={[]}
-          eventId={eventId}
+          eventId={currentEventId || eventId}
           organizationId={selectedOrganizationId || user?.organizationId}
         />
       ),
@@ -634,13 +738,13 @@ const EventDetail = () => {
       component: (
         <Publish
           publishData={[]}
-          eventId={eventId}
+          eventId={currentEventId || eventId}
           onDownload={() => handleDownload()}
           onSendMail={() => handleSendMail()}
         />
       ),
     },
-  ], [mode, detailSaveRef, guestsData, organizersData, formData?.eventDescription, fetchedEvent?.eventDescription, formData?.location, fetchedEvent?.locationDetails, tasksData, eventId, selectedOrganizationId, user?.organizationId, handleDownload, handleSendMail, fetchedEvent?.eventName, validationErrors]);
+  ], [mode, detailSaveRef, guestsData, organizersData, formData?.eventDescription, fetchedEvent?.eventDescription, formData?.location, fetchedEvent?.locationDetails, tasksData, currentEventId, eventId, selectedOrganizationId, user?.organizationId, handleDownload, handleSendMail, fetchedEvent?.eventName, validationErrors]);
 
   const filteredTabs = React.useMemo(() =>
     mode === "create"
@@ -666,13 +770,13 @@ const EventDetail = () => {
       icon: FileText,
       onClick: mode === "create" ? undefined : () => navigate("/events/eventDetailPage", {
         state: {
-          eventId: eventId,
+          eventId: currentEventId || eventId,
           mode: "view",
           eventData: fetchedEvent
         }
       }),
     },
-  ], [user?.organization?.name, mode, navigate, eventId, fetchedEvent]);
+  ], [user?.organization?.name, mode, navigate, currentEventId, eventId, fetchedEvent]);
 
   // Determine loading state
   const isLoading = useMemo(() => {
@@ -712,6 +816,7 @@ const EventDetail = () => {
           getEventTypeById={getEventTypeById}
           getEventTypeByName={getEventTypeByName}
           getActiveEventTypes={getActiveEventTypes}
+          eventJustCreated={eventJustCreated}
         />
       </div>
       <div className="Inner-Content">
