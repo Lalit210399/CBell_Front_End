@@ -52,6 +52,30 @@ const EventTable = () => {
     return `${day}/${month}/${year}`;
   };
 
+  // Utility function to convert text to Camel Case
+  const toCamelCase = (text) => {
+    if (!text) return "";
+    return text
+      .toLowerCase()
+      .split(/[\s_-]+/)
+      .map((word, index) => 
+        index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1)
+      )
+      .join("");
+  };
+
+  // Utility function to convert text to Title Case for display
+  const toTitleCase = (text) => {
+    if (!text) return "";
+    return text
+      .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+      .replace(/^./, str => str.toUpperCase()) // Capitalize first letter
+      .trim() // Remove leading/trailing spaces
+      .split(/[\s_-]+/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
+
   // Filter options
   const statusOptions = [
     { label: "All Status", value: "" },
@@ -182,7 +206,7 @@ const EventTable = () => {
         }
 
         return {
-          name: participantName,
+          name: toCamelCase(participantName),
           src: participantName,
           fallback: participantName.charAt(0).toUpperCase() || "?",
           size: "32px",
@@ -192,11 +216,11 @@ const EventTable = () => {
 
       return {
         id: event.id || Date.now().toString(),
-        name: event.eventName || "Unnamed Event",
-        type: event.eventTypeDesc || event.eventTypeName || "N/A",
+        name: toCamelCase(event.eventName) || "Unnamed Event",
+        type: toCamelCase(event.eventTypeDesc || event.eventTypeName) || "N/A",
         // ✅ Use formatted date
         date: event.eventDate ? formatDateTime(event.eventDate) : "N/A",
-        createdBy: event.createdByName || event.createdBy?.name || event.createdBy || "Unknown",
+        createdBy: toCamelCase(event.createdByName || event.createdBy?.name || event.createdBy) || "Unknown",
         participants: allParticipants,
         rawData: event,
         eventDate: event.eventDate, // Keep original date for filtering
@@ -233,8 +257,8 @@ const EventTable = () => {
     const uniqueTypes = [...new Set(eventsData.map(event => event.type).filter(type => type !== "N/A"))];
     const uniqueUsers = [...new Set(eventsData.map(event => event.createdBy).filter(user => user !== "Unknown"))];
     
-    setAvailableTypes(uniqueTypes.map(type => ({ label: type, value: type })));
-    setAvailableUsers(uniqueUsers.map(user => ({ label: user, value: user })));
+    setAvailableTypes(uniqueTypes.map(type => ({ label: toTitleCase(type), value: type })));
+    setAvailableUsers(uniqueUsers.map(user => ({ label: toTitleCase(user), value: user })));
 
     return eventsData;
   }, [eventsData]);
@@ -279,8 +303,10 @@ const EventTable = () => {
     // Filter by event name
     if (filterValues.eventName) {
       const lowerQuery = filterValues.eventName.toLowerCase();
+      const camelCaseQuery = toCamelCase(filterValues.eventName);
       filtered = filtered.filter(event =>
-        String(event.name).toLowerCase().includes(lowerQuery)
+        String(event.name).toLowerCase().includes(lowerQuery) ||
+        String(event.name).includes(camelCaseQuery)
       );
     }
 
@@ -314,9 +340,12 @@ const EventTable = () => {
 
     // Filter by assigned user (participants)
     if (filterValues.assignedUser) {
+      const lowerQuery = filterValues.assignedUser.toLowerCase();
+      const camelCaseQuery = toCamelCase(filterValues.assignedUser);
       filtered = filtered.filter(event =>
         event.participants.some(participant =>
-          participant.name.toLowerCase().includes(filterValues.assignedUser.toLowerCase())
+          participant.name.toLowerCase().includes(lowerQuery) ||
+          toCamelCase(participant.name).includes(camelCaseQuery)
         )
       );
     }
@@ -471,7 +500,7 @@ const EventTable = () => {
               <label>Event Type</label>
               <CustomDropdown
                 options={[{ label: "All Types", value: "" }, ...availableTypes]}
-                defaultLabel={filters.eventType || "All Types"}
+                defaultLabel={filters.eventType ? toTitleCase(filters.eventType) : "All Types"}
                 onSelect={(option) => handleFilterChange("eventType", option.value)}
               />
             </div>
@@ -480,7 +509,7 @@ const EventTable = () => {
               <label>Status</label>
               <CustomDropdown
                 options={statusOptions}
-                defaultLabel={filters.status || "All Status"}
+                defaultLabel={filters.status ? toTitleCase(filters.status) : "All Status"}
                 onSelect={(option) => handleFilterChange("status", option.value)}
               />
             </div>
@@ -489,7 +518,7 @@ const EventTable = () => {
               <label>Date Range</label>
               <CustomDropdown
                 options={dateRangeOptions}
-                defaultLabel={filters.dateRange || "All Dates"}
+                defaultLabel={filters.dateRange ? toTitleCase(filters.dateRange) : "All Dates"}
                 onSelect={(option) => handleFilterChange("dateRange", option.value)}
               />
             </div>
@@ -498,7 +527,7 @@ const EventTable = () => {
               <label>Created By</label>
               <CustomDropdown
                 options={[{ label: "All Users", value: "" }, ...availableUsers]}
-                defaultLabel={filters.createdBy || "All Users"}
+                defaultLabel={filters.createdBy ? toTitleCase(filters.createdBy) : "All Users"}
                 onSelect={(option) => handleFilterChange("createdBy", option.value)}
               />
             </div>
@@ -558,16 +587,19 @@ const EventTable = () => {
             if (key === "type") {
               return (
                 <span className="type-pill">
-                  {item.type || getEmptyText(key)}
+                  {toTitleCase(item.type) || getEmptyText(key)}
                 </span>
               );
             }
             if (key === "createdBy") {
               return (
                 <div className="created-by-name">
-                  {item.createdBy || getEmptyText(key)}
+                  {toTitleCase(item.createdBy) || getEmptyText(key)}
                 </div>
               );
+            }
+            if (key === "name") {
+              return toTitleCase(item[key]) || getEmptyText(key);
             }
             return item[key] || getEmptyText(key);
           }}
