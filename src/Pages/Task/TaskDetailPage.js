@@ -602,7 +602,7 @@ const TaskDetailPage = () => {
     if (!canSave) {
       addMessage({
         text: "You don't have permission to save this task",
-        type: "error",
+                type: "error",
         duration: 3000
       });
       return;
