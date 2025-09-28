@@ -106,8 +106,6 @@ const List = ({
     setGuests(prevGuests => {
       const updatedGuests = [...prevGuests];
       updatedGuests[index][field] = value;
-      console.log(`NewList: Field ${field} changed for index ${index}:`, value);
-      console.log("NewList: Updated guests:", updatedGuests);
       notifyParent(updatedGuests);
       return updatedGuests;
     });
@@ -126,10 +124,7 @@ const List = ({
 
   // Handle keyboard shortcuts
   const handleKeyDown = React.useCallback((e, index) => {
-    if (e.key === 'Enter' && e.ctrlKey) {
-      e.preventDefault();
-      handleAddGuest();
-    } else if (e.key === 'Escape') {
+    if (e.key === 'Escape') {
       e.preventDefault();
       setGuests(prevGuests => {
         if (prevGuests[index]?.name === "" && prevGuests[index]?.designation === "") {
@@ -140,7 +135,7 @@ const List = ({
         return prevGuests;
       });
     }
-  }, [handleAddGuest, notifyParent]);
+  }, [notifyParent]);
 
   // Focus management for new guests
   useEffect(() => {
@@ -165,58 +160,35 @@ const List = ({
     return Object.keys(errors).length === 0;
   }, [errors]);
 
-  // Add keyboard shortcut hint
-  useEffect(() => {
-    const handleGlobalKeyDown = (e) => {
-      if (e.ctrlKey && e.key === 'Enter' && isEditMode) {
-        e.preventDefault();
-        handleAddGuest();
-      }
-    };
-
-    if (isEditMode) {
-      document.addEventListener('keydown', handleGlobalKeyDown);
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleGlobalKeyDown);
-    };
-  }, [isEditMode, handleAddGuest]);
 
   return (
-    <div className="special-guests-wrapper" style={{ border: "1px solid #ccc", borderRadius: "8px", backgroundColor: "#fff", padding: "10px", maxHeight: "300px", overflowY: "auto" }}>
-      <div className="header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-        <div className="header-left" style={{ fontWeight: "bold", fontSize: "16px" }}>
+    <div className="special-guests-wrapper">
+      <div className="header">
+        <div className="header-left">
           {title}
-          {isEditMode && (
-            <span style={{ fontSize: "12px", color: "#666", fontWeight: "normal", marginLeft: "8px" }}>
-              (Ctrl+Enter to add)
-            </span>
-          )}
         </div>
         {isEditMode && (
           <button 
             ref={addButtonRef}
             className="add-guest-btn" 
             onClick={handleAddGuest} 
-            style={{ background: "none", border: "none", color: "#000", fontWeight: "bold", cursor: "pointer" }}
-            aria-label="Add new guest (Ctrl+Enter)"
-            title="Add new guest (Ctrl+Enter)"
+            aria-label="Add new guest"
+            title="Add new guest"
           >
             + Add Guests
           </button>
         )}
       </div>
-      <div className="guests-list-container" style={{ maxHeight: "240px", overflowY: "auto", scrollbarColor: "#ccc transparent", scrollbarWidth: "thin" }}>
+      <div className="guests-list-container">
         {guests.map((guest, index) => (
-          <div key={index} className="guest-card" style={{ display: "flex", alignItems: "center", borderRadius: "8px", border: "1px solid #eee", padding: "8px", marginBottom: "8px", backgroundColor: "#fff" }}>
-            <div className="avatar-circle" style={{ width: "40px", height: "40px", borderRadius: "50%", backgroundColor: "#004d61", color: "#fff", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: "bold", fontSize: "14px", marginRight: "12px" }}>
+          <div key={index} className="guest-card">
+            <div className="avatar-circle">
               {getInitials(guest.name)}
             </div>
-            <div className="guest-info" style={{ flex: 1 }}>
+            <div className="guest-info">
               {isEditMode ? (
                 <>
-                  <div style={{ position: "relative" }}>
+                  <div className="input-field-container">
                     <input
                       ref={index === guests.length - 1 && guest.name === "" ? newGuestNameRef : null}
                       type="text"
@@ -225,24 +197,16 @@ const List = ({
                       value={guest.name}
                       onChange={(e) => handleChange(index, "name", e.target.value)}
                       onKeyDown={(e) => handleKeyDown(e, index)}
-                      style={{ 
-                        width: "100%", 
-                        border: "none", 
-                        borderBottom: errors[`${index}-name`] ? "1px solid #d32f2f" : "1px solid #ccc", 
-                        outline: "none", 
-                        fontSize: "14px", 
-                        marginBottom: "4px" 
-                      }}
                       aria-label="Guest name"
                       aria-invalid={!!errors[`${index}-name`]}
                     />
                     {errors[`${index}-name`] && (
-                      <div className="error-message" style={{ color: "#d32f2f", fontSize: "12px", marginTop: "2px" }}>
+                      <div className="error-message">
                         {errors[`${index}-name`]}
                       </div>
                     )}
                   </div>
-                  <div style={{ position: "relative" }}>
+                  <div className="input-field-container">
                     <input
                       type="text"
                       className={`guest-designation-input ${errors[`${index}-designation`] ? 'error' : ''}`}
@@ -250,19 +214,11 @@ const List = ({
                       value={guest.designation}
                       onChange={(e) => handleChange(index, "designation", e.target.value)}
                       onKeyDown={(e) => handleKeyDown(e, index)}
-                      style={{ 
-                        width: "100%", 
-                        border: "none", 
-                        borderBottom: errors[`${index}-designation`] ? "1px solid #d32f2f" : "1px solid #ccc", 
-                        outline: "none", 
-                        fontSize: "12px", 
-                        color: "#666" 
-                      }}
                       aria-label="Guest designation"
                       aria-invalid={!!errors[`${index}-designation`]}
                     />
                     {errors[`${index}-designation`] && (
-                      <div className="error-message" style={{ color: "#d32f2f", fontSize: "12px", marginTop: "2px" }}>
+                      <div className="error-message">
                         {errors[`${index}-designation`]}
                       </div>
                     )}
@@ -270,8 +226,8 @@ const List = ({
                 </>
               ) : (
                 <>
-                  <p className="guest-name-text" style={{ margin: 0, fontWeight: "bold", fontSize: "14px", color: "#000" }}>{guest.name || "Name..."}</p>
-                  <p className="guest-designation-text" style={{ margin: 0, fontSize: "12px", color: "#888" }}>{guest.designation || "Designation..."}</p>
+                  <p className="guest-name-text">{guest.name || "Name..."}</p>
+                  <p className="guest-designation-text">{guest.designation || "Designation..."}</p>
                 </>
               )}
             </div>
@@ -281,7 +237,6 @@ const List = ({
                 onClick={() => handleDeleteGuest(index)}
                 aria-label={`Delete guest ${guest.name || 'at position ' + (index + 1)}`}
                 title="Delete guest (Escape if empty)"
-                style={{ background: "none", border: "none", color: "#888", fontSize: "20px", cursor: "pointer", marginLeft: "8px" }}
               >
                 ×
               </button>
@@ -291,16 +246,6 @@ const List = ({
         {isEditMode && (
           <div 
             className="guest-card placeholder-card" 
-            style={{ 
-              display: "flex", 
-              alignItems: "center", 
-              borderRadius: "8px", 
-              border: "2px dashed #ccc", 
-              padding: "8px", 
-              backgroundColor: "#f8f9fa",
-              opacity: 0.7,
-              cursor: "pointer"
-            }}
             onClick={handleAddGuest}
             role="button"
             tabIndex={0}
@@ -311,16 +256,16 @@ const List = ({
               }
             }}
             aria-label="Click to add new guest"
-            title="Click to add new guest (Ctrl+Enter)"
+            title="Click to add new guest"
           >
-            <div className="avatar-circle" style={{ width: "40px", height: "40px", borderRadius: "50%", backgroundColor: "#6c757d", color: "#fff", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: "bold", fontSize: "14px", marginRight: "12px" }}>
+            <div className="placeholder-avatar">
               +
             </div>
-            <div className="guest-info" style={{ flex: 1 }}>
-              <div style={{ width: "100%", border: "none", borderBottom: "1px dashed #ccc", outline: "none", fontSize: "14px", marginBottom: "4px", color: "#6c757d", fontStyle: "italic" }}>
+            <div className="guest-info">
+              <div className="placeholder-text-name">
                 Click to add new guest...
               </div>
-              <div style={{ width: "100%", border: "none", borderBottom: "1px dashed #ccc", outline: "none", fontSize: "12px", color: "#6c757d", fontStyle: "italic" }}>
+              <div className="placeholder-text-designation">
                 Name and designation...
               </div>
             </div>

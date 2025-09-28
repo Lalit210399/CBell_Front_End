@@ -170,7 +170,12 @@ const Dashboard = () => {
             items: [{
               name: ev.eventName,
               id: ev.id,
-              eventData: ev
+              // Use event's organization ID if available, otherwise use the current scope organization ID
+              organizationId: ev.organizationId || ev.orgId || organizationId,
+              eventData: {
+                ...ev,
+                organizationId: ev.organizationId || ev.orgId || organizationId
+              }
             }],
           }));
   }, [orgIdReady, selectedOrganizationId, user?.organizationId, selectedMonth, selectedYear]);
@@ -260,6 +265,8 @@ const Dashboard = () => {
     return data.events.map((event) => ({
       status: "Active",
           eventName: event.eventName,
+      // Use event's organization ID if available, otherwise use the current scope organization ID
+      organizationId: event.organizationId || event.orgId || organizationId,
       assignTo: event.assignedUsers?.map((user, index) => ({
         name: user.userName || user.name || user.fullName || `User ${index + 1}`,
         src: user.src || "",
@@ -310,6 +317,8 @@ const Dashboard = () => {
       status: event.status || "Active",
       eventName: event.eventName,
       collegeName: event.organizationName || event.collegeName || event.college || "",
+      // Use event's organization ID if available, otherwise use the current scope organization ID
+      organizationId: event.organizationId || event.orgId || organizationId,
       assignTo: event.assignedUsers?.map((user, index) => ({
         name: user.userName || user.name || user.fullName || `User ${index + 1}`,
         src: user.src || "",
@@ -440,7 +449,10 @@ const Dashboard = () => {
     },
     {
       icon: <UserCheck size={24} color="rgba(60, 131, 246, 1)" />,
-      count: summaryData?.assignedEvents ?? 0,
+      count: loadingSummary
+        ? "..."
+        : errorSummary
+        ? "!" :summaryData?.assignedEvents ?? 0,
       title: "Events Assigned to Me",
       subtitle: "Events I'm Managing",
       bgcolor: "rgba(185, 210, 251, 0.2)",
@@ -452,7 +464,10 @@ const Dashboard = () => {
     },
     {
       icon: <ClipboardList size={24} color="rgba(168, 85, 247, 1)" />,
-      count: summaryData?.totalTasks ?? 0,
+      count: loadingSummary
+        ? "..."
+        : errorSummary
+        ? "!" :summaryData?.totalTasks ?? 0,
       title: "Total Tasks",
       subtitle: "All Tasks Across Events",
       bgcolor: "rgba(224, 194, 251, 0.2)",
@@ -464,7 +479,10 @@ const Dashboard = () => {
     },
     {
       icon: <ClockIcon size={24} color="#F59F0A" />,
-      count: summaryData?.dueSoonTasks ?? 0,
+      count: loadingSummary
+        ? "..."
+        : errorSummary
+        ? "!" :summaryData?.dueSoonTasks ?? 0,
       title: "Tasks Due Next 7 Days",
       subtitle: "Tasks Due Soon",
       bgcolor: "rgba(245, 159, 10, 0.1)",
@@ -476,7 +494,10 @@ const Dashboard = () => {
     },
     {
       icon: <AlertCircle size={24} color="rgba(220, 38, 38, 1)" />,
-      count: summaryData?.overdueTasks ?? 0,
+      count: loadingSummary
+        ? "..."
+        : errorSummary
+        ? "!" :summaryData?.overdueTasks ?? 0,
       title: "Overdue Tasks",
       subtitle: "For Institute Level",
       bgcolor: "rgba(242, 178, 178, 0.2)",
@@ -488,7 +509,10 @@ const Dashboard = () => {
     },
     {
       icon: <Plus size={24} color="rgba(156, 163, 175, 1)" />,
-      count: summaryData?.newTasks ?? 0,
+      count: loadingSummary
+        ? "..."
+        : errorSummary
+        ? "!" :summaryData?.newTasks ?? 0,
       title: "New Tasks",
       subtitle: "Awaiting Assignment",
       bgcolor: "rgba(219, 223, 226, 0.2)",
@@ -500,7 +524,10 @@ const Dashboard = () => {
     },
     {
       icon: <Zap size={24} color="rgba(59, 130, 246, 1)" />,
-      count: summaryData?.activeTasks ?? 0,
+      count: loadingSummary
+        ? "..."
+        : errorSummary
+        ? "!" :summaryData?.activeTasks ?? 0,
       title: "Active Tasks",
       subtitle: "Currently In Progress",
       bgcolor: "rgba(216, 230, 253, 0.2)",
@@ -512,7 +539,10 @@ const Dashboard = () => {
     },
     {
       icon: <ClockIcon size={24} color="rgba(249, 115, 22, 1)" />,
-      count: summaryData?.underApprovalTasks ?? 0,
+      count: loadingSummary
+        ? "..."
+        : errorSummary
+        ? "!" :summaryData?.underApprovalTasks ?? 0,
       title: "Under Approval Tasks",
       subtitle: "Awaiting Approvals",
       bgcolor: "rgba(253, 205, 170, 0.2)",
@@ -524,7 +554,10 @@ const Dashboard = () => {
     },
     {
       icon: <CheckCircleIcon size={24} color="rgba(34, 197, 94, 1)" />,
-      count: summaryData?.approvedTasks ?? 0,
+      count: loadingSummary
+        ? "..."
+        : errorSummary
+        ? "!" :summaryData?.approvedTasks ?? 0,
       title: "Approved Tasks",
       subtitle: "Ready To Publish",
       bgcolor: "rgba(176, 233, 197, 0.2)",
@@ -536,7 +569,10 @@ const Dashboard = () => {
     },
     {
       icon: <Star size={24} color="rgba(168, 85, 247, 1)" />,
-      count: summaryData?.publishedTasks ?? 0,
+      count: loadingSummary
+        ? "..."
+        : errorSummary
+        ? "!" :summaryData?.publishedTasks ?? 0,
       title: "Published Tasks",
       subtitle: "Completed Tasks",
       bgcolor: "rgba(224, 194, 251, 0.2)",
@@ -703,6 +739,7 @@ const Dashboard = () => {
                 showDropdown={[
                   "Total Tasks",
                 ].includes(currentTitle)}
+                hideAssignedToColumn={currentTitle === "New Tasks"}
                 emptyStateMessage={`No ${currentTitle.toLowerCase()} found`}
               />
             </div>

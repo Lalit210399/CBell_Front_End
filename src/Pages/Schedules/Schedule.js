@@ -1,15 +1,12 @@
 // Schedule.js
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import CustomCalendar from "../../CommonComponents/Calendar/CustomCalendar";
-import { useMessages } from "../../Context/MessageContext";
 import { useUser } from "../../Context/UserContext";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
-import useApi from "../../Hooks/useApi";
 import "./Schedule.css";
 
 const Schedule = () => {
-  const { addMessage } = useMessages();
   const { user, selectedOrganizationId, isViewingOwnOrganization, scopeChangeTrigger } = useUser();
   const navigate = useNavigate();
 
@@ -37,7 +34,7 @@ const Schedule = () => {
     }
 
     // Use the new hierarchy endpoint
-    const response = await fetchWithRefresh(`/apis/event/hierarchy/${organizationId}?userId=${user?.userId}`, {
+    const response = await fetchWithRefresh(`/apis/event/hierarchy/${organizationId}?userId=${user?.userId}&filter=schedule`, {
       method: "GET",
       headers,
     });
@@ -83,20 +80,37 @@ const Schedule = () => {
     return formattedEvents;
   }, [selectedOrganizationId, user?.organizationId, user?.userId]);
 
-  /** -------------------- Use API Hook -------------------- **/
-  const {
-    data: eventsData,
-    loading,
-    error,
-    execute: executeFetchEvents
-  } = useApi(fetchEvents, [selectedOrganizationId], false);
+  /** -------------------- State Management -------------------- **/
+  const [eventsData, setEventsData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const isFetchingRef = useRef(false);
 
   // Execute API when organization is ready or scope changes
-  useEffect(() => {
-    if (selectedOrganizationId) {
-      executeFetchEvents();
+  const executeFetchEvents = useCallback(async () => {
+    if (selectedOrganizationId && !isFetchingRef.current) {
+      
+      isFetchingRef.current = true;
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Call fetchEvents directly without including it in dependencies
+        const data = await fetchEvents();
+        setEventsData(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+        isFetchingRef.current = false;
+      }
     }
-  }, [selectedOrganizationId, executeFetchEvents, scopeChangeTrigger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedOrganizationId, user?.userId]);
+
+  useEffect(() => {
+    executeFetchEvents();
+  }, [executeFetchEvents, scopeChangeTrigger]);
 
   // Process events data
   const events = useMemo(() => {

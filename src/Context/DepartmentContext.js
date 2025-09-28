@@ -12,7 +12,7 @@ export const useDepartments = () => {
   return context;
 };
 
-export const DepartmentProvider = ({ children }) => {
+export const DepartmentProvider = ({ children, eventOrganizationId = null }) => {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -35,11 +35,9 @@ export const DepartmentProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const organizationId = selectedOrganizationId || user?.organizationId;
+      // Use event's organization ID if provided, otherwise fall back to user's organization
+      const organizationId = eventOrganizationId || selectedOrganizationId || user?.organizationId;
       
-      console.log("DepartmentContext: selectedOrganizationId:", selectedOrganizationId);
-      console.log("DepartmentContext: user?.organizationId:", user?.organizationId);
-      console.log("DepartmentContext: final organizationId:", organizationId);
       
       if (!organizationId) {
         throw new Error("No organization selected");
@@ -60,15 +58,11 @@ export const DepartmentProvider = ({ children }) => {
       }
 
       const apiUrl = `/apis/department/organization/${organizationId}`;
-      console.log(`DepartmentContext: Calling API URL: ${apiUrl}`);
-      console.log(`DepartmentContext: Headers:`, headers);
       
       const response = await fetchWithRefresh(apiUrl, {
         method: "GET",
         headers,
       });
-      console.log(`DepartmentContext: API response status: ${response.status}`);
-      console.log(`DepartmentContext: API response headers:`, response.headers);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch departments: ${response.status}`);
@@ -150,7 +144,7 @@ export const DepartmentProvider = ({ children }) => {
       setLastFetched(null);
       setError(null);
     }
-  }, [selectedOrganizationId, user?.organizationId, user?.scope]);
+  }, [selectedOrganizationId, user?.organizationId, user?.scope, eventOrganizationId]);
 
   // Clear cache when organization changes
   useEffect(() => {

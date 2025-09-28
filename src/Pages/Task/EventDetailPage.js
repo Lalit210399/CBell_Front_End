@@ -13,8 +13,8 @@ import { useUser } from "../../Context/UserContext";
 import { useMessages } from "../../Context/MessageContext";
 import { useEventTypes } from "../../Hooks/useEventTypes";
 import { useDepartments } from "../../Hooks/useDepartments";
+import { DepartmentProvider } from "../../Context/DepartmentContext";
 import { getHierarchyUsers } from "../../Services/AuthN";
-import useApi from "../../Hooks/useApi";
 import { Building, Calendar, FileText } from "lucide-react";
 import "./Tasks.css";
 
@@ -28,6 +28,8 @@ const EventDetail = () => {
   const [usersList, setUsersList] = useState([]);
   const [assignedUsers, setAssignedUsers] = useState([]);
   const [selectedDepartments, setSelectedDepartments] = useState([]);
+  const [currentEventId, setCurrentEventId] = useState(null);
+  const [eventJustCreated, setEventJustCreated] = useState(false);
   const detailSaveRef = useRef(null);
   const { user, selectedOrganizationId, isViewingOwnOrganization, scopeChangeTrigger } = useUser();
   const { addMessage } = useMessages();
@@ -52,6 +54,13 @@ const EventDetail = () => {
     locationSelectedDate ? new Date(locationSelectedDate) : null
   ), [locationSelectedDate]);
 
+  // Initialize currentEventId from location state or use eventId
+  React.useEffect(() => {
+    if (eventId) {
+      setCurrentEventId(eventId);
+    }
+  }, [eventId]);
+
   // Only sync from navigation when initialMode changes; don't override local edits
   useEffect(() => {
     if (initialMode) {
@@ -61,9 +70,16 @@ const EventDetail = () => {
 
   /** -------------------- API Functions -------------------- **/
   const fetchTasks = useCallback(async () => {
-        const organizationId = selectedOrganizationId || user?.organizationId;
+        // Use event's organization ID if available, otherwise fall back to current scope organization
+        const eventOrgId = fetchedEvent?.organizationId || location.state?.eventData?.organizationId;
+        const organizationId = eventOrgId || selectedOrganizationId || user?.organizationId;
+        const taskEventId = currentEventId || eventId;
         
-        const response = await fetchWithRefresh(`/apis/task/by-event/${eventId}?organizationId=${organizationId}`, {
+        if (!taskEventId) {
+          return [];
+        }
+        
+        const response = await fetchWithRefresh(`/apis/task/by-event/${taskEventId}?organizationId=${organizationId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -77,7 +93,6 @@ const EventDetail = () => {
         }
 
         if (response.status === 500) {
-          console.error("Server error fetching tasks - likely backend data type mismatch");
           addMessageRef.current({
             text: "Unable to load tasks due to server error. Please try again later.",
             type: "error",
@@ -91,16 +106,6 @@ const EventDetail = () => {
 
         const safeArray = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
         
-        // Debug: Log the raw task data
-        console.log("=== RAW TASK DATA DEBUG ===");
-        console.log("Raw data:", data);
-        console.log("Safe array:", safeArray);
-        if (safeArray.length > 0) {
-          console.log("First task:", safeArray[0]);
-          console.log("First task assignedTo:", safeArray[0].assignedTo);
-          console.log("First task assignedTo type:", typeof safeArray[0].assignedTo);
-          console.log("First task assignedTo is array:", Array.isArray(safeArray[0].assignedTo));
-        }
         
         const formattedTasks = safeArray.map((task) => ({
           id: task.id,
@@ -114,17 +119,19 @@ const EventDetail = () => {
           ...task
         }));
         
-        console.log("Formatted tasks:", formattedTasks);
 
     return formattedTasks;
-  }, [eventId, selectedOrganizationId, user?.organizationId]);
+  }, [currentEventId, eventId, selectedOrganizationId, user?.organizationId, fetchedEvent?.organizationId, location.state?.eventData?.organizationId]);
 
   const fetchEvent = useCallback(async () => {
-    if (!eventId) {
+    const eventIdToUse = currentEventId || eventId;
+    if (!eventIdToUse) {
       return null;
     }
     
-        const organizationId = selectedOrganizationId || user?.organizationId;
+        // Use event's organization ID if available, otherwise fall back to current scope organization
+        const eventOrgId = location.state?.eventData?.organizationId;
+        const organizationId = eventOrgId || selectedOrganizationId || user?.organizationId;
         
         if (!organizationId) {
           throw new Error("No organization selected");
@@ -147,7 +154,7 @@ const EventDetail = () => {
 
         // Use the new event details API endpoint
         const response = await fetchWithRefresh(
-          `/apis/event/get_event/${eventId}?organizationId=${organizationId}&userId=${user?.userId}`,
+          `/apis/event/get_event/${eventIdToUse}?organizationId=${organizationId}&userId=${user?.userId}`,
           {
             method: "GET",
             headers,
@@ -174,39 +181,76 @@ const EventDetail = () => {
         };
 
     return transformedData;
-  }, [eventId, selectedOrganizationId, user?.organizationId, user?.userId]);
+  }, [currentEventId, eventId, selectedOrganizationId, user?.organizationId, user?.userId, location.state?.eventData?.organizationId]);
 
-  /** -------------------- Use API Hooks -------------------- **/
-  const {
-    data: tasksData,
-    execute: executeFetchTasks
-  } = useApi(fetchTasks, [eventId, selectedOrganizationId], false);
-
-  const {
-    data: eventData,
-    loading: eventLoading,
-    execute: executeFetchEvent
-  } = useApi(fetchEvent, [eventId, selectedOrganizationId], false);
+  /** -------------------- State Management -------------------- **/
+  const [tasksData, setTasksData] = useState(null);
+  const [eventData, setEventData] = useState(null);
+  const [eventLoading, setEventLoading] = useState(false);
+  const [tasksLoading, setTasksLoading] = useState(false);
+  const [eventError, setEventError] = useState(null);
+  const [tasksError, setTasksError] = useState(null);
+  const isFetchingEventRef = useRef(false);
+  const isFetchingTasksRef = useRef(false);
 
   // Execute tasks API when activeTab is "Task" and eventId is available
-  useEffect(() => {
-    if (activeTab === "Task" && eventId) {
-      executeFetchTasks();
+  const executeFetchTasks = useCallback(async () => {
+    const taskEventId = currentEventId || eventId;
+    if (activeTab === "Task" && taskEventId && !isFetchingTasksRef.current) {
+      
+      isFetchingTasksRef.current = true;
+      setTasksLoading(true);
+      setTasksError(null);
+      
+      try {
+        const data = await fetchTasks();
+        setTasksData(data);
+      } catch (err) {
+        setTasksError(err.message);
+      } finally {
+        setTasksLoading(false);
+        isFetchingTasksRef.current = false;
+      }
     }
-  }, [activeTab, eventId, executeFetchTasks, scopeChangeTrigger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, currentEventId, eventId, fetchTasks]);
 
   // Execute event API when eventId is available and not in create mode
-  useEffect(() => {
-    if (eventId && mode !== "create") {
-      executeFetchEvent();
+  const executeFetchEvent = useCallback(async () => {
+    const taskEventId = currentEventId || eventId;
+    if (taskEventId && mode !== "create" && !isFetchingEventRef.current) {
+      
+      isFetchingEventRef.current = true;
+      setEventLoading(true);
+      setEventError(null);
+      
+      try {
+        const data = await fetchEvent();
+        setEventData(data);
+      } catch (err) {
+        setEventError(err.message);
+      } finally {
+        setEventLoading(false);
+        isFetchingEventRef.current = false;
+      }
     }
-  }, [eventId, mode, executeFetchEvent, scopeChangeTrigger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentEventId, eventId, mode, fetchEvent]);
+
+  useEffect(() => {
+    executeFetchTasks();
+  }, [executeFetchTasks, scopeChangeTrigger]);
+
+  useEffect(() => {
+    executeFetchEvent();
+  }, [executeFetchEvent, scopeChangeTrigger]);
 
   const fetchUsers = useCallback(async () => {
-    const organizationId = selectedOrganizationId || user?.organizationId;
+    // Use event's organization ID if available, otherwise fall back to current scope organization
+    const eventOrgId = fetchedEvent?.organizationId || location.state?.eventData?.organizationId;
+    const organizationId = eventOrgId || selectedOrganizationId || user?.organizationId;
     
     if (!organizationId) {
-      console.warn("No organizationId available for user fetch");
       return [];
     }
 
@@ -223,15 +267,37 @@ const EventDetail = () => {
     }));
 
     return formattedUsers;
-  }, [selectedOrganizationId, user?.organizationId]);
+  }, [selectedOrganizationId, user?.organizationId, fetchedEvent?.organizationId, location.state?.eventData?.organizationId]);
 
-  const {
-    data: usersData,
-    loading: usersLoading,
-    execute: executeFetchUsers
-  } = useApi(fetchUsers, [selectedOrganizationId], false);
+  const [usersData, setUsersData] = useState(null);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState(null);
+  const isFetchingUsersRef = useRef(false);
 
   // Execute users API when component mounts or scope changes
+  const executeFetchUsers = useCallback(async () => {
+    // Use event's organization ID if available, otherwise fall back to current scope organization
+    const eventOrgId = fetchedEvent?.organizationId || location.state?.eventData?.organizationId;
+    const organizationId = eventOrgId || selectedOrganizationId || user?.organizationId;
+    if (organizationId && !isFetchingUsersRef.current) {
+      
+      isFetchingUsersRef.current = true;
+      setUsersLoading(true);
+      setUsersError(null);
+      
+      try {
+        const data = await fetchUsers();
+        setUsersData(data);
+      } catch (err) {
+        setUsersError(err.message);
+      } finally {
+        setUsersLoading(false);
+        isFetchingUsersRef.current = false;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedOrganizationId, user?.organizationId, fetchUsers, fetchedEvent?.organizationId, location.state?.eventData?.organizationId]);
+
   useEffect(() => {
     executeFetchUsers();
   }, [executeFetchUsers, scopeChangeTrigger]);
@@ -285,28 +351,84 @@ const EventDetail = () => {
     const eventAllowsCRUD = fetchedEvent?.canCRUD !== false;
     const isOwnOrg = isViewingOwnOrganization();
     
-    return {
+    // Check if user is assigned to this event (for cross-organization events)
+    const isAssignedToEvent = fetchedEvent?.assignedUsers?.some(assignedUser => 
+      assignedUser.userId === user?.userId || 
+      assignedUser.id === user?.userId ||
+      assignedUser.userId === user?.id ||
+      assignedUser.id === user?.id
+    ) ?? false;
+    
+    
+    // Allow actions if: 1) User is in their own org, OR 2) User is assigned to the event
+    const canPerformActions = isOwnOrg || isAssignedToEvent;
+    
+    const permissionsResult = {
       // New Event: Only check organization scope (not canCRUD)
       canCreateEvent: isOwnOrg,
-      // New Task: Check user permissions + canCRUD + organization scope
-      canCreateTask: userCanCreateTask && eventAllowsCRUD && isOwnOrg,
-      // Edit/Save: Check user permissions + canCRUD + organization scope
-      canEdit: mode === "create" ? isOwnOrg : userCanEdit && eventAllowsCRUD && isOwnOrg,
-      canSave: mode === "create" ? isOwnOrg : userCanEdit && eventAllowsCRUD && isOwnOrg,
+      // New Task: Check user permissions + canCRUD + (own org OR assigned to event)
+      canCreateTask: userCanCreateTask && eventAllowsCRUD && canPerformActions,
+      // Edit/Save: Check user permissions + canCRUD + (own org OR assigned to event)
+      canEdit: mode === "create" ? isOwnOrg : userCanEdit && eventAllowsCRUD && canPerformActions,
+      canSave: mode === "create" ? isOwnOrg : userCanEdit && eventAllowsCRUD && canPerformActions,
+      // Publish: Only assigned users can publish (same logic as other actions)
+      canPublish: canPerformActions,
     };
-  }, [mode, userPermissions?.permissions?.Events, userPermissions?.permissions?.Tasks, fetchedEvent?.canCRUD, isViewingOwnOrganization]);
+    
+    // Debug logging
+    console.log("EventDetailPage permissions:", {
+      isOwnOrg,
+      isAssignedToEvent,
+      canPerformActions,
+      canPublish: permissionsResult.canPublish,
+      user: user?.userId,
+      assignedUsers: fetchedEvent?.assignedUsers
+    });
+    
+    return permissionsResult;
+  }, [mode, userPermissions?.permissions?.Events, userPermissions?.permissions?.Tasks, fetchedEvent?.canCRUD, isViewingOwnOrganization, fetchedEvent?.assignedUsers, user?.userId]);
 
   const handleSaveEvent = async (topSectionData, detailData) => {
     setIsSubmitting(true);
-    // Basic validation for required fields: name/title and date
+    // Comprehensive validation for all required fields
     const errors = {};
+    
+    // Validate Event Name
     const titleValue = (topSectionData?.title || "").trim();
     if (!titleValue) {
       errors.title = "Event name is required";
     }
+    
+    // Validate Event Type
+    const eventTypeValue = (topSectionData?.type || topSectionData?.typeName || "").trim();
+    if (!eventTypeValue) {
+      errors.eventType = "Event type is required";
+    }
+    
+    // Validate Date
     if (!topSectionData?.date) {
       errors.date = "Event date is required";
+    } else {
+      // Additional validation: date should not be in the past
+      const selectedDate = new Date(topSectionData.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        errors.date = "Event date cannot be in the past";
+      }
     }
+    
+    // Validate Time
+    if (!topSectionData?.time) {
+      errors.time = "Event time is required";
+    }
+    
+    // Validate Description
+    const descriptionValue = (detailData?.description || "").trim();
+    if (!descriptionValue) {
+      errors.description = "Event description is required";
+    }
+    
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       setIsSubmitting(false);
@@ -325,10 +447,6 @@ const EventDetail = () => {
     // Get department IDs from topSectionData
     const departmentIds = topSectionData?.departmentIds || selectedDepartments;
     
-    console.log("EventDetailPage: handleSaveEvent called");
-    console.log("EventDetailPage: topSectionData:", topSectionData);
-    console.log("EventDetailPage: detailData received:", detailData);
-    console.log("EventDetailPage: finalDetailData:", finalDetailData);
 
     // Prepare assignedUsers array - assignedUsers already contains full user objects
     const assignedUsersPayload = assignedUsers.map(assignedUser => {
@@ -353,32 +471,36 @@ const EventDetail = () => {
       };
     });
 
-    const payload = {
-      eventName: titleValue,
-      organizationId: selectedOrganizationId || user?.organizationId,
-      eventTypeId: topSectionData.eventTypeId || eventTypeId || fetchedEvent?.eventTypeId,
-      eventTypeName: (topSectionData.typeName || fetchedEvent?.typeName || "").trim(),
-      eventDescription: finalDetailData.description || "",
-      locationDetails: finalDetailData.location || "Pune",
-      coordinators: (finalDetailData.organizers || []).map(org => ({
-        name: org.name,
-        title: org.title || "Coordinator"
-      })),
-      specialGuests: (finalDetailData.guests || []).map(guest => ({
-        name: guest.name,
-        title: guest.title || "Guest"
-      })),
-      assignedUsers: assignedUsersPayload,
-      departmentIds: departmentIds,
+     // Use event's organization ID if available, otherwise fall back to current scope organization
+     const eventOrgId = fetchedEvent?.organizationId || location.state?.eventData?.organizationId;
+     const organizationId = eventOrgId || selectedOrganizationId || user?.organizationId;
+     
+     const payload = {
+       eventName: titleValue,
+       organizationId: organizationId,
+       eventTypeId: topSectionData.eventTypeId || eventTypeId || fetchedEvent?.eventTypeId,
+       eventTypeName: (topSectionData.typeName || topSectionData.type || fetchedEvent?.typeName || "").trim(),
+       eventDescription: finalDetailData.description || "",
+       locationDetails: finalDetailData.location || "Pune",
+       coordinators: (finalDetailData.organizers || []).map(org => ({
+         name: org.name,
+         title: org.title || "Coordinator"
+       })),
+       specialGuests: (finalDetailData.guests || []).map(guest => ({
+         name: guest.name,
+         title: guest.title || "Guest"
+       })),
+       assignedUsers: assignedUsersPayload,
+       departmentIds: departmentIds,
       // Expect topSectionData.date to be a datetime-local value; convert to ISO
-      eventDate: topSectionData?.date
-        ? new Date(topSectionData.date).toISOString()
-        : (selectedDate ? selectedDate.toISOString() : new Date().toISOString()),
-      createdBy: user?.userId,
-      createdByName: user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.userName || "Unknown User" : "Unknown User",
-      isPrivate: false,
-      updatedBy: user?.userId
-    };
+       eventDate: topSectionData?.date
+         ? new Date(topSectionData.date).toISOString()
+         : (selectedDate ? selectedDate.toISOString() : new Date().toISOString()),
+       createdBy: user?.userId,
+       createdByName: user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.userName || "Unknown User" : "Unknown User",
+       isPrivate: false,
+       updatedBy: user?.userId
+     };
 
     try {
       const url = mode === "create"
@@ -401,15 +523,22 @@ const EventDetail = () => {
       const result = await response.json();
 
       // For new events, get the ID from the response and update the state
-      if (mode === "create" && result.id) {
+      // Handle both possible response formats: result.id or result.eventId
+      const newEventId = result.eventId || result.id;
+      if (mode === "create" && newEventId) {
+        // Update the current event ID state
+        setCurrentEventId(newEventId);
+        // Mark that event was just created
+        setEventJustCreated(true);
+        
         // Update the URL state to include the new event ID
         navigate(location.pathname, {
           state: {
             ...location.state,
-            eventId: result.id,
+            eventId: newEventId,
             eventData: {
               ...payload,
-              id: result.id,
+              id: newEventId,
               coordinators: payload.coordinators,
               specialGuests: payload.specialGuests,
               assignedUsers: payload.assignedUsers,
@@ -423,7 +552,7 @@ const EventDetail = () => {
       // Update the local state with the saved data
       const updatedEvent = {
         ...payload,
-        id: mode === "create" ? result.id : eventId,
+        id: mode === "create" ? newEventId : eventId,
         coordinators: payload.coordinators,
         specialGuests: payload.specialGuests,
         assignedUsers: payload.assignedUsers,
@@ -435,13 +564,21 @@ const EventDetail = () => {
       // Switch to view mode after successful save/create
       setMode("view");
       addMessageRef.current({
-        text: `Event ${mode === "create" ? "created" : "updated"} successfully!`,
+        text: mode === "create" 
+          ? "Event created successfully! You can now create tasks for this event." 
+          : "Event updated successfully!",
         type: "success",
-        duration: 3000,
+        duration: 4000,
       });
 
+      // Reset the eventJustCreated flag after a delay
+      if (mode === "create") {
+        setTimeout(() => {
+          setEventJustCreated(false);
+        }, 10000); // Reset after 10 seconds
+      }
+
     } catch (error) {
-      console.error(`Error ${mode === "create" ? "creating" : "updating"} event:`, error);
       addMessageRef.current({
         text: `Failed to ${mode === "create" ? "create" : "update"} event.`,
         type: "error",
@@ -489,11 +626,23 @@ const EventDetail = () => {
   };
 
   const handleNewTaskClick = () => {
+    // Use currentEventId if available, otherwise fall back to eventId from location state
+    const taskEventId = currentEventId || eventId;
+    
+    if (!taskEventId) {
+      addMessageRef.current({
+        text: "Event ID not available. Please save the event first.",
+        type: "error",
+        duration: 3000,
+      });
+      return;
+    }
+    
     navigate("/events/eventDetailPage/tasks", {
       state: {
-        eventId,
+        eventId: taskEventId,
         mode: "create",
-        organizationId: selectedOrganizationId || user?.organizationId,
+        organizationId: fetchedEvent?.organizationId || location.state?.eventData?.organizationId || selectedOrganizationId || user?.organizationId,
         eventDate: fetchedEvent?.eventDate || (selectedDate ? selectedDate.toISOString() : undefined),
         eventName: fetchedEvent?.eventName || "New Event",
       },
@@ -548,31 +697,32 @@ const EventDetail = () => {
       ? (eventType || "")
       : (fetchedEvent?.typeName || getEventTypeById(fetchedEvent?.eventTypeId)?.name || "");
 
-    return {
-    title: mode === "create" ? formData?.eventName || "" : fetchedEvent?.eventName || "",
-    date: mode === "create"
-      ? selectedDate
-        ? formatDateTimeLocal(selectedDate)
-        : formatDateTimeLocal(new Date())
-      : fetchedEvent?.eventDate
-        ? formatDateTimeLocal(fetchedEvent.eventDate)
-        : formatDateTimeLocal(new Date()),
-      type: eventTypeName,
-      typeDesc: eventTypeName,
-    createdBy: mode === "create"
-      ? (user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.userName || "Current User" : "Current User")
-      : (fetchedEvent?.createdByName || `User ID ${fetchedEvent?.createdBy || ""}`),
-    creatorAvatar: {
-      id: 0,
-      name: mode === "create" 
-        ? (user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.userName || "Current User" : "Current User")
-        : (fetchedEvent?.createdByName || `User ID ${fetchedEvent?.createdBy || ""}`),
-      size: "24px",
-      shape: "circle",
-    },
-    participants,
-    };
-  }, [mode, formData?.eventName, fetchedEvent?.eventName, selectedDate, fetchedEvent?.eventDate, fetchedEvent?.typeName, fetchedEvent?.eventTypeId, eventType, user, fetchedEvent?.createdBy, fetchedEvent?.createdByName, participants, getEventTypeById]);
+     return {
+     title: mode === "create" ? formData?.eventName || "" : fetchedEvent?.eventName || "",
+     date: mode === "create"
+       ? selectedDate
+         ? formatDateTimeLocal(selectedDate)
+         : null
+       : fetchedEvent?.eventDate
+         ? formatDateTimeLocal(fetchedEvent.eventDate)
+         : null,
+       type: eventTypeName,
+       typeName: eventTypeName,
+       eventTypeId: mode === "create" ? eventTypeId : fetchedEvent?.eventTypeId,
+     createdBy: mode === "create"
+       ? (user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.userName || "Current User" : "Current User")
+       : (fetchedEvent?.createdByName || `User ID ${fetchedEvent?.createdBy || ""}`),
+     creatorAvatar: {
+       id: 0,
+       name: mode === "create" 
+         ? (user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.userName || "Current User" : "Current User")
+         : (fetchedEvent?.createdByName || `User ID ${fetchedEvent?.createdBy || ""}`),
+       size: "24px",
+       shape: "circle",
+     },
+     participants,
+     };
+  }, [mode, formData?.eventName, fetchedEvent?.eventName, selectedDate, fetchedEvent?.eventDate, fetchedEvent?.typeName, fetchedEvent?.eventTypeId, eventType, eventTypeId, user, fetchedEvent?.createdBy, fetchedEvent?.createdByName, participants, getEventTypeById]);
 
   const guestsData = React.useMemo(() =>
     mode === "create" ? [] : fetchedEvent?.specialGuests || [],
@@ -598,20 +748,22 @@ const EventDetail = () => {
           initialLocation={
             mode === "create" ? formData?.location || "" : fetchedEvent?.locationDetails || ""
           }
+          validationErrors={validationErrors}
+          onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
         />
       ),
     },
     {
       label: "Task",
-      component: <Task tasksData={tasksData || []} eventId={eventId} eventName={fetchedEvent?.eventName || ""} />,
+      component: <Task tasksData={tasksData || []} eventId={currentEventId || eventId} eventName={fetchedEvent?.eventName || ""} />,
     },
     {
       label: "Files & Uploads",
       component: (
         <FileUploads
           filesFromTasks={[]}
-          eventId={eventId}
-          organizationId={selectedOrganizationId || user?.organizationId}
+          eventId={currentEventId || eventId}
+          organizationId={fetchedEvent?.organizationId || location.state?.eventData?.organizationId || selectedOrganizationId || user?.organizationId}
         />
       ),
     },
@@ -620,13 +772,15 @@ const EventDetail = () => {
       component: (
         <Publish
           publishData={[]}
-          eventId={eventId}
+          eventId={currentEventId || eventId}
           onDownload={() => handleDownload()}
           onSendMail={() => handleSendMail()}
+          canPublish={permissions.canPublish}
+          user={user}
         />
       ),
     },
-  ], [mode, detailSaveRef, guestsData, organizersData, formData?.eventDescription, fetchedEvent?.eventDescription, formData?.location, fetchedEvent?.locationDetails, tasksData, eventId, selectedOrganizationId, user?.organizationId, handleDownload, handleSendMail, fetchedEvent?.eventName]);
+  ], [mode, detailSaveRef, guestsData, organizersData, formData?.eventDescription, fetchedEvent?.eventDescription, formData?.location, fetchedEvent?.locationDetails, tasksData, currentEventId, eventId, selectedOrganizationId, user?.organizationId, handleDownload, handleSendMail, fetchedEvent?.eventName, validationErrors, permissions.canPublish, user]);
 
   const filteredTabs = React.useMemo(() =>
     mode === "create"
@@ -652,13 +806,13 @@ const EventDetail = () => {
       icon: FileText,
       onClick: mode === "create" ? undefined : () => navigate("/events/eventDetailPage", {
         state: {
-          eventId: eventId,
+          eventId: currentEventId || eventId,
           mode: "view",
           eventData: fetchedEvent
         }
       }),
     },
-  ], [user?.organization?.name, mode, navigate, eventId, fetchedEvent]);
+  ], [user?.organization?.name, mode, navigate, currentEventId, eventId, fetchedEvent]);
 
   // Determine loading state
   const isLoading = useMemo(() => {
@@ -670,56 +824,66 @@ const EventDetail = () => {
     return <PageSkeleton type="event" />;
   }
 
+  // Get event organization ID for department context
+  // Priority: 1) Event data organization ID, 2) Location state organization ID, 3) Current scope organization ID
+  const eventOrgId = fetchedEvent?.organizationId || 
+                     location.state?.eventData?.organizationId || 
+                     selectedOrganizationId || 
+                     user?.organizationId;
+
   return (
-    <div className="event-detail-module fade-in">
-      <div className="BreadCrumb">
-        <Breadcrumb items={breadcrumbItems} />
+    <DepartmentProvider eventOrganizationId={eventOrgId}>
+      <div className="event-detail-module fade-in">
+        <div className="BreadCrumb">
+          <Breadcrumb items={breadcrumbItems} />
+        </div>
+        <div className="Top-Section">
+          <TopSection
+            mode={mode}
+            onBackClick={handleBackClick}
+            onNewTaskClick={permissions.canCreateTask ? handleNewTaskClick : undefined}
+            onSaveClick={permissions.canSave ? ((topData) => {
+              const detailData = detailSaveRef.current ? detailSaveRef.current() : null;
+              handleSaveEvent(topData, detailData);
+            }) : undefined}
+            data={topSectionData}
+            participants={participants}
+            permissions={permissions}
+            initialDate={selectedDate ? formatDateTimeLocal(selectedDate) : ""}
+            isSubmitting={isSubmitting}
+            errors={validationErrors}
+            onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
+            users={usersList}
+            assignedTo={assignedUsers}
+            onParticipantsChange={handleParticipantsChange}
+            eventTypes={eventTypes}
+            getEventTypeById={getEventTypeById}
+            getEventTypeByName={getEventTypeByName}
+            getActiveEventTypes={getActiveEventTypes}
+            eventJustCreated={eventJustCreated}
+            departments={departments}
+            getDepartmentById={getDepartmentById}
+            getDepartmentByName={getDepartmentByName}
+            getActiveDepartments={getActiveDepartments}
+            selectedDepartments={selectedDepartments}
+            onDepartmentsChange={handleDepartmentsChange}
+          />
+        </div>
+        <div className="Inner-Content">
+          <TabMenu
+            tabs={filteredTabs}
+            activeTab={activeTab}
+            setActiveTab={handleTabChange}
+            showEditButton={showEdit && mode === "view" && permissions.canEdit}
+            isEditMode={mode === "edit"}
+            onEditClick={() => {
+              setMode("edit");
+            }}
+            onCancelClick={() => setMode("view")}
+          />
+        </div>
       </div>
-      <div className="Top-Section">
-        <TopSection
-          mode={mode}
-          onBackClick={handleBackClick}
-          onNewTaskClick={permissions.canCreateTask ? handleNewTaskClick : undefined}
-          onSaveClick={permissions.canSave ? ((topData) => {
-            const detailData = detailSaveRef.current ? detailSaveRef.current() : null;
-            handleSaveEvent(topData, detailData);
-          }) : undefined}
-          data={topSectionData}
-          participants={participants}
-          permissions={permissions}
-          initialDate={selectedDate ? formatDateTimeLocal(selectedDate) : ""}
-          isSubmitting={isSubmitting}
-          errors={validationErrors}
-          onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
-          users={usersList}
-          assignedTo={assignedUsers}
-          onParticipantsChange={handleParticipantsChange}
-          eventTypes={eventTypes}
-          getEventTypeById={getEventTypeById}
-          getEventTypeByName={getEventTypeByName}
-          getActiveEventTypes={getActiveEventTypes}
-          departments={departments}
-          getDepartmentById={getDepartmentById}
-          getDepartmentByName={getDepartmentByName}
-          getActiveDepartments={getActiveDepartments}
-          selectedDepartments={selectedDepartments}
-          onDepartmentsChange={handleDepartmentsChange}
-        />
-      </div>
-      <div className="Inner-Content">
-        <TabMenu
-          tabs={filteredTabs}
-          activeTab={activeTab}
-          setActiveTab={handleTabChange}
-          showEditButton={showEdit && mode === "view" && permissions.canEdit}
-          isEditMode={mode === "edit"}
-          onEditClick={() => {
-            setMode("edit");
-          }}
-          onCancelClick={() => setMode("view")}
-        />
-      </div>
-    </div>
+    </DepartmentProvider>
   );
 };
 

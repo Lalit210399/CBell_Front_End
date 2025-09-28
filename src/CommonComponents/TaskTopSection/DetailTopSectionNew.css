@@ -5,7 +5,7 @@
   background: var(--white);
   border-radius: 8px;
   padding: 12px 16px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--colourBorder);
   font-family: 'Lato', sans-serif;
   overflow: visible;
@@ -148,10 +148,10 @@
 }
 
 .creator-name {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--textDark);
-    margin-left: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--textDark);
+  margin-left: 4px;
 }
 
 .avatar-initials {
@@ -255,7 +255,7 @@
     position: absolute;
     top: 100%;
     left: 0;
-    z-index: 9999;
+    z-index: 10000;
     background: white;
     border: 1px solid #ddd;
     border-radius: 8px;
@@ -594,15 +594,18 @@
     align-items: stretch;
     gap: 12px;
   }
+
   .left_section,
   .right_section {
     flex: none;
     min-width: 100%;
   }
+
   .right_section {
     justify-content: flex-start;
     gap: 12px;
   }
+
   .save-button-section {
     width: 100%;
     margin-top: 8px;

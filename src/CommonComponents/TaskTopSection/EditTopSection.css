@@ -1,17 +1,482 @@
-/* 🌟 Outer Container */
-.header-wrapper {
+/* 🌟 EditTopSection Outer Container */
+.edit-top-header-wrapper {
     height: auto;
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 10px;
+    flex-direction: column;
+    gap: 16px;
     border-radius: var(--radius-md);
     padding: 15px 10px;
     border: 1px solid var(--colourBorder);
     background: var(--white);
-    padding: 10px;
     flex-wrap: wrap;
     margin: 10px;
+}
+
+/* Top Row - matches DetailTopSectionNew structure */
+.edit-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+}
+
+/* Back Button */
+.edit-top-back-button {
+    width: 32px;
+    height: 32px;
+    border-radius: 24px;
+    background: var(--primary);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    flex-shrink: 0;
+}
+
+.edit-top-back-button svg {
+    color: var(--white);
+    width: 18px;
+    height: 18px;
+}
+
+.edit-top-back-button:hover {
+    background-color: var(--primaryDark);
+}
+
+.edit-top-back-button:active {
+    transform: scale(0.95);
+}
+
+/* Title Input Container */
+.edit-top-title-container {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    position: relative;
+    min-width: 200px;
+}
+
+.edit-top-title-input {
+    flex-grow: 1;
+    font-size: 20px;
+    font-weight: 400;
+    border: 1px solid var(--grayLine);
+    border-radius: 20px;
+    padding: 8px 12px;
+    color: rgba(30, 41, 59, 1);
+    outline: none;
+    height: 24px;
+    transition: border-color 0.3s ease;
+}
+
+.edit-top-title-input:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.edit-top-title-input::placeholder {
+    color: #999;
+    font-style: italic;
+    opacity: 1;
+    font-size: 16px;
+}
+
+.edit-top-title-input.error {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
+}
+
+.edit-top-required-asterisk {
+    color: #dc2626;
+    font-size: 16px;
+    font-weight: bold;
+    margin-left: 4px;
+}
+
+/* Created By Section */
+.edit-top-created-by {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--textLight);
+    white-space: nowrap;
+    border: 1px solid;
+    height: 24px;
+    padding: 8px 4px;
+    border-radius: 20px
+}
+
+.edit-top-creator-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--midGray);
+}
+
+.edit-top-creator-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    -webkit-user-select: none;
+    user-select: none;
+    margin-right: -8px;
+}
+
+.edit-top-avatar-initials {
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+}
+
+/* Bottom Row */
+.edit-top-bottom-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+}
+
+.edit-top-left-section {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex: 1;
+}
+
+.edit-top-right-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* Team Section */
+.edit-top-team-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.edit-top-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--midGray);
+    white-space: nowrap;
+}
+
+.edit-top-avatar-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* border: 1px solid var(--grayBorder); */
+    border-radius: 16px;
+    padding: 4px 8px;
+    background: var(--white);
+    min-width: 120px;
+}
+
+.edit-top-add-participant-section {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.edit-top-avatar-add-button {
+    background-color: var(--lightGray);
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+}
+
+.edit-top-avatar-add-button:hover {
+    background-color: var(--grayLine);
+}
+
+.edit-top-inline-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 6px;
+    z-index: 1000;
+    background-color: var(--white);
+    border: 1px solid var(--grayBorder);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    width: 280px;
+    max-height: 340px;
+    padding: 0;
+    overflow: hidden;
+}
+
+.edit-top-user-dropdown {
+    display: flex;
+    flex-direction: column;
+}
+
+.edit-top-user-dropdown-header {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    border-bottom: 1px solid var(--grayBorder);
+    background: var(--white);
+}
+
+.edit-top-user-search {
+    flex: 1;
+    border: 1px solid var(--grayBorder);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 14px;
+    outline: none;
+}
+
+.edit-top-user-search:focus {
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.edit-top-user-done {
+    border: 1px solid var(--grayBorder);
+    background: var(--white);
+    border-radius: 6px;
+    padding: 8px 16px;
+    cursor: pointer;
+    color: var(--textDark);
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.edit-top-user-done:hover {
+    background: var(--lightGray);
+}
+
+.edit-top-user-dropdown-list {
+    max-height: 280px;
+    overflow: auto;
+}
+
+.edit-top-user-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.edit-top-user-item:hover {
+    background: rgba(74, 144, 226, 0.05);
+}
+
+.edit-top-user-item.selected {
+    background: rgba(74, 144, 226, 0.1);
+}
+
+.edit-top-user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--lightGray);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--textDark);
+    flex-shrink: 0;
+}
+
+.edit-top-user-name {
+    font-size: 14px;
+    color: var(--textDark);
+    flex: 1;
+}
+
+.edit-top-user-empty {
+    padding: 20px;
+    text-align: center;
+    color: var(--placeholderGray);
+    font-style: italic;
+    font-size: 14px;
+}
+
+.edit-top-no-assigned-users {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--placeholderGray);
+    font-size: 13px;
+    font-style: italic;
+}
+
+.edit-top-placeholder-icon {
+    color: var(--placeholderGray);
+}
+
+.edit-top-placeholder-text {
+    color: var(--placeholderGray);
+}
+
+/* Status Section */
+.edit-top-status-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.edit-top-status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.edit-top-status-text {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* Status Color Variants */
+.edit-top-status-badge.edit-top-status-new {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+.edit-top-status-badge.edit-top-status-active {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+}
+
+.edit-top-status-badge.edit-top-status-under-approval {
+    background-color: #fed7aa;
+    color: #ea580c;
+}
+
+.edit-top-status-badge.edit-top-status-approved {
+    background-color: #dcfce7;
+    color: #16a34a;
+}
+
+.edit-top-status-badge.edit-top-status-published {
+    background-color: #e0e7ff;
+    color: #3730a3;
+}
+
+.edit-top-status-badge.edit-top-status-default {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+/* Save Button Section */
+.edit-top-save-button-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.edit-top-btn-save {
+    background: var(--white);
+    color: var(--midGray);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid var(--grayBorder);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.edit-top-btn-save:hover {
+    background: var(--primary);
+    color: var(--white);
+    border-color: var(--primary);
+}
+
+.edit-top-btn-save:active {
+    transform: translateY(1px);
+}
+
+/* Status Change Buttons */
+.edit-top-status-change-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.edit-top-status-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.edit-top-under-approval-btn {
+    background: var(--primary);
+    color: white;
+}
+
+.edit-top-under-approval-btn:hover {
+    background: var(--primaryDark);
+    transform: translateY(-1px);
+}
+
+.edit-top-approved-btn {
+    background: var(--primary);
+    color: white;
+}
+
+.edit-top-approved-btn:hover {
+    background: var(--primaryDark);
+    transform: translateY(-1px);
+}
+
+.edit-top-status-btn:active {
+    transform: translateY(0);
+}
+
+.edit-top-status-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.edit-top-status-btn:disabled:hover {
+    transform: none;
+    background: #10b981;
 }
 
 /* 📌 Left Section (Back Button + Title Next to Each Other) */
@@ -105,7 +570,7 @@
 }
 
 .editable-title-input:empty {
-    color: #999;
+    color: #000000;
 }
 
 .editable-title-input::placeholder {
@@ -172,7 +637,7 @@
     background: var(--white);
     color: var(--midGray);
     justify-content: space-between;
-    width: 100px;
+    width: 150px;
 }
 
 .avatar-add-button {

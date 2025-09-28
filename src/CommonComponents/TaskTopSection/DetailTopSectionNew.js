@@ -46,6 +46,9 @@ const DetailTopSectionNew = ({
   const { user, scope, selectedOrganizationId } = useUser();
   const { eventTypes: contextEventTypes, getEventTypeByName: contextGetEventTypeByName } = useEventTypes();
   const { departments: contextDepartments, getDepartmentByName: contextGetDepartmentByName } = useDepartments();
+  
+  // Check if user is a Designer based on the roles array
+  const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
   const [editableTitle, setEditableTitle] = useState(data?.title || "");
   const [editableDate, setEditableDate] = useState("");
   const [editableTime, setEditableTime] = useState("");
@@ -96,9 +99,18 @@ const DetailTopSectionNew = ({
 
   useEffect(() => {
     setEditableTitle(data?.title || "");
-    const dt = formatDateTimeLocal(data?.date || new Date());
-    setEditableDate(dt.date);
-    setEditableTime(dt.time);
+    
+    // Only set date/time if data exists and has a valid date
+    if (data?.date && data.date !== "") {
+      const dt = formatDateTimeLocal(data.date);
+      setEditableDate(dt.date);
+      setEditableTime(dt.time);
+    } else {
+      // Set empty values for create mode or when no date is available
+      setEditableDate("");
+      setEditableTime("");
+    }
+    
     setSelectedEventType(data?.type || "");
     setSelectedEventTypeId(data?.eventTypeId || "");
     setSelectedTypeName(data?.typeName || "");
@@ -154,7 +166,7 @@ const DetailTopSectionNew = ({
     } else {
       setFetchedUsers(users);
     }
-  }, [mode, users]);
+  }, [mode, users, user?.organizationId]);
 
   const handleTitleChange = (e) => {
     setEditableTitle(e.target.value);
@@ -168,6 +180,7 @@ const DetailTopSectionNew = ({
 
   const handleTimeChange = (e) => {
     setEditableTime(e.target.value);
+    if (errors && errors.time && onClearError) onClearError("time");
   };
 
 
@@ -238,21 +251,17 @@ const DetailTopSectionNew = ({
       combinedDateTime = new Date(`${editableDate}T${editableTime}`).toISOString();
     }
     
-    console.log("Save click - Current state:");
-    console.log("selectedEventType:", selectedEventType);
-    console.log("selectedEventTypeId:", selectedEventTypeId);
-    console.log("selectedTypeName:", selectedTypeName);
     
     const payload = {
       title: editableTitle,
       date: combinedDateTime,
-      type: selectedTypeName.trim(),
+      time: editableTime || "", // Include time separately for validation, empty string if not set
+      type: selectedEventType,
+      typeName: selectedTypeName.trim(),
       eventTypeId: selectedEventTypeId,
-      eventTypeName: selectedTypeName.trim(),
       departmentIds: selectedDepartments,
     };
     
-    console.log("Payload being sent:", payload);
     onSaveClick(payload);
   };
 
@@ -263,14 +272,11 @@ const DetailTopSectionNew = ({
   };
 
   const eventTypeOptions = useMemo(() => {
-    console.log("Event types available:", eventTypes);
     if (eventTypes && eventTypes.length > 0) {
       const options = eventTypes.map(event => ({ value: event.name, label: event.name }));
-      console.log("Event type options:", options);
       return options;
     } else {
       // No fallback - return empty array if no event types available
-      console.log("No event types available, returning empty array");
       return [];
     }
   }, [eventTypes]);
@@ -344,12 +350,14 @@ const DetailTopSectionNew = ({
               )}
               {(mode === "edit" || mode === "create") && (
                 <div className="add-participant-section-new">
-                  <button
-                    className="team-avatar-add"
-                    onClick={handleAddButtonClick}
-                  >
-                    +
-                  </button>
+                  {permissions?.canEdit && (
+                    <button
+                      className="team-avatar-add"
+                      onClick={handleAddButtonClick}
+                    >
+                      +
+                    </button>
+                  )}
                   {isDropdownOpen && (
                     <div className="inline-dropdown-new">
                       <div className="user-dropdown-new">
@@ -429,13 +437,10 @@ const DetailTopSectionNew = ({
                   "Select Event Type"
                 }
                 onSelect={(option) => {
-                  console.log("Event type selected:", option);
                   const selectedEvent = getEventTypeByName ? getEventTypeByName(option.value) : eventTypes.find(et => et.name === option.value);
-                  console.log("Selected event:", selectedEvent);
                   setSelectedEventType(option.value);
                   setSelectedEventTypeId(selectedEvent?.id || "");
                   setSelectedTypeName(option.value.trim());
-                  console.log("Set selectedTypeName to:", option.value.trim());
                 }}
                 disabled={mode === "view"}
               />
@@ -545,8 +550,8 @@ const DetailTopSectionNew = ({
           </div>
 
           <div className="save-button-section" style={{ display: "flex", gap: "8px" }}>
-            {/* Show New Task button in view, edit, or create mode */}
-            {(mode === "view") && (
+            {/* Show New Task button in view mode, but hide for Designers and if user doesn't have permission */}
+            {(mode === "view") && !isDesigner && permissions?.canCreateTask && (
               <button className="btn-new" onClick={onNewTaskClick}>
                 New Task
               </button>

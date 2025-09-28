@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 import {
   Image as ImageIcon,
@@ -9,7 +10,6 @@ import {
   Loader2,
   X,
   Trash2,
-  Share2,
   Check,
 } from 'lucide-react';
 import './FilesandUploads.css';
@@ -24,7 +24,7 @@ const FilesUploads = ({
   mode,
   selectedFiles = [],
   onFileSelect,
-  enableSelectionCheckbox = false, // ← NEW PROP
+  enableSelectionRadio = false, // ← NEW PROP for radio button selection
 }) => {
   // const [links, setLinks] = useState([]); // commented out for now
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -34,10 +34,40 @@ const FilesUploads = ({
   const [currentFile, setCurrentFile] = useState(null);
   const [description, setDescription] = useState('');
   const [approvedFiles, setApprovedFiles] = useState([]);
+  const filesRef = useRef([]);
+  const uploadedFilesRef = useRef([]);
 
-  //console.log('files in FilesUploads:', files);
+
+  // Handle click outside to close preview modal
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (previewFile && event.target.classList.contains('popup')) {
+        setPreviewFile(null);
+      }
+    };
+
+    if (previewFile) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [previewFile]);
+
+  // Prevent body scroll when preview modal is open
+  useEffect(() => {
+    if (previewFile) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [previewFile]);
 
   useEffect(() => {
+    // Update refs
+    filesRef.current = files;
+    
     // Extract approved files from the files data
     const approved = files.filter(file => file.status === 'Approved');
     setApprovedFiles(approved.map(file => file.documentId));
@@ -50,17 +80,19 @@ const FilesUploads = ({
     }
   }, [files, onFileSelect]);
 
-  useEffect(() => {
-    return () => {
-      [...files, ...uploadedFiles].forEach(file => {
-        if (file.src && file.src.startsWith('blob:')) {
-          URL.revokeObjectURL(file.src);
-        }
-      });
-    };
-  }, [files, uploadedFiles]);
+  // Temporarily disable cleanup to test if it's causing the issue
+  // useEffect(() => {
+  //   return () => {
+  //     [...filesRef.current, ...uploadedFilesRef.current].forEach(file => {
+  //       if (file.src && file.src.startsWith('blob:')) {
+  //         URL.revokeObjectURL(file.src);
+  //       }
+  //     });
+  //   };
+  // }, []); // Empty dependency array - only run on unmount
 
   useEffect(() => {
+    uploadedFilesRef.current = uploadedFiles;
     onDataChange?.({ uploadedFiles });
   }, [uploadedFiles, onDataChange]);
 
@@ -185,8 +217,8 @@ const FilesUploads = ({
   };
 
   const LazyFileCard = ({ file, mode }) => {
-    const [isVisible, setIsVisible] = useState(false);
     const ref = useRef();
+
 
     const isApproved = approvedFiles.includes(file.documentId);
     const isSelected = isApproved || selectedFiles.includes(file.documentId);
@@ -194,139 +226,104 @@ const FilesUploads = ({
     const isPublished = isFilePublished(file);
     const canSelect = !isApproved && !hasApprovedFile && !isPublished;
 
-    useEffect(() => {
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-            observer.disconnect();
-          }
-        },
-        { threshold: 0.1 }
-      );
-
-      if (ref.current) observer.observe(ref.current);
-      return () => observer.disconnect();
-    }, []);
-
     return (
       <div
         ref={ref}
         className={`file-card-wrapper ${mode === 'edit' ? 'edit-mode' : ''}`}
         onClick={() => {
           if (onFileSelect && canSelect) {
-            onFileSelect(file.documentId, !isSelected);
+            // For radio buttons, always select the file (single selection)
+            onFileSelect(file.documentId, true);
           }
         }}
       >
-        {/* Show checkbox when selection is enabled and file is not published */}
-        {enableSelectionCheckbox && !isPublished && (
+        {/* Show radio button when selection is enabled and file is not published */}
+        {enableSelectionRadio && !isPublished && (
           <input
-            type="checkbox"
+            type="radio"
+            name="file-selection"
             className="file-selection-radio"
             checked={isSelected}
             disabled={!canSelect}
             onChange={e => {
               e.stopPropagation();
               if (onFileSelect && canSelect) {
-                onFileSelect(file.documentId, e.target.checked);
+                // For radio buttons, we always select the file (no toggle)
+                onFileSelect(file.documentId, true);
               }
             }}
           />
         )}
 
-
         <div className={`file-card ${isSelected ? 'selected' : ''}`}>
-          {isVisible ? (
-            <>
-              {/* Status indicator for approved files */}
-              {isApproved && (
-                <div className="file-status-indicator">
-                  <div className="approved-badge">
-                    <Check size={12} />
-                    Approved
-                  </div>
-                </div>
-              )}
-
-              {/* Published badge */}
-              {isPublished && (
-                <div className="file-status-indicator">
-                  <div className="published-badge">
-                    Published
-                  </div>
-                </div>
-              )}
-              
-              <div className="file-header">
-                {file.type === 'image' && <ImageIcon size={20} />}
-                {file.type === 'video' && <Clapperboard size={20} />}
-                {file.type === 'audio' && <MusicIcon size={20} />}
-                {file.type === 'pdf' && <FileText size={20} />}
-                {!['image', 'video', 'audio', 'pdf'].includes(file.type) && <FileIcon size={20} />}
-                <span className="file-name" title={file.name}>{file.name}</span>
-                {/* Delete button - always visible if not readOnly */}
-                {!readOnly && (
-                  <button
-                    className="file-action-btn delete-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteFile(file.documentId);
-                    }}
-                    title="Delete file"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                )}
+          {/* Status indicator for approved files */}
+          {isApproved && (
+            <div className="file-status-indicator">
+              <div className="approved-badge">
+                <Check size={12} />
+                Approved
               </div>
-              <div className="file-icon" onClick={() => setPreviewFile(file)}>
-                {file.type === 'image' && <img src={file.src} alt={file.name} className="image-preview" />}
-                {file.type === 'video' && <video src={file.src} className="video-preview" controls />}
-                {file.type === 'audio' && (
-                  <div className="audio-container">
-                    <MusicIcon size={60} />
-                    <audio src={file.src} className="audio-preview" controls />
-                  </div>
-                )}
-                {file.type === 'pdf' && (
-                  <div className="pdf-preview">
-                    <FileText size={60} />
-                    <span>PDF Document</span>
-                  </div>
-                )}
-                {!['image', 'video', 'audio', 'pdf'].includes(file.type) && (
-                  <div className="fallback-preview">
-                    <FileIcon size={60} />
-                    <span>Download File</span>
-                  </div>
-                )}
-              </div>
-              {!readOnly && (
-                <div className="file-actions">
-                  <button
-                    className="file-action-btn social-upload-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // TODO: Implement social media sharing functionality
-                      alert('Social media sharing feature coming soon!');
-                    }}
-                    disabled={isApproved}
-                    title="Share to social media"
-                  >
-                    <Share2 size={14} />
-                  </button>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="file-card-placeholder">Loading...</div>
+            </div>
           )}
+
+          {/* Published badge */}
+          {isPublished && (
+            <div className="file-status-indicator">
+              <div className="published-badge">
+                Published
+              </div>
+            </div>
+          )}
+          
+          <div className="file-header">
+            {file.type === 'image' && <ImageIcon size={20} />}
+            {file.type === 'video' && <Clapperboard size={20} />}
+            {file.type === 'audio' && <MusicIcon size={20} />}
+            {file.type === 'pdf' && <FileText size={20} />}
+            {!['image', 'video', 'audio', 'pdf'].includes(file.type) && <FileIcon size={20} />}
+            <span className="file-name" title={file.name}>{file.name}</span>
+            {/* Delete button - visible in view mode and edit mode, but not for approved files */}
+            {!isApproved && (
+              <button
+                className="file-action-btn delete-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteFile(file.documentId);
+                }}
+                title="Delete file"
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
+          </div>
+          <div className="file-icon" onClick={() => setPreviewFile(file)}>
+            {file.type === 'image' && <img src={file.src} alt={file.name} className="image-preview" />}
+            {file.type === 'video' && <video src={file.src} className="video-preview" controls />}
+            {file.type === 'audio' && (
+              <div className="audio-container">
+                <MusicIcon size={60} />
+                <audio src={file.src} className="audio-preview" controls />
+              </div>
+            )}
+            {file.type === 'pdf' && (
+              <div className="pdf-preview">
+                <FileText size={60} />
+                <span>PDF Document</span>
+              </div>
+            )}
+            {!['image', 'video', 'audio', 'pdf'].includes(file.type) && (
+              <div className="fallback-preview">
+                <FileIcon size={60} />
+                <span>Download File</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
   };
 
-  return (
+  const mainContent = (
     <div className="files-uploads-container">
       {showUploadModal && (
         <div className="upload-modal">
@@ -366,20 +363,6 @@ const FilesUploads = ({
         </div>
       )}
 
-      {/* <div className="links-container">
-        <h3>Links</h3>
-        <ul>
-          {links.map((link, index) => (
-            <li key={index}>
-              <a href={link} target="_blank" rel="noopener noreferrer">{link}</a>
-            </li>
-          ))}
-        </ul>
-        <div className="add-link-icon" onClick={handleAddLink}>
-          <PlusCircle size={30} />
-        </div>
-      </div> */}
-
       <div className="files-container">
         <div className="files-header">
           <h3>Files</h3>
@@ -396,12 +379,6 @@ const FilesUploads = ({
           </label>
         </div>
 
-        {/* {approvedFiles.length > 0 && (
-          <div className="approval-notice">
-            <Check size={16} /> 
-          </div>
-        )} */}
-
         <div className="files-grid">
           {[...files, ...uploadedFiles].map((file, index) => (
             <LazyFileCard key={index} file={file} mode={mode} />
@@ -409,65 +386,62 @@ const FilesUploads = ({
           {isUploading && <p>Loading...</p>}
         </div>
       </div>
+    </div>
+  );
 
-      {previewFile && (
-        <div className="popup" onClick={() => setPreviewFile(null)}>
-          <X size={30} className="close-icon" onClick={() => setPreviewFile(null)} />
-          <div className="popup-content" onClick={(e) => e.stopPropagation()}>
+  // Preview modal component using React Portal
+  const PreviewModal = () => {
+    if (!previewFile) return null;
 
-            {previewFile.type === 'image' && <img src={previewFile.src} alt={previewFile.name} />}
-            {previewFile.type === 'video' && <video src={previewFile.src} controls autoPlay />}
-            {previewFile.type === 'audio' && (
-              <div className="audio-popup">
-                <h3>{previewFile.name}</h3>
-                <audio src={previewFile.src} controls autoPlay />
-              </div>
-            )}
-            {previewFile.type === 'pdf' && (
-              <div className="pdf-popup">
-                <h3>{previewFile.name}</h3>
-                <iframe src={previewFile.src} width="100%" height="500px" title={previewFile.name} />
-              </div>
-            )}
-            {!['image', 'video', 'audio', 'pdf'].includes(previewFile.type) && (
-              <div className="fallback-popup">
-                <h3>{previewFile.name}</h3>
-                <FileIcon size={100} />
-                <p>This file type cannot be previewed</p>
-              </div>
-            )}
+    const modalContent = (
+      <div className="popup" onClick={() => setPreviewFile(null)}>
+        <X size={30} className="close-icon" onClick={() => setPreviewFile(null)} />
+        <div className="popup-content" onClick={(e) => e.stopPropagation()}>
 
-            <div className="file-description">
-              {/* <h4>Description:</h4> */}
-              <p>{previewFile.name || 'No description provided'}</p>
-              {previewFile.status && (
-                <div className="file-status-popup">
-                  {/* <h4>Status:</h4> */}
-                  <p className={`status-${previewFile.status.toLowerCase()}`}>
-                    {previewFile.status}
-                  </p>
-                </div>
-              )}
+          {previewFile.type === 'image' && <img src={previewFile.src} alt={previewFile.name} />}
+          {previewFile.type === 'video' && <video src={previewFile.src} controls autoPlay />}
+          {previewFile.type === 'audio' && (
+            <div className="audio-popup">
+              <h3>{previewFile.name}</h3>
+              <audio src={previewFile.src} controls autoPlay />
             </div>
+          )}
+          {previewFile.type === 'pdf' && (
+            <div className="pdf-popup">
+              <h3>{previewFile.name}</h3>
+              <iframe src={previewFile.src} width="100%" height="500px" title={previewFile.name} />
+            </div>
+          )}
+          {!['image', 'video', 'audio', 'pdf'].includes(previewFile.type) && (
+            <div className="fallback-popup">
+              <h3>{previewFile.name}</h3>
+              <FileIcon size={100} />
+              <p>This file type cannot be previewed</p>
+            </div>
+          )}
 
-
-
-            {/* {previewFile.publishedTo && previewFile.publishedTo.length > 0 && (
-              <div className="published-info">
-                <h4>Published To:</h4>
-                <ul>
-                  {previewFile.publishedTo.map((platform, i) => (
-                    <li key={i}>
-                      {platform.platform} by {platform.publishedByName} at {new Date(platform.publishedAt).toLocaleString()}
-                    </li>
-                  ))}
-                </ul>
+          <div className="file-description">
+            <p>{previewFile.name || 'No description provided'}</p>
+            {previewFile.status && (
+              <div className="file-status-popup">
+                <p className={`status-${previewFile.status.toLowerCase()}`}>
+                  {previewFile.status}
+                </p>
               </div>
-            )} */}
+            )}
           </div>
         </div>
-      )}
-    </div>
+      </div>
+    );
+
+    return createPortal(modalContent, document.body);
+  };
+
+  return (
+    <>
+      {mainContent}
+      <PreviewModal />
+    </>
   );
 };
 

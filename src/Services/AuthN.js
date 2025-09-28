@@ -41,7 +41,6 @@ export const signin = async (credentials) => {
     }
 
     const data = await response.json();
-    //console.log("Signin response data:", data);
 
     if (!response.ok) {
       throw new Error(data.message || `Login failed with status ${response.status}`);
@@ -216,7 +215,6 @@ export const getTaskTypeOptions = async () => {
     });
 
     if (response.status === 404) {
-      console.warn('Task types API endpoint not found, using default values');
       return null; // Return null to indicate API not available
     }
 
@@ -227,7 +225,6 @@ export const getTaskTypeOptions = async () => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching task types:', error);
     throw error.message || 'Error fetching task type options';
   }
 };
@@ -252,7 +249,6 @@ export const deleteTask = async (taskId) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error deleting task:', error);
     throw error.message || 'Error deleting task';
   }
 };

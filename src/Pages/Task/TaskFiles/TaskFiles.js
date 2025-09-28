@@ -9,7 +9,8 @@ const TasksFiles = ({
   organizationId, 
   mode = "view",
   selectedFiles,
-  onFileSelect
+  onFileSelect,
+  taskStatus
 }) => {
   const [fetchedFiles, setFetchedFiles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +95,9 @@ const TasksFiles = ({
 
     const selectedFile = fetchedFiles.find(f => f.documentId === fileId);
     if (selectedFile) {
-      onFileSelect(selectedFile, isSelected);
+      // For radio buttons, always pass true (single selection)
+      // The parent component should handle clearing previous selections
+      onFileSelect(selectedFile, true);
     }
   };
 
@@ -111,12 +114,12 @@ const TasksFiles = ({
           taskId={taskId}
           eventId={eventId}
           organizationId={organizationId}
-          readOnly={hasApprovedFile || mode === 'view'} // Disable editing if approved file exists
+          readOnly={hasApprovedFile} // Only disable if approved file exists, not for view mode
           mode={mode}
           selectedFiles={selectedFiles.map(f => f.documentId)}
           onFileSelect={handleFileSelect}
           hasApprovedFile={hasApprovedFile} // Pass this prop to child
-          enableSelectionCheckbox={true}
+          enableSelectionRadio={taskStatus?.value === "Under Approval" || taskStatus?.value === "Under Review"}
         />
       )}
     </div>

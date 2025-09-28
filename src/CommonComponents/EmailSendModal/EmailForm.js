@@ -3,13 +3,17 @@ import { FaTimes } from 'react-icons/fa';
 import './EmailForm.css';
 
 const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
+  // Get documentId from props or fileDetail - prioritize the passed documentId
+  const actualDocumentId = documentId || fileDetail?.document?.documentId || fileDetail?.document?.fileId || fileDetail?.documentId;
+  
+  
   const [formData, setFormData] = useState({
     to: '',
     cc: '',
     bcc: '',
     subject: '',
     message: '',
-    documentId: documentId || '',
+    documentId: actualDocumentId || '',
   });
 
   const [isSending, setIsSending] = useState(false);
@@ -21,9 +25,9 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
 
   useEffect(() => {
     const fetchFile = async () => {
-      if (documentId && !fileDetail?.file) {
+      if (actualDocumentId && !fileDetail?.file) {
         try {
-          const response = await fetch(`/apis/task/download_document/${documentId}`, {
+          const response = await fetch(`/apis/task/download_document/${actualDocumentId}`, {
             method: 'GET',
             headers: {
               'ngrok-skip-browser-warning': '1'
@@ -34,7 +38,7 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
           const filename = fileDetail?.filename || fileDetail?.name || 'attachment';
           const file = new File([blob], filename, { type: blob.type });
 
-          const url = `/apis/document/view/${documentId}`;
+          const url = `/apis/document/view/${actualDocumentId}`;
 
           const updated = {
             ...fileDetail,
@@ -62,7 +66,7 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
     };
 
     fetchFile();
-  }, [documentId, fileDetail]);
+  }, [actualDocumentId, fileDetail]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -196,10 +200,10 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
           {attachment?.name && (
             <div className="email-form-attachment">
               Attachment: <strong>{attachment.name}</strong>
-              {attachment?.url && (
+              {actualDocumentId && (
                 <>
                   <a
-                    href={attachment.url}
+                    href={`/apis/document/view/${actualDocumentId}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ marginLeft: '10px' }}
@@ -207,7 +211,7 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
                     View
                   </a>
                   <a
-                    href={`/apis/task/download_document/${documentId}`}
+                    href={`/apis/task/download_document/${actualDocumentId}`}
                     download={attachment.name}
                     style={{ marginLeft: '10px' }}
                   >

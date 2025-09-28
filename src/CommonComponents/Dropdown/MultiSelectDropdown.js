@@ -12,7 +12,6 @@ const MultiSelectDropdown = ({
   maxDisplayItems = 2,
 }) => {
   // Debug logging
-  console.log("MultiSelectDropdown props:", { placeholder, defaultLabel, selectedValues });
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef(null);
