@@ -9,15 +9,17 @@ const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
   const [fetchedEventFiles, setFetchedEventFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const isFetchingRef = useRef(false);
+  const filesRef = useRef([]);
+  const isMountedRef = useRef(true);
 
-  const getFileTypeFromMime = useCallback((mime) => {
+  const getFileTypeFromMime = (mime) => {
     if (!mime) return 'file';
     if (mime.startsWith('image')) return 'image';
     if (mime.startsWith('video')) return 'video';
     if (mime.startsWith('audio')) return 'audio';
     if (mime === 'application/pdf') return 'pdf';
     return 'file';
-  }, []);
+  };
 
   const fetchEventDocuments = useCallback(async () => {
     if (!eventId || isFetchingRef.current) return;
@@ -43,6 +45,7 @@ const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
             });
             const blob = await response.blob();
             src = URL.createObjectURL(blob);
+            console.log(`Created blob URL for ${doc.filename}:`, src);
           } else {
             src = `/apis/document/view/${doc.documentId}`;
           }
@@ -57,26 +60,43 @@ const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
         })
       );
 
+      console.log("Files with preview created:", filesWithPreview);
       setFetchedEventFiles(filesWithPreview);
+      filesRef.current = filesWithPreview;
     } catch (error) {
       console.error("Error fetching event documents:", error);
     } finally {
       setLoading(false);
       isFetchingRef.current = false;
     }
-  }, [eventId, getFileTypeFromMime]);
+  }, [eventId]);
 
   useEffect(() => {
-    fetchEventDocuments();
+    console.log("useEffect running for fetchEventDocuments with eventId:", eventId);
+    if (eventId) {
+      fetchEventDocuments();
+    }
+  }, [eventId]); // Only depend on eventId, not the function
 
-    return () => {
-      fetchedEventFiles.forEach(file => {
-        if (file.src && file.src.startsWith('blob:')) {
-          URL.revokeObjectURL(file.src);
-        }
-      });
-    };
-  }, [fetchEventDocuments, fetchedEventFiles]);
+  // Temporarily disable cleanup to test if it's causing the issue
+  // useEffect(() => {
+  //   isMountedRef.current = true;
+  //   return () => {
+  //     isMountedRef.current = false;
+  //     console.log("Component unmounting - cleaning up blob URLs");
+  //     // Only clean up if component is actually unmounting
+  //     setTimeout(() => {
+  //       if (!isMountedRef.current) {
+  //         filesRef.current.forEach(file => {
+  //           if (file.src && file.src.startsWith('blob:')) {
+  //             console.log(`Revoking blob URL: ${file.src}`);
+  //             URL.revokeObjectURL(file.src);
+  //           }
+  //         });
+  //       }
+  //     }, 1000); // Delay cleanup to prevent race conditions
+  //   };
+  // }, []); // Empty dependency array - only run on unmount
 
   // Skeleton placeholder for file cards
   const SkeletonCards = () => (

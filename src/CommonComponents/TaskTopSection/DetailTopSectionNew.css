@@ -429,10 +429,7 @@
   transition: all 0.2s ease;
 }
 
-.event-type-badge:hover {
-  background: #282d28;
-  border-color: #282d28;
-}
+  
 
 /* Required field indicators */
 .required-asterisk {

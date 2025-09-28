@@ -133,6 +133,17 @@ const Task = ({ tasksData, eventId, eventName }) => {
         />
       );
     }
+    
+    if (key === "status") {
+      const status = item[key] || "Unknown";
+      const statusClass = status.toLowerCase().replace(/\s+/g, '-');
+      return (
+        <span className={`status-badge status-${statusClass}`}>
+          {status}
+        </span>
+      );
+    }
+    
     return item[key];
   };
 

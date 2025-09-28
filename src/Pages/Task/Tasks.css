@@ -84,3 +84,76 @@
 td .avatar-list {
   padding: 4px 0;
 }
+
+/* Status badge styling */
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* Status badge color variants */
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.status-in-progress {
+  background-color: #cce5ff;
+  color: #004085;
+  border: 1px solid #74c0fc;
+}
+
+.status-completed {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #a3e4a3;
+}
+
+.status-cancelled {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f1aeb5;
+}
+
+.status-overdue {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f1aeb5;
+}
+
+.status-draft {
+  background-color: #e2e3e5;
+  color: #383d41;
+  border: 1px solid #c6c8ca;
+}
+
+.status-review {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.status-approved {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #a3e4a3;
+}
+
+.status-rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f1aeb5;
+}
+
+.status-unknown {
+  background-color: #e2e3e5;
+  color: #6c757d;
+  border: 1px solid #c6c8ca;
+}

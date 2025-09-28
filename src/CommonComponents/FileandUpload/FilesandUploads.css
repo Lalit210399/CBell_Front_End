@@ -1,10 +1,10 @@
 /* Updated Files Container and Grid Styles */
 .files-container {
   padding: 16px;
-  background-color: var(--background-color);
+  /* background-color: var(--background-color); */
   border-radius: var(--border-radius);
   margin: 16px 0;
-  box-shadow: var(--shadow);
+  /* box-shadow: var(--shadow); */
 }
 
 .files-grid {
@@ -60,11 +60,11 @@
 .file-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: space-around;
   width: 100%;
-  padding: 12px;
+  padding: 8px;
   border-bottom: 1px solid var(--border-color);
-  background-color: var(--background-color);
+  /* background-color: var(--background-color); */
   min-height: 50px;
   gap: 8px;
 }
@@ -176,7 +176,7 @@
 .popup-content img {
   max-width: 80vw;
   max-height: 80vh;
-  object-fit: contain; 
+  object-fit: contain;
   border-radius: var(--small-border-radius);
 }
 
@@ -589,7 +589,8 @@
   cursor: pointer;
   accent-color: var(--primary-color);
   background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 4px;
+  border-radius: 50%;
+  /* Make it circular for radio button */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
 }
@@ -643,9 +644,11 @@
   0% {
     box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
   }
+
   50% {
     box-shadow: 0 2px 6px rgba(76, 175, 80, 0.6);
   }
+
   100% {
     box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
   }
@@ -702,11 +705,11 @@
   .files-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
-  
+
   .popup-content {
     padding: 16px;
   }
-  
+
   .upload-modal-content {
     width: 90%;
     padding: 16px;
@@ -725,6 +728,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -744,9 +748,12 @@
 }
 
 @keyframes loadingPulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.6;
   }
+
   50% {
     opacity: 1;
   }

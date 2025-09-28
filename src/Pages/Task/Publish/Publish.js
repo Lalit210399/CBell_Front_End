@@ -31,6 +31,30 @@ const getPlatformIcon = (platform) => {
   }
 };
 
+// Helper function to check if file type is supported by platform
+const isFileTypeSupported = (fileType, platform) => {
+  if (!fileType) return true; // If no file type info, allow all platforms
+  
+  const lowerFileType = fileType.toLowerCase();
+  
+  switch (platform.toLowerCase()) {
+    case 'youtube':
+      // YouTube only supports video files
+      return lowerFileType.startsWith('video/');
+    case 'instagram':
+      // Instagram supports image and video files
+      return lowerFileType.startsWith('image/') || lowerFileType.startsWith('video/');
+    case 'facebook':
+      // Facebook supports all file types
+      return true;
+    case 'email':
+      // Email supports all file types
+      return true;
+    default:
+      return true;
+  }
+};
+
 const Publish = ({ eventId }) => {
   const [publishData, setPublishData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -129,7 +153,12 @@ const Publish = ({ eventId }) => {
 
   const handleShare = (file, fullTask) => {
     setDescription(file.name || '');
-    setDocumentId(file.document.fileId);
+    // Use the correct document ID from the document object - prioritize documentId
+    const docId = file.document?.documentId || file.document?.fileId;
+    console.log('Publish - handleShare file:', file);
+    console.log('Publish - file.document:', file.document);
+    console.log('Publish - document ID:', docId);
+    setDocumentId(docId);
     setFileDetail({ ...file, fullTask });
     setShowShareModal(true);
   };
@@ -160,7 +189,7 @@ const Publish = ({ eventId }) => {
           status: doc.status || "Not Published",
           publishedTo: doc.publishedTo || [],
           fullTask: task,
-          document: doc
+          document: doc // This contains the document object with documentId field
         }));
 
         return {
@@ -209,23 +238,42 @@ const Publish = ({ eventId }) => {
     if (key === 'files') {
       return item.files?.map((file, idx) => (
         <div key={idx} className="file-entry">
-          <a
-            href={file.url.replace('/apis/task/download_document/', '/apis/document/view/')}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {file.name}
-          </a>
+          <span className="file-badge">
+            <a
+              href={file.url.replace('/apis/task/download_document/', '/apis/document/view/')}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {file.name}
+            </a>
+          </span>
           <span className="platform-icons">
-            {file.publishedTo?.map((p, i) => (
-              <span key={i} className="platform-icon">
-                {getPlatformIcon(p.platform)}
-              </span>
-            ))}
+            {file.publishedTo?.map((p, i) => {
+              // Check if the platform supports this file type
+              const fileType = file.document?.contentType || file.document?.type || file.type;
+              const isSupported = isFileTypeSupported(fileType, p.platform);
+              console.log(`Platform ${p.platform} for file type ${fileType}: ${isSupported ? 'supported' : 'not supported'}`);
+              return isSupported ? (
+                <span key={i} className="platform-icon">
+                  {getPlatformIcon(p.platform)}
+                </span>
+              ) : null;
+            }).filter(Boolean)}
           </span>
         </div>
       )) || "No File";
     }
+    
+    if (key === 'status') {
+      const status = item[key] || "Unknown";
+      const statusClass = status.toLowerCase().replace(/\s+/g, '-');
+      return (
+        <span className={`status-badge status-${statusClass}`}>
+          {status}
+        </span>
+      );
+    }
+    
     return item[key] || "-";
   };
 

@@ -850,11 +850,15 @@ const TaskDetailPage = () => {
   };
 
   const handleFileSelect = useCallback((file, isSelected) => {
-    setSelectedFiles(prev =>
-      isSelected
-        ? [...prev, file]
-        : prev.filter(f => f.documentId !== file.documentId)
-    );
+    setSelectedFiles(prev => {
+      if (isSelected) {
+        // For radio button behavior, replace the entire selection with the new file
+        return [file];
+      } else {
+        // Remove the file if deselected
+        return prev.filter(f => f.documentId !== file.documentId);
+      }
+    });
   }, []);
 
   // Handle status change from buttons
@@ -1066,17 +1070,18 @@ const TaskDetailPage = () => {
             organizationId={organizationId || taskData.organizationId}
             selectedFiles={selectedFiles}
             onFileSelect={handleFileSelect}
+            taskStatus={taskStatus}
           />
         ),
         disabled: mode === "create",
       },
     ];
 
-    if (mode === "create" || mode === "edit") {
+    if (mode === "create") {
       return allTabs.filter(tab => tab.label === "Details");
     }
     return allTabs;
-  }, [mode, taskData, formData, handleFormFieldUpdate, eventDate, validationErrors, taskId, eventId, fileData.uploadedFiles, setFileData, organizationId, selectedFiles, handleFileSelect, activeTab]);
+  }, [mode, taskData, formData, handleFormFieldUpdate, eventDate, validationErrors, taskId, eventId, fileData.uploadedFiles, setFileData, organizationId, selectedFiles, handleFileSelect, activeTab, taskStatus]);
 
   const breadcrumbItems = [
     { label: user?.organization?.name, href: "#", icon: Building },

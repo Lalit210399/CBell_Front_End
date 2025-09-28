@@ -1,16 +1,73 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import SocialMediaUploader from '../SocialMediaPost/Instagram';
 import YouTubeUploader from '../SocialMediaPost/YouTubeUploader';
 import { FaFacebook, FaInstagram, FaYoutube, FaEnvelope, FaTimes } from 'react-icons/fa';
 import EmailForm from '../EmailSendModal/EmailForm'; 
 import './FileShareModel.css';
 
+// Helper function to check if file type is supported by platform
+const isFileTypeSupported = (fileType, platform) => {
+  if (!fileType) return true; // If no file type info, allow all platforms
+  
+  const lowerFileType = fileType.toLowerCase();
+  
+  switch (platform.toLowerCase()) {
+    case 'youtube':
+      // YouTube only supports video files
+      return lowerFileType.startsWith('video/');
+    case 'instagram':
+      // Instagram supports image and video files
+      return lowerFileType.startsWith('image/') || lowerFileType.startsWith('video/');
+    case 'facebook':
+      // Facebook supports all file types
+      return true;
+    case 'email':
+      // Email supports all file types
+      return true;
+    default:
+      return true;
+  }
+};
+
 const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatformPublish }) => {
+  // Debug logging
+  console.log('FileShareModel - documentId:', documentId);
+  console.log('FileShareModel - fileDetail:', fileDetail);
+  
+  // Check file type support for debugging
+  const fileType = fileDetail?.document?.contentType || fileDetail?.document?.type || fileDetail?.type;
+  console.log('FileShareModel - fileType:', fileType);
+  console.log('FileShareModel - YouTube supported:', isFileTypeSupported(fileType, 'youtube'));
+  console.log('FileShareModel - Instagram supported:', isFileTypeSupported(fileType, 'instagram'));
+  
   const [fileName] = useState(fileDetail?.name);
   const [showSocialUploader, setShowSocialUploader] = useState(false);
   const [showYouTubeUploader, setShowYouTubeUploader] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [platform, setPlatform] = useState(null);
+
+  // Handle click outside to close modal
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (event.target.classList.contains('share-popup-overlay')) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [onClose]);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   const handlePlatformSuccess = (platform) => {
     setShowSocialUploader(false);
@@ -36,7 +93,7 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
     }
   };
 
-  return (
+  const modalContent = (
     <>
       {showSocialUploader ? (
         <SocialMediaUploader
@@ -62,6 +119,8 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
           documentId={documentId}
           onClose={() => setShowEmailForm(false)}
           onEmailSent={(platform) => {
+            console.log('FileShareModel - onEmailSent called with platform:', platform);
+            console.log('FileShareModel - calling onPlatformPublish with documentId:', documentId);
             if (onPlatformPublish) onPlatformPublish(documentId, platform || 'email');
             setShowEmailForm(false);
             onClose();
@@ -84,18 +143,25 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
               <button onClick={() => handleShare('facebook')} className="icon-button" title="Facebook">
                 <FaFacebook className="icon" />
               </button>
-              <button onClick={() => handleShare('instagram')} className="icon-button" title="Instagram">
-                <FaInstagram className="icon" />
-              </button>
-              <button onClick={() => handleShare('youtube')} className="icon-button" title="YouTube">
-                <FaYoutube className="icon" />
-              </button>
+              {isFileTypeSupported(fileDetail?.document?.contentType || fileDetail?.document?.type || fileDetail?.type, 'instagram') && (
+                <button onClick={() => handleShare('instagram')} className="icon-button" title="Instagram">
+                  <FaInstagram className="icon" />
+                </button>
+              )}
+              {isFileTypeSupported(fileDetail?.document?.contentType || fileDetail?.document?.type || fileDetail?.type, 'youtube') && (
+                <button onClick={() => handleShare('youtube')} className="icon-button" title="YouTube">
+                  <FaYoutube className="icon" />
+                </button>
+              )}
             </div>
           </div>
         </div>
       )}
     </>
   );
+
+  // Use React Portal to render modal at document body level
+  return createPortal(modalContent, document.body);
 };
 
 export default FileShareModel;

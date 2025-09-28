@@ -37,6 +37,9 @@ const DetailTopSectionNew = ({
 }) => {
   const { user } = useUser();
   const { eventTypes: contextEventTypes, getEventTypeByName: contextGetEventTypeByName } = useEventTypes();
+  
+  // Check if user is a Designer based on the roles array
+  const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
   const [editableTitle, setEditableTitle] = useState(data?.title || "");
   const [editableDate, setEditableDate] = useState("");
   const [editableTime, setEditableTime] = useState("");
@@ -409,8 +412,8 @@ const DetailTopSectionNew = ({
           </div>
 
           <div className="save-button-section" style={{ display: "flex", gap: "8px" }}>
-            {/* Show New Task button in view, edit, or create mode */}
-            {(mode === "view") && (
+            {/* Show New Task button in view mode, but hide for Designers */}
+            {(mode === "view") && !isDesigner && (
               <button className="btn-new" onClick={onNewTaskClick}>
                 New Task
               </button>
