@@ -33,7 +33,6 @@ const TaskDetailPage = () => {
   
   // Check if user is a Designer
   const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
-  console.log("TaskDetailPage - isDesigner:", isDesigner, "user roles:", user?.roles);
   
   const { taskId, mode: initialMode = "view", eventId, organizationId, eventDate: navEventDate, eventName } = location.state || {};
   const eventDate = React.useMemo(() => navEventDate ? new Date(navEventDate) : null, [navEventDate]);
@@ -160,12 +159,10 @@ const TaskDetailPage = () => {
     }
 
     if (!currentOrgId) {
-      console.warn("No organizationId available for user fetch");
       return [];
     }
     
     try {
-      console.log("Fetching users for organization:", currentOrgId);
       const response = await getHierarchyUsers(currentOrgId);
       
       const formattedUsers = response.users.map(user => ({
@@ -179,7 +176,6 @@ const TaskDetailPage = () => {
       
       return formattedUsers;
     } catch (error) {
-      console.error("Error fetching hierarchy users:", error);
       addMessage({
         text: "Failed to load users list",
         type: "error",
@@ -228,7 +224,6 @@ const TaskDetailPage = () => {
       }
 
       if (response.status === 500) {
-        console.error("Server error fetching task - likely backend data type mismatch");
         addMessage({
           text: "Unable to load task due to server error. Please try again later.",
           type: "error",
@@ -250,7 +245,6 @@ const TaskDetailPage = () => {
 
       return data;
     } catch (err) {
-      console.error("Error loading task:", err);
       addMessage({
         text: `Failed to load task details: ${err.message}`,
         type: "error",
@@ -297,7 +291,6 @@ const TaskDetailPage = () => {
     if (mode === "create" && statusOptions.length > 0) {
       // Find the "New" status specifically
       const newStatus = statusOptions.find(status => status.value === "New");
-      console.log("Setting default status for create mode:", newStatus);
       if (newStatus) {
         setTaskStatus(newStatus);
       }
@@ -311,14 +304,12 @@ const TaskDetailPage = () => {
         // Users are assigned - set to Active (only if currently New)
         const activeStatus = statusOptions.find(status => status.value === "Active");
         if (activeStatus && taskStatus?.value === "New") {
-          console.log("Users assigned to New task - changing status to Active:", activeStatus);
           setTaskStatus(activeStatus);
         }
       } else if (selectedParticipantIds.length === 0 && taskStatus?.value === "Active") {
         // No users assigned and currently Active - set back to New
         const newStatus = statusOptions.find(status => status.value === "New");
         if (newStatus) {
-          console.log("No users assigned - changing status back to New:", newStatus);
           setTaskStatus(newStatus);
         }
       }
@@ -328,7 +319,6 @@ const TaskDetailPage = () => {
   // Execute users API when component mounts or scope changes
   const executeFetchUsers = useCallback(async () => {
     if ((mode === "edit" || mode === "create") && !isFetchingUsersRef.current) {
-      console.log("Executing fetchUsers for TaskDetailPage with:", { mode, currentOrgId });
       
       isFetchingUsersRef.current = true;
       setUsersLoading(true);
@@ -338,7 +328,6 @@ const TaskDetailPage = () => {
         const data = await fetchUsers();
         setUsersData(data);
       } catch (err) {
-        console.error("Error fetching users for TaskDetailPage:", err);
         setUsersError(err.message);
       } finally {
         setUsersLoading(false);
@@ -351,7 +340,6 @@ const TaskDetailPage = () => {
   // Execute task API when taskId is available and not in create mode
   const executeFetchTask = useCallback(async () => {
     if (taskId && mode !== "create" && !isFetchingTaskRef.current) {
-      console.log("Executing fetchTask for TaskDetailPage with:", { taskId, mode });
       
       isFetchingTaskRef.current = true;
       setTaskLoading(true);
@@ -361,7 +349,6 @@ const TaskDetailPage = () => {
         const data = await fetchTask();
         setTaskDataFromAPI(data);
       } catch (err) {
-        console.error("Error fetching task for TaskDetailPage:", err);
         setTaskError(err.message);
       } finally {
         setTaskLoading(false);
@@ -396,13 +383,6 @@ const TaskDetailPage = () => {
       
       const currentStatusOptions = statusOptions;
       const apiStatusName = data.taskStatusName || data.taskStatus || "New";
-      console.log("API Status Data:", { 
-        taskStatusName: data.taskStatusName, 
-        taskStatusId: data.taskStatusId,
-        apiStatusName,
-        statusOptions: currentStatusOptions,
-        statusOptionsValues: currentStatusOptions.map(opt => ({ value: opt.value, label: opt.label }))
-      });
       
       // Try multiple matching strategies
       let matchedStatus = currentStatusOptions.find(
@@ -430,10 +410,8 @@ const TaskDetailPage = () => {
           value: apiStatusName,
           color: getDefaultColor(apiStatusName)
         };
-        console.log("No matching status found, created fallback:", matchedStatus);
       }
       
-      console.log("Matched Status:", matchedStatus);
       setTaskStatus(matchedStatus);
 
       const formattedChecklist = Array.isArray(data.checklistDetails) 
@@ -444,9 +422,6 @@ const TaskDetailPage = () => {
           }))
         : [{ text: "", checked: false, isPlaceholder: false }];
       
-      console.log("TaskDetailPage: Raw API data:", data);
-      console.log("TaskDetailPage: Formatted checklist:", formattedChecklist);
-      console.log("TaskDetailPage: Description:", data.description);
       
       const newTaskData = {
         id: data.id || "",
@@ -465,7 +440,6 @@ const TaskDetailPage = () => {
         organizationId: data.organizationId || organizationId || "",
       };
       
-      console.log("Setting taskData with assignedTo:", data.assignedTo);
       
       setTaskData(newTaskData);
       
@@ -675,7 +649,6 @@ const TaskDetailPage = () => {
         return;
       }
     } catch (error) {
-      console.error("Date validation error:", error);
       addMessage({ text: "Invalid date format.", type: "error", duration: 3000 });
       return;
     }
@@ -703,11 +676,9 @@ const TaskDetailPage = () => {
           
           approvalResults.forEach((result, index) => {
             if (result.status === "rejected") {
-              console.error(`Failed to approve file ${selectedFiles[index].documentId}:`, result.reason);
             }
           });
         } catch (fileError) {
-          console.error("Error in file approval process:", fileError);
           addMessage({
             text: "Error approving files",
             type: "error",
@@ -744,7 +715,6 @@ const TaskDetailPage = () => {
       if (!statusId || statusId === "" || statusId === null) {
         // Use hardcoded status ID mapping
         statusId = HARDCODED_STATUS_IDS[taskStatus?.value] || null;
-        console.log("Using hardcoded status ID:", statusId, "for status:", taskStatus?.value);
       }
 
       const payload = {
@@ -764,17 +734,6 @@ const TaskDetailPage = () => {
         OrganizationId: organizationId || currentFormData.organizationId
       };
 
-      console.log("Save payload with status ID:", {
-        taskStatusId: payload.taskStatusId,
-        statusValue: taskStatus?.value,
-        statusLabel: taskStatus?.label,
-        fullStatus: taskStatus,
-        assignedUsers: selectedParticipantIds,
-        hasAssignees: selectedParticipantIds.length > 0,
-        mode: mode,
-        statusOptions: statusOptions,
-        statusOptionsLength: statusOptions.length
-      });
 
 
       const url = mode === "edit" 
@@ -833,7 +792,6 @@ const TaskDetailPage = () => {
         });
       }
     } catch (error) {
-      console.error("Save failed:", error);
       addMessage({
         text: `Save failed: ${error.message}`,
         type: "error",
@@ -908,7 +866,6 @@ const TaskDetailPage = () => {
         if (!statusId || statusId === "" || statusId === null) {
           // Use hardcoded status ID mapping
           statusId = HARDCODED_STATUS_IDS[newStatus.value] || null;
-          console.log("Using hardcoded status ID for update:", statusId, "for status:", newStatus.value);
         }
 
         // Prepare payload for status update
@@ -958,11 +915,9 @@ const TaskDetailPage = () => {
             
             approvalResults.forEach((result, index) => {
               if (result.status === "rejected") {
-                console.error(`Failed to approve file ${selectedFiles[index].documentId}:`, result.reason);
               }
             });
           } catch (fileError) {
-            console.error("Error in file approval process:", fileError);
             addMessage({
               text: "Error approving files. Please try again.",
               type: "error",
@@ -1001,7 +956,6 @@ const TaskDetailPage = () => {
         });
 
       } catch (error) {
-        console.error("Status update failed:", error);
         
         // Revert status change on error
         const originalStatus = statusOptions.find(opt => opt.value === taskStatus.value);

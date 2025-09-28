@@ -63,12 +63,6 @@ const Task = ({ tasksData, eventId, eventName }) => {
   // Custom cell renderer for the table (similar to Events.js)
   const renderCell = (key, item) => {
     if (key === "assigned_to") {
-      // Debug: Log the actual data structure
-      console.log("=== ASSIGNED TO DEBUG ===");
-      console.log("Item:", item);
-      console.log("Assigned to:", item.assigned_to);
-      console.log("Assigned to type:", typeof item.assigned_to);
-      console.log("Is array:", Array.isArray(item.assigned_to));
       
       // Handle assigned users similar to participants in Events.js
       const assignedUsers = item.assigned_to || [];
@@ -77,17 +71,9 @@ const Task = ({ tasksData, eventId, eventName }) => {
         return <span className="no-assigned-users">No assigned users</span>;
       }
 
-      // Debug: Log each user object
-      console.log("Assigned users array:", assignedUsers);
-      assignedUsers.forEach((user, index) => {
-        console.log(`User ${index}:`, user);
-        console.log(`User ${index} type:`, typeof user);
-        console.log(`User ${index} keys:`, user ? Object.keys(user) : "No user object");
-      });
 
       // Convert assigned users to avatar format
       const avatars = assignedUsers.map((user, index) => {
-        console.log(`Processing user ${index}:`, user);
         
         // Handle different user object formats
         let userId, firstName, lastName, fullName;
@@ -110,7 +96,6 @@ const Task = ({ tasksData, eventId, eventName }) => {
           lastName = `${index + 1}`;
         }
 
-        console.log(`Processed user ${index}:`, { userId, firstName, lastName, fullName });
 
         return {
           id: userId,
@@ -122,7 +107,6 @@ const Task = ({ tasksData, eventId, eventName }) => {
         };
       });
 
-      console.log("Final avatars:", avatars);
 
       return (
         <AvatarList
@@ -182,7 +166,6 @@ const Task = ({ tasksData, eventId, eventName }) => {
       
       alert("Task deleted successfully");
     } catch (error) {
-      console.error("Error deleting task:", error);
       alert(`Failed to delete task: ${error.message || 'Unknown error'}`);
     }
   };

@@ -122,7 +122,6 @@ const Publish = ({ eventId }) => {
       await handlePublishRecord(docId, platform);
       fetchPublishedTasks();
     } catch (err) {
-      console.error(`Error posting to ${platform}:`, err);
       alert(`Error posting to ${platform}: ${err.message}`);
     }
   };
@@ -147,7 +146,6 @@ const Publish = ({ eventId }) => {
       });
       if (!response.ok) throw new Error('Failed to record publish');
     } catch (err) {
-      console.error('Error calling publish-record:', err);
     }
   };
 
@@ -155,9 +153,6 @@ const Publish = ({ eventId }) => {
     setDescription(file.name || '');
     // Use the correct document ID from the document object - prioritize documentId
     const docId = file.document?.documentId || file.document?.fileId;
-    console.log('Publish - handleShare file:', file);
-    console.log('Publish - file.document:', file.document);
-    console.log('Publish - document ID:', docId);
     setDocumentId(docId);
     setFileDetail({ ...file, fullTask });
     setShowShareModal(true);
@@ -166,7 +161,6 @@ const Publish = ({ eventId }) => {
   const fetchPublishedTasks = useCallback(async () => {
     if (!eventId || isFetchingRef.current) return;
     
-    console.log("Executing fetchPublishedTasks for Publish with:", { eventId });
     
     isFetchingRef.current = true;
     setLoading(true);
@@ -203,7 +197,6 @@ const Publish = ({ eventId }) => {
 
       setPublishData(formatted);
     } catch (err) {
-      console.error("Error fetching published tasks:", err);
     } finally {
       setLoading(false);
       isFetchingRef.current = false;
@@ -252,7 +245,6 @@ const Publish = ({ eventId }) => {
               // Check if the platform supports this file type
               const fileType = file.document?.contentType || file.document?.type || file.type;
               const isSupported = isFileTypeSupported(fileType, p.platform);
-              console.log(`Platform ${p.platform} for file type ${fileType}: ${isSupported ? 'supported' : 'not supported'}`);
               return isSupported ? (
                 <span key={i} className="platform-icon">
                   {getPlatformIcon(p.platform)}

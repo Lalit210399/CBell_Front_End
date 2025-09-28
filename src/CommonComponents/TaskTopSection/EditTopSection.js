@@ -39,13 +39,9 @@ const TopSection = ({
   const [userSearch, setUserSearch] = useState("");
   const isTitleManuallyEdited = useRef(false);
 
-  console.log(user);
-  console.log("Status in EditTopSection:", status);
-  console.log("AssignedTo in EditTopSection:", assignedTo);
 
   // Check if user is a Designer based on the roles array
   const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
-  console.log("EditTopSection - isDesigner:", isDesigner, "user roles:", user?.roles);
   
   // Get CSS class for status badge based on status value
   const getStatusClass = (statusValue) => {
@@ -61,7 +57,6 @@ const TopSection = ({
     };
     
     const cssClass = statusMap[statusValue] || 'default';
-    console.log("getStatusClass:", statusValue, "->", cssClass);
     return cssClass;
   };
 

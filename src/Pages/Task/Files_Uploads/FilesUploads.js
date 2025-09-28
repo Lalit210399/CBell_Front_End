@@ -24,7 +24,6 @@ const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
   const fetchEventDocuments = useCallback(async () => {
     if (!eventId || isFetchingRef.current) return;
     
-    console.log("Executing fetchEventDocuments for FilesUploads with:", { eventId });
     
     isFetchingRef.current = true;
     setLoading(true);
@@ -45,7 +44,6 @@ const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
             });
             const blob = await response.blob();
             src = URL.createObjectURL(blob);
-            console.log(`Created blob URL for ${doc.filename}:`, src);
           } else {
             src = `/apis/document/view/${doc.documentId}`;
           }
@@ -60,11 +58,9 @@ const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
         })
       );
 
-      console.log("Files with preview created:", filesWithPreview);
       setFetchedEventFiles(filesWithPreview);
       filesRef.current = filesWithPreview;
     } catch (error) {
-      console.error("Error fetching event documents:", error);
     } finally {
       setLoading(false);
       isFetchingRef.current = false;
@@ -72,7 +68,6 @@ const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
   }, [eventId]);
 
   useEffect(() => {
-    console.log("useEffect running for fetchEventDocuments with eventId:", eventId);
     if (eventId) {
       fetchEventDocuments();
     }

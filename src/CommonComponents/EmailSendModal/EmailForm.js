@@ -6,11 +6,6 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
   // Get documentId from props or fileDetail - prioritize the passed documentId
   const actualDocumentId = documentId || fileDetail?.document?.documentId || fileDetail?.document?.fileId || fileDetail?.documentId;
   
-  // Debug logging to check documentId
-  console.log('EmailForm - documentId prop:', documentId);
-  console.log('EmailForm - fileDetail:', fileDetail);
-  console.log('EmailForm - fileDetail.document:', fileDetail?.document);
-  console.log('EmailForm - actualDocumentId:', actualDocumentId);
   
   const [formData, setFormData] = useState({
     to: '',

@@ -89,7 +89,6 @@ const Schedule = () => {
   // Execute API when organization is ready or scope changes
   const executeFetchEvents = useCallback(async () => {
     if (selectedOrganizationId && !isFetchingRef.current) {
-      console.log("Executing fetchEvents for Schedule with:", { selectedOrganizationId, userId: user?.userId });
       
       isFetchingRef.current = true;
       setLoading(true);
@@ -100,7 +99,6 @@ const Schedule = () => {
         const data = await fetchEvents();
         setEventsData(data);
       } catch (err) {
-        console.error("Error fetching events for Schedule:", err);
         setError(err.message);
       } finally {
         setLoading(false);

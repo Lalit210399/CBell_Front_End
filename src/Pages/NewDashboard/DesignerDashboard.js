@@ -158,9 +158,7 @@ const DesignerDashboard = () => {
   // Tasks API
   // Tasks API
 const fetchTasksData = useCallback(async (filterType = "all") => {
-  console.log("fetchTasksData called with:", { filterType, orgIdReady });
   if (!orgIdReady) {
-    console.log("orgIdReady is false, returning empty array");
     return [];
   }
   
@@ -182,7 +180,6 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
   };
 
   const apiFilter = filterMap[filterType] || "all";
-  console.log("API Filter mapping:", { filterType, apiFilter, organizationId });
 
   try {
     const response = await fetchWithRefresh(
@@ -197,16 +194,13 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
     );
 
     if (!response.ok) {
-      console.error("Tasks API failed:", response.status, response.statusText);
       throw new Error(`Tasks API failed: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
-    console.log("Tasks API Response:", data);
 
     // Check if data has tasks array or if it's the response structure
     const tasksArray = data.tasks || data.data?.tasks || data;
-    console.log("Tasks Array:", tasksArray);
 
     // Transform API data to match the expected format for RecentTasks component
     const transformedTasks = (Array.isArray(tasksArray) ? tasksArray : []).map((task) => ({
@@ -232,11 +226,8 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
       updatedById: task.updatedBy,
     }));
     
-     console.log("Transformed Tasks:", transformedTasks);
-     console.log("Transformed Tasks Count:", transformedTasks.length);
      return transformedTasks;
   } catch (error) {
-    console.error("Error in fetchTasksData:", error);
     throw error;
   }
 }, [orgIdReady, selectedOrganizationId, user?.organizationId]);
@@ -315,11 +306,9 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
   const fetchTasksForCurrentTitle = useCallback(() => {
     // For "Total Tasks", use the filter state; for others, use the title
     const filterToUse = currentTitle === "Total Tasks" ? filter : currentTitle;
-    console.log("fetchTasksForCurrentTitle called:", { currentTitle, filter, filterToUse });
     
     // Special handling for "Tasks Under Approval"
     if (currentTitle === "Tasks Under Approval") {
-      console.log("Fetching Tasks Under Approval data...");
     }
     
     return fetchTasksData(filterToUse);
@@ -418,7 +407,6 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
 
   // Handle tile click
   const handleTileClick = useCallback((tile) => {
-    console.log("Tile clicked:", tile.title);
     setCurrentTitle(tile.title);
 
     if (tile.title === "Tasks Assigned to Me") {
@@ -438,7 +426,6 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
           "Approved Tasks": "Approved",
         };
         setFilter(filterMap[tile.title] || tile.title);
-        console.log("Filter set to:", filterMap[tile.title] || tile.title);
       }
 
       // Note: API will be executed automatically by useApi hook when currentTitle changes
@@ -447,7 +434,6 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
 
   // Handle task click
   const handleTaskClick = (task, key) => {
-    console.log("Task clicked:", { task, clickedField: key, taskId: task.id });
     navigate('/events/eventDetailPage/tasks', { 
       state: { 
         taskId: task.id, 
@@ -462,7 +448,6 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
 
   // Handle event campaign item click
   const handleEventCampaignClick = (item) => {
-    console.log("Event campaign item clicked:", item);
     if (item && (item.id || item.eventData?.id)) {
       navigate("/events/eventDetailPage", {
         state: {
@@ -472,7 +457,6 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
         },
       });
     } else {
-      console.warn("Event campaign item missing required ID:", item);
     }
   };
 
@@ -508,17 +492,6 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
           {/* Recent Tasks */}
           {activeComponent === "recent" && (
             <div className="recent-tasks">
-              {console.log("RecentTasks Props:", {
-                currentTitle,
-                tasksData: tasksData?.length || 0,
-                myTasksData: myTasksData?.length || 0,
-                loadingTasks,
-                loadingMyTasks,
-                errorTasks,
-                errorMyTasks,
-                filter,
-                actualTasksData: tasksData
-              })}
               <RecentTasks
                 tasks={currentTitle === "Tasks Assigned to Me" ? (myTasksData || []).slice(0, 5) : (tasksData || []).slice(0, 5)}
                 title={currentTitle}

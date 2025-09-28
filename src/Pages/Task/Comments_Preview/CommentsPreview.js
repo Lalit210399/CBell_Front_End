@@ -173,7 +173,6 @@ const CommentsPreview = ({ onFilesChange = () => {}, taskId, eventId, isActive, 
   const fetchAllDocuments = useCallback(async () => {
     if (!taskId || isFetchingRef.current) return;
     
-    console.log("Executing fetchAllDocuments for CommentsPreview with:", { taskId });
     
     isFetchingRef.current = true;
     setLoadingFiles(true);
@@ -198,7 +197,6 @@ const CommentsPreview = ({ onFilesChange = () => {}, taskId, eventId, isActive, 
       const description = files.map((f) => `${f.name} (${f.type})`).join(", ");
       onFilesChangeRef.current({ files, description });
     } catch (err) {
-      console.error("Error fetching documents:", err);
     } finally {
       setLoadingFiles(false);
       isFetchingRef.current = false;

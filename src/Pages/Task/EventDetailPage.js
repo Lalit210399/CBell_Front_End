@@ -87,7 +87,6 @@ const EventDetail = () => {
         }
 
         if (response.status === 500) {
-          console.error("Server error fetching tasks - likely backend data type mismatch");
           addMessageRef.current({
             text: "Unable to load tasks due to server error. Please try again later.",
             type: "error",
@@ -101,16 +100,6 @@ const EventDetail = () => {
 
         const safeArray = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
         
-        // Debug: Log the raw task data
-        console.log("=== RAW TASK DATA DEBUG ===");
-        console.log("Raw data:", data);
-        console.log("Safe array:", safeArray);
-        if (safeArray.length > 0) {
-          console.log("First task:", safeArray[0]);
-          console.log("First task assignedTo:", safeArray[0].assignedTo);
-          console.log("First task assignedTo type:", typeof safeArray[0].assignedTo);
-          console.log("First task assignedTo is array:", Array.isArray(safeArray[0].assignedTo));
-        }
         
         const formattedTasks = safeArray.map((task) => ({
           id: task.id,
@@ -124,7 +113,6 @@ const EventDetail = () => {
           ...task
         }));
         
-        console.log("Formatted tasks:", formattedTasks);
 
     return formattedTasks;
   }, [currentEventId, eventId, selectedOrganizationId, user?.organizationId]);
@@ -200,7 +188,6 @@ const EventDetail = () => {
   const executeFetchTasks = useCallback(async () => {
     const taskEventId = currentEventId || eventId;
     if (activeTab === "Task" && taskEventId && !isFetchingTasksRef.current) {
-      console.log("Executing fetchTasks for EventDetailPage with:", { taskEventId, activeTab });
       
       isFetchingTasksRef.current = true;
       setTasksLoading(true);
@@ -210,7 +197,6 @@ const EventDetail = () => {
         const data = await fetchTasks();
         setTasksData(data);
       } catch (err) {
-        console.error("Error fetching tasks for EventDetailPage:", err);
         setTasksError(err.message);
       } finally {
         setTasksLoading(false);
@@ -224,7 +210,6 @@ const EventDetail = () => {
   const executeFetchEvent = useCallback(async () => {
     const taskEventId = currentEventId || eventId;
     if (taskEventId && mode !== "create" && !isFetchingEventRef.current) {
-      console.log("Executing fetchEvent for EventDetailPage with:", { taskEventId, mode });
       
       isFetchingEventRef.current = true;
       setEventLoading(true);
@@ -234,7 +219,6 @@ const EventDetail = () => {
         const data = await fetchEvent();
         setEventData(data);
       } catch (err) {
-        console.error("Error fetching event for EventDetailPage:", err);
         setEventError(err.message);
       } finally {
         setEventLoading(false);
@@ -256,7 +240,6 @@ const EventDetail = () => {
     const organizationId = selectedOrganizationId || user?.organizationId;
     
     if (!organizationId) {
-      console.warn("No organizationId available for user fetch");
       return [];
     }
 
@@ -284,7 +267,6 @@ const EventDetail = () => {
   const executeFetchUsers = useCallback(async () => {
     const organizationId = selectedOrganizationId || user?.organizationId;
     if (organizationId && !isFetchingUsersRef.current) {
-      console.log("Executing fetchUsers for EventDetailPage with:", { organizationId });
       
       isFetchingUsersRef.current = true;
       setUsersLoading(true);
@@ -294,7 +276,6 @@ const EventDetail = () => {
         const data = await fetchUsers();
         setUsersData(data);
       } catch (err) {
-        console.error("Error fetching users for EventDetailPage:", err);
         setUsersError(err.message);
       } finally {
         setUsersLoading(false);
@@ -419,10 +400,6 @@ const EventDetail = () => {
       organizers: []
     };
     
-    console.log("EventDetailPage: handleSaveEvent called");
-    console.log("EventDetailPage: topSectionData:", topSectionData);
-    console.log("EventDetailPage: detailData received:", detailData);
-    console.log("EventDetailPage: finalDetailData:", finalDetailData);
 
     // Prepare assignedUsers array - assignedUsers already contains full user objects
     const assignedUsersPayload = assignedUsers.map(assignedUser => {
@@ -548,7 +525,6 @@ const EventDetail = () => {
       }
 
     } catch (error) {
-      console.error(`Error ${mode === "create" ? "creating" : "updating"} event:`, error);
       addMessageRef.current({
         text: `Failed to ${mode === "create" ? "create" : "update"} event.`,
         type: "error",

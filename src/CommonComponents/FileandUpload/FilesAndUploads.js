@@ -37,7 +37,6 @@ const FilesUploads = ({
   const filesRef = useRef([]);
   const uploadedFilesRef = useRef([]);
 
-  console.log('files in FilesUploads:', files);
 
   // Handle click outside to close preview modal
   useEffect(() => {
@@ -220,7 +219,6 @@ const FilesUploads = ({
   const LazyFileCard = ({ file, mode }) => {
     const ref = useRef();
 
-    console.log('LazyFileCard rendering file:', file);
 
     const isApproved = approvedFiles.includes(file.documentId);
     const isSelected = isApproved || selectedFiles.includes(file.documentId);
@@ -298,10 +296,7 @@ const FilesUploads = ({
               </button>
             )}
           </div>
-          <div className="file-icon" onClick={() => {
-            console.log('File clicked for preview:', file);
-            setPreviewFile(file);
-          }}>
+          <div className="file-icon" onClick={() => setPreviewFile(file)}>
             {file.type === 'image' && <img src={file.src} alt={file.name} className="image-preview" />}
             {file.type === 'video' && <video src={file.src} className="video-preview" controls />}
             {file.type === 'audio' && (
@@ -402,7 +397,6 @@ const FilesUploads = ({
       <div className="popup" onClick={() => setPreviewFile(null)}>
         <X size={30} className="close-icon" onClick={() => setPreviewFile(null)} />
         <div className="popup-content" onClick={(e) => e.stopPropagation()}>
-          {console.log('Preview modal showing file:', previewFile)}
 
           {previewFile.type === 'image' && <img src={previewFile.src} alt={previewFile.name} />}
           {previewFile.type === 'video' && <video src={previewFile.src} controls autoPlay />}

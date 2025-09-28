@@ -31,15 +31,7 @@ const isFileTypeSupported = (fileType, platform) => {
 };
 
 const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatformPublish }) => {
-  // Debug logging
-  console.log('FileShareModel - documentId:', documentId);
-  console.log('FileShareModel - fileDetail:', fileDetail);
-  
-  // Check file type support for debugging
   const fileType = fileDetail?.document?.contentType || fileDetail?.document?.type || fileDetail?.type;
-  console.log('FileShareModel - fileType:', fileType);
-  console.log('FileShareModel - YouTube supported:', isFileTypeSupported(fileType, 'youtube'));
-  console.log('FileShareModel - Instagram supported:', isFileTypeSupported(fileType, 'instagram'));
   
   const [fileName] = useState(fileDetail?.name);
   const [showSocialUploader, setShowSocialUploader] = useState(false);
@@ -119,8 +111,6 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
           documentId={documentId}
           onClose={() => setShowEmailForm(false)}
           onEmailSent={(platform) => {
-            console.log('FileShareModel - onEmailSent called with platform:', platform);
-            console.log('FileShareModel - calling onPlatformPublish with documentId:', documentId);
             if (onPlatformPublish) onPlatformPublish(documentId, platform || 'email');
             setShowEmailForm(false);
             onClose();

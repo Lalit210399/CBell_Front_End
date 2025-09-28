@@ -61,11 +61,6 @@ const Detail = ({
         const transformedGuests = transformToOldFormat(guests).filter(g => g.name && g.name.trim());
         const transformedOrganizers = transformToOldFormat(organizers).filter(o => o.name && o.name.trim());
         
-        console.log("EventDetail: Save handler called");
-        console.log("EventDetail: Raw guests:", guests);
-        console.log("EventDetail: Raw organizers:", organizers);
-        console.log("EventDetail: Transformed guests:", transformedGuests);
-        console.log("EventDetail: Transformed organizers:", transformedOrganizers);
         
         return {
           description: editorRef.current,

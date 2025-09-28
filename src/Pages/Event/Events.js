@@ -27,7 +27,6 @@ const EventTable = () => {
   const { addMessage } = useMessages();
   const { user, permissions: userPermissions, selectedOrganizationId, isViewingOwnOrganization, scopeChangeTrigger, loading: userLoading } = useUser();
 
-  console.log("user", user?.roles[0]?.name);
 
   const permissions = {
     // New Event: Only check organization scope (not canCRUD)
@@ -142,12 +141,6 @@ const EventTable = () => {
       throw new Error("No organization selected");
     }
 
-    console.log("fetchEvents called with:", { 
-      organizationId, 
-      userId: user?.userId, 
-      selectedOrganizationId, 
-      userOrgId: user?.organizationId 
-    });
 
     // Determine if we need to include X-Context-Organization header
     const isViewingOwnOrg = organizationId === user?.organizationId;
@@ -163,8 +156,6 @@ const EventTable = () => {
       headers["X-Context-Organization"] = organizationId;
     }
 
-    console.log("Making API call to:", `/apis/event/hierarchy/${organizationId}?userId=${user?.userId}`);
-    console.log("Headers:", headers);
 
     // Use the new hierarchy endpoint
     const res = await fetchWithRefresh(`/apis/event/hierarchy/${organizationId}?userId=${user?.userId}`,
@@ -175,13 +166,6 @@ const EventTable = () => {
     );
 
     if (!res.ok) {
-      console.error("Events API failed:", { 
-        status: res.status, 
-        statusText: res.statusText,
-        url: res.url,
-        organizationId,
-        userId: user?.userId
-      });
       throw new Error(`Failed to fetch events: ${res.status} - ${res.statusText}`);
     }
 
@@ -240,7 +224,6 @@ const EventTable = () => {
   // Execute API when permissions and organization are ready or scope changes
   const executeFetchEvents = useCallback(async () => {
     if (!userLoading && permissions.canRead && selectedOrganizationId && user?.userId && !isFetchingRef.current) {
-      console.log("Executing fetchEvents with:", { selectedOrganizationId, userId: user?.userId });
       
       isFetchingRef.current = true;
       setLoading(true);
@@ -251,7 +234,6 @@ const EventTable = () => {
         const data = await fetchEvents();
         setEventsData(data);
       } catch (err) {
-        console.error("Error fetching events:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -437,7 +419,6 @@ const EventTable = () => {
         duration: 3000,
       });
     } catch (err) {
-      console.error("Error deleting event:", err);
       addMessage({
         text: `Failed to delete event: ${err.message}`,
         type: "error",
@@ -630,11 +611,6 @@ const EventTable = () => {
           onDuplicate={permissions.canDuplicate ? () => alert("Duplicate pressed") : undefined}
           onRowClick={(event) => {
             if (!loading && !error && permissions.canRead) {
-              console.log("Clicked event data:", {
-                id: event.id,
-                rawData: event.rawData,
-                allEventData: event
-              });
 
               navigate("/events/eventDetailPage", {
                 state: {

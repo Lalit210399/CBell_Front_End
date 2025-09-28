@@ -11,9 +11,6 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
   // Merge taskData and formData for display using useMemo to prevent infinite re-renders
   const mergedData = React.useMemo(() => ({ ...taskData, ...formData }), [taskData, formData]);
   
-  console.log("TaskDetail - taskData:", taskData);
-  console.log("TaskDetail - formData:", formData);
-  console.log("TaskDetail - mergedData:", mergedData);
   
   // Parse initial datetime from merged data or use empty for create mode
   const initialDateTime = mergedData.date 

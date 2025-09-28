@@ -21,8 +21,6 @@ const Dashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  console.log("user", user?.roles[0]?.name);
-  console.log("user", user?.userId);
 
   // Handle event click
   const handleEventClick = (eventData) => {
@@ -72,10 +70,8 @@ const Dashboard = () => {
           if (res.ok) {
             dashboardData = await res.json();
           } else {
-            console.warn("Dashboard API failed");
           }
         } catch (err) {
-          console.error("Error fetching dashboard:", err);
         }
 
         // --- Upcoming Events ---
@@ -103,10 +99,8 @@ const Dashboard = () => {
               rawData: event,
             }));
           } else {
-            console.warn("Upcoming events API failed");
           }
         } catch (err) {
-          console.error("Error fetching upcoming events:", err);
         }
 
         // --- Past Events ---
@@ -134,15 +128,11 @@ const Dashboard = () => {
               rawData: event,
             }));
           } else {
-            console.warn("Past events API failed");
           }
         } catch (err) {
-          console.error("Error fetching past events:", err);
         }
 
         // --- Pending Tasks from dashboard API ---
-        console.log("Dashboard API Response:", dashboardData);
-        console.log("Tasks from API:", dashboardData.tasks);
         
         const allTasks =
           dashboardData.tasks?.map((task) => {
@@ -158,7 +148,6 @@ const Dashboard = () => {
               statusClass: getStatusClass(task.taskStatusName || task.taskStatus),
               rawData: task,
             };
-            console.log("Processed task:", processedTask);
             return processedTask;
           }) || [];
 

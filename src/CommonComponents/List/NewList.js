@@ -106,8 +106,6 @@ const List = ({
     setGuests(prevGuests => {
       const updatedGuests = [...prevGuests];
       updatedGuests[index][field] = value;
-      console.log(`NewList: Field ${field} changed for index ${index}:`, value);
-      console.log("NewList: Updated guests:", updatedGuests);
       notifyParent(updatedGuests);
       return updatedGuests;
     });
