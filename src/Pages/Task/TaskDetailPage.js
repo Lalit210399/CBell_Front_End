@@ -175,7 +175,9 @@ const TaskDetailPage = () => {
         lastName: user.lastName,
         email: user.email,
         fullName: `${user.firstName} ${user.lastName}`,
-        organizationId: user.organizationId
+        organizationId: user.organizationId,
+        organizationCode: user.organizationCode || "ORG001",
+        role: user.role || user.roles?.[0]?.name || ""
       }));
       
       return formattedUsers;

@@ -12,6 +12,7 @@ import PageSkeleton from "../../CommonComponents/SkeletonLoading/PageSkeleton";
 import { useUser } from "../../Context/UserContext";
 import { useMessages } from "../../Context/MessageContext";
 import { useEventTypes } from "../../Hooks/useEventTypes";
+import { useDepartments } from "../../Hooks/useDepartments";
 import { getHierarchyUsers } from "../../Services/AuthN";
 import useApi from "../../Hooks/useApi";
 import { Building, Calendar, FileText } from "lucide-react";
@@ -26,6 +27,7 @@ const EventDetail = () => {
   const [validationErrors, setValidationErrors] = useState({});
   const [usersList, setUsersList] = useState([]);
   const [assignedUsers, setAssignedUsers] = useState([]);
+  const [selectedDepartments, setSelectedDepartments] = useState([]);
   const detailSaveRef = useRef(null);
   const { user, selectedOrganizationId, isViewingOwnOrganization, scopeChangeTrigger } = useUser();
   const { addMessage } = useMessages();
@@ -33,6 +35,7 @@ const EventDetail = () => {
   addMessageRef.current = addMessage;
   const { permissions: userPermissions } = useUser();
   const { eventTypes, getEventTypeById, getEventTypeByName, getActiveEventTypes } = useEventTypes();
+  const { departments, getDepartmentById, getDepartmentByName, getActiveDepartments } = useDepartments();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -166,7 +169,8 @@ const EventDetail = () => {
           specialGuests: Array.isArray(eventData.specialGuests)
             ? eventData.specialGuests.map(guest => typeof guest === 'string' ? { name: guest, title: "Guest" } : guest)
             : [],
-          assignedUsers: Array.isArray(eventData.assignedUsers) ? eventData.assignedUsers : []
+          assignedUsers: Array.isArray(eventData.assignedUsers) ? eventData.assignedUsers : [],
+        departmentIds: Array.isArray(eventData.departmentIds) ? eventData.departmentIds : []
         };
 
     return transformedData;
@@ -254,6 +258,7 @@ const EventDetail = () => {
         typeName: fetchedEvent?.typeName || "",
         location: formData?.location || "",
         assignedUsers: [],
+        departmentIds: [],
       };
 
       setFetchedEvent(newEvent);
@@ -266,6 +271,10 @@ const EventDetail = () => {
         // Initialize assignedUsers from fetched data - pass full user objects instead of just IDs
         if (eventData.assignedUsers && Array.isArray(eventData.assignedUsers)) {
           setAssignedUsers(eventData.assignedUsers);
+        }
+        // Initialize selectedDepartments from fetched data
+        if (eventData.departmentIds && Array.isArray(eventData.departmentIds)) {
+          setSelectedDepartments(eventData.departmentIds);
         }
     }
   }, [mode, formData, selectedDate, eventData, selectedOrganizationId, user?.organizationId, eventType, eventTypeId, fetchedEvent?.typeName]);
@@ -313,6 +322,9 @@ const EventDetail = () => {
       organizers: []
     };
     
+    // Get department IDs from topSectionData
+    const departmentIds = topSectionData?.departmentIds || selectedDepartments;
+    
     console.log("EventDetailPage: handleSaveEvent called");
     console.log("EventDetailPage: topSectionData:", topSectionData);
     console.log("EventDetailPage: detailData received:", detailData);
@@ -357,6 +369,7 @@ const EventDetail = () => {
         title: guest.title || "Guest"
       })),
       assignedUsers: assignedUsersPayload,
+      departmentIds: departmentIds,
       // Expect topSectionData.date to be a datetime-local value; convert to ISO
       eventDate: topSectionData?.date
         ? new Date(topSectionData.date).toISOString()
@@ -399,7 +412,8 @@ const EventDetail = () => {
               id: result.id,
               coordinators: payload.coordinators,
               specialGuests: payload.specialGuests,
-              assignedUsers: payload.assignedUsers
+              assignedUsers: payload.assignedUsers,
+              departmentIds: payload.departmentIds
             }
           },
           replace: true
@@ -412,7 +426,8 @@ const EventDetail = () => {
         id: mode === "create" ? result.id : eventId,
         coordinators: payload.coordinators,
         specialGuests: payload.specialGuests,
-        assignedUsers: payload.assignedUsers
+        assignedUsers: payload.assignedUsers,
+        departmentIds: payload.departmentIds
       };
 
       setFetchedEvent(updatedEvent);
@@ -467,6 +482,10 @@ const EventDetail = () => {
       };
     });
     setAssignedUsers(fullUserObjects);
+  };
+
+  const handleDepartmentsChange = (departmentIds) => {
+    setSelectedDepartments(departmentIds);
   };
 
   const handleNewTaskClick = () => {
@@ -679,6 +698,12 @@ const EventDetail = () => {
           getEventTypeById={getEventTypeById}
           getEventTypeByName={getEventTypeByName}
           getActiveEventTypes={getActiveEventTypes}
+          departments={departments}
+          getDepartmentById={getDepartmentById}
+          getDepartmentByName={getDepartmentByName}
+          getActiveDepartments={getActiveDepartments}
+          selectedDepartments={selectedDepartments}
+          onDepartmentsChange={handleDepartmentsChange}
         />
       </div>
       <div className="Inner-Content">

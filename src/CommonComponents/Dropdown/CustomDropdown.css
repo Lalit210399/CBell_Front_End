@@ -10,14 +10,15 @@
   justify-content: space-between;
   background: #ffffff;
   border: 1px solid #E5E7EB;
-  border-radius: 8px;
-  padding: 2px 12px;
-  font-size: 12px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   min-width: 150px;
   transition: border 0.2s ease;
   height: 32px;
+  max-height: 32px;
 }
 .dropdown_toggle txt {
   color : #5D6D7E;

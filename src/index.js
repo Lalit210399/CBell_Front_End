@@ -6,6 +6,7 @@ import { UserProvider } from './Context/UserContext';
 import { ThemeProvider } from './Context/ThemeContext';
 import { MessageProvider } from './Context/MessageContext';
 import { EventTypesProvider } from './Context/EventTypesContext';
+import { DepartmentProvider } from './Context/DepartmentContext';
 import { TaskStatusProvider } from './Context/TaskStatusContext';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -15,9 +16,11 @@ root.render(
       <ThemeProvider>
         <MessageProvider>
           <EventTypesProvider>
-            <TaskStatusProvider>
-              <App />
-            </TaskStatusProvider>
+            <DepartmentProvider>
+              <TaskStatusProvider>
+                <App />
+              </TaskStatusProvider>
+            </DepartmentProvider>
           </EventTypesProvider>
         </MessageProvider>
       </ThemeProvider>

@@ -2,8 +2,10 @@ import React, { useState, useEffect, useMemo } from "react";
 import { ArrowLeft, Save, Users } from "lucide-react";
 import AvatarList from "../Avatar/index";
 import CustomDropdown from "../Dropdown/CustomDropdown";
+import MultiSelectDropdown from "../Dropdown/MultiSelectDropdown";
 import { useUser } from "../../Context/UserContext";
 import { useEventTypes } from "../../Hooks/useEventTypes";
+import { useDepartments } from "../../Hooks/useDepartments";
 import "./DetailTopSectionNew.css";
 
 function formatDateTimeLocal(date) {
@@ -34,9 +36,16 @@ const DetailTopSectionNew = ({
   getEventTypeById: propGetEventTypeById,
   getEventTypeByName: propGetEventTypeByName,
   getActiveEventTypes: propGetActiveEventTypes,
+  departments: propDepartments,
+  getDepartmentById: propGetDepartmentById,
+  getDepartmentByName: propGetDepartmentByName,
+  getActiveDepartments: propGetActiveDepartments,
+  selectedDepartments = [],
+  onDepartmentsChange,
 }) => {
-  const { user } = useUser();
+  const { user, scope, selectedOrganizationId } = useUser();
   const { eventTypes: contextEventTypes, getEventTypeByName: contextGetEventTypeByName } = useEventTypes();
+  const { departments: contextDepartments, getDepartmentByName: contextGetDepartmentByName } = useDepartments();
   const [editableTitle, setEditableTitle] = useState(data?.title || "");
   const [editableDate, setEditableDate] = useState("");
   const [editableTime, setEditableTime] = useState("");
@@ -56,6 +65,34 @@ const DetailTopSectionNew = ({
   const getEventTypeByName = useMemo(() => {
     return propGetEventTypeByName || contextGetEventTypeByName;
   }, [propGetEventTypeByName, contextGetEventTypeByName]);
+
+  // Use departments from props or context
+  const departments = useMemo(() => {
+    return propDepartments || contextDepartments || [];
+  }, [propDepartments, contextDepartments]);
+
+  const getDepartmentByName = useMemo(() => {
+    return propGetDepartmentByName || contextGetDepartmentByName;
+  }, [propGetDepartmentByName, contextGetDepartmentByName]);
+
+  // Helper function to determine if organization supports departments
+  const organizationSupportsDepartments = useMemo(() => {
+    // Get current organization info from scope
+    const currentOrg = scope?.accessibleOrganizations?.find(org => org.id === selectedOrganizationId);
+    const orgCode = currentOrg?.data?.organizationCode?.toLowerCase();
+    
+    // Business logic: Only colleges have departments, institutes don't
+    // You can extend this logic for other business types in the future
+    if (orgCode?.includes('college') || orgCode?.includes('university')) {
+      return true;
+    } else if (orgCode?.includes('institute') || orgCode?.includes('school')) {
+      return false;
+    }
+    
+    // Default behavior for unknown organization types
+    // You can change this to true/false based on your business requirements
+    return true; // Default to supporting departments
+  }, [scope?.accessibleOrganizations, selectedOrganizationId]);
 
   useEffect(() => {
     setEditableTitle(data?.title || "");
@@ -200,13 +237,22 @@ const DetailTopSectionNew = ({
     if (editableDate && editableTime) {
       combinedDateTime = new Date(`${editableDate}T${editableTime}`).toISOString();
     }
+    
+    console.log("Save click - Current state:");
+    console.log("selectedEventType:", selectedEventType);
+    console.log("selectedEventTypeId:", selectedEventTypeId);
+    console.log("selectedTypeName:", selectedTypeName);
+    
     const payload = {
       title: editableTitle,
       date: combinedDateTime,
-      type: selectedEventType,
+      type: selectedTypeName.trim(),
       eventTypeId: selectedEventTypeId,
       eventTypeName: selectedTypeName.trim(),
+      departmentIds: selectedDepartments,
     };
+    
+    console.log("Payload being sent:", payload);
     onSaveClick(payload);
   };
 
@@ -217,19 +263,26 @@ const DetailTopSectionNew = ({
   };
 
   const eventTypeOptions = useMemo(() => {
+    console.log("Event types available:", eventTypes);
     if (eventTypes && eventTypes.length > 0) {
-      return eventTypes.map(event => ({ value: event.name, label: event.name }));
+      const options = eventTypes.map(event => ({ value: event.name, label: event.name }));
+      console.log("Event type options:", options);
+      return options;
     } else {
-      // Fallback options if no event types are available
-      return [
-        { value: 'Conference', label: 'Conference' },
-        { value: 'Workshop', label: 'Workshop' },
-        { value: 'Meeting', label: 'Meeting' },
-        { value: 'Training', label: 'Training' },
-        { value: 'Seminar', label: 'Seminar' }
-      ];
+      // No fallback - return empty array if no event types available
+      console.log("No event types available, returning empty array");
+      return [];
     }
   }, [eventTypes]);
+
+  const departmentOptions = useMemo(() => {
+    if (departments && departments.length > 0) {
+      return departments.map(dept => ({ value: dept.id, label: dept.name }));
+    } else {
+      // No fallback - return empty array if no departments available
+      return [];
+    }
+  }, [departments]);
 
   return (
     <div className="detail-top-section-new-container">
@@ -237,15 +290,20 @@ const DetailTopSectionNew = ({
         <button className="back-button" onClick={onBackClick}>
           <ArrowLeft size={18} />
         </button>
-        <input
-          type="text"
-          className={`editable-title-input-new ${errors && errors.title ? "error" : ""}`}
-          value={editableTitle}
-          onChange={handleTitleChange}
-          placeholder="Enter event name ..."
-          autoFocus={mode === "create"}
-          readOnly={mode === "view"}
-        />
+        {mode === "view" ? (
+          <div className="event-title-display">
+            {editableTitle || "Untitled Event"}
+          </div>
+        ) : (
+          <input
+            type="text"
+            className={`editable-title-input-new ${errors && errors.title ? "error" : ""}`}
+            value={editableTitle}
+            onChange={handleTitleChange}
+            placeholder="Enter event name ..."
+            autoFocus={mode === "create"}
+          />
+        )}
         <div className="created-by">
           <span className="creator-name">{data.createdBy}</span>
           <div className="creator-avatar-new">
@@ -257,7 +315,6 @@ const DetailTopSectionNew = ({
               <Users size={20} />
             )}
           </div>
-          <span ></span>
         </div>
       </div>
 
@@ -267,7 +324,18 @@ const DetailTopSectionNew = ({
             <span className="label">Team:</span>
             <div className="avatar-group-new">
               {hasAssignedUsers ? (
-                <AvatarList avatars={selectedParticipants} maxVisible={2} />
+                <div className="team-avatars-container">
+                  {selectedParticipants.slice(0, 2).map((participant, index) => (
+                    <div key={participant.id || index} className="team-avatar">
+                      {participant.name ? participant.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                  ))}
+                  {selectedParticipants.length > 2 && (
+                    <div className="team-avatar">
+                      +{selectedParticipants.length - 2}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="no-assigned-users-placeholder">
                   <Users size={14} className="placeholder-icon" />
@@ -277,7 +345,7 @@ const DetailTopSectionNew = ({
               {(mode === "edit" || mode === "create") && (
                 <div className="add-participant-section-new">
                   <button
-                    className="avatar-add-button-new"
+                    className="team-avatar-add"
                     onClick={handleAddButtonClick}
                   >
                     +
@@ -345,43 +413,135 @@ const DetailTopSectionNew = ({
         <div className="right_section">
           <div className="type-section">
             <label className="label">Type:</label>
-          <CustomDropdown
-            options={eventTypeOptions}
-            defaultLabel={
-              eventTypeOptions.find((opt) => opt.value === selectedEventType)?.label ||
-              "Select Event Type"
-            }
-            onSelect={(option) => {
-              const selectedEvent = getEventTypeByName ? getEventTypeByName(option.value) : eventTypes.find(et => et.name === option.value);
-              setSelectedEventType(option.value);
-              setSelectedEventTypeId(selectedEvent?.id || "");
-              setSelectedTypeName((selectedEvent?.name || "").trim());
-            }}
-            disabled={mode === "view"}
-          />
+            {mode === "view" ? (
+              <div className="event-type-display">
+                {selectedEventType ? (
+                  <span>{selectedEventType}</span>
+                ) : (
+                  <span className="no-event-type">No event type selected</span>
+                )}
+              </div>
+            ) : (
+              <CustomDropdown
+                options={eventTypeOptions}
+                defaultLabel={
+                  eventTypeOptions.find((opt) => opt.value === selectedEventType)?.label ||
+                  "Select Event Type"
+                }
+                onSelect={(option) => {
+                  console.log("Event type selected:", option);
+                  const selectedEvent = getEventTypeByName ? getEventTypeByName(option.value) : eventTypes.find(et => et.name === option.value);
+                  console.log("Selected event:", selectedEvent);
+                  setSelectedEventType(option.value);
+                  setSelectedEventTypeId(selectedEvent?.id || "");
+                  setSelectedTypeName(option.value.trim());
+                  console.log("Set selectedTypeName to:", option.value.trim());
+                }}
+                disabled={mode === "view"}
+              />
+            )}
           </div>
+
+          {organizationSupportsDepartments && (
+            // In view mode, only show department section if there are assigned departments
+            // In edit/create mode, always show the section
+            (mode !== "view" || selectedDepartments.length > 0) && (
+              <div className="department-section">
+                <label className="label">Department:</label>
+                {mode === "view" ? (
+                  <div className="department-display">
+                    <div className="department-list">
+                      {selectedDepartments.map((deptId, index) => {
+                        const department = departments.find(dept => dept.id === deptId);
+                        return (
+                          <span key={deptId} className="department-tag">
+                            {department ? department.name : deptId}
+                            {index < selectedDepartments.length - 1 && ", "}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  departmentOptions.length > 0 ? (
+                    <MultiSelectDropdown
+                      options={departmentOptions}
+                      selectedValues={selectedDepartments}
+                      onSelect={(option) => {
+                        if (option.clearAll) {
+                          // Clear all departments
+                          onDepartmentsChange && onDepartmentsChange([]);
+                        } else {
+                          // Toggle individual department
+                          const newSelectedDepartments = selectedDepartments.includes(option.value)
+                            ? selectedDepartments.filter(id => id !== option.value)
+                            : [...selectedDepartments, option.value];
+                          onDepartmentsChange && onDepartmentsChange(newSelectedDepartments);
+                        }
+                      }}
+                      disabled={mode === "view"}
+                      placeholder="Select departments"
+                      maxDisplayItems={2}
+                    />
+                  ) : (
+                    <div className="no-departments-available">
+                      <span className="no-departments-text">No departments available for this organization</span>
+                    </div>
+                  )
+                )}
+              </div>
+            )
+          )}
 
           <div className="date-section">
             <label htmlFor="date-input" className="label">Date:</label>
-            <input
-              id="date-input"
-              type="date"
-              className={`date-input-new ${errors && errors.date ? "error" : ""}`}
-              value={editableDate}
-              onChange={handleDateChange}
-              min={new Date().toISOString().slice(0, 10)}
-            />
+            {mode === "view" ? (
+              <div className="date-display">
+                {editableDate ? (
+                  <span>{new Date(editableDate).toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric' 
+                  })}</span>
+                ) : (
+                  <span className="no-date">No date selected</span>
+                )}
+              </div>
+            ) : (
+              <input
+                id="date-input"
+                type="date"
+                className={`date-input-new ${errors && errors.date ? "error" : ""}`}
+                value={editableDate}
+                onChange={handleDateChange}
+                min={new Date().toISOString().slice(0, 10)}
+              />
+            )}
           </div>
 
           <div className="time-section">
             <label htmlFor="time-input" className="label">Time:</label>
-            <input
-              id="time-input"
-              type="time"
-              className="time-input-new"
-              value={editableTime}
-              onChange={handleTimeChange}
-            />
+            {mode === "view" ? (
+              <div className="time-display">
+                {editableTime ? (
+                  <span>{new Date(`2000-01-01T${editableTime}`).toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: true 
+                  })}</span>
+                ) : (
+                  <span className="no-time">No time selected</span>
+                )}
+              </div>
+            ) : (
+              <input
+                id="time-input"
+                type="time"
+                className="time-input-new"
+                value={editableTime}
+                onChange={handleTimeChange}
+              />
+            )}
           </div>
 
           <div className="save-button-section" style={{ display: "flex", gap: "8px" }}>

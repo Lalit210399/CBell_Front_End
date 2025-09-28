@@ -5,7 +5,7 @@ module.exports = function (app) {
   app.use(
     '/apis',
     createProxyMiddleware({
-      target: 'https://cbell.ai/apis',
+      target: 'https://cbell.ai',
       changeOrigin: true,
       pathRewrite: { '^/apis': '' },
     })
