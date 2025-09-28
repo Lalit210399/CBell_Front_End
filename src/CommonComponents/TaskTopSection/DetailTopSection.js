@@ -255,12 +255,12 @@ const DetailTopSection = ({
                               <div className="user-info">
                                 <div className="user-name">{`${u.firstName || "User"} ${u.lastName || ""}`}</div>
                                 <div className="user-details">
-                                  <span className="user-email">{u.email || "No email"}</span>
+                                  <span className="user-role">{u.roles?.[0]?.name || u.roles?.[0]?.displayName || "No role"}</span>
                                   {u.organizationCode && (
                                     <span className="user-org">• {u.organizationCode}</span>
                                   )}
-                                  {u.role && (
-                                    <span className="user-role">• {u.role}</span>
+                                  {u.email && (
+                                    <span className="user-email">• {u.email}</span>
                                   )}         
                                 </div>
                               </div>

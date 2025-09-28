@@ -133,7 +133,7 @@ function Navbar() {
           </div>
         </div>
         
-        <BellRing size={22} className="bell-icon" />
+        {/* <BellRing size={22} className="bell-icon" /> */}
         <div className="user-info" ref={dropdownRef}>
           
           <div className="avatar-dropdown-wrapper">

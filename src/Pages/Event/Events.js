@@ -463,7 +463,7 @@ const EventTable = () => {
             <input
               type="text"
               placeholder="Search events"
-              className="search-input"
+              className="search-inputs"
               onChange={(e) => handleSearch(e.target.value)}
             />
           </div>

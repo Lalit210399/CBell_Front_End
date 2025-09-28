@@ -1,217 +1,133 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { ArrowLeft, Save, Users } from "lucide-react";
 import AvatarList from "../Avatar/index";
+import UserDropdown from "../UserDropdown";
+import { useUser } from "../../Context/UserContext";
 import "./EditTopSection.css";
 
-// Hardcoded status IDs from backend data - moved outside component to prevent re-creation
 const HARDCODED_STATUS_IDS = {
-  "New": "68baab0b9a31a52d62646ca1",
-  "Active": "68bee09b522caf6ac9f65bdc", 
-  "Under Approval": "68bee0b1522caf6ac9f65bdd",
-  "Under Review": "68bee0b1522caf6ac9f65bdd", // Use same ID as Under Approval
-  "Approved": "68bee0c2522caf6ac9f65bde",
-  "Published": "68bee0d1522caf6ac9f65bdf"
+  "Active": "68bee09b522caf6ac9f65bdc",
+  "Under Approval": "68bee09b522caf6ac9f65bdd",
+  "Under Review": "68bee09b522caf6ac9f65bde",
+  "Approved": "68bee09b522caf6ac9f65bdf"
+};
+
+const getDefaultColor = (status) => {
+  const colors = {
+    "Active": "#10b981",
+    "Under Approval": "#f59e0b", 
+    "Under Review": "#3b82f6",
+    "Approved": "#059669"
+  };
+  return colors[status] || "#6b7280";
+};
+
+const getStatusClass = (status) => {
+  if (!status) return "unknown";
+  return status.toLowerCase().replace(/\s+/g, "-");
 };
 
 const TopSection = ({
   mode,
+  onBackClick,
+  onSaveClick,
+  onStatusChange,
   title,
   setTitle,
   status,
-  setStatus,
-  statusOptions,
-  createdBy,
-  onBackClick,
-  onSaveClick,
-  users = [],
   assignedTo = [],
   onParticipantsChange,
+  users = [],
+  errors = {},
   onClearError,
-  onStatusChange, // New prop for handling status changes
-  isUpdatingStatus = false, // Loading state for status updates
-  user, // Add user prop to check role
-  errors = {}, // Add errors prop for validation
+  isUpdatingStatus = false
 }) => {
-  const [editableTitle, setEditableTitle] = useState(title || "");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
-  const titleRef = useRef(null);
-  const [userSearch, setUserSearch] = useState("");
-  const isTitleManuallyEdited = useRef(false);
-
-
+  const { user } = useUser();
+  
   // Check if user is a Designer based on the roles array
   const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
   
-  // Get CSS class for status badge based on status value
-  const getStatusClass = (statusValue) => {
-    if (!statusValue) return 'default';
-    
-    const statusMap = {
-      'New': 'new',
-      'Active': 'active', 
-      'Under Approval': 'under-approval',
-      'Under Review': 'under-approval', // Map Under Review to under-approval class
-      'Approved': 'approved',
-      'Published': 'published'
-    };
-    
-    const cssClass = statusMap[statusValue] || 'default';
-    return cssClass;
-  };
-
-  // Get default color for status
-  const getDefaultColor = (statusValue) => {
-    const colorMap = {
-      "New": "gray",
-      "Active": "blue", 
-      "Under Approval": "orange",
-      "Under Review": "orange", // Map Under Review to orange color
-      "Approved": "green",
-      "Published": "purple"
-    };
-    return colorMap[statusValue] || "gray";
-  };
-
-
-  // Note: Status automatically changes to 'Active' when users are assigned
-  // and back to 'New' when all users are removed (handled in TaskDetailPage)
-
-  // Local state for assigned user IDs
+  const [editableTitle, setEditableTitle] = useState(title || "");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [assignedIds, setAssignedIds] = useState([]);
+  const [fetchedUsers, setFetchedUsers] = useState([]);
+  const titleRef = useRef(null);
+  const isTitleManuallyEdited = useRef(false);
 
-  // Sync local assignedIds with incoming prop
+  // Status options for dropdown
+  const statusOptions = [
+    { id: "68bee09b522caf6ac9f65bdc", label: "Active", value: "Active", color: "#10b981" },
+    { id: "68bee09b522caf6ac9f65bdd", label: "Under Approval", value: "Under Approval", color: "#f59e0b" },
+    { id: "68bee09b522caf6ac9f65bde", label: "Under Review", value: "Under Review", color: "#3b82f6" },
+    { id: "68bee09b522caf6ac9f65bdf", label: "Approved", value: "Approved", color: "#059669" }
+  ];
+
+  // Get creator user info
+  const creatorUser = useMemo(() => {
+    if (!user) return { firstName: "Unknown", lastName: "User" };
+    return {
+      firstName: user.firstName || "Unknown",
+      lastName: user.lastName || "User"
+    };
+  }, [user]);
+
+  useEffect(() => {
+    setEditableTitle(title || "");
+  }, [title]);
+
   useEffect(() => {
     const ids = (assignedTo || [])
       .map((item) => {
-        const id = typeof item === "string" || typeof item === "number" ? item : item?.id;
-        return id;
+        if (typeof item === "string" || typeof item === "number") {
+          return item;
+        } else if (item && typeof item === "object") {
+          return item.userId || item.id;
+        }
+        return null;
       })
       .filter(Boolean);
-    setAssignedIds(ids);
-  }, [assignedTo]);
-
-  // Find creator user from users list or create a fallback
-  const creatorUser =
-    users.find(
-      (user) =>
-        user.id === createdBy?.id ||
-        `${user.firstName} ${user.lastName}` === createdBy
-    ) || {
-      firstName:
-        createdBy?.name?.split(" ")[0] || createdBy?.split(" ")[0] || "User",
-      lastName:
-        createdBy?.name?.split(" ")[1] || createdBy?.split(" ")[1] || "",
-    };
-
-
-  useEffect(() => {
-    // Only update editableTitle if it's different from current value and not empty
-    // AND if the title hasn't been manually edited by the user
-    // This prevents clearing user input during validation
-    if (title !== editableTitle && title !== undefined && title !== "" && !isTitleManuallyEdited.current) {
-      setEditableTitle(title || "");
-    }
-  }, [title]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (mode === "create" && titleRef.current && !title) {
-      titleRef.current.focus();
-    }
-  }, [mode, title]);
-
-  // Reset manual editing flag when title prop changes significantly (new task loaded)
-  useEffect(() => {
-    if (title && title !== editableTitle) {
-      isTitleManuallyEdited.current = false;
-    }
-  }, [title, editableTitle]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Prepare selected participants (handle both API assignedTo data and users list lookup)
-  const selectedParticipants = React.useMemo(() => {
-    return assignedIds.map((assignedId) => {
-      // First, try to find in the assignedTo prop (from API) which has name field
-      const assignedUser = assignedTo.find((u) => u.id === assignedId);
-      
-      if (assignedUser && assignedUser.name) {
-        // Use the name directly from assignedTo (API data)
-        const fullName = assignedUser.name;
-        const nameParts = fullName.split(" ");
-        const firstName = nameParts[0] || "User";
-        
-        return {
-          id: assignedId,
-          name: fullName,
-          fallback: (firstName?.charAt(0) || "?").toUpperCase(),
-          size: "20px",
-          shape: "circle",
-        };
-      }
-      
-      // Fallback: try to find in users list
-      const fullUser = users.find((u) => u.id === assignedId);
-      const firstName = fullUser?.firstName || "User";
-      const fullName = `${firstName} ${fullUser?.lastName || ""}`.trim();
-
-      return {
-        id: assignedId,
-        name: fullName,
-        fallback: (firstName?.charAt(0) || "?").toUpperCase(),
-        size: "20px",
-        shape: "circle",
-      };
-    });
-  }, [assignedIds, assignedTo, users]);
-
-  const hasAssignedUsers = selectedParticipants && selectedParticipants.length > 0;
-
-  const filteredUsers = React.useMemo(() => {
-    const q = userSearch.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter((u) =>
-      `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase().includes(q) ||
-      (u.email || "").toLowerCase().includes(q) ||
-      (u.organizationCode || "").toLowerCase().includes(q) ||
-      (u.role || "").toLowerCase().includes(q)
-    );
-  }, [users, userSearch]);
-
-  const isUserSelected = (id) => assignedIds.includes(id);
-
-  const toggleUserSelection = (id) => {
-    const next = isUserSelected(id)
-      ? assignedIds.filter((x) => x !== id)
-      : [...assignedIds, id];
     
-    setAssignedIds(next);
-    onParticipantsChange(next); // notify parent immediately
-  };
+    const currentIds = assignedIds.sort();
+    const newIds = ids.sort();
+    if (JSON.stringify(currentIds) !== JSON.stringify(newIds)) {
+      setAssignedIds(ids);
+    }
+  }, [assignedTo, assignedIds]);
 
-  const getUserInitials = (firstName = "", lastName = "") => {
-    const a = (firstName[0] || "").toUpperCase();
-    const b = (lastName[0] || "").toUpperCase();
-    return (a + b) || "?";
-  };
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch(`/apis/auth/assignment-users/${user?.organizationId}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "ngrok-skip-browser-warning": "1",
+          },
+        });
 
-  // Handle title change and clear validation errors
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+
+        const data = await response.json();
+        setFetchedUsers(data.users || []);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        setFetchedUsers([]);
+      }
+    };
+
+    if (mode === "edit" || mode === "create") {
+      fetchUsers();
+    } else {
+      setFetchedUsers(users);
+    }
+  }, [mode, users, user?.organizationId]);
+
   const handleTitleChange = (e) => {
-    const newTitle = e.target.value;
-    setEditableTitle(newTitle);
-    setTitle(newTitle);
-    isTitleManuallyEdited.current = true; // Mark as manually edited
-    // Clear any validation errors for title when user starts typing
-    if (onClearError) {
+    setEditableTitle(e.target.value);
+    if (setTitle) setTitle(e.target.value);
+    isTitleManuallyEdited.current = true;
+
+    if (errors && errors.title && onClearError) {
       onClearError('title');
     }
   };
@@ -219,7 +135,6 @@ const TopSection = ({
   const handleKeyDown = (e) => {
     if (e.key === "Enter") e.preventDefault();
   };
-
 
   const handleAddButtonClick = () => {
     setIsDropdownOpen((prev) => !prev);
@@ -243,6 +158,42 @@ const TopSection = ({
         onStatusChange(fallbackStatus);
       }
     }
+  };
+
+  const selectedParticipants = assignedIds.map((assignedId) => {
+    const assignedUser = assignedTo.find((u) => (u.userId || u.id) === assignedId);
+    
+    if (assignedUser) {
+      return {
+        id: assignedUser.userId || assignedUser.id,
+        name: assignedUser.userName || assignedUser.name,
+        fallback: (assignedUser.userName || assignedUser.name || "?").charAt(0).toUpperCase(),
+        size: "20px",
+        shape: "circle",
+      };
+    }
+    
+    const fullUser = fetchedUsers.find((u) => u.id === assignedId);
+    const firstName = fullUser?.firstName || "User";
+    const lastName = fullUser?.lastName || "";
+    const fullName = `${firstName} ${lastName}`.trim();
+
+    return {
+      id: assignedId,
+      name: fullName,
+      fallback: (firstName?.charAt(0) || "?").toUpperCase(),
+      size: "20px",
+      shape: "circle",
+    };
+  });
+
+  const hasAssignedUsers = selectedParticipants && selectedParticipants.length > 0;
+
+
+  const getUserInitials = (firstName = "", lastName = "") => {
+    const a = (firstName[0] || "").toUpperCase();
+    const b = (lastName[0] || "").toUpperCase();
+    return (a + b) || "?";
   };
 
   return (
@@ -297,62 +248,20 @@ const TopSection = ({
                   >
                     +
                   </button>
-                  {isDropdownOpen && (
-                    <div className="edit-top-inline-dropdown">
-                      <div className="edit-top-user-dropdown">
-                        <div className="edit-top-user-dropdown-header">
-                          <input
-                            type="text"
-                            className="edit-top-user-search"
-                            placeholder="Search users..."
-                            value={userSearch}
-                            onChange={(e) => setUserSearch(e.target.value)}
-                          />
-                          <button
-                            className="edit-top-user-done"
-                            onClick={() => setIsDropdownOpen(false)}
-                          >
-                            Done
-                          </button>
-                        </div>
-                        <div className="edit-top-user-dropdown-list">
-                          {filteredUsers.length === 0 ? (
-                            <div className="edit-top-user-empty">No users found</div>
-                          ) : (
-                            filteredUsers.map((u) => (
-                              <label
-                                key={u.id}
-                                className={`edit-top-user-item ${isUserSelected(u.id) ? "selected" : ""}`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isUserSelected(u.id)}
-                                  onChange={() => toggleUserSelection(u.id)}
-                                />
-                                <span className="edit-top-user-avatar">
-                                  {getUserInitials(u.firstName, u.lastName)}
-                                </span>
-                                <div className="user-info">
-                                  <div className="user-name-email">
-                                    <div className="user-name">{`${u.firstName || "User"} ${u.lastName || ""}`}</div>
-                                    <div className="user-email">{u.email || "No email"}</div>
-                                  </div>
-                                  <div className="user-org-role">
-                                    {u.organizationCode && (
-                                      <span className="user-org">• {u.organizationCode}</span>
-                                    )}
-                                    {u.role && (
-                                      <span className="user-role">• {u.role}</span>
-                                    )}
-                                  </div>
-                                </div>
-                              </label>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  <UserDropdown
+                    isOpen={isDropdownOpen}
+                    onClose={() => setIsDropdownOpen(false)}
+                    users={fetchedUsers}
+                    selectedUserIds={assignedIds}
+                    onUserSelectionChange={(newIds) => {
+                      setAssignedIds(newIds);
+                      if (onParticipantsChange) {
+                        onParticipantsChange(newIds);
+                      }
+                    }}
+                    placeholder="Search by name, email, org, or role..."
+                    className="edit-top-user-dropdown-wrapper"
+                  />
                 </div>
               )}
             </div>
@@ -381,33 +290,34 @@ const TopSection = ({
                   </button>
                 )}
                 
-                 {/* Status change buttons - only show in view mode */}
-                 {mode === "view" && (
-                   <div className="edit-top-status-change-buttons">
-                     {/* Submit for Approval button - show only for Designers and for all statuses except Under Approval/Under Review */}
-                     {isDesigner && status?.value !== "Under Approval" && status?.value !== "Under Review" && (
-                       <button 
-                         className="edit-top-status-btn edit-top-under-approval-btn"
-                         onClick={() => handleStatusChange("Under Approval")}
-                         title="Submit for Approval"
-                         disabled={isUpdatingStatus}
-                       >
-                         {isUpdatingStatus ? "Updating..." : "Submit for Approval"}
-                       </button>
-                     )}
-                     {/* Approved button - show to everyone EXCEPT Designers when status is Under Approval or Under Review */}
-                     {!isDesigner && (status?.value === "Under Approval" || status?.value === "Under Review") && (
-                       <button 
-                         className="edit-top-status-btn edit-top-approved-btn"
-                         onClick={() => handleStatusChange("Approved")}
-                         title="Approve Task (requires file selection)"
-                         disabled={isUpdatingStatus}
-                       >
-                         {isUpdatingStatus ? "Updating..." : "Approve"}
-                       </button>
-                     )}
-                   </div>
-                 )}
+                {/* Status change buttons - only show in view mode */}
+                {mode === "view" && (
+                  <div className="edit-top-status-change-buttons">
+                    {/* Submit for Approval button - show only for Designers and for all statuses except Under Approval/Under Review */}
+                    {isDesigner && status?.value !== "Under Approval" && status?.value !== "Under Review" && (
+                      <button 
+                        className="edit-top-status-btn edit-top-under-approval-btn"
+                        onClick={() => handleStatusChange("Under Approval")}
+                        title="Submit for Approval"
+                        disabled={isUpdatingStatus}
+                      >
+                        {isUpdatingStatus ? "Updating..." : "Submit for Approval"}
+                      </button>
+                    )}
+
+                    {/* Approved button - show to everyone EXCEPT Designers when status is Under Approval or Under Review */}
+                    {!isDesigner && (status?.value === "Under Approval" || status?.value === "Under Review") && (
+                      <button 
+                        className="edit-top-status-btn edit-top-approved-btn"
+                        onClick={() => handleStatusChange("Approved")}
+                        title="Approve Task (requires file selection)"
+                        disabled={isUpdatingStatus}
+                      >
+                        {isUpdatingStatus ? "Updating..." : "Approve"}
+                      </button>
+                    )}
+                  </div>
+                )}
               </>
             )}
           </div>

@@ -3,6 +3,7 @@ import { ArrowLeft, Save, Users } from "lucide-react";
 import AvatarList from "../Avatar/index";
 import CustomDropdown from "../Dropdown/CustomDropdown";
 import MultiSelectDropdown from "../Dropdown/MultiSelectDropdown";
+import UserDropdown from "../UserDropdown";
 import { useUser } from "../../Context/UserContext";
 import { useEventTypes } from "../../Hooks/useEventTypes";
 import { useDepartments } from "../../Hooks/useDepartments";
@@ -56,7 +57,6 @@ const DetailTopSectionNew = ({
   const [selectedEventTypeId, setSelectedEventTypeId] = useState(data?.eventTypeId || "");
   const [selectedTypeName, setSelectedTypeName] = useState(data?.typeName || "");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [userSearch, setUserSearch] = useState("");
   const [assignedIds, setAssignedIds] = useState([]);
   const [fetchedUsers, setFetchedUsers] = useState([]);
 
@@ -217,28 +217,6 @@ const DetailTopSectionNew = ({
 
   const hasAssignedUsers = selectedParticipants && selectedParticipants.length > 0;
 
-  const filteredUsers = React.useMemo(() => {
-    const q = userSearch.trim().toLowerCase();
-    if (!q) return fetchedUsers;
-    return fetchedUsers.filter((u) =>
-      `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase().includes(q) ||
-      (u.email || "").toLowerCase().includes(q) ||
-      (u.organizationCode || "").toLowerCase().includes(q) ||
-      (u.role || "").toLowerCase().includes(q)
-    );
-  }, [fetchedUsers, userSearch]);
-
-  const isUserSelected = (id) => assignedIds.includes(id);
-
-  const toggleUserSelection = (id) => {
-    const next = isUserSelected(id)
-      ? assignedIds.filter((x) => x !== id)
-      : [...assignedIds, id];
-    setAssignedIds(next);
-    if (onParticipantsChange) {
-      onParticipantsChange(next);
-    }
-  };
 
   const handleAddButtonClick = () => {
     setIsDropdownOpen((prev) => !prev);
@@ -358,60 +336,20 @@ const DetailTopSectionNew = ({
                       +
                     </button>
                   )}
-                  {isDropdownOpen && (
-                    <div className="inline-dropdown-new">
-                      <div className="user-dropdown-new">
-                        <div className="user-dropdown-header-new">
-                          <input
-                            type="text"
-                            className="user-search-new"
-                            placeholder="Search by name, email, org, or role..."
-                            value={userSearch}
-                            onChange={(e) => setUserSearch(e.target.value)}
-                          />
-                          <button
-                            className="user-done-new"
-                            onClick={() => setIsDropdownOpen(false)}
-                          >
-                            Done
-                          </button>
-                        </div>
-                        <div className="user-dropdown-list-new">
-                          {filteredUsers.length === 0 ? (
-                            <div className="user-empty-new">No users found</div>
-                          ) : (
-                            filteredUsers.map((u) => (
-                              <label
-                                key={u.id}
-                                className={`user-item-new ${isUserSelected(u.id) ? "selected" : ""}`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isUserSelected(u.id)}
-                                  onChange={() => toggleUserSelection(u.id)}
-                                />
-                                <span className="user-avatar-new">
-                                  {getUserInitials(u.firstName, u.lastName)}
-                                </span>
-                                <div className="user-info-new">
-                                  <div className="user-name-new">{`${u.firstName || "User"} ${u.lastName || ""}`}</div>
-                                  <div className="user-details-new">
-                                    <span className="user-email-new">{u.email || "No email"}</span>
-                                    {u.organizationCode && (
-                                      <span className="user-org-new">• {u.organizationCode}</span>
-                                    )}
-                                    {u.role && (
-                                      <span className="user-role-new">• {u.role}</span>
-                                    )}
-                                  </div>
-                                </div>
-                              </label>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  <UserDropdown
+                    isOpen={isDropdownOpen}
+                    onClose={() => setIsDropdownOpen(false)}
+                    users={fetchedUsers}
+                    selectedUserIds={assignedIds}
+                    onUserSelectionChange={(newIds) => {
+                      setAssignedIds(newIds);
+                      if (onParticipantsChange) {
+                        onParticipantsChange(newIds);
+                      }
+                    }}
+                    placeholder="Search by name, email, org, or role..."
+                    className="detail-top-user-dropdown-wrapper"
+                  />
                 </div>
               )}
             </div>
