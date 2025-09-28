@@ -849,13 +849,13 @@ const TaskDetailPage = () => {
     setActiveTab(tab);
   };
 
-  const handleFileSelect = (file, isSelected) => {
+  const handleFileSelect = useCallback((file, isSelected) => {
     setSelectedFiles(prev =>
       isSelected
         ? [...prev, file]
         : prev.filter(f => f.documentId !== file.documentId)
     );
-  };
+  }, []);
 
   // Handle status change from buttons
   const handleStatusChange = async (newStatus) => {
@@ -1016,58 +1016,67 @@ const TaskDetailPage = () => {
     }
   };
 
-  const tabs = [
-    {
-      label: "Details",
-      component: (
-        <TaskDetail
-          taskData={taskData}
-          formData={formData}
-          onUpdate={handleFormFieldUpdate}
-          mode={mode}
-          eventDate={eventDate}
-          errors={validationErrors}
-          onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
-        />
-      ),
-    },
-    {
-      label: "Comments and Preview",
-      component: mode === "create" ? (
-        <div className="create-mode-message">
-          Save the task first to access comments and preview
-        </div>
-      ) : (
-        <CommentsPreview
-          mode={mode}
-          taskId={taskId}
-          eventId={eventId}
-          isActive={activeTab === "Comments and Preview"}
-        />
-      ),
-      disabled: mode === "create",
-    },
-    {
-      label: "Files & Uploads",
-      component: mode === "create" ? (
-        <div className="create-mode-message">
-          Save the task first to upload files
-        </div>
-      ) : (
-        <TasksFiles
-          files={fileData.uploadedFiles}
-          onFilesChange={setFileData}
-          mode={mode}
-          taskId={taskId || taskData.id}
-          eventId={eventId || taskData.eventId}
-          organizationId={organizationId || taskData.organizationId}
-          selectedFiles={selectedFiles}
-          onFileSelect={handleFileSelect}
-        />
-      ),
-      disabled: mode === "create",
-    },
-  ];
+  // Filter tabs based on mode - only show Details tab in create and edit modes
+  const tabs = useMemo(() => {
+    // Define all tabs inside useMemo to avoid dependency issues
+    const allTabs = [
+      {
+        label: "Details",
+        component: (
+          <TaskDetail
+            taskData={taskData}
+            formData={formData}
+            onUpdate={handleFormFieldUpdate}
+            mode={mode}
+            eventDate={eventDate}
+            errors={validationErrors}
+            onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
+          />
+        ),
+      },
+      {
+        label: "Comments and Preview",
+        component: mode === "create" ? (
+          <div className="create-mode-message">
+            Save the task first to access comments and preview
+          </div>
+        ) : (
+          <CommentsPreview
+            mode={mode}
+            taskId={taskId}
+            eventId={eventId}
+            isActive={activeTab === "Comments and Preview"}
+          />
+        ),
+        disabled: mode === "create",
+      },
+      {
+        label: "Files & Uploads",
+        component: mode === "create" ? (
+          <div className="create-mode-message">
+            Save the task first to upload files
+          </div>
+        ) : (
+          <TasksFiles
+            files={fileData.uploadedFiles}
+            onFilesChange={setFileData}
+            mode={mode}
+            taskId={taskId || taskData.id}
+            eventId={eventId || taskData.eventId}
+            organizationId={organizationId || taskData.organizationId}
+            selectedFiles={selectedFiles}
+            onFileSelect={handleFileSelect}
+          />
+        ),
+        disabled: mode === "create",
+      },
+    ];
+
+    if (mode === "create" || mode === "edit") {
+      return allTabs.filter(tab => tab.label === "Details");
+    }
+    return allTabs;
+  }, [mode, taskData, formData, handleFormFieldUpdate, eventDate, validationErrors, taskId, eventId, fileData.uploadedFiles, setFileData, organizationId, selectedFiles, handleFileSelect, activeTab]);
 
   const breadcrumbItems = [
     { label: user?.organization?.name, href: "#", icon: Building },
@@ -1151,7 +1160,6 @@ const TaskDetailPage = () => {
           }}
           activeTab={activeTab}
           setActiveTab={handleTabChange}
-          disabledTabs={mode === "create" ? tabs.filter(t => t.disabled).map(t => t.label) : []}
         />
       </div>
     </div>
