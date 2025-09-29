@@ -8,7 +8,7 @@ const EventAssignToMe = ({ events, onEventClick, title = "Events Assigned to Me"
 
   const columns = [
     { key: "eventName", label: "Event Name" },
-    { key: "collegeName", label: "College Name" },
+    { key: "collegeName", label: "Organization" },
     { key: "assignTo", label: "Assign To" },
     { key: "eventDate", label: "Event Date" },
     { key: "createdBy", label: "Created By" },
@@ -28,7 +28,7 @@ const EventAssignToMe = ({ events, onEventClick, title = "Events Assigned to Me"
         case "eventName":
           return "Untitled Event";
         case "collegeName":
-          return "No College";
+          return "No Organization";
         case "assignTo":
           return "Unassigned";
         case "eventDate":

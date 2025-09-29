@@ -346,21 +346,34 @@ const EventDetail = () => {
   }, [mode, formData, selectedDate, eventData, selectedOrganizationId, user?.organizationId, eventType, eventTypeId, fetchedEvent?.typeName]);
 
   const permissions = React.useMemo(() => {
+    // Determine if the current user is a Designer role
+    const isDesigner = user?.roles?.some(role => role?.name === "Designer" || role?.displayName === "Designer");
     const userCanEdit = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false;
     const userCanCreateTask = userPermissions?.permissions?.Tasks?.["Task Management"]?.includes("Create") ?? false;
     const eventAllowsCRUD = fetchedEvent?.canCRUD !== false;
     const isOwnOrg = isViewingOwnOrganization();
     
-    // Check if user is assigned to this event (for cross-organization events)
-    const isAssignedToEvent = fetchedEvent?.assignedUsers?.some(assignedUser => 
-      assignedUser.userId === user?.userId || 
-      assignedUser.id === user?.userId ||
-      assignedUser.userId === user?.id ||
-      assignedUser.id === user?.id
-    ) ?? false;
+    // Check if user is assigned to this event with robust ID normalization
+    const currentUserId = String(user?.userId || user?.id || user?.userID || "");
+    const assignedUserIds = Array.isArray(fetchedEvent?.assignedUsers)
+      ? fetchedEvent.assignedUsers.map(u => {
+          if (typeof u === "string" || typeof u === "number") {
+            return String(u);
+          }
+          const possibleId = u?.userId ?? u?.id ?? u?.userID ?? u?.user?.id ?? u?.user?.userId;
+          return possibleId != null ? String(possibleId) : "";
+        }).filter(Boolean)
+      : [];
+    const isAssignedToEvent = currentUserId && assignedUserIds.includes(currentUserId);
     
     
-    // Allow actions if: 1) User is in their own org, OR 2) User is assigned to the event
+    // Event creator should also be allowed to publish even if not in assignedUsers
+    const creatorId = String(fetchedEvent?.createdBy ?? fetchedEvent?.createdById ?? "");
+    const currentUserIdForCreatorCheck = String(user?.userId || user?.id || user?.userID || "");
+    const isCreator = creatorId && currentUserIdForCreatorCheck && creatorId === currentUserIdForCreatorCheck;
+    // Only assigned users or creator can access publish actions, and Designers are explicitly blocked
+    const canPublish = (isAssignedToEvent || isCreator) && !isDesigner;
+    // Other actions may continue to consider org or assignment
     const canPerformActions = isOwnOrg || isAssignedToEvent;
     
     const permissionsResult = {
@@ -371,8 +384,8 @@ const EventDetail = () => {
       // Edit/Save: Check user permissions + canCRUD + (own org OR assigned to event)
       canEdit: mode === "create" ? isOwnOrg : userCanEdit && eventAllowsCRUD && canPerformActions,
       canSave: mode === "create" ? isOwnOrg : userCanEdit && eventAllowsCRUD && canPerformActions,
-      // Publish: Only assigned users can publish (same logic as other actions)
-      canPublish: canPerformActions,
+      // Publish: strictly require assignment to this event
+      canPublish: canPublish,
     };
     
     // Debug logging
@@ -386,7 +399,7 @@ const EventDetail = () => {
     });
     
     return permissionsResult;
-  }, [mode, userPermissions?.permissions?.Events, userPermissions?.permissions?.Tasks, fetchedEvent?.canCRUD, isViewingOwnOrganization, fetchedEvent?.assignedUsers, user?.userId]);
+  }, [mode, userPermissions?.permissions?.Events, userPermissions?.permissions?.Tasks, fetchedEvent?.canCRUD, isViewingOwnOrganization, fetchedEvent?.assignedUsers, fetchedEvent?.createdBy, fetchedEvent?.createdById, user?.userId, user?.id, user?.roles]);
 
   const handleSaveEvent = async (topSectionData, detailData) => {
     setIsSubmitting(true);
@@ -733,61 +746,75 @@ const EventDetail = () => {
     [mode, fetchedEvent?.coordinators]
   );
 
-  const tabs = React.useMemo(() => [
-    {
-      label: "Details",
-      component: (
-        <Detail
-          mode={mode}
-          onSave={detailSaveRef}
-          guestsData={guestsData}
-          organizersData={organizersData}
-          initialDescription={
-            mode === "create" ? formData?.eventDescription || "" : fetchedEvent?.eventDescription || ""
-          }
-          initialLocation={
-            mode === "create" ? formData?.location || "" : fetchedEvent?.locationDetails || ""
-          }
-          validationErrors={validationErrors}
-          onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
-        />
-      ),
-    },
-    {
-      label: "Task",
-      component: <Task tasksData={tasksData || []} eventId={currentEventId || eventId} eventName={fetchedEvent?.eventName || ""} />,
-    },
-    {
-      label: "Files & Uploads",
-      component: (
-        <FileUploads
-          filesFromTasks={[]}
-          eventId={currentEventId || eventId}
-          organizationId={fetchedEvent?.organizationId || location.state?.eventData?.organizationId || selectedOrganizationId || user?.organizationId}
-        />
-      ),
-    },
-    {
-      label: "To Publish",
-      component: (
-        <Publish
-          publishData={[]}
-          eventId={currentEventId || eventId}
-          onDownload={() => handleDownload()}
-          onSendMail={() => handleSendMail()}
-          canPublish={permissions.canPublish}
-          user={user}
-        />
-      ),
-    },
-  ], [mode, detailSaveRef, guestsData, organizersData, formData?.eventDescription, fetchedEvent?.eventDescription, formData?.location, fetchedEvent?.locationDetails, tasksData, currentEventId, eventId, selectedOrganizationId, user?.organizationId, handleDownload, handleSendMail, fetchedEvent?.eventName, validationErrors, permissions.canPublish, user]);
+  const tabs = React.useMemo(() => {
+    const baseTabs = [
+      {
+        label: "Details",
+        component: (
+          <Detail
+            mode={mode}
+            onSave={detailSaveRef}
+            guestsData={guestsData}
+            organizersData={organizersData}
+            initialDescription={
+              mode === "create" ? formData?.eventDescription || "" : fetchedEvent?.eventDescription || ""
+            }
+            initialLocation={
+              mode === "create" ? formData?.location || "" : fetchedEvent?.locationDetails || ""
+            }
+            validationErrors={validationErrors}
+            onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
+          />
+        ),
+      },
+      {
+        label: "Task",
+        component: <Task tasksData={tasksData || []} eventId={currentEventId || eventId} eventName={fetchedEvent?.eventName || ""} />,
+      },
+      {
+        label: "Files & Uploads",
+        component: (
+          <FileUploads
+            filesFromTasks={[]}
+            eventId={currentEventId || eventId}
+            organizationId={fetchedEvent?.organizationId || location.state?.eventData?.organizationId || selectedOrganizationId || user?.organizationId}
+          />
+        ),
+      }
+    ];
 
-  const filteredTabs = React.useMemo(() =>
-    mode === "create"
-      ? tabs.filter(tab => tab.label === "Details")
-      : tabs,
-    [mode, tabs]
-  );
+    if (permissions.canPublish) {
+      baseTabs.push({
+        label: "To Publish",
+        component: (
+          <Publish
+            publishData={[]}
+            eventId={currentEventId || eventId}
+            onDownload={() => handleDownload()}
+            onSendMail={() => handleSendMail()}
+            canPublish={permissions.canPublish}
+            user={user}
+          />
+        ),
+      });
+    }
+
+    return baseTabs;
+  }, [mode, detailSaveRef, guestsData, organizersData, formData?.eventDescription, fetchedEvent?.eventDescription, formData?.location, fetchedEvent?.locationDetails, tasksData, currentEventId, eventId, selectedOrganizationId, user?.organizationId, handleDownload, handleSendMail, fetchedEvent?.eventName, validationErrors, permissions.canPublish, user, fetchedEvent?.organizationId, location.state?.eventData?.organizationId]);
+
+  const filteredTabs = React.useMemo(() => {
+    if (mode === "create") {
+      return tabs.filter(tab => tab.label === "Details");
+    }
+    return tabs;
+  }, [mode, tabs]);
+
+  // If user cannot publish and the active tab is "To Publish", redirect to Details
+  useEffect(() => {
+    if (!permissions.canPublish && activeTab === "To Publish") {
+      setActiveTab("Details");
+    }
+  }, [permissions.canPublish, activeTab]);
 
   const breadcrumbItems = React.useMemo(() => [
     { label: user?.organization?.name || "Organization", href: "#", icon: Building },

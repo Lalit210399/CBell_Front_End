@@ -740,6 +740,7 @@ const Dashboard = () => {
                   "Total Tasks",
                 ].includes(currentTitle)}
                 hideAssignedToColumn={currentTitle === "New Tasks"}
+                showOrganizationColumn={currentTitle === "Events Assigned to Me" ? false : (currentTitle === "Tasks Assigned to Me")}
                 emptyStateMessage={`No ${currentTitle.toLowerCase()} found`}
               />
             </div>

@@ -290,7 +290,8 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
     data: summaryData,
     loading: loadingSummary,
     error: errorSummary,
-    execute: executeSummary
+    execute: executeSummary,
+    reset: resetSummary
   } = useApi(fetchSummaryData, [orgIdReady], false);
 
 
@@ -299,7 +300,8 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
     data: allEvents,
     loading: loadingEventsCampaign,
     error: errorEventsCampaign,
-    execute: executeEventsCampaign
+    execute: executeEventsCampaign,
+    reset: resetEventsCampaign
   } = useApi(fetchEventsCampaign, [orgIdReady, selectedMonth, selectedYear], false);
 
   // Tasks - Create a memoized function for tasks
@@ -317,15 +319,18 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
   const {
     data: tasksData,
     loading: loadingTasks,
-    error: errorTasks
-  } = useApi(fetchTasksForCurrentTitle, [orgIdReady, currentTitle, filter], true);
+    error: errorTasks,
+    execute: executeTasks,
+    reset: resetTasks
+  } = useApi(fetchTasksForCurrentTitle, [orgIdReady, currentTitle, filter], false);
 
   // My Tasks - for "Tasks Assigned to Me" tile
   const {
     data: myTasksData,
     loading: loadingMyTasks,
     error: errorMyTasks,
-    execute: executeMyTasks
+    execute: executeMyTasks,
+    reset: resetMyTasks
   } = useApi(fetchMyTasksData, [orgIdReady], false);
 
 
@@ -341,9 +346,18 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
   // Separate useEffect for Events Campaign to prevent unnecessary re-execution
   useEffect(() => {
     if (orgIdReady) {
+      // Clear stale events before fetching new scope
+      resetEventsCampaign();
       executeEventsCampaign();
     }
-  }, [selectedMonth, selectedYear, orgIdReady, executeEventsCampaign]);
+  }, [selectedMonth, selectedYear, orgIdReady, scopeChangeTrigger, executeEventsCampaign, resetEventsCampaign]);
+
+  // Clear and refetch summary on scope change to avoid stale counts
+  useEffect(() => {
+    if (!orgIdReady) return;
+    resetSummary();
+    executeSummary();
+  }, [scopeChangeTrigger, orgIdReady, resetSummary, executeSummary]);
 
 
 
@@ -412,7 +426,8 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
     if (tile.title === "Tasks Assigned to Me") {
       setActiveComponent("recent");
       setFilter("All");
-      executeMyTasks(); // Execute my tasks API when tile is clicked
+      // Clear any stale data; effect will handle the fetch
+      resetMyTasks();
     } else {
       setActiveComponent("recent");
 
@@ -428,9 +443,25 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
         setFilter(filterMap[tile.title] || tile.title);
       }
 
-      // Note: API will be executed automatically by useApi hook when currentTitle changes
+      // Clear stale tasks list; effect will run a single fetch
+      resetTasks();
     }
-  }, [executeMyTasks]);
+  }, [resetMyTasks, resetTasks]);
+
+  // Single effect to handle all task fetching based on current title
+  useEffect(() => {
+    if (!orgIdReady) return;
+    
+    if (currentTitle === "Tasks Assigned to Me") {
+      // Clear and fetch my tasks
+      resetMyTasks();
+      executeMyTasks();
+    } else {
+      // Clear and fetch regular tasks for other tiles
+      resetTasks();
+      executeTasks();
+    }
+  }, [orgIdReady, currentTitle, filter, scopeChangeTrigger, executeMyTasks, resetMyTasks, executeTasks, resetTasks]);
 
   // Handle task click
   const handleTaskClick = (task, key) => {
@@ -493,7 +524,7 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
           {activeComponent === "recent" && (
             <div className="recent-tasks">
               <RecentTasks
-                tasks={currentTitle === "Tasks Assigned to Me" ? (myTasksData || []).slice(0, 5) : (tasksData || []).slice(0, 5)}
+                tasks={(currentTitle === "Tasks Assigned to Me" ? (myTasksData || []) : (tasksData || [])).slice(0, 5)}
                 title={currentTitle}
                 filter={filter}
                 onFilterChange={setFilter}
@@ -505,6 +536,7 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
                 ].includes(currentTitle)}
                 hideAssignedToColumn={currentTitle === "New Tasks"}
                 disableClientFiltering={true}
+                showOrganizationColumn={false}
               />
             </div>
           )}

@@ -6,7 +6,7 @@ import { ListTodo } from "lucide-react";
 import { useTaskStatus } from "../../Hooks/useTaskStatus";
 import "./RecentTask.css";
 
-const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChange, showDropdown = true, loading = false, disableClientFiltering = false, hideAssignedToColumn = false }) => {
+const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChange, showDropdown = true, loading = false, disableClientFiltering = false, hideAssignedToColumn = false, showOrganizationColumn = false }) => {
   const { getActiveTaskStatuses } = useTaskStatus();
   
   // Generate filter options from task status context
@@ -46,6 +46,8 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
           return "Unassigned";
         case "dueDate":
           return "No Due Date";
+        case "organizationName":
+          return "No Organization";
         default:
           return "N/A";
       }
@@ -119,12 +121,13 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
           { key: "status", label: "Status" },
           { key: "taskName", label: "Task Name" },
           { key: "eventName", label: "Event Name" },
+          ...(showOrganizationColumn ? [{ key: "organizationName", label: "Organization" }] : []),
           ...(hideAssignedToColumn ? [] : [{ key: "assignedTo", label: "Assigned To" }]),
           { key: "dueDate", label: "Due Date" },
         ]}
         data={loading ? skeletonRows : filteredTasks}
         renderCell={loading ? () => <div className="skeleton-row-cell" /> : renderCell}
-        sortableColumns={["taskName", "eventName", "dueDate"]}
+        sortableColumns={["taskName", "eventName", ...(showOrganizationColumn ? ["organizationName"] : []), "dueDate"]}
         showActions={false}
         onRowClick={loading ? undefined : (task) => onTaskClick?.(task)}
         className="fixed-height"
