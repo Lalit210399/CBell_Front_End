@@ -15,7 +15,7 @@ const HARDCODED_STATUS_IDS = {
 const getDefaultColor = (status) => {
   const colors = {
     "Active": "#10b981",
-    "Under Approval": "#f59e0b", 
+    "Under Approval": "#f59e0b",
     "Under Review": "#3b82f6",
     "Approved": "#059669"
   };
@@ -43,10 +43,10 @@ const TopSection = ({
   isUpdatingStatus = false
 }) => {
   const { user } = useUser();
-  
+
   // Check if user is a Designer based on the roles array
   const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
-  
+
   const [editableTitle, setEditableTitle] = useState(title || "");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [assignedIds, setAssignedIds] = useState([]);
@@ -86,7 +86,7 @@ const TopSection = ({
         return null;
       })
       .filter(Boolean);
-    
+
     const currentIds = assignedIds.sort();
     const newIds = ids.sort();
     if (JSON.stringify(currentIds) !== JSON.stringify(newIds)) {
@@ -97,7 +97,7 @@ const TopSection = ({
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch(`/apis/auth/assignment-users/${user?.organizationId}`, {
+        const response = await fetch(`/apis/auth/hierarchy-users/${user?.organizationId}`, {
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
@@ -108,6 +108,7 @@ const TopSection = ({
         if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
 
         const data = await response.json();
+
         setFetchedUsers(data.users || []);
       } catch (error) {
         console.error("Error fetching users:", error);
@@ -144,7 +145,7 @@ const TopSection = ({
   const handleStatusChange = (newStatusValue) => {
     if (onStatusChange) {
       const newStatus = statusOptions.find(option => option.value === newStatusValue);
-      
+
       if (newStatus) {
         onStatusChange(newStatus);
       } else {
@@ -162,7 +163,7 @@ const TopSection = ({
 
   const selectedParticipants = assignedIds.map((assignedId) => {
     const assignedUser = assignedTo.find((u) => (u.userId || u.id) === assignedId);
-    
+
     if (assignedUser) {
       return {
         id: assignedUser.userId || assignedUser.id,
@@ -172,7 +173,7 @@ const TopSection = ({
         shape: "circle",
       };
     }
-    
+
     const fullUser = fetchedUsers.find((u) => u.id === assignedId);
     const firstName = fullUser?.firstName || "User";
     const lastName = fullUser?.lastName || "";
@@ -269,7 +270,7 @@ const TopSection = ({
 
           <div className="edit-top-status-section">
             <span className="edit-top-label">Status:</span>
-            <div 
+            <div
               className={`edit-top-status-badge edit-top-status-${getStatusClass(status?.value)}`}
               data-status={status?.value || status?.label}
             >
@@ -289,13 +290,13 @@ const TopSection = ({
                     Save
                   </button>
                 )}
-                
+
                 {/* Status change buttons - only show in view mode */}
                 {mode === "view" && (
                   <div className="edit-top-status-change-buttons">
                     {/* Submit for Approval button - show only for Designers and for all statuses except Under Approval/Under Review */}
                     {isDesigner && status?.value !== "Under Approval" && status?.value !== "Under Review" && (
-                      <button 
+                      <button
                         className="edit-top-status-btn edit-top-under-approval-btn"
                         onClick={() => handleStatusChange("Under Approval")}
                         title="Submit for Approval"
@@ -307,7 +308,7 @@ const TopSection = ({
 
                     {/* Approved button - show to everyone EXCEPT Designers when status is Under Approval or Under Review */}
                     {!isDesigner && (status?.value === "Under Approval" || status?.value === "Under Review") && (
-                      <button 
+                      <button
                         className="edit-top-status-btn edit-top-approved-btn"
                         onClick={() => handleStatusChange("Approved")}
                         title="Approve Task (requires file selection)"
