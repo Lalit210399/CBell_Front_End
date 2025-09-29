@@ -20,7 +20,6 @@ const HARDCODED_STATUS_IDS = {
   "New": "68baab0b9a31a52d62646ca1",
   "Active": "68bee09b522caf6ac9f65bdc", 
   "Under Approval": "68bee0b1522caf6ac9f65bdd",
-  "Under Review": "68bee0b1522caf6ac9f65bdd", // Use same ID as Under Approval
   "Approved": "68bee0c2522caf6ac9f65bde",
   "Published": "68bee0d1522caf6ac9f65bdf"
 };
@@ -76,7 +75,6 @@ const TaskDetailPage = () => {
       "New": "gray",
       "Active": "blue", 
       "Under Approval": "orange",
-      "Under Review": "orange", // Map Under Review to orange color
       "Approved": "green",
       "Published": "purple"
     };
@@ -102,12 +100,6 @@ const TaskDetailPage = () => {
         id: HARDCODED_STATUS_IDS["Under Approval"],
         label: "Under Approval",
         value: "Under Approval", 
-        color: "orange"
-      },
-      {
-        id: HARDCODED_STATUS_IDS["Under Approval"], // Use same ID as Under Approval
-        label: "Under Review",
-        value: "Under Review", 
         color: "orange"
       },
       {
@@ -163,22 +155,16 @@ const TaskDetailPage = () => {
       return false;
     }
     
-    // If user is a Designer, they cannot edit tasks
-    if (isDesigner) {
-      console.log("Edit blocked: User is Designer");
-      return false;
-    }
-    
     // If task status is Approved, it cannot be edited
     if (taskStatus?.value === "Approved") {
       console.log("Edit blocked: Task is Approved");
       return false;
     }
     
-    // Otherwise, allow editing
+    // Otherwise, allow editing (Designers can now edit tasks)
     console.log("Edit allowed: All conditions passed");
     return true;
-  }, [taskData.canCRUD, taskData.accessLevel, isDesigner, taskStatus?.value]);
+  }, [taskData.canCRUD, taskData.accessLevel, taskStatus?.value]);
 
   const canSave = React.useMemo(() => {
     // In create mode, always allow saving
@@ -431,7 +417,8 @@ const TaskDetailPage = () => {
       const data = taskDataFromAPI;
       
       setTaskTitle(data.taskTitle || "");
-      setCreatedBy(data.createdByName || data.createdBy || (user ? `${user.firstName} ${user.lastName}` : "User"));
+      // Use the actual creator's name from API response, only fallback to current user for new tasks
+      setCreatedBy(data.createdByName || "Unknown User");
       
       const currentStatusOptions = statusOptions;
       const apiStatusName = data.taskStatusName || data.taskStatus || "New";
@@ -448,10 +435,6 @@ const TaskDetailPage = () => {
         );
       }
       
-      // Special handling for "Under Review" - map to "Under Approval" if not found
-      if (!matchedStatus && (apiStatusName.toLowerCase() === "under review" || apiStatusName.toLowerCase() === "underapproval")) {
-        matchedStatus = currentStatusOptions.find(opt => opt.value === "Under Review");
-      }
       
       // If still not found, create a fallback status with hardcoded ID
       if (!matchedStatus) {
@@ -992,6 +975,7 @@ const TaskDetailPage = () => {
         }
 
         // Make API call to update task
+        debugger;
         const response = await fetchWithRefresh(`/apis/task/update/${taskId}`, {
           method: "PUT",
           headers: {
@@ -1194,6 +1178,7 @@ const TaskDetailPage = () => {
           onStatusChange={handleStatusChange}
           isUpdatingStatus={isUpdatingStatus}
           user={user}
+          createdBy={createdBy}
         />
       </div>
 

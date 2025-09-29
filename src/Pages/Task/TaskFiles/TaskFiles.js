@@ -119,7 +119,7 @@ const TasksFiles = ({
           selectedFiles={selectedFiles.map(f => f.documentId)}
           onFileSelect={handleFileSelect}
           hasApprovedFile={hasApprovedFile} // Pass this prop to child
-          enableSelectionRadio={taskStatus?.value === "Under Approval" || taskStatus?.value === "Under Review"}
+          enableSelectionRadio={taskStatus?.value === "Under Approval"}
         />
       )}
     </div>

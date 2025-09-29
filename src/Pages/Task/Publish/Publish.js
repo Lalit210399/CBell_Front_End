@@ -88,7 +88,7 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
       return;
     }
     
-    const organizationId = user?.organizationId || '681460dcb8327b2e3417d8b1';
+    const organizationId = user?.organizationId;
     
     let payload;
     let endpoint;
@@ -137,8 +137,16 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
   };
 
   const handlePublishRecord = async (docId, platform) => {
-    const userId = user?.userID || '';
+    // Try to get user ID from various possible field names
+    const userId = user?.id || user?._id || user?.userId || user?.user_id || user?.uid || user?.userID;
     const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
+    
+    // Validate that we have a valid user ID
+    if (!userId) {
+      console.error("User ID not available for publish record");
+      return;
+    }
+    
     const payload = {
       platforms: [platform],
       userId,

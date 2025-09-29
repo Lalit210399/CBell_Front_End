@@ -6,18 +6,20 @@ import { useUser } from "../../Context/UserContext";
 import "./EditTopSection.css";
 
 const HARDCODED_STATUS_IDS = {
+  "New": "68baab0b9a31a52d62646ca1",
   "Active": "68bee09b522caf6ac9f65bdc",
-  "Under Approval": "68bee09b522caf6ac9f65bdd",
-  "Under Review": "68bee09b522caf6ac9f65bde",
-  "Approved": "68bee09b522caf6ac9f65bdf"
+  "Under Approval": "68bee0b1522caf6ac9f65bdd",
+  "Approved": "68bee0c2522caf6ac9f65bde",
+  "Published": "68bee0d1522caf6ac9f65bdf"
 };
 
 const getDefaultColor = (status) => {
   const colors = {
+    "New": "#6b7280",
     "Active": "#10b981",
     "Under Approval": "#f59e0b",
-    "Under Review": "#3b82f6",
-    "Approved": "#059669"
+    "Approved": "#059669",
+    "Published": "#8b5cf6"
   };
   return colors[status] || "#6b7280";
 };
@@ -40,7 +42,8 @@ const TopSection = ({
   users = [],
   errors = {},
   onClearError,
-  isUpdatingStatus = false
+  isUpdatingStatus = false,
+  createdBy = ""
 }) => {
   const { user } = useUser();
 
@@ -56,20 +59,31 @@ const TopSection = ({
 
   // Status options for dropdown
   const statusOptions = [
+    { id: "68baab0b9a31a52d62646ca1", label: "New", value: "New", color: "#6b7280" },
     { id: "68bee09b522caf6ac9f65bdc", label: "Active", value: "Active", color: "#10b981" },
-    { id: "68bee09b522caf6ac9f65bdd", label: "Under Approval", value: "Under Approval", color: "#f59e0b" },
-    { id: "68bee09b522caf6ac9f65bde", label: "Under Review", value: "Under Review", color: "#3b82f6" },
-    { id: "68bee09b522caf6ac9f65bdf", label: "Approved", value: "Approved", color: "#059669" }
+    { id: "68bee0b1522caf6ac9f65bdd", label: "Under Approval", value: "Under Approval", color: "#f59e0b" },
+    { id: "68bee0c2522caf6ac9f65bde", label: "Approved", value: "Approved", color: "#059669" },
+    { id: "68bee0d1522caf6ac9f65bdf", label: "Published", value: "Published", color: "#8b5cf6" }
   ];
 
-  // Get creator user info
+  // Get creator user info - use passed createdBy prop or fallback to current user for new tasks
   const creatorUser = useMemo(() => {
+    if (createdBy && createdBy !== "") {
+      // Parse the createdBy name (e.g., "Rohan Kulkarni" -> firstName: "Rohan", lastName: "Kulkarni")
+      const nameParts = createdBy.trim().split(" ");
+      return {
+        firstName: nameParts[0] || "Unknown",
+        lastName: nameParts.slice(1).join(" ") || "User"
+      };
+    }
+    
+    // Fallback to current user for new tasks
     if (!user) return { firstName: "Unknown", lastName: "User" };
     return {
       firstName: user.firstName || "Unknown",
       lastName: user.lastName || "User"
     };
-  }, [user]);
+  }, [createdBy, user]);
 
   useEffect(() => {
     setEditableTitle(title || "");
@@ -294,8 +308,8 @@ const TopSection = ({
                 {/* Status change buttons - only show in view mode */}
                 {mode === "view" && (
                   <div className="edit-top-status-change-buttons">
-                    {/* Submit for Approval button - show only for Designers and for all statuses except Under Approval/Under Review */}
-                    {isDesigner && status?.value !== "Under Approval" && status?.value !== "Under Review" && (
+                    {/* Submit for Approval button - show only for Designers and for all statuses except Under Approval */}
+                    {isDesigner && status?.value !== "Under Approval" && (
                       <button
                         className="edit-top-status-btn edit-top-under-approval-btn"
                         onClick={() => handleStatusChange("Under Approval")}
@@ -306,8 +320,8 @@ const TopSection = ({
                       </button>
                     )}
 
-                    {/* Approved button - show to everyone EXCEPT Designers when status is Under Approval or Under Review */}
-                    {!isDesigner && (status?.value === "Under Approval" || status?.value === "Under Review") && (
+                    {/* Approved button - show to everyone EXCEPT Designers when status is Under Approval */}
+                    {!isDesigner && status?.value === "Under Approval" && (
                       <button
                         className="edit-top-status-btn edit-top-approved-btn"
                         onClick={() => handleStatusChange("Approved")}
