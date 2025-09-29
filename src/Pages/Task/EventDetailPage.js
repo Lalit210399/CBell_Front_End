@@ -816,30 +816,44 @@ const EventDetail = () => {
     }
   }, [permissions.canPublish, activeTab]);
 
-  const breadcrumbItems = React.useMemo(() => [
-    { label: user?.organization?.name || "Organization", href: "#", icon: Building },
-    {
-      label: "Events",
-      href: "/events",
-      icon: Calendar,
-      onClick: () => navigate("/events"),
-    },
-    {
-      label:
-        mode === "create"
-          ? "New Event"
-          : fetchedEvent?.eventName || "Event Details",
-      href: "#",
-      icon: FileText,
-      onClick: mode === "create" ? undefined : () => navigate("/events/eventDetailPage", {
-        state: {
-          eventId: currentEventId || eventId,
-          mode: "view",
-          eventData: fetchedEvent
-        }
-      }),
-    },
-  ], [user?.organization?.name, mode, navigate, currentEventId, eventId, fetchedEvent]);
+  const breadcrumbItems = React.useMemo(() => {
+    // Ensure we have valid data before creating breadcrumb items
+    const organizationName = user?.organization?.name || user?.organizationName || "Organization";
+    const eventName = mode === "create" 
+      ? "New Event" 
+      : (fetchedEvent?.eventName || "Event Details");
+    
+    return [
+      { 
+        label: organizationName, 
+        href: "#", 
+        icon: Building 
+      },
+      {
+        label: "Events",
+        href: "/events",
+        icon: Calendar,
+        onClick: () => navigate("/events"),
+      },
+      {
+        label: eventName,
+        href: "#",
+        icon: FileText,
+        onClick: mode === "create" ? undefined : () => {
+          // Only navigate if we have valid event data
+          if (currentEventId || eventId) {
+            navigate("/events/eventDetailPage", {
+              state: {
+                eventId: currentEventId || eventId,
+                mode: "view",
+                eventData: fetchedEvent
+              }
+            });
+          }
+        },
+      },
+    ];
+  }, [user?.organization?.name, user?.organizationName, mode, navigate, currentEventId, eventId, fetchedEvent]);
 
   // Determine loading state
   const isLoading = useMemo(() => {

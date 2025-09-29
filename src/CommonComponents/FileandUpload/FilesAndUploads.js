@@ -354,7 +354,6 @@ const FilesUploads = ({
               <button
                 onClick={confirmUpload}
                 disabled={isUploading}
-                style={{ background: '#841111', color: 'white' }}
               >
                 {isUploading ? <Loader2 className="animate-spin" size={16} /> : 'Upload'}
               </button>
@@ -366,24 +365,67 @@ const FilesUploads = ({
       <div className="files-container">
         <div className="files-header">
           <h3>Files</h3>
-          <label className="upload-button">
-            {isUploading ? <Loader2 className="animate-spin" size={20} /> : 'Upload'}
-            <input
-              type="file"
-              onChange={handleFileUpload}
-              multiple
-              accept="image/*,video/*,audio/*,.pdf"
-              style={{ display: "none" }}
-              disabled={isUploading}
-            />
-          </label>
+          {[...files, ...uploadedFiles].length > 0 && (
+            <label className="upload-button">
+              {isUploading ? <Loader2 className="animate-spin" size={20} /> : 'Upload'}
+              <input
+                type="file"
+                onChange={handleFileUpload}
+                multiple
+                accept="image/*,video/*,audio/*,.pdf"
+                style={{ display: "none" }}
+                disabled={isUploading}
+              />
+            </label>
+          )}
         </div>
 
         <div className="files-grid">
-          {[...files, ...uploadedFiles].map((file, index) => (
-            <LazyFileCard key={index} file={file} mode={mode} />
-          ))}
-          {isUploading && <p>Loading...</p>}
+          {[...files, ...uploadedFiles].length === 0 && !isUploading ? (
+            <div className="empty-files-state">
+              <div className="empty-files-illustration">
+                <FileIcon size={64} className="empty-icon" />
+                <div className="empty-files-content">
+                  <h4>No files uploaded yet</h4>
+                  <p>Upload documents, images, videos, or other files to get started</p>
+                  <div className="empty-files-features">
+                    <div className="feature-item">
+                      <ImageIcon size={16} />
+                      <span>Images & Videos</span>
+                    </div>
+                    <div className="feature-item">
+                      <FileText size={16} />
+                      <span>PDF Documents</span>
+                    </div>
+                    <div className="feature-item">
+                      <MusicIcon size={16} />
+                      <span>Audio Files</span>
+                    </div>
+                  </div>
+                  <div className="empty-upload-section">
+                    <label className="empty-upload-button">
+                      {isUploading ? <Loader2 className="animate-spin" size={20} /> : 'Upload Files'}
+                      <input
+                        type="file"
+                        onChange={handleFileUpload}
+                        multiple
+                        accept="image/*,video/*,audio/*,.pdf"
+                        style={{ display: "none" }}
+                        disabled={isUploading}
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {[...files, ...uploadedFiles].map((file, index) => (
+                <LazyFileCard key={index} file={file} mode={mode} />
+              ))}
+              {isUploading && <p>Loading...</p>}
+            </>
+          )}
         </div>
       </div>
     </div>

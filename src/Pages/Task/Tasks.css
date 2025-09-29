@@ -22,8 +22,9 @@
   }
   
   .Inner-Content {
-    height: calc(100% - 160px);
+    height: auto;
     width: 100%;
+    min-height: 0;
   }
 
   .icon-btn {
@@ -92,7 +93,6 @@ td .avatar-list {
   border-radius: 16px;
   font-size: 0.75rem;
   font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.5px;
   white-space: nowrap;
 }

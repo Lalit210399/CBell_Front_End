@@ -12,7 +12,7 @@ import { useUser } from "../../Context/UserContext";
 import { useMessages } from "../../Context/MessageContext";
 import { useTaskStatus } from "../../Hooks/useTaskStatus";
 import { getHierarchyUsers } from "../../Services/AuthN";
-import { Building, Calendar, Pencil } from "lucide-react";
+import { Building, Calendar, Pencil, FileText } from "lucide-react";
 import "./Tasks.css";
 
 // Hardcoded status IDs from backend data - moved outside component to prevent re-creation
@@ -1101,27 +1101,54 @@ const TaskDetailPage = () => {
     return allTabs;
   }, [mode, taskData, formData, handleFormFieldUpdate, eventDate, validationErrors, taskId, eventId, fileData.uploadedFiles, setFileData, organizationId, selectedFiles, handleFileSelect, activeTab, taskStatus]);
 
-  const breadcrumbItems = [
-    { label: user?.organization?.name, href: "#", icon: Building },
-    { 
-      label: "Events", 
-      href: "/events", 
-      icon: Calendar,
-      onClick: () => navigate("/events")
-    },
-    eventName ? { 
-      label: eventName, 
-      href: "#", 
-      icon: Calendar,
-      onClick: () => navigate("/events/eventDetailPage", {
-        state: {
-          eventId: eventId,
-          mode: "view"
+  const breadcrumbItems = React.useMemo(() => {
+    // Ensure we have valid data before creating breadcrumb items
+    const organizationName = user?.organization?.name || user?.organizationName || "Organization";
+    const taskName = taskTitle || (mode === "create" ? "New Task" : "Task Details");
+    
+    const items = [
+      { 
+        label: organizationName, 
+        href: "#", 
+        icon: Building 
+      },
+      { 
+        label: "Events", 
+        href: "/events", 
+        icon: Calendar,
+        onClick: () => navigate("/events")
+      }
+    ];
+    
+    // Add event name if available
+    if (eventName) {
+      items.push({ 
+        label: eventName, 
+        href: "#", 
+        icon: FileText,
+        onClick: () => {
+          // Only navigate if we have valid event ID
+          if (eventId) {
+            navigate("/events/eventDetailPage", {
+              state: {
+                eventId: eventId,
+                mode: "view"
+              }
+            });
+          }
         }
-      })
-    } : null,
-    { label: taskTitle || "New Task", href: "#", icon: Pencil },
-  ].filter(Boolean);
+      });
+    }
+    
+    // Add task name
+    items.push({ 
+      label: taskName, 
+      href: "#", 
+      icon: Pencil 
+    });
+    
+    return items;
+  }, [user?.organization?.name, user?.organizationName, eventName, eventId, taskTitle, mode, navigate]);
 
   // Determine loading state
   const isLoading = useMemo(() => {

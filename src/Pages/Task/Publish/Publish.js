@@ -290,7 +290,7 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
       const statusClass = status.toLowerCase().replace(/\s+/g, '-');
       return (
         <span className={`status-badge status-${statusClass}`}>
-          {status}
+          {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
         </span>
       );
     }

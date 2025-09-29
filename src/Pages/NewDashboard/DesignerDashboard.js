@@ -279,6 +279,7 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
       isDueToday: task.isDueToday,
       eventDate: task.eventDate ? new Date(task.eventDate).toLocaleDateString("en-GB") : "",
       organizationId: task.organizationId,
+      organizationName: task.organizationName,
     }));
   }, [orgIdReady, selectedOrganizationId, user?.organizationId, user?.userId, isViewingOwnOrganization]);
 
@@ -536,7 +537,7 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
                 ].includes(currentTitle)}
                 hideAssignedToColumn={currentTitle === "New Tasks"}
                 disableClientFiltering={true}
-                showOrganizationColumn={false}
+                showOrganizationColumn={currentTitle === "Tasks Assigned to Me"}
               />
             </div>
           )}

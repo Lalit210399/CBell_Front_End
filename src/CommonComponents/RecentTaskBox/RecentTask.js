@@ -60,7 +60,7 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
             className={`status-badge ${item.status?.toLowerCase().replace(" ", "-") || ""}`}
             onClick={handleClick}
           >
-            {item.status || getEmptyText(key)}
+            {(item.status || getEmptyText(key)).charAt(0).toUpperCase() + (item.status || getEmptyText(key)).slice(1).toLowerCase()}
           </span>
         );
       case "taskName":
@@ -121,7 +121,7 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
           { key: "status", label: "Status" },
           { key: "taskName", label: "Task Name" },
           { key: "eventName", label: "Event Name" },
-          ...(showOrganizationColumn ? [{ key: "organizationName", label: "Organization" }] : []),
+          ...(showOrganizationColumn ? [{ key: "organizationName", label: "Organization Name" }] : []),
           ...(hideAssignedToColumn ? [] : [{ key: "assignedTo", label: "Assigned To" }]),
           { key: "dueDate", label: "Due Date" },
         ]}

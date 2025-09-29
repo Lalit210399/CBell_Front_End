@@ -110,4 +110,11 @@ export const UserProvider = ({ children }) => {
   );
 };
 
+/**
+
+ * @name useUser
+ * Custom hook to access UserContext
+ * @throws {Error} If used outside of UserProvider
+ * @returns {Object} UserContext
+ */
 export const useUser = () => useContext(UserContext);

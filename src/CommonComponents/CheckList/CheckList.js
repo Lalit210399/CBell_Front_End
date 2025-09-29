@@ -37,6 +37,25 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
     }
   }, [initialItems]);
 
+  // Auto-resize textareas when component mounts or checklist changes
+  useEffect(() => {
+    const resizeTextareas = () => {
+      inputRefs.current.forEach((textarea) => {
+        if (textarea) {
+          // Reset height to auto to get the natural height
+          textarea.style.height = 'auto';
+          // Set height to scrollHeight to fit content
+          const newHeight = textarea.scrollHeight;
+          textarea.style.height = newHeight + 'px';
+        }
+      });
+    };
+    
+    // Resize after a short delay to ensure DOM is updated
+    const timeoutId = setTimeout(resizeTextareas, 100);
+    return () => clearTimeout(timeoutId);
+  }, [checklist]);
+
   // Notify parent when user makes changes (not on initial render or external updates)
   const notifyParent = React.useCallback((newChecklist) => {
     if (mode === "view" || !onChecklistChange) return;
@@ -68,6 +87,16 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
       notifyParent(updated);
       return updated;
     });
+    
+    // Auto-resize textarea
+    const textarea = inputRefs.current[index];
+    if (textarea) {
+      // Reset height to auto to get the natural height
+      textarea.style.height = 'auto';
+      // Set height to scrollHeight to fit content
+      const newHeight = textarea.scrollHeight;
+      textarea.style.height = newHeight + 'px';
+    }
   };
 
   const handleKeyDown = (index, event) => {
@@ -110,29 +139,50 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
     }
   };
 
+  // Filter out placeholder items in view mode
+  const displayItems = mode === "view" 
+    ? checklist.filter(item => !item.isPlaceholder && item.text.trim())
+    : checklist;
+
   return (
     <div className="checklist-container">
-      {checklist.map((item, index) => (
-        <label key={index} className={`checklist-item ${item.checked ? "checked" : ""}`}>
-          <input
-            type="checkbox"
-            checked={item.checked}
-            onChange={() => toggleCheck(index)}
-            disabled={mode === "view" || item.isPlaceholder}
-          />
-          <span className="checkbox-custom"></span>
-          <input
-            ref={(el) => (inputRefs.current[index] = el)}
-            type="text"
-            placeholder={item.isPlaceholder ? "Add checklist item..." : ""}
-            value={item.text}
-            onChange={(e) => handleInputChange(index, e.target.value)}
-            onKeyDown={(e) => handleKeyDown(index, e)}
-            className="checklist-input"
-            disabled={mode === "view"}
-          />
-        </label>
-      ))}
+      {displayItems.map((item, index) => {
+        const originalIndex = checklist.findIndex(originalItem => originalItem === item);
+        return (
+          <label key={originalIndex} className={`checklist-item ${item.checked ? "checked" : ""}`}>
+            <input
+              type="checkbox"
+              checked={item.checked}
+              onChange={() => toggleCheck(originalIndex)}
+              disabled={mode === "view" || item.isPlaceholder}
+            />
+            <span 
+              className="checkbox-custom"
+              onClick={(e) => {
+                if (!item.isPlaceholder && mode !== "view") {
+                  e.preventDefault();
+                  toggleCheck(originalIndex);
+                }
+              }}
+            ></span>
+          {mode === "view" ? (
+            <div className="checklist-input checklist-view-text">
+              {item.text}
+            </div>
+          ) : (
+            <textarea
+              ref={(el) => (inputRefs.current[originalIndex] = el)}
+              placeholder={item.isPlaceholder ? "Add checklist item..." : ""}
+              value={item.text}
+              onChange={(e) => handleInputChange(originalIndex, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(originalIndex, e)}
+              className="checklist-input"
+              rows={1}
+            />
+          )}
+          </label>
+        );
+      })}
     </div>
   );
 };
