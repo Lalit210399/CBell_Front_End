@@ -1178,7 +1178,6 @@ const TaskDetailPage = () => {
           onStatusChange={handleStatusChange}
           isUpdatingStatus={isUpdatingStatus}
           user={user}
-          createdBy={createdBy}
         />
       </div>
 
