@@ -25,6 +25,7 @@ const FilesUploads = ({
   selectedFiles = [],
   onFileSelect,
   enableSelectionRadio = false, // ← NEW PROP for radio button selection
+  showFileRequirementWarning = false, // ← NEW PROP for showing file requirement warning
 }) => {
   // const [links, setLinks] = useState([]); // commented out for now
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -373,6 +374,11 @@ const FilesUploads = ({
       <div className="files-container">
         <div className="files-header">
           <h3>Files</h3>
+          {showFileRequirementWarning && [...files, ...uploadedFiles].length === 0 && (
+            <div className="file-requirement-warning">
+              <span className="warning-text">⚠️ Files required for approval submission</span>
+            </div>
+          )}
           {[...files, ...uploadedFiles].length > 0 && !hasApprovedOrPublishedFile && (
             <label className="upload-button">
               {isUploading ? <Loader2 className="animate-spin" size={20} /> : 'Upload'}

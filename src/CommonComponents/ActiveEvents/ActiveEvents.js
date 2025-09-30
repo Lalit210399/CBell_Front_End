@@ -48,7 +48,13 @@ const ActiveEvents = ({ events, onEventClick, title = "Active Events", loading =
         return (
           <div onClick={handleClick}>
             {item.assignTo && item.assignTo.length > 0 ? (
-              <AvatarList avatars={item.assignTo} maxVisible={2} stack={true} />
+              <AvatarList 
+                avatars={item.assignTo} 
+                maxVisible={2} 
+                stack={true} 
+                showTooltip={true}
+                tooltipPosition="top"
+              />
             ) : (
               <span className="empty-field">{getEmptyText(key)}</span>
             )}

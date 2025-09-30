@@ -30,7 +30,7 @@ const isFileTypeSupported = (fileType, platform) => {
   }
 };
 
-const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatformPublish }) => {
+const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatformPublish, taskId }) => {
   
   const [fileName] = useState(fileDetail?.name);
   const [showSocialUploader, setShowSocialUploader] = useState(false);
@@ -109,6 +109,7 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
           open={showYouTubeUploader}
           onClose={() => setShowYouTubeUploader(false)}
           fileDetail={fileDetail}
+          taskId={taskId}
           onSuccess={handlePlatformSuccess}
           onPlatformPublish={onPlatformPublish}
         />
@@ -116,6 +117,7 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
         <EmailForm 
           fileDetail={fileDetail}
           documentId={documentId}
+          taskId={taskId}
           onClose={() => setShowEmailForm(false)}
           onEmailSent={(platform) => {
             // Call onPlatformPublish to record the email publish

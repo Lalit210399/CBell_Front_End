@@ -15,6 +15,7 @@ const TasksFiles = ({
   const [fetchedFiles, setFetchedFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hasApprovedFile, setHasApprovedFile] = useState(false);
+  const [hasAnyFiles, setHasAnyFiles] = useState(false);
 
   useEffect(() => {
     const getFileTypeFromMime = (mime) => {
@@ -40,6 +41,9 @@ const TasksFiles = ({
           (doc.publishedTo && doc.publishedTo.length > 0 && doc.publishedTo.some(p => p.isPublished === true))
         );
         setHasApprovedFile(approvedOrPublishedExists);
+        
+        // Check if there are any files at all
+        setHasAnyFiles(data.length > 0);
 
         const filesWithPreview = await Promise.all(
           data.map(async (doc) => {
@@ -103,6 +107,16 @@ const TasksFiles = ({
       onFileSelect(selectedFile, true);
     }
   };
+
+  // Function to check if task has any files (for external validation)
+  const checkIfTaskHasFiles = () => {
+    return hasAnyFiles;
+  };
+
+  // Expose the check function to parent component
+  React.useImperativeHandle(React.forwardRef(() => null), () => ({
+    checkIfTaskHasFiles
+  }));
 
   return (
     <div>
