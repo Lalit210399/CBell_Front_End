@@ -248,7 +248,12 @@ const TopSection = ({
             <span className="edit-top-label">Team:</span>
             <div className="edit-top-avatar-group">
               {hasAssignedUsers ? (
-                <AvatarList avatars={selectedParticipants} maxVisible={2} />
+                <AvatarList 
+                  avatars={selectedParticipants} 
+                  maxVisible={2} 
+                  showTooltip={true}
+                  tooltipPosition="top"
+                />
               ) : (
                 <div className="edit-top-no-assigned-users">
                   <Users size={14} className="edit-top-placeholder-icon" />

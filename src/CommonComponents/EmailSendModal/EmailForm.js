@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import './EmailForm.css';
 
-const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
+const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent, taskId }) => {
   // Get documentId from props or fileDetail - prioritize the passed documentId
   const actualDocumentId = documentId || fileDetail?.document?.documentId || fileDetail?.document?.fileId || fileDetail?.documentId;
   
@@ -95,6 +95,9 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
       formDataToSend.append('Subject', formData.subject);
       formDataToSend.append('Message', formData.message);
       formDataToSend.append('DocumentId', formData.documentId);
+      if (taskId) {
+        formDataToSend.append('TaskId', taskId);
+      }
 
       // if (attachment?.file) {
       //   formDataToSend.append('Attachment', attachment.file, attachment.file.name);

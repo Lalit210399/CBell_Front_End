@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { ArrowLeft, Save, Users } from "lucide-react";
-import AvatarList from "../Avatar/index";
 import CustomDropdown from "../Dropdown/CustomDropdown";
 import MultiSelectDropdown from "../Dropdown/MultiSelectDropdown";
 import UserDropdown from "../UserDropdown";
@@ -46,7 +45,7 @@ const DetailTopSectionNew = ({
 }) => {
   const { user, scope, selectedOrganizationId } = useUser();
   const { eventTypes: contextEventTypes, getEventTypeByName: contextGetEventTypeByName } = useEventTypes();
-  const { departments: contextDepartments, getDepartmentByName: contextGetDepartmentByName } = useDepartments();
+  const { departments: contextDepartments } = useDepartments();
   
   // Check if user is a Designer based on the roles array
   const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
@@ -74,9 +73,6 @@ const DetailTopSectionNew = ({
     return propDepartments || contextDepartments || [];
   }, [propDepartments, contextDepartments]);
 
-  const getDepartmentByName = useMemo(() => {
-    return propGetDepartmentByName || contextGetDepartmentByName;
-  }, [propGetDepartmentByName, contextGetDepartmentByName]);
 
   // Helper function to determine if organization supports departments
   const organizationSupportsDepartments = useMemo(() => {
@@ -310,12 +306,19 @@ const DetailTopSectionNew = ({
               {hasAssignedUsers ? (
                 <div className="team-avatars-container">
                   {selectedParticipants.slice(0, 2).map((participant, index) => (
-                    <div key={participant.id || index} className="team-avatar">
+                    <div 
+                      key={participant.id || index} 
+                      className="team-avatar"
+                      title={participant.name || 'Unknown User'}
+                    >
                       {participant.name ? participant.name.charAt(0).toUpperCase() : 'U'}
                     </div>
                   ))}
                   {selectedParticipants.length > 2 && (
-                    <div className="team-avatar">
+                    <div 
+                      className="team-avatar"
+                      title={`${selectedParticipants.slice(2).map(p => p.name).join(', ')}`}
+                    >
                       +{selectedParticipants.length - 2}
                     </div>
                   )}

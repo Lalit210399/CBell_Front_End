@@ -7,7 +7,8 @@ const YouTubeUploader = ({
   onClose,
   fileDetail = null,
   onSuccess,
-  onPlatformPublish
+  onPlatformPublish,
+  taskId
 }) => {
   const fileName = fileDetail?.name || '';
   const documentId = fileDetail?.url ? fileDetail.url.split('/').pop() : '';
@@ -45,7 +46,8 @@ const YouTubeUploader = ({
         title: title.trim(),
         description: description.trim(),
         tags: tagsArray,
-        privacyStatus
+        privacyStatus,
+        taskId: taskId
       };
 
       if (onPlatformPublish) {

@@ -105,6 +105,7 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
     }
     
     const organizationId = user?.organizationId;
+    const taskId = fileDetail?.fullTask?.id || fileDetail?.id;
     
     let payload;
     let endpoint;
@@ -114,6 +115,7 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
       payload = {
         organizationId,
         documentId: docId,
+        taskId: taskId,
         title: publishData.title || `${fileDetail?.name || 'Video'}`,
         description: publishData.description || '',
         tags: publishData.tags || [],
@@ -126,6 +128,7 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
       payload = {
         organizationId,
         documentId: docId,
+        taskId: taskId,
         caption: publishData.caption || `${fileDetail?.name || 'Creative'} shared via platform`
       };
     }
@@ -399,6 +402,7 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
           fileDetail={fileDetail}
           documentId={documentId}
           description={description}
+          taskId={fileDetail?.fullTask?.id || fileDetail?.id}
           onPlatformPublish={handlePlatformPublish}
           documents={fileDetail && fileDetail.document ? [fileDetail.document] : []}
         />
