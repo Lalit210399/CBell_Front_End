@@ -31,13 +31,13 @@ const isFileTypeSupported = (fileType, platform) => {
 };
 
 const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatformPublish }) => {
-  const fileType = fileDetail?.document?.contentType || fileDetail?.document?.type || fileDetail?.type;
   
   const [fileName] = useState(fileDetail?.name);
   const [showSocialUploader, setShowSocialUploader] = useState(false);
   const [showYouTubeUploader, setShowYouTubeUploader] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [platform, setPlatform] = useState(null);
+  const [showConfigWarning, setShowConfigWarning] = useState(false);
 
   // Handle click outside to close modal
   useEffect(() => {
@@ -85,6 +85,13 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
     }
   };
 
+  const handleSocialMediaClick = (platform) => {
+    // Show a warning that social media accounts need to be configured
+    setShowConfigWarning(true);
+    setTimeout(() => setShowConfigWarning(false), 5000);
+    handleShare(platform);
+  };
+
   const modalContent = (
     <>
       {showSocialUploader ? (
@@ -111,6 +118,7 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
           documentId={documentId}
           onClose={() => setShowEmailForm(false)}
           onEmailSent={(platform) => {
+            // Call onPlatformPublish to record the email publish
             if (onPlatformPublish) onPlatformPublish(documentId, platform || 'email');
             setShowEmailForm(false);
             onClose();
@@ -130,20 +138,25 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
               <button onClick={() => handleShare('email')} className="icon-button" title="Email">
                 <FaEnvelope className="icon" />
               </button>
-              <button onClick={() => handleShare('facebook')} className="icon-button" title="Facebook">
+              <button onClick={() => handleSocialMediaClick('facebook')} className="icon-button" title="Facebook">
                 <FaFacebook className="icon" />
               </button>
               {isFileTypeSupported(fileDetail?.document?.contentType || fileDetail?.document?.type || fileDetail?.type, 'instagram') && (
-                <button onClick={() => handleShare('instagram')} className="icon-button" title="Instagram">
+                <button onClick={() => handleSocialMediaClick('instagram')} className="icon-button" title="Instagram">
                   <FaInstagram className="icon" />
                 </button>
               )}
               {isFileTypeSupported(fileDetail?.document?.contentType || fileDetail?.document?.type || fileDetail?.type, 'youtube') && (
-                <button onClick={() => handleShare('youtube')} className="icon-button" title="YouTube">
+                <button onClick={() => handleSocialMediaClick('youtube')} className="icon-button" title="YouTube">
                   <FaYoutube className="icon" />
                 </button>
               )}
             </div>
+            {showConfigWarning && (
+              <div className="config-warning">
+                <p>⚠️ No social media account added. Please contact your administrator to add social media accounts for your organization.</p>
+              </div>
+            )}
           </div>
         </div>
       )}

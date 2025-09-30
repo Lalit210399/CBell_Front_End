@@ -16,6 +16,7 @@ const getFileTypeLabel = (name) => name.split(".").pop().toUpperCase();
 const FileUpload = ({
   onToggleCollapse = () => {},
   onFilesChange = () => {},
+  onUploadComplete = () => {},
   taskId,
   eventId,
   organizationId,
@@ -143,6 +144,12 @@ const FileUpload = ({
     setUploadedFiles(updated);
     onFilesChange({ files: updated, description: newDescription });
     setCurrentIndex(0);
+    setLoading(false);
+    
+    // Notify parent that upload is complete
+    if (processed.length > 0) {
+      onUploadComplete(processed);
+    }
   };
 
   const handleFileChange = (e) => {

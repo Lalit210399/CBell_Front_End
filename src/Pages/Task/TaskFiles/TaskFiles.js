@@ -34,9 +34,12 @@ const TasksFiles = ({
         });
         const data = await res.json();
 
-        // Check if any file is already approved
-        const approvedExists = data.some(doc => doc.status === 'Approved');
-        setHasApprovedFile(approvedExists);
+        // Check if any file is already approved or published
+        const approvedOrPublishedExists = data.some(doc => 
+          doc.status === 'Approved' || doc.status === 'Published' || 
+          (doc.publishedTo && doc.publishedTo.length > 0 && doc.publishedTo.some(p => p.isPublished === true))
+        );
+        setHasApprovedFile(approvedOrPublishedExists);
 
         const filesWithPreview = await Promise.all(
           data.map(async (doc) => {
@@ -85,7 +88,7 @@ const TasksFiles = ({
     if (taskId) {
       fetchDocuments();
     }
-  }, [taskId]);
+  }, [taskId, onFileSelect]);
 
   const handleFileSelect = (fileId, isSelected) => {
     if (hasApprovedFile) {

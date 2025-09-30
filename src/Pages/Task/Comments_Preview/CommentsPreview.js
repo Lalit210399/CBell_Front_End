@@ -141,6 +141,7 @@ const CommentsPreview = ({ onFilesChange = () => {}, taskId, eventId, isActive, 
   const [shouldLoadConversation, setShouldLoadConversation] = useState(false);
   const [allFiles, setAllFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const isFetchingRef = useRef(false);
   const onFilesChangeRef = useRef(onFilesChange);
   
@@ -207,7 +208,14 @@ const CommentsPreview = ({ onFilesChange = () => {}, taskId, eventId, isActive, 
     if (taskId) {
       fetchAllDocuments();
     }
-  }, [taskId]);
+  }, [taskId, fetchAllDocuments]);
+
+  // Add effect to refetch when refreshTrigger changes
+  useEffect(() => {
+    if (taskId && refreshTrigger > 0) {
+      fetchAllDocuments();
+    }
+  }, [refreshTrigger, taskId, fetchAllDocuments]);
 
   const handleToggleCollapse = (collapsed) => {
     setIsCollapsed(collapsed);
@@ -216,6 +224,13 @@ const CommentsPreview = ({ onFilesChange = () => {}, taskId, eventId, isActive, 
   const handleFilesChange = ({ files, description }) => {
     setAllFiles(files);
     onFilesChangeRef.current({ files, description });
+  };
+
+  const handleUploadComplete = (uploadedFiles) => {
+    // Trigger refresh after file upload with a small delay to ensure backend is updated
+    setTimeout(() => {
+      setRefreshTrigger(prev => prev + 1);
+    }, 500);
   };
 
   return (
@@ -234,6 +249,7 @@ const CommentsPreview = ({ onFilesChange = () => {}, taskId, eventId, isActive, 
         <FileUpload
           onToggleCollapse={handleToggleCollapse}
           onFilesChange={handleFilesChange}
+          onUploadComplete={handleUploadComplete}
           taskId={taskId}
           eventId={eventId}
           organizationId={organizationId}
