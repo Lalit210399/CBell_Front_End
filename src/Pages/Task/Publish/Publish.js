@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Table from "../../../CommonComponents/Table/Table";
 import { Download, Share2 } from "lucide-react";
 import { useUser } from "../../../Context/UserContext";
+import { useMessages } from "../../../Context/MessageContext";
 import { FaInstagram, FaFacebook, FaEnvelope, FaYoutube } from 'react-icons/fa';
 import FileShareModel from '../../../CommonComponents/FileShareModal/FileShareModel';
 import "./Publish.css";
@@ -66,6 +67,7 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
   const [fileDetail, setFileDetail] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const { user: contextUser } = useUser();
+  const { addMessage } = useMessages();
   const user = userProp || contextUser;
   const isFetchingRef = useRef(false);
 
@@ -88,7 +90,22 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
       return;
     }
     
+    // For email platform, we don't need to make an API call here
+    // The email API call is already handled in EmailForm.js
+    if (platform === 'email') {
+      await handlePublishRecord(docId, platform);
+      fetchPublishedTasks();
+      // Show success notification for email
+      addMessage({
+        text: "Email published successfully!",
+        type: "success",
+        duration: 3000,
+      });
+      return;
+    }
+    
     const organizationId = user?.organizationId;
+    const taskId = fileDetail?.fullTask?.id || fileDetail?.id;
     
     let payload;
     let endpoint;
@@ -98,6 +115,7 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
       payload = {
         organizationId,
         documentId: docId,
+        taskId: taskId,
         title: publishData.title || `${fileDetail?.name || 'Video'}`,
         description: publishData.description || '',
         tags: publishData.tags || [],
@@ -110,6 +128,7 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
       payload = {
         organizationId,
         documentId: docId,
+        taskId: taskId,
         caption: publishData.caption || `${fileDetail?.name || 'Creative'} shared via platform`
       };
     }
@@ -125,14 +144,72 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Failed to post to ${platform}`);
+        let errorMessage = `Failed to post to ${platform}`;
+        
+        // Clone the response to avoid "body stream already read" error
+        const responseClone = response.clone();
+        
+        try {
+          const errorData = await response.json();
+          console.log('Facebook API Error Response:', errorData);
+          errorMessage = errorData.message || errorMessage;
+          
+          // Handle specific error for social media config not found
+          if (response.status === 400 && (
+            errorData.message?.includes('Social media config not found') ||
+            errorData.message?.includes('social media account not configured') ||
+            errorData.message?.includes('Social media account not configured') ||
+            errorData.message?.includes('config not found') ||
+            errorData.message?.includes('account not configured')
+          )) {
+            throw new Error('No social media account added. Please contact your administrator to add social media accounts for your organization.');
+          }
+        } catch (jsonError) {
+          // If response is not valid JSON, check for specific error patterns in text
+          try {
+            const responseText = await responseClone.text();
+            console.log('Facebook API Error Text:', responseText);
+            if (response.status === 400 && (
+              responseText.includes('Social media config not found') ||
+              responseText.includes('social media account not configured') ||
+              responseText.includes('Social media account not configured') ||
+              responseText.includes('config not found') ||
+              responseText.includes('account not configured')
+            )) {
+              throw new Error('No social media account added. Please contact your administrator to add social media accounts for your organization.');
+            }
+            errorMessage = responseText || errorMessage;
+          } catch (textError) {
+            // If both JSON and text parsing fail, use default message
+            console.error('Failed to parse response:', textError);
+          }
+        }
+        
+        // For any 400 error on social media platforms, show the social media account error
+        if (response.status === 400 && (platform === 'facebook' || platform === 'instagram' || platform === 'youtube')) {
+          throw new Error('No social media account added. Please contact your administrator to add social media accounts for your organization.');
+        }
+        
+        throw new Error(errorMessage);
       }
 
       await handlePublishRecord(docId, platform);
       fetchPublishedTasks();
+      
+      // Show success notification for social media platforms
+      const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);
+      addMessage({
+        text: `${platformName} published successfully!`,
+        type: "success",
+        duration: 3000,
+      });
     } catch (err) {
-      alert(`Error posting to ${platform}: ${err.message}`);
+      // Show error message using the message system for better UX
+      addMessage({
+        text: err.message,
+        type: "error",
+        duration: 5000,
+      });
     }
   };
 
@@ -325,6 +402,7 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
           fileDetail={fileDetail}
           documentId={documentId}
           description={description}
+          taskId={fileDetail?.fullTask?.id || fileDetail?.id}
           onPlatformPublish={handlePlatformPublish}
           documents={fileDetail && fileDetail.document ? [fileDetail.document] : []}
         />

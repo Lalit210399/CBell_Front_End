@@ -73,7 +73,13 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
         return (
           <div onClick={handleClick}>
             {item.assignedTo && item.assignedTo.length > 0 ? (
-              <AvatarList avatars={item.assignedTo} maxVisible={2} stack={true} />
+              <AvatarList 
+                avatars={item.assignedTo} 
+                maxVisible={2} 
+                stack={true} 
+                showTooltip={true}
+                tooltipPosition="top"
+              />
             ) : (
               <span className="empty-field">{getEmptyText(key)}</span>
             )}

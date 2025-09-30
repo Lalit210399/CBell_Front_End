@@ -33,7 +33,7 @@ const TaskDetailPage = () => {
   // Check if user is a Designer
   const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
   
-  const { taskId, mode: initialMode = "view", eventId, organizationId, eventDate: navEventDate, eventName } = location.state || {};
+  const { taskId, mode: initialMode = "view", eventId: locationEventId, organizationId, eventDate: navEventDate, eventName } = location.state || {};
   const eventDate = React.useMemo(() => navEventDate ? new Date(navEventDate) : null, [navEventDate]);
 
   
@@ -66,6 +66,7 @@ const TaskDetailPage = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [validationErrors, setValidationErrors] = useState({});
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [apiEventId, setApiEventId] = useState(locationEventId); // Store eventId from API response
   
   // Use task status context
   const { loading: statusLoading } = useTaskStatus();
@@ -164,7 +165,7 @@ const TaskDetailPage = () => {
     // Otherwise, allow editing (Designers can now edit tasks)
     console.log("Edit allowed: All conditions passed");
     return true;
-  }, [taskData.canCRUD, taskData.accessLevel, taskStatus?.value]);
+  }, [taskData.canCRUD, taskData.accessLevel, taskStatus?.value, isDesigner, taskData.id]);
 
   const canSave = React.useMemo(() => {
     // In create mode, always allow saving
@@ -303,7 +304,7 @@ const TaskDetailPage = () => {
   const initializeCreateMode = React.useCallback(() => {
     setTaskData({
       id: "",
-      eventId: eventId || "",
+      eventId: apiEventId || "",
       taskTitle: "",
       taskStatus: "New",
       taskStatusId: "",
@@ -321,7 +322,7 @@ const TaskDetailPage = () => {
     });
     setTaskTitle("");
     setCreatedBy(user ? `${user.firstName} ${user.lastName}` : "User");
-  }, [eventId, user, organizationId]);
+  }, [apiEventId, user, organizationId]);
 
 
   // Initialize status when statusOptions are loaded and we're in create mode
@@ -448,6 +449,11 @@ const TaskDetailPage = () => {
       }
       
       setTaskStatus(matchedStatus);
+
+      // Update eventId from API response
+      if (data.eventId) {
+        setApiEventId(data.eventId);
+      }
 
       const formattedChecklist = Array.isArray(data.checklistDetails) 
         ? data.checklistDetails.map(item => ({
@@ -755,7 +761,7 @@ const TaskDetailPage = () => {
       }
 
       const payload = {
-        EventId: mode === "edit" ? currentFormData.eventId : eventId,
+        EventId: mode === "edit" ? currentFormData.eventId : apiEventId,
         TaskTitle: taskTitle,
         taskStatusId: statusId, // Use the validated status ID
         AssignedTo: (selectedParticipantIds || []).map((item) =>
@@ -873,6 +879,39 @@ const TaskDetailPage = () => {
       return;
     }
     
+    // Special validation for Under Approval status - must have files uploaded
+    if (newStatus.value === "Under Approval") {
+      try {
+        // Check if there are any documents uploaded for this task
+        const response = await fetch(`/apis/document-details/task/${taskId}`, {
+          headers: { 'ngrok-skip-browser-warning': '1' }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to check task documents');
+        }
+        
+        const documents = await response.json();
+        
+        if (!documents || documents.length === 0) {
+          addMessage({
+            text: "You must upload at least one file before submitting for approval.",
+            type: "error",
+            duration: 5000
+          });
+          setActiveTab("Files & Uploads");
+          return;
+        }
+      } catch (error) {
+        addMessage({
+          text: "Failed to verify task documents. Please try again.",
+          type: "error",
+          duration: 3000
+        });
+        return;
+      }
+    }
+    
     // Special validation for Approved status - must have files selected
     if (newStatus.value === "Approved") {
       if (selectedFiles.length === 0) {
@@ -975,7 +1014,7 @@ const TaskDetailPage = () => {
         }
 
         // Make API call to update task
-        debugger;
+        // debugger;
         const response = await fetchWithRefresh(`/apis/task/update/${taskId}`, {
           method: "PUT",
           headers: {
@@ -1050,7 +1089,7 @@ const TaskDetailPage = () => {
           <CommentsPreview
             mode={mode}
             taskId={taskId}
-            eventId={eventId}
+            eventId={apiEventId}
             isActive={activeTab === "Comments and Preview"}
           />
         ),
@@ -1068,7 +1107,7 @@ const TaskDetailPage = () => {
             onFilesChange={setFileData}
             mode={mode}
             taskId={taskId || taskData.id}
-            eventId={eventId || taskData.eventId}
+            eventId={apiEventId || taskData.eventId}
             organizationId={organizationId || taskData.organizationId}
             selectedFiles={selectedFiles}
             onFileSelect={handleFileSelect}
@@ -1083,7 +1122,7 @@ const TaskDetailPage = () => {
       return allTabs.filter(tab => tab.label === "Details");
     }
     return allTabs;
-  }, [mode, taskData, formData, handleFormFieldUpdate, eventDate, validationErrors, taskId, eventId, fileData.uploadedFiles, setFileData, organizationId, selectedFiles, handleFileSelect, activeTab, taskStatus]);
+  }, [mode, taskData, formData, handleFormFieldUpdate, eventDate, validationErrors, taskId, apiEventId, fileData.uploadedFiles, setFileData, organizationId, selectedFiles, handleFileSelect, activeTab, taskStatus]);
 
   const breadcrumbItems = React.useMemo(() => {
     // Ensure we have valid data before creating breadcrumb items
@@ -1112,10 +1151,10 @@ const TaskDetailPage = () => {
         icon: FileText,
         onClick: () => {
           // Only navigate if we have valid event ID
-          if (eventId) {
+          if (apiEventId) {
             navigate("/events/eventDetailPage", {
               state: {
-                eventId: eventId,
+                eventId: apiEventId,
                 mode: "view"
               }
             });
@@ -1132,7 +1171,7 @@ const TaskDetailPage = () => {
     });
     
     return items;
-  }, [user?.organization?.name, user?.organizationName, eventName, eventId, taskTitle, mode, navigate]);
+  }, [user?.organization?.name, user?.organizationName, eventName, apiEventId, taskTitle, mode, navigate]);
 
   // Determine loading state
   const isLoading = useMemo(() => {
@@ -1178,6 +1217,7 @@ const TaskDetailPage = () => {
           onStatusChange={handleStatusChange}
           isUpdatingStatus={isUpdatingStatus}
           user={user}
+          taskId={taskId}
         />
       </div>
 

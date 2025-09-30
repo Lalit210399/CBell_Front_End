@@ -12,6 +12,23 @@ const ConversationModule = ({ currentUser, users, taskId, eventId, isActive }) =
   const [isNewConversation, setIsNewConversation] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
 
+  const getInitialsFromUserName = (userName) => {
+    if (!userName) return "??";
+    
+    const nameParts = userName.trim().split(/\s+/);
+    if (nameParts.length >= 2) {
+      const first = nameParts[0]?.[0] || "";
+      const last = nameParts[nameParts.length - 1]?.[0] || "";
+      return (first + last).toUpperCase();
+    } else if (nameParts.length === 1) {
+      // If only one name part, use first two characters
+      const name = nameParts[0];
+      return (name[0] + (name[1] || name[0])).toUpperCase();
+    }
+    
+    return "??";
+  };
+
   const handleResponse = async (response) => {
     if (response.status === 404) {
       setIsNewConversation(true);
@@ -54,7 +71,7 @@ const ConversationModule = ({ currentUser, users, taskId, eventId, isActive }) =
         user: {
           id: thread.userId,
           name: thread.userName || thread.userId,
-          avatar: (thread.userName || thread.userId).slice(0, 2).toUpperCase()
+          avatar: getInitialsFromUserName(thread.userName || thread.userId)
         },
         conversationText: thread.conversationText,
         createdOn: thread.createdOn,

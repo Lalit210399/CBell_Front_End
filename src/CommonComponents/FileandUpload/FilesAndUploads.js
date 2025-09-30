@@ -25,6 +25,7 @@ const FilesUploads = ({
   selectedFiles = [],
   onFileSelect,
   enableSelectionRadio = false, // ← NEW PROP for radio button selection
+  showFileRequirementWarning = false, // ← NEW PROP for showing file requirement warning
 }) => {
   // const [links, setLinks] = useState([]); // commented out for now
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -34,6 +35,7 @@ const FilesUploads = ({
   const [currentFile, setCurrentFile] = useState(null);
   const [description, setDescription] = useState('');
   const [approvedFiles, setApprovedFiles] = useState([]);
+  const [hasApprovedOrPublishedFile, setHasApprovedOrPublishedFile] = useState(false);
   const filesRef = useRef([]);
   const uploadedFilesRef = useRef([]);
 
@@ -71,6 +73,13 @@ const FilesUploads = ({
     // Extract approved files from the files data
     const approved = files.filter(file => file.status === 'Approved');
     setApprovedFiles(approved.map(file => file.documentId));
+
+    // Check if any file is approved or published
+    const hasApprovedOrPublished = files.some(file => 
+      file.status === 'Approved' || file.status === 'Published' || 
+      (file.publishedTo && file.publishedTo.length > 0 && file.publishedTo.some(p => p.isPublished === true))
+    );
+    setHasApprovedOrPublishedFile(hasApprovedOrPublished);
 
     // If there are approved files, automatically select them
     if (approved.length > 0 && onFileSelect) {
@@ -365,7 +374,12 @@ const FilesUploads = ({
       <div className="files-container">
         <div className="files-header">
           <h3>Files</h3>
-          {[...files, ...uploadedFiles].length > 0 && (
+          {showFileRequirementWarning && [...files, ...uploadedFiles].length === 0 && (
+            <div className="file-requirement-warning">
+              <span className="warning-text">⚠️ Files required for approval submission</span>
+            </div>
+          )}
+          {[...files, ...uploadedFiles].length > 0 && !hasApprovedOrPublishedFile && (
             <label className="upload-button">
               {isUploading ? <Loader2 className="animate-spin" size={20} /> : 'Upload'}
               <input
@@ -402,19 +416,21 @@ const FilesUploads = ({
                       <span>Audio Files</span>
                     </div>
                   </div>
-                  <div className="empty-upload-section">
-                    <label className="empty-upload-button">
-                      {isUploading ? <Loader2 className="animate-spin" size={20} /> : 'Upload Files'}
-                      <input
-                        type="file"
-                        onChange={handleFileUpload}
-                        multiple
-                        accept="image/*,video/*,audio/*,.pdf"
-                        style={{ display: "none" }}
-                        disabled={isUploading}
-                      />
-                    </label>
-                  </div>
+                  {!hasApprovedOrPublishedFile && (
+                    <div className="empty-upload-section">
+                      <label className="empty-upload-button">
+                        {isUploading ? <Loader2 className="animate-spin" size={20} /> : 'Upload Files'}
+                        <input
+                          type="file"
+                          onChange={handleFileUpload}
+                          multiple
+                          accept="image/*,video/*,audio/*,.pdf"
+                          style={{ display: "none" }}
+                          disabled={isUploading}
+                        />
+                      </label>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

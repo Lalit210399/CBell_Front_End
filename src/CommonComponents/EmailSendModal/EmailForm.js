@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import './EmailForm.css';
 
-const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
+const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent, taskId }) => {
   // Get documentId from props or fileDetail - prioritize the passed documentId
   const actualDocumentId = documentId || fileDetail?.document?.documentId || fileDetail?.document?.fileId || fileDetail?.documentId;
   
@@ -13,7 +13,7 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
     bcc: '',
     subject: '',
     message: '',
-    documentId: actualDocumentId || '',
+    documentId: fileDetail?.document?.fileId || actualDocumentId || '',
   });
 
   const [isSending, setIsSending] = useState(false);
@@ -25,9 +25,14 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
 
   useEffect(() => {
     const fetchFile = async () => {
-      if (actualDocumentId && !fileDetail?.file) {
+      // Use fileId for API calls if available, otherwise fall back to documentId
+      const fileId = fileDetail?.document?.fileId;
+      const docId = fileDetail?.document?.documentId;
+      const apiId = fileId || docId || actualDocumentId;
+      
+      if (apiId && !fileDetail?.file) {
         try {
-          const response = await fetch(`/apis/task/download_document/${actualDocumentId}`, {
+          const response = await fetch(`/apis/task/download_document/${apiId}`, {
             method: 'GET',
             headers: {
               'ngrok-skip-browser-warning': '1'
@@ -38,7 +43,7 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
           const filename = fileDetail?.filename || fileDetail?.name || 'attachment';
           const file = new File([blob], filename, { type: blob.type });
 
-          const url = `/apis/document/view/${actualDocumentId}`;
+          const url = `/apis/document/view/${apiId}`;
 
           const updated = {
             ...fileDetail,
@@ -90,6 +95,9 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
       formDataToSend.append('Subject', formData.subject);
       formDataToSend.append('Message', formData.message);
       formDataToSend.append('DocumentId', formData.documentId);
+      if (taskId) {
+        formDataToSend.append('TaskId', taskId);
+      }
 
       // if (attachment?.file) {
       //   formDataToSend.append('Attachment', attachment.file, attachment.file.name);
@@ -106,6 +114,7 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
       }
 
       setSuccessMessage('Email sent successfully!');
+      // Call onEmailSent to trigger the publish record
       onEmailSent?.('email');
       setTimeout(() => onClose(), 2000);
     } catch (error) {
@@ -200,10 +209,10 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
           {attachment?.name && (
             <div className="email-form-attachment">
               Attachment: <strong>{attachment.name}</strong>
-              {actualDocumentId && (
+              {(fileDetail?.document?.fileId || fileDetail?.document?.documentId || actualDocumentId) && (
                 <>
                   <a
-                    href={`/apis/document/view/${actualDocumentId}`}
+                    href={`/apis/document/view/${fileDetail?.document?.fileId || fileDetail?.document?.documentId || actualDocumentId}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ marginLeft: '10px' }}
@@ -211,7 +220,7 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent }) => {
                     View
                   </a>
                   <a
-                    href={`/apis/task/download_document/${actualDocumentId}`}
+                    href={`/apis/task/download_document/${fileDetail?.document?.fileId || fileDetail?.document?.documentId || actualDocumentId}`}
                     download={attachment.name}
                     style={{ marginLeft: '10px' }}
                   >

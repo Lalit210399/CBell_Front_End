@@ -141,6 +141,7 @@ const CommentsPreview = ({ onFilesChange = () => {}, taskId, eventId, isActive, 
   const [shouldLoadConversation, setShouldLoadConversation] = useState(false);
   const [allFiles, setAllFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const isFetchingRef = useRef(false);
   const onFilesChangeRef = useRef(onFilesChange);
   
@@ -149,7 +150,22 @@ const CommentsPreview = ({ onFilesChange = () => {}, taskId, eventId, isActive, 
     onFilesChangeRef.current = onFilesChange;
   }, [onFilesChange]);
 
-  const getInitials = (firstName, lastName) => {
+  const getInitials = (firstName, lastName, userName) => {
+    // If userName is provided, use it to extract initials
+    if (userName) {
+      const nameParts = userName.trim().split(/\s+/);
+      if (nameParts.length >= 2) {
+        const first = nameParts[0]?.[0] || "";
+        const last = nameParts[nameParts.length - 1]?.[0] || "";
+        return (first + last).toUpperCase();
+      } else if (nameParts.length === 1) {
+        // If only one name part, use first two characters
+        const name = nameParts[0];
+        return (name[0] + (name[1] || name[0])).toUpperCase();
+      }
+    }
+    
+    // Fallback to firstName and lastName if provided
     const first = firstName?.[0] || "";
     const last = lastName?.[0] || "";
     return (first + last).toUpperCase();
@@ -159,7 +175,7 @@ const CommentsPreview = ({ onFilesChange = () => {}, taskId, eventId, isActive, 
     id: user?.userId,
     firstName: user?.firstName,
     lastName: user?.lastName,
-    avatar: getInitials(user?.firstName, user?.lastName),
+    avatar: getInitials(user?.firstName, user?.lastName, user?.userName),
     organizationId: user?.organizationId,
   };
 
@@ -207,7 +223,14 @@ const CommentsPreview = ({ onFilesChange = () => {}, taskId, eventId, isActive, 
     if (taskId) {
       fetchAllDocuments();
     }
-  }, [taskId]);
+  }, [taskId, fetchAllDocuments]);
+
+  // Add effect to refetch when refreshTrigger changes
+  useEffect(() => {
+    if (taskId && refreshTrigger > 0) {
+      fetchAllDocuments();
+    }
+  }, [refreshTrigger, taskId, fetchAllDocuments]);
 
   const handleToggleCollapse = (collapsed) => {
     setIsCollapsed(collapsed);
@@ -216,6 +239,13 @@ const CommentsPreview = ({ onFilesChange = () => {}, taskId, eventId, isActive, 
   const handleFilesChange = ({ files, description }) => {
     setAllFiles(files);
     onFilesChangeRef.current({ files, description });
+  };
+
+  const handleUploadComplete = (uploadedFiles) => {
+    // Trigger refresh after file upload with a small delay to ensure backend is updated
+    setTimeout(() => {
+      setRefreshTrigger(prev => prev + 1);
+    }, 500);
   };
 
   return (
@@ -234,6 +264,7 @@ const CommentsPreview = ({ onFilesChange = () => {}, taskId, eventId, isActive, 
         <FileUpload
           onToggleCollapse={handleToggleCollapse}
           onFilesChange={handleFilesChange}
+          onUploadComplete={handleUploadComplete}
           taskId={taskId}
           eventId={eventId}
           organizationId={organizationId}

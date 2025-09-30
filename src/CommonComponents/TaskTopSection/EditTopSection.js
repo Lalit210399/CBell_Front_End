@@ -43,7 +43,8 @@ const TopSection = ({
   errors = {},
   onClearError,
   isUpdatingStatus = false,
-  createdBy = ""
+  createdBy = "",
+  taskId = null
 }) => {
   const { user } = useUser();
 
@@ -155,9 +156,40 @@ const TopSection = ({
     setIsDropdownOpen((prev) => !prev);
   };
 
+  // Helper function to check if task has uploaded files
+  const checkTaskFiles = async (taskId) => {
+    if (!taskId) return false;
+    
+    try {
+      const response = await fetch(`/apis/document-details/task/${taskId}`, {
+        headers: { 'ngrok-skip-browser-warning': '1' }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to check task documents');
+      }
+      
+      const documents = await response.json();
+      return documents && documents.length > 0;
+    } catch (error) {
+      console.error('Error checking task files:', error);
+      return false;
+    }
+  };
+
   // Handle status change button clicks
-  const handleStatusChange = (newStatusValue) => {
+  const handleStatusChange = async (newStatusValue) => {
     if (onStatusChange) {
+      // Special validation for Under Approval status
+      if (newStatusValue === "Under Approval" && taskId) {
+        const hasFiles = await checkTaskFiles(taskId);
+        if (!hasFiles) {
+          // Show error message and don't proceed with status change
+          alert("You must upload at least one file before submitting for approval.");
+          return;
+        }
+      }
+
       const newStatus = statusOptions.find(option => option.value === newStatusValue);
 
       if (newStatus) {
@@ -248,7 +280,12 @@ const TopSection = ({
             <span className="edit-top-label">Team:</span>
             <div className="edit-top-avatar-group">
               {hasAssignedUsers ? (
-                <AvatarList avatars={selectedParticipants} maxVisible={2} />
+                <AvatarList 
+                  avatars={selectedParticipants} 
+                  maxVisible={2} 
+                  showTooltip={true}
+                  tooltipPosition="top"
+                />
               ) : (
                 <div className="edit-top-no-assigned-users">
                   <Users size={14} className="edit-top-placeholder-icon" />
