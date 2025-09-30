@@ -87,9 +87,10 @@
   .input-box {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     border: 1px solid #8b6f6f;
     border-radius: 10px;
-    padding: 4px 6px;
+    padding: 0px 6px;
     gap: 5px;
     height: 25px;
     margin-top: 10px;
@@ -99,7 +100,7 @@
 
   .number-input {
     min-height: 40px;
-    padding: 4px 8px;
+    padding: 0px 8px;
   }
 
   .input-box:focus-within {
@@ -141,7 +142,7 @@ input[type=number] {
   .icon {
     font-size: 18px;
     color: #8b6f6f;
-    margin-right: 50px;
+    /* margin-right: 50px; */
   }
   
   .number-input input{
@@ -155,7 +156,7 @@ input[type=number] {
   .checkList {
     flex: 1;
     margin-top: 10px;
-    min-height: 200px;
+    min-height: auto;
   }
 
   .input-group {

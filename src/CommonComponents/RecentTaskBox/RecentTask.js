@@ -6,7 +6,7 @@ import { ListTodo } from "lucide-react";
 import { useTaskStatus } from "../../Hooks/useTaskStatus";
 import "./RecentTask.css";
 
-const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChange, showDropdown = true, loading = false }) => {
+const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChange, showDropdown = true, loading = false, disableClientFiltering = false, hideAssignedToColumn = false, showOrganizationColumn = false }) => {
   const { getActiveTaskStatuses } = useTaskStatus();
   
   // Generate filter options from task status context
@@ -21,11 +21,12 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
     ];
   }, [getActiveTaskStatuses]);
 
-  // 🔹 filter tasks
-  const filteredTasks =
-    filter === "All"
-      ? tasks
-      : tasks.filter((task) => task.status === filter);
+  // 🔹 filter tasks (only if client-side filtering is enabled)
+  const filteredTasks = disableClientFiltering 
+    ? tasks 
+    : (filter === "All"
+        ? tasks
+        : tasks.filter((task) => task.status === filter));
 
   const renderCell = (key, item) => {
     const handleClick = (e) => {
@@ -33,32 +34,55 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
       onTaskClick?.(item, key);
     };
 
+    const getEmptyText = (key) => {
+      switch (key) {
+        case "status":
+          return "No Status";
+        case "taskName":
+          return "Untitled Task";
+        case "eventName":
+          return "No Event";
+        case "assignedTo":
+          return "Unassigned";
+        case "dueDate":
+          return "No Due Date";
+        case "organizationName":
+          return "No Organization";
+        default:
+          return "N/A";
+      }
+    };
+
     switch (key) {
       case "status":
         return (
           <span
-            className={`status-badge ${item.status.toLowerCase().replace(" ", "-")}`}
+            className={`status-badge ${item.status?.toLowerCase().replace(" ", "-") || ""}`}
             onClick={handleClick}
           >
-            {item.status}
+            {(item.status || getEmptyText(key)).charAt(0).toUpperCase() + (item.status || getEmptyText(key)).slice(1).toLowerCase()}
           </span>
         );
       case "taskName":
         return (
           <span className="task-link" onClick={handleClick}>
-            {item.taskName}
+            {item.taskName || getEmptyText(key)}
           </span>
         );
       case "assignedTo":
         return (
           <div onClick={handleClick}>
-            <AvatarList avatars={item.assignedTo} maxVisible={2} stack={true} />
+            {item.assignedTo && item.assignedTo.length > 0 ? (
+              <AvatarList avatars={item.assignedTo} maxVisible={2} stack={true} />
+            ) : (
+              <span className="empty-field">{getEmptyText(key)}</span>
+            )}
           </div>
         );
       default:
         return (
           <span className="clickable-cell" onClick={handleClick}>
-            {item[key]}
+            {item[key] || getEmptyText(key)}
           </span>
         );
     }
@@ -97,12 +121,13 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
           { key: "status", label: "Status" },
           { key: "taskName", label: "Task Name" },
           { key: "eventName", label: "Event Name" },
-          { key: "assignedTo", label: "Assigned To" },
+          ...(showOrganizationColumn ? [{ key: "organizationName", label: "Organization Name" }] : []),
+          ...(hideAssignedToColumn ? [] : [{ key: "assignedTo", label: "Assigned To" }]),
           { key: "dueDate", label: "Due Date" },
         ]}
         data={loading ? skeletonRows : filteredTasks}
         renderCell={loading ? () => <div className="skeleton-row-cell" /> : renderCell}
-        sortableColumns={["taskName", "eventName", "dueDate"]}
+        sortableColumns={["taskName", "eventName", ...(showOrganizationColumn ? ["organizationName"] : []), "dueDate"]}
         showActions={false}
         onRowClick={loading ? undefined : (task) => onTaskClick?.(task)}
         className="fixed-height"

@@ -124,7 +124,10 @@ const DetailTopSection = ({
     const q = userSearch.trim().toLowerCase();
     if (!q) return users;
     return users.filter((u) =>
-      `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase().includes(q)
+      `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase().includes(q) ||
+      (u.email || "").toLowerCase().includes(q) ||
+      (u.organizationCode || "").toLowerCase().includes(q) ||
+      (u.role || "").toLowerCase().includes(q)
     );
   }, [users, userSearch]);
 
@@ -249,7 +252,18 @@ const DetailTopSection = ({
                               <span className="user-avatar">
                                 {getUserInitials(u.firstName, u.lastName)}
                               </span>
-                              <span className="user-name">{`${u.firstName || "User"} ${u.lastName || ""}`}</span>
+                              <div className="user-info">
+                                <div className="user-name">{`${u.firstName || "User"} ${u.lastName || ""}`}</div>
+                                <div className="user-details">
+                                  <span className="user-role">{u.roles?.[0]?.name || u.roles?.[0]?.displayName || "No role"}</span>
+                                  {u.organizationCode && (
+                                    <span className="user-org">• {u.organizationCode}</span>
+                                  )}
+                                  {u.email && (
+                                    <span className="user-email">• {u.email}</span>
+                                  )}         
+                                </div>
+                              </div>
                             </label>
                           ))
                         )}

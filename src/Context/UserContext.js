@@ -49,7 +49,7 @@ export const UserProvider = ({ children }) => {
     // Check if scope change is allowed on current page
     if (currentLocation) {
       // Only allow scope changes on the exact main pages, not sub-paths
-      const allowedPages = ['/dashboard', '/events', '/schedule'];
+      const allowedPages = ['/dashboard','/designer-dashboard', '/events', '/schedule'];
       const isAllowedPage = allowedPages.includes(currentLocation.pathname);
       
       // If not on an allowed page, change scope and redirect to dashboard
@@ -100,4 +100,11 @@ export const UserProvider = ({ children }) => {
   );
 };
 
+/**
+
+ * @name useUser
+ * Custom hook to access UserContext
+ * @throws {Error} If used outside of UserProvider
+ * @returns {Object} UserContext
+ */
 export const useUser = () => useContext(UserContext);

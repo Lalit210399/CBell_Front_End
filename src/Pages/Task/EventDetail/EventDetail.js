@@ -9,6 +9,8 @@ const Detail = ({
   mode,
   onSave,
   initialDescription = "",
+  validationErrors = {},
+  onClearError,
 }) => {
   const [guests, setGuests] = useState([]);
   const [organizers, setOrganizers] = useState([]);
@@ -59,11 +61,6 @@ const Detail = ({
         const transformedGuests = transformToOldFormat(guests).filter(g => g.name && g.name.trim());
         const transformedOrganizers = transformToOldFormat(organizers).filter(o => o.name && o.name.trim());
         
-        console.log("EventDetail: Save handler called");
-        console.log("EventDetail: Raw guests:", guests);
-        console.log("EventDetail: Raw organizers:", organizers);
-        console.log("EventDetail: Transformed guests:", transformedGuests);
-        console.log("EventDetail: Transformed organizers:", transformedOrganizers);
         
         return {
           description: editorRef.current,
@@ -82,9 +79,16 @@ const Detail = ({
           initialContent={initialDescription}
           onContentChange={(val) => {
             editorRef.current = val;
+            // Clear description error when user starts typing
+            if (validationErrors.description && onClearError) {
+              onClearError('description');
+            }
           }}
           isFullWidth={true}
           mode={mode}
+          hasError={!!validationErrors.description}
+          errorMessage={validationErrors.description}
+          showRequiredAsterisk={mode === "create" || mode === "edit"}
         />
       </div>
       <div className="ED_Left_Section">

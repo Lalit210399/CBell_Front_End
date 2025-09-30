@@ -41,9 +41,11 @@
 }
 
 .separator {
-  margin: 0 6px;
+  margin: 0 8px;
   color: var(--midGray);
   font-size: 14px;
+  display: flex;
+  align-items: center;
 }
 
 .last-item {

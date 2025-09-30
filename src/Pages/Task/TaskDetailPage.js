@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useLocation, useNavigate } from "react-router-dom";
 import TabMenu from "../../CommonComponents/TabMenu/TabMenu";
@@ -12,8 +12,7 @@ import { useUser } from "../../Context/UserContext";
 import { useMessages } from "../../Context/MessageContext";
 import { useTaskStatus } from "../../Hooks/useTaskStatus";
 import { getHierarchyUsers } from "../../Services/AuthN";
-import useApi from "../../Hooks/useApi";
-import { Building, Calendar, Pencil } from "lucide-react";
+import { Building, Calendar, Pencil, FileText } from "lucide-react";
 import "./Tasks.css";
 
 // Hardcoded status IDs from backend data - moved outside component to prevent re-creation
@@ -21,7 +20,6 @@ const HARDCODED_STATUS_IDS = {
   "New": "68baab0b9a31a52d62646ca1",
   "Active": "68bee09b522caf6ac9f65bdc", 
   "Under Approval": "68bee0b1522caf6ac9f65bdd",
-  "Under Review": "68bee0b1522caf6ac9f65bdd", // Use same ID as Under Approval
   "Approved": "68bee0c2522caf6ac9f65bde",
   "Published": "68bee0d1522caf6ac9f65bdf"
 };
@@ -34,9 +32,8 @@ const TaskDetailPage = () => {
   
   // Check if user is a Designer
   const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
-  console.log("TaskDetailPage - isDesigner:", isDesigner, "user roles:", user?.roles);
   
-  const { taskId, mode: initialMode = "view", eventId, organizationId, eventDate: navEventDate, eventName } = location.state || {};
+  const { taskId, mode: initialMode = "view", eventId: locationEventId, organizationId, eventDate: navEventDate, eventName } = location.state || {};
   const eventDate = React.useMemo(() => navEventDate ? new Date(navEventDate) : null, [navEventDate]);
 
   
@@ -55,7 +52,7 @@ const TaskDetailPage = () => {
   const [formData, setFormData] = useState({
     title: "",
     type: "",
-    date: new Date().toISOString().split("T")[0],
+    date: "", // Empty date by default
     quantity: 1,
     description: "",
     checklist: [{ text: "", checked: false, isPlaceholder: false }],
@@ -69,6 +66,7 @@ const TaskDetailPage = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [validationErrors, setValidationErrors] = useState({});
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [apiEventId, setApiEventId] = useState(locationEventId); // Store eventId from API response
   
   // Use task status context
   const { loading: statusLoading } = useTaskStatus();
@@ -78,7 +76,6 @@ const TaskDetailPage = () => {
       "New": "gray",
       "Active": "blue", 
       "Under Approval": "orange",
-      "Under Review": "orange", // Map Under Review to orange color
       "Approved": "green",
       "Published": "purple"
     };
@@ -104,12 +101,6 @@ const TaskDetailPage = () => {
         id: HARDCODED_STATUS_IDS["Under Approval"],
         label: "Under Approval",
         value: "Under Approval", 
-        color: "orange"
-      },
-      {
-        id: HARDCODED_STATUS_IDS["Under Approval"], // Use same ID as Under Approval
-        label: "Under Review",
-        value: "Under Review", 
         color: "orange"
       },
       {
@@ -142,12 +133,54 @@ const TaskDetailPage = () => {
     description: "",
     checklist: [{ text: "", checked: false, isPlaceholder: false }],
     organizationId: "",
+    canCRUD: true, // Default to true for new tasks
+    accessLevel: "FULL_ACCESS", // Default to full access for new tasks
   });
 
   // No default status options - only use API data
 
-  // Mode-based permissions - no complex permission system needed
-  const canSave = mode === "edit" || mode === "create";
+  // Enhanced permissions based on task data and user role
+  const canEdit = React.useMemo(() => {
+    // Debug logging to help troubleshoot
+    console.log("Permission Check:", {
+      canCRUD: taskData.canCRUD,
+      accessLevel: taskData.accessLevel,
+      isDesigner,
+      taskStatus: taskStatus?.value,
+      taskId: taskData.id
+    });
+    
+    // If task has canCRUD: false or accessLevel: "READ_ONLY", user cannot edit
+    if (taskData.canCRUD === false || taskData.accessLevel === "READ_ONLY") {
+      console.log("Edit blocked: canCRUD or accessLevel restriction");
+      return false;
+    }
+    
+    // If task status is Approved, it cannot be edited
+    if (taskStatus?.value === "Approved") {
+      console.log("Edit blocked: Task is Approved");
+      return false;
+    }
+    
+    // Otherwise, allow editing (Designers can now edit tasks)
+    console.log("Edit allowed: All conditions passed");
+    return true;
+  }, [taskData.canCRUD, taskData.accessLevel, taskStatus?.value]);
+
+  const canSave = React.useMemo(() => {
+    // In create mode, always allow saving
+    if (mode === "create") {
+      return true;
+    }
+    
+    // In edit mode, check if user has edit permissions
+    if (mode === "edit") {
+      return canEdit;
+    }
+    
+    // In view mode, no saving allowed
+    return false;
+  }, [mode, canEdit]);
 
   // Memoize the organization ID to prevent unnecessary re-renders
   const currentOrgId = useMemo(() => {
@@ -161,12 +194,10 @@ const TaskDetailPage = () => {
     }
 
     if (!currentOrgId) {
-      console.warn("No organizationId available for user fetch");
       return [];
     }
     
     try {
-      console.log("Fetching users for organization:", currentOrgId);
       const response = await getHierarchyUsers(currentOrgId);
       
       const formattedUsers = response.users.map(user => ({
@@ -175,12 +206,13 @@ const TaskDetailPage = () => {
         lastName: user.lastName,
         email: user.email,
         fullName: `${user.firstName} ${user.lastName}`,
-        organizationId: user.organizationId
+        organizationId: user.organizationId,
+        organizationCode: user.organizationCode || "ORG001",
+        role: user.role || user.roles?.[0]?.name || ""
       }));
       
       return formattedUsers;
     } catch (error) {
-      console.error("Error fetching hierarchy users:", error);
       addMessage({
         text: "Failed to load users list",
         type: "error",
@@ -229,7 +261,6 @@ const TaskDetailPage = () => {
       }
 
       if (response.status === 500) {
-        console.error("Server error fetching task - likely backend data type mismatch");
         addMessage({
           text: "Unable to load task due to server error. Please try again later.",
           type: "error",
@@ -251,7 +282,6 @@ const TaskDetailPage = () => {
 
       return data;
     } catch (err) {
-      console.error("Error loading task:", err);
       addMessage({
         text: `Failed to load task details: ${err.message}`,
         type: "error",
@@ -261,23 +291,20 @@ const TaskDetailPage = () => {
     }
   }, [taskId, mode, organizationId, user?.organizationId, addMessage]);
 
-  // Use API Hooks
-  const {
-    data: usersData,
-    loading: usersLoading,
-    execute: executeFetchUsers
-  } = useApi(fetchUsers, [mode, currentOrgId], false);
-
-  const {
-    data: taskDataFromAPI,
-    loading: taskLoading,
-    execute: executeFetchTask
-  } = useApi(fetchTask, [taskId, mode], false);
+  // State Management
+  const [usersData, setUsersData] = useState(null);
+  const [taskDataFromAPI, setTaskDataFromAPI] = useState(null);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [taskLoading, setTaskLoading] = useState(false);
+  const [usersError, setUsersError] = useState(null);
+  const [taskError, setTaskError] = useState(null);
+  const isFetchingUsersRef = useRef(false);
+  const isFetchingTaskRef = useRef(false);
 
   const initializeCreateMode = React.useCallback(() => {
     setTaskData({
       id: "",
-      eventId: eventId || "",
+      eventId: apiEventId || "",
       taskTitle: "",
       taskStatus: "New",
       taskStatusId: "",
@@ -285,15 +312,17 @@ const TaskDetailPage = () => {
       createdBy: user ? `${user.firstName} ${user.lastName}` : "User",
       updatedBy: "",
       type: "",
-      date: new Date().toISOString().split("T")[0],
+      date: "", // Empty date for create mode
       quantity: 1,
       description: "",
       checklist: [{ text: "", checked: false, isPlaceholder: false }],
       organizationId: organizationId || "",
+      canCRUD: true, // Default to true for new tasks
+      accessLevel: "FULL_ACCESS", // Default to full access for new tasks
     });
     setTaskTitle("");
     setCreatedBy(user ? `${user.firstName} ${user.lastName}` : "User");
-  }, [eventId, user, organizationId]);
+  }, [apiEventId, user, organizationId]);
 
 
   // Initialize status when statusOptions are loaded and we're in create mode
@@ -301,7 +330,6 @@ const TaskDetailPage = () => {
     if (mode === "create" && statusOptions.length > 0) {
       // Find the "New" status specifically
       const newStatus = statusOptions.find(status => status.value === "New");
-      console.log("Setting default status for create mode:", newStatus);
       if (newStatus) {
         setTaskStatus(newStatus);
       }
@@ -315,14 +343,12 @@ const TaskDetailPage = () => {
         // Users are assigned - set to Active (only if currently New)
         const activeStatus = statusOptions.find(status => status.value === "Active");
         if (activeStatus && taskStatus?.value === "New") {
-          console.log("Users assigned to New task - changing status to Active:", activeStatus);
           setTaskStatus(activeStatus);
         }
       } else if (selectedParticipantIds.length === 0 && taskStatus?.value === "Active") {
         // No users assigned and currently Active - set back to New
         const newStatus = statusOptions.find(status => status.value === "New");
         if (newStatus) {
-          console.log("No users assigned - changing status back to New:", newStatus);
           setTaskStatus(newStatus);
         }
       }
@@ -330,18 +356,54 @@ const TaskDetailPage = () => {
   }, [selectedParticipantIds, statusOptions, taskStatus?.value]);
 
   // Execute users API when component mounts or scope changes
-  useEffect(() => {
-    if (mode === "edit" || mode === "create") {
-      executeFetchUsers();
+  const executeFetchUsers = useCallback(async () => {
+    if ((mode === "edit" || mode === "create") && !isFetchingUsersRef.current) {
+      
+      isFetchingUsersRef.current = true;
+      setUsersLoading(true);
+      setUsersError(null);
+      
+      try {
+        const data = await fetchUsers();
+        setUsersData(data);
+      } catch (err) {
+        setUsersError(err.message);
+      } finally {
+        setUsersLoading(false);
+        isFetchingUsersRef.current = false;
+      }
     }
-  }, [executeFetchUsers, mode, scopeChangeTrigger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, currentOrgId, fetchUsers]);
 
   // Execute task API when taskId is available and not in create mode
-  useEffect(() => {
-    if (taskId && mode !== "create") {
-      executeFetchTask();
+  const executeFetchTask = useCallback(async () => {
+    if (taskId && mode !== "create" && !isFetchingTaskRef.current) {
+      
+      isFetchingTaskRef.current = true;
+      setTaskLoading(true);
+      setTaskError(null);
+      
+      try {
+        const data = await fetchTask();
+        setTaskDataFromAPI(data);
+      } catch (err) {
+        setTaskError(err.message);
+      } finally {
+        setTaskLoading(false);
+        isFetchingTaskRef.current = false;
+      }
     }
-  }, [executeFetchTask, taskId, mode, scopeChangeTrigger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taskId, mode, fetchTask]);
+
+  useEffect(() => {
+    executeFetchUsers();
+  }, [executeFetchUsers, scopeChangeTrigger]);
+
+  useEffect(() => {
+    executeFetchTask();
+  }, [executeFetchTask, scopeChangeTrigger]);
 
   // Update usersList when usersData changes
   useEffect(() => {
@@ -356,17 +418,11 @@ const TaskDetailPage = () => {
       const data = taskDataFromAPI;
       
       setTaskTitle(data.taskTitle || "");
-      setCreatedBy(data.createdByName || data.createdBy || (user ? `${user.firstName} ${user.lastName}` : "User"));
+      // Use the actual creator's name from API response, only fallback to current user for new tasks
+      setCreatedBy(data.createdByName || "Unknown User");
       
       const currentStatusOptions = statusOptions;
       const apiStatusName = data.taskStatusName || data.taskStatus || "New";
-      console.log("API Status Data:", { 
-        taskStatusName: data.taskStatusName, 
-        taskStatusId: data.taskStatusId,
-        apiStatusName,
-        statusOptions: currentStatusOptions,
-        statusOptionsValues: currentStatusOptions.map(opt => ({ value: opt.value, label: opt.label }))
-      });
       
       // Try multiple matching strategies
       let matchedStatus = currentStatusOptions.find(
@@ -380,10 +436,6 @@ const TaskDetailPage = () => {
         );
       }
       
-      // Special handling for "Under Review" - map to "Under Approval" if not found
-      if (!matchedStatus && (apiStatusName.toLowerCase() === "under review" || apiStatusName.toLowerCase() === "underapproval")) {
-        matchedStatus = currentStatusOptions.find(opt => opt.value === "Under Review");
-      }
       
       // If still not found, create a fallback status with hardcoded ID
       if (!matchedStatus) {
@@ -394,11 +446,14 @@ const TaskDetailPage = () => {
           value: apiStatusName,
           color: getDefaultColor(apiStatusName)
         };
-        console.log("No matching status found, created fallback:", matchedStatus);
       }
       
-      console.log("Matched Status:", matchedStatus);
       setTaskStatus(matchedStatus);
+
+      // Update eventId from API response
+      if (data.eventId) {
+        setApiEventId(data.eventId);
+      }
 
       const formattedChecklist = Array.isArray(data.checklistDetails) 
         ? data.checklistDetails.map(item => ({
@@ -408,9 +463,6 @@ const TaskDetailPage = () => {
           }))
         : [{ text: "", checked: false, isPlaceholder: false }];
       
-      console.log("TaskDetailPage: Raw API data:", data);
-      console.log("TaskDetailPage: Formatted checklist:", formattedChecklist);
-      console.log("TaskDetailPage: Description:", data.description);
       
       const newTaskData = {
         id: data.id || "",
@@ -427,9 +479,10 @@ const TaskDetailPage = () => {
         checklist: formattedChecklist,
         description: data.description || "",
         organizationId: data.organizationId || organizationId || "",
+        canCRUD: data.canCRUD, // Include permission fields
+        accessLevel: data.accessLevel, // Include access level
       };
       
-      console.log("Setting taskData with assignedTo:", data.assignedTo);
       
       setTaskData(newTaskData);
       
@@ -537,7 +590,7 @@ const TaskDetailPage = () => {
     
     if (!canSave) {
       addMessage({
-        text: "Cannot save in current mode",
+        text: "You don't have permission to save this task",
         type: "error",
         duration: 3000
       });
@@ -611,6 +664,11 @@ const TaskDetailPage = () => {
     
     // Validate task date and time
     try {
+      if (!currentFormData.date) {
+        addMessage({ text: "Please select a due date and time.", type: "error", duration: 3000 });
+        return;
+      }
+      
       const now = new Date();
       const selected = new Date(currentFormData.date);
       const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
@@ -629,12 +687,11 @@ const TaskDetailPage = () => {
         return;
       }
       
-      if (eventDate && selected >= new Date(eventDate)) {
-        addMessage({ text: "Task date must be earlier than the event date.", type: "error", duration: 3000 });
+      if (eventDate && selected > new Date(eventDate)) {
+        addMessage({ text: "Task date cannot be after the event date.", type: "error", duration: 3000 });
         return;
       }
     } catch (error) {
-      console.error("Date validation error:", error);
       addMessage({ text: "Invalid date format.", type: "error", duration: 3000 });
       return;
     }
@@ -662,11 +719,9 @@ const TaskDetailPage = () => {
           
           approvalResults.forEach((result, index) => {
             if (result.status === "rejected") {
-              console.error(`Failed to approve file ${selectedFiles[index].documentId}:`, result.reason);
             }
           });
         } catch (fileError) {
-          console.error("Error in file approval process:", fileError);
           addMessage({
             text: "Error approving files",
             type: "error",
@@ -703,11 +758,10 @@ const TaskDetailPage = () => {
       if (!statusId || statusId === "" || statusId === null) {
         // Use hardcoded status ID mapping
         statusId = HARDCODED_STATUS_IDS[taskStatus?.value] || null;
-        console.log("Using hardcoded status ID:", statusId, "for status:", taskStatus?.value);
       }
 
       const payload = {
-        EventId: mode === "edit" ? currentFormData.eventId : eventId,
+        EventId: mode === "edit" ? currentFormData.eventId : apiEventId,
         TaskTitle: taskTitle,
         taskStatusId: statusId, // Use the validated status ID
         AssignedTo: (selectedParticipantIds || []).map((item) =>
@@ -723,17 +777,6 @@ const TaskDetailPage = () => {
         OrganizationId: organizationId || currentFormData.organizationId
       };
 
-      console.log("Save payload with status ID:", {
-        taskStatusId: payload.taskStatusId,
-        statusValue: taskStatus?.value,
-        statusLabel: taskStatus?.label,
-        fullStatus: taskStatus,
-        assignedUsers: selectedParticipantIds,
-        hasAssignees: selectedParticipantIds.length > 0,
-        mode: mode,
-        statusOptions: statusOptions,
-        statusOptionsLength: statusOptions.length
-      });
 
 
       const url = mode === "edit" 
@@ -761,16 +804,27 @@ const TaskDetailPage = () => {
       const result = await response.json();
 
       if (mode === "create") {
+        // Handle both possible response formats: result.taskId or result.id
+        const newTaskId = result.taskId || result.id;
+        
+        if (!newTaskId) {
+          throw new Error("No task ID returned from server");
+        }
+        
         setMode("view");
-        setTaskData(prev => ({ ...prev, id: result.taskId }));
+        setTaskData(prev => ({ ...prev, id: newTaskId }));
         navigate(location.pathname, {
-          state: { ...location.state, taskId: result.taskId, mode: "view" },
+          state: { ...location.state, taskId: newTaskId, mode: "view" },
           replace: true
         });
+        
+        // Switch to Files & Uploads tab to encourage file upload
+        setActiveTab("Files & Uploads");
+        
         addMessage({
-          text: "Task created successfully",
+          text: "Task created successfully! You can now add files and comments.",
           type: "success",
-          duration: 3000
+          duration: 4000
         });
       } else {
         setMode("view");
@@ -781,7 +835,6 @@ const TaskDetailPage = () => {
         });
       }
     } catch (error) {
-      console.error("Save failed:", error);
       addMessage({
         text: `Save failed: ${error.message}`,
         type: "error",
@@ -797,18 +850,32 @@ const TaskDetailPage = () => {
     setActiveTab(tab);
   };
 
-  const handleFileSelect = (file, isSelected) => {
-    setSelectedFiles(prev =>
-      isSelected
-        ? [...prev, file]
-        : prev.filter(f => f.documentId !== file.documentId)
-    );
-  };
+  const handleFileSelect = useCallback((file, isSelected) => {
+    setSelectedFiles(prev => {
+      if (isSelected) {
+        // For radio button behavior, replace the entire selection with the new file
+        return [file];
+      } else {
+        // Remove the file if deselected
+        return prev.filter(f => f.documentId !== file.documentId);
+      }
+    });
+  }, []);
 
   // Handle status change from buttons
   const handleStatusChange = async (newStatus) => {
     // Prevent multiple clicks while updating
     if (isUpdatingStatus) {
+      return;
+    }
+    
+    // Check if user has permission to change status
+    if (!canEdit) {
+      addMessage({
+        text: "You don't have permission to change the status of this task",
+        type: "error",
+        duration: 3000
+      });
       return;
     }
     
@@ -852,7 +919,6 @@ const TaskDetailPage = () => {
         if (!statusId || statusId === "" || statusId === null) {
           // Use hardcoded status ID mapping
           statusId = HARDCODED_STATUS_IDS[newStatus.value] || null;
-          console.log("Using hardcoded status ID for update:", statusId, "for status:", newStatus.value);
         }
 
         // Prepare payload for status update
@@ -866,7 +932,7 @@ const TaskDetailPage = () => {
           CreatedBy: userId,
           UpdatedBy: userId,
           CreativeType: currentFormData.type,
-          DueDate: new Date(currentFormData.date).toISOString(),
+          DueDate: currentFormData.date ? new Date(currentFormData.date).toISOString() : new Date().toISOString(),
           CreativeNumbers: currentFormData.quantity,
           checklistDetails: Array.isArray(currentFormData.checklist)
             ? currentFormData.checklist.map(item => ({
@@ -902,11 +968,9 @@ const TaskDetailPage = () => {
             
             approvalResults.forEach((result, index) => {
               if (result.status === "rejected") {
-                console.error(`Failed to approve file ${selectedFiles[index].documentId}:`, result.reason);
               }
             });
           } catch (fileError) {
-            console.error("Error in file approval process:", fileError);
             addMessage({
               text: "Error approving files. Please try again.",
               type: "error",
@@ -917,6 +981,7 @@ const TaskDetailPage = () => {
         }
 
         // Make API call to update task
+        debugger;
         const response = await fetchWithRefresh(`/apis/task/update/${taskId}`, {
           method: "PUT",
           headers: {
@@ -945,7 +1010,6 @@ const TaskDetailPage = () => {
         });
 
       } catch (error) {
-        console.error("Status update failed:", error);
         
         // Revert status change on error
         const originalStatus = statusOptions.find(opt => opt.value === taskStatus.value);
@@ -964,80 +1028,117 @@ const TaskDetailPage = () => {
     }
   };
 
-  const tabs = [
-    {
-      label: "Details",
-      component: (
-        <TaskDetail
-          taskData={taskData}
-          formData={formData}
-          onUpdate={handleFormFieldUpdate}
-          mode={mode}
-          eventDate={eventDate}
-          errors={validationErrors}
-          onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
-        />
-      ),
-    },
-    {
-      label: "Comments and Preview",
-      component: mode === "create" ? (
-        <div className="create-mode-message">
-          Save the task first to access comments and preview
-        </div>
-      ) : (
-        <CommentsPreview
-          mode={mode}
-          taskId={taskId}
-          eventId={eventId}
-          isActive={activeTab === "Comments and Preview"}
-        />
-      ),
-      disabled: mode === "create",
-    },
-    {
-      label: "Files & Uploads",
-      component: mode === "create" ? (
-        <div className="create-mode-message">
-          Save the task first to upload files
-        </div>
-      ) : (
-        <TasksFiles
-          files={fileData.uploadedFiles}
-          onFilesChange={setFileData}
-          mode={mode}
-          taskId={taskId || taskData.id}
-          eventId={eventId || taskData.eventId}
-          organizationId={organizationId || taskData.organizationId}
-          selectedFiles={selectedFiles}
-          onFileSelect={handleFileSelect}
-        />
-      ),
-      disabled: mode === "create",
-    },
-  ];
+  // Filter tabs based on mode - only show Details tab in create and edit modes
+  const tabs = useMemo(() => {
+    // Define all tabs inside useMemo to avoid dependency issues
+    const allTabs = [
+      {
+        label: "Details",
+        component: (
+          <TaskDetail
+            taskData={taskData}
+            formData={formData}
+            onUpdate={handleFormFieldUpdate}
+            mode={mode}
+            eventDate={eventDate}
+            errors={validationErrors}
+            onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
+          />
+        ),
+      },
+      {
+        label: "Comments and Preview",
+        component: mode === "create" ? (
+          <div className="create-mode-message">
+            Save the task first to access comments and preview
+          </div>
+        ) : (
+          <CommentsPreview
+            mode={mode}
+            taskId={taskId}
+            eventId={apiEventId}
+            isActive={activeTab === "Comments and Preview"}
+          />
+        ),
+        disabled: mode === "create",
+      },
+      {
+        label: "Files & Uploads",
+        component: mode === "create" ? (
+          <div className="create-mode-message">
+            Save the task first to upload files
+          </div>
+        ) : (
+          <TasksFiles
+            files={fileData.uploadedFiles}
+            onFilesChange={setFileData}
+            mode={mode}
+            taskId={taskId || taskData.id}
+            eventId={apiEventId || taskData.eventId}
+            organizationId={organizationId || taskData.organizationId}
+            selectedFiles={selectedFiles}
+            onFileSelect={handleFileSelect}
+            taskStatus={taskStatus}
+          />
+        ),
+        disabled: mode === "create",
+      },
+    ];
 
-  const breadcrumbItems = [
-    { label: user?.organization?.name, href: "#", icon: Building },
-    { 
-      label: "Events", 
-      href: "/events", 
-      icon: Calendar,
-      onClick: () => navigate("/events")
-    },
-    eventName ? { 
-      label: eventName, 
-      href: "#", 
-      icon: Calendar,
-      onClick: () => navigate("/events/eventDetailPage", {
-        state: {
-          eventId: eventId,
-          mode: "view"
+    if (mode === "create") {
+      return allTabs.filter(tab => tab.label === "Details");
+    }
+    return allTabs;
+  }, [mode, taskData, formData, handleFormFieldUpdate, eventDate, validationErrors, taskId, apiEventId, fileData.uploadedFiles, setFileData, organizationId, selectedFiles, handleFileSelect, activeTab, taskStatus]);
+
+  const breadcrumbItems = React.useMemo(() => {
+    // Ensure we have valid data before creating breadcrumb items
+    const organizationName = user?.organization?.name || user?.organizationName || "Organization";
+    const taskName = taskTitle || (mode === "create" ? "New Task" : "Task Details");
+    
+    const items = [
+      { 
+        label: organizationName, 
+        href: "#", 
+        icon: Building 
+      },
+      { 
+        label: "Events", 
+        href: "/events", 
+        icon: Calendar,
+        onClick: () => navigate("/events")
+      }
+    ];
+    
+    // Add event name if available
+    if (eventName) {
+      items.push({ 
+        label: eventName, 
+        href: "#", 
+        icon: FileText,
+        onClick: () => {
+          // Only navigate if we have valid event ID
+          if (apiEventId) {
+            navigate("/events/eventDetailPage", {
+              state: {
+                eventId: apiEventId,
+                mode: "view"
+              }
+            });
+          }
         }
-      })
-    } : null,
-    { label: taskTitle || "New Task", href: "#", icon: Pencil },
-  ].filter(Boolean);
+      });
+    }
+    
+    // Add task name
+    items.push({ 
+      label: taskName, 
+      href: "#", 
+      icon: Pencil 
+    });
+    
+    return items;
+  }, [user?.organization?.name, user?.organizationName, eventName, apiEventId, taskTitle, mode, navigate]);
 
   // Determine loading state
   const isLoading = useMemo(() => {
@@ -1089,7 +1190,7 @@ const TaskDetailPage = () => {
       <div className="Inner-Content">
         <TabMenu
           tabs={tabs}
-          showEditButton={mode === "view" && taskStatus.value !== "Approved" && !isDesigner} // Show edit button only in view mode, when status is not Approved, and user is not a Designer
+          showEditButton={mode === "view" && canEdit} // Show edit button only in view mode and when user has edit permissions
           isEditMode={mode === "edit"}
           onEditClick={() => {
             setMode("edit");
@@ -1099,7 +1200,6 @@ const TaskDetailPage = () => {
           }}
           activeTab={activeTab}
           setActiveTab={handleTabChange}
-          disabledTabs={mode === "create" ? tabs.filter(t => t.disabled).map(t => t.label) : []}
         />
       </div>
     </div>

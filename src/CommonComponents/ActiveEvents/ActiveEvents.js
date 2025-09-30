@@ -22,33 +22,48 @@ const ActiveEvents = ({ events, onEventClick, title = "Active Events", loading =
       onEventClick?.(item, key);
     };
 
+    const getEmptyText = (key) => {
+      switch (key) {
+        case "eventName":
+          return "Untitled Event";
+        case "assignTo":
+          return "Unassigned";
+        case "displayDate":
+          return "No Event Date";
+        case "createdBy":
+          return "Unknown Creator";
+        default:
+          return "N/A";
+      }
+    };
+
     switch (key) {
       case "eventName":
         return (
           <span className="event-link" onClick={handleClick}>
-            {item.eventName}
+            {item.eventName || getEmptyText(key)}
           </span>
         );
       case "assignTo":
         return (
           <div onClick={handleClick}>
-            {(!item.assignTo || item.assignTo.length === 0) ? (
-              <span>-</span>
-            ) : (
+            {item.assignTo && item.assignTo.length > 0 ? (
               <AvatarList avatars={item.assignTo} maxVisible={2} stack={true} />
+            ) : (
+              <span className="empty-field">{getEmptyText(key)}</span>
             )}
           </div>
         );
       case "createdBy":
         return (
           <div onClick={handleClick} className="created-by-name">
-            {item.createdBy.name}
+            {item.createdBy?.name || getEmptyText(key)}
           </div>
         );
       default:
         return (
           <span className="clickable-cell" onClick={handleClick}>
-            {item[key]}
+            {item[key] || getEmptyText(key)}
           </span>
         );
     }

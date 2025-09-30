@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Events.css";
 import Table from "../../CommonComponents/Table/Table";
@@ -27,7 +27,6 @@ const EventTable = () => {
   const { addMessage } = useMessages();
   const { user, permissions: userPermissions, selectedOrganizationId, isViewingOwnOrganization, scopeChangeTrigger, loading: userLoading } = useUser();
 
-  console.log("user", user?.roles[0]?.name);
 
   const permissions = {
     // New Event: Only check organization scope (not canCRUD)
@@ -50,6 +49,30 @@ const EventTable = () => {
     // const minutes = String(date.getMinutes()).padStart(2, "0");
     // return `${day}/${month}/${year} ${hours}:${minutes}`;
     return `${day}/${month}/${year}`;
+  };
+
+  // Utility function to convert text to Camel Case
+  const toCamelCase = (text) => {
+    if (!text) return "";
+    return text
+      .toLowerCase()
+      .split(/[\s_-]+/)
+      .map((word, index) => 
+        index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1)
+      )
+      .join("");
+  };
+
+  // Utility function to convert text to Title Case for display
+  const toTitleCase = (text) => {
+    if (!text) return "";
+    return text
+      .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+      .replace(/^./, str => str.toUpperCase()) // Capitalize first letter
+      .trim() // Remove leading/trailing spaces
+      .split(/[\s_-]+/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
   };
 
   // Filter options
@@ -118,12 +141,6 @@ const EventTable = () => {
       throw new Error("No organization selected");
     }
 
-    console.log("fetchEvents called with:", { 
-      organizationId, 
-      userId: user?.userId, 
-      selectedOrganizationId, 
-      userOrgId: user?.organizationId 
-    });
 
     // Determine if we need to include X-Context-Organization header
     const isViewingOwnOrg = organizationId === user?.organizationId;
@@ -139,8 +156,6 @@ const EventTable = () => {
       headers["X-Context-Organization"] = organizationId;
     }
 
-    console.log("Making API call to:", `/apis/event/hierarchy/${organizationId}?userId=${user?.userId}`);
-    console.log("Headers:", headers);
 
     // Use the new hierarchy endpoint
     const res = await fetchWithRefresh(`/apis/event/hierarchy/${organizationId}?userId=${user?.userId}`,
@@ -151,13 +166,6 @@ const EventTable = () => {
     );
 
     if (!res.ok) {
-      console.error("Events API failed:", { 
-        status: res.status, 
-        statusText: res.statusText,
-        url: res.url,
-        organizationId,
-        userId: user?.userId
-      });
       throw new Error(`Failed to fetch events: ${res.status} - ${res.statusText}`);
     }
 
@@ -181,7 +189,7 @@ const EventTable = () => {
         }
 
         return {
-          name: participantName,
+          name: toCamelCase(participantName),
           src: participantName,
           fallback: participantName.charAt(0).toUpperCase() || "?",
           size: "32px",
@@ -191,11 +199,11 @@ const EventTable = () => {
 
       return {
         id: event.id || Date.now().toString(),
-        name: event.eventName || "Unnamed Event",
-        type: event.eventTypeDesc || event.eventTypeName || "N/A",
+        name: toCamelCase(event.eventName) || "Unnamed Event",
+        type: toCamelCase(event.eventTypeDesc || event.eventTypeName) || "N/A",
         // ✅ Use formatted date
         date: event.eventDate ? formatDateTime(event.eventDate) : "N/A",
-        createdBy: event.createdByName || event.createdBy?.name || event.createdBy || "Unknown",
+        createdBy: toCamelCase(event.createdByName || event.createdBy?.name || event.createdBy) || "Unknown",
         participants: allParticipants,
         rawData: event,
         eventDate: event.eventDate, // Keep original date for filtering
@@ -206,21 +214,37 @@ const EventTable = () => {
     return formatted;
   }, [selectedOrganizationId, user?.organizationId, user?.userId]);
 
-  /** -------------------- Use API Hook -------------------- **/
-  const {
-    data: eventsData,
-    loading,
-    error,
-    execute: executeFetchEvents
-  } = useApi(fetchEvents, [userLoading, permissions.canRead, selectedOrganizationId, user?.userId], false);
+  /** -------------------- State Management -------------------- **/
+  const [eventsData, setEventsData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const isFetchingRef = useRef(false);
 
   // Execute API when permissions and organization are ready or scope changes
-  useEffect(() => {
-    if (!userLoading && permissions.canRead && selectedOrganizationId && user?.userId) {
-      console.log("Executing fetchEvents with:", { selectedOrganizationId, userId: user?.userId });
-      executeFetchEvents();
+  const executeFetchEvents = useCallback(async () => {
+    if (!userLoading && permissions.canRead && selectedOrganizationId && user?.userId && !isFetchingRef.current) {
+      
+      isFetchingRef.current = true;
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Call fetchEvents directly without including it in dependencies
+        const data = await fetchEvents();
+        setEventsData(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+        isFetchingRef.current = false;
+      }
     }
-  }, [userLoading, permissions.canRead, selectedOrganizationId, user?.userId, executeFetchEvents, scopeChangeTrigger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userLoading, permissions.canRead, selectedOrganizationId, user?.userId]);
+
+  useEffect(() => {
+    executeFetchEvents();
+  }, [executeFetchEvents, scopeChangeTrigger]);
 
   // Process events data and extract filter options
   const originalEvents = useMemo(() => {
@@ -232,8 +256,8 @@ const EventTable = () => {
     const uniqueTypes = [...new Set(eventsData.map(event => event.type).filter(type => type !== "N/A"))];
     const uniqueUsers = [...new Set(eventsData.map(event => event.createdBy).filter(user => user !== "Unknown"))];
     
-    setAvailableTypes(uniqueTypes.map(type => ({ label: type, value: type })));
-    setAvailableUsers(uniqueUsers.map(user => ({ label: user, value: user })));
+    setAvailableTypes(uniqueTypes.map(type => ({ label: toTitleCase(type), value: type })));
+    setAvailableUsers(uniqueUsers.map(user => ({ label: toTitleCase(user), value: user })));
 
     return eventsData;
   }, [eventsData]);
@@ -278,8 +302,10 @@ const EventTable = () => {
     // Filter by event name
     if (filterValues.eventName) {
       const lowerQuery = filterValues.eventName.toLowerCase();
+      const camelCaseQuery = toCamelCase(filterValues.eventName);
       filtered = filtered.filter(event =>
-        String(event.name).toLowerCase().includes(lowerQuery)
+        String(event.name).toLowerCase().includes(lowerQuery) ||
+        String(event.name).includes(camelCaseQuery)
       );
     }
 
@@ -313,9 +339,12 @@ const EventTable = () => {
 
     // Filter by assigned user (participants)
     if (filterValues.assignedUser) {
+      const lowerQuery = filterValues.assignedUser.toLowerCase();
+      const camelCaseQuery = toCamelCase(filterValues.assignedUser);
       filtered = filtered.filter(event =>
         event.participants.some(participant =>
-          participant.name.toLowerCase().includes(filterValues.assignedUser.toLowerCase())
+          participant.name.toLowerCase().includes(lowerQuery) ||
+          toCamelCase(participant.name).includes(camelCaseQuery)
         )
       );
     }
@@ -389,7 +418,6 @@ const EventTable = () => {
         duration: 3000,
       });
     } catch (err) {
-      console.error("Error deleting event:", err);
       addMessage({
         text: `Failed to delete event: ${err.message}`,
         type: "error",
@@ -434,7 +462,7 @@ const EventTable = () => {
             <input
               type="text"
               placeholder="Search events"
-              className="search-input"
+              className="search-inputs"
               onChange={(e) => handleSearch(e.target.value)}
             />
           </div>
@@ -470,7 +498,7 @@ const EventTable = () => {
               <label>Event Type</label>
               <CustomDropdown
                 options={[{ label: "All Types", value: "" }, ...availableTypes]}
-                defaultLabel={filters.eventType || "All Types"}
+                defaultLabel={filters.eventType ? toTitleCase(filters.eventType) : "All Types"}
                 onSelect={(option) => handleFilterChange("eventType", option.value)}
               />
             </div>
@@ -479,7 +507,7 @@ const EventTable = () => {
               <label>Status</label>
               <CustomDropdown
                 options={statusOptions}
-                defaultLabel={filters.status || "All Status"}
+                defaultLabel={filters.status ? toTitleCase(filters.status) : "All Status"}
                 onSelect={(option) => handleFilterChange("status", option.value)}
               />
             </div>
@@ -488,7 +516,7 @@ const EventTable = () => {
               <label>Date Range</label>
               <CustomDropdown
                 options={dateRangeOptions}
-                defaultLabel={filters.dateRange || "All Dates"}
+                defaultLabel={filters.dateRange ? toTitleCase(filters.dateRange) : "All Dates"}
                 onSelect={(option) => handleFilterChange("dateRange", option.value)}
               />
             </div>
@@ -497,7 +525,7 @@ const EventTable = () => {
               <label>Created By</label>
               <CustomDropdown
                 options={[{ label: "All Users", value: "" }, ...availableUsers]}
-                defaultLabel={filters.createdBy || "All Users"}
+                defaultLabel={filters.createdBy ? toTitleCase(filters.createdBy) : "All Users"}
                 onSelect={(option) => handleFilterChange("createdBy", option.value)}
               />
             </div>
@@ -525,31 +553,53 @@ const EventTable = () => {
           onRetry={handleRetry}
           onSort={handleSort}
           renderCell={(key, item) => {
+            const getEmptyText = (key) => {
+              switch (key) {
+                case "name":
+                  return "Untitled Event";
+                case "type":
+                  return "No Type";
+                case "date":
+                  return "No Date";
+                case "participants":
+                  return "No Team Members";
+                case "createdBy":
+                  return "Unknown Creator";
+                default:
+                  return "N/A";
+              }
+            };
+
             if (key === "participants") {
-              return (
+              return item.participants && item.participants.length > 0 ? (
                 <AvatarList
                   avatars={item.participants}
                   stack={true}
                   maxVisible={3}
                   showTooltip={true}
                 />
+              ) : (
+                <span className="empty-field">{getEmptyText(key)}</span>
               );
             }
             if (key === "type") {
               return (
                 <span className="type-pill">
-                  {item.type}
+                  {toTitleCase(item.type) || getEmptyText(key)}
                 </span>
               );
             }
             if (key === "createdBy") {
               return (
                 <div className="created-by-name">
-                  {item.createdBy}
+                  {toTitleCase(item.createdBy) || getEmptyText(key)}
                 </div>
               );
             }
-            return item[key];
+            if (key === "name") {
+              return toTitleCase(item[key]) || getEmptyText(key);
+            }
+            return item[key] || getEmptyText(key);
           }}
           noDataText="No Events Scheduled at this time"
           addEventText="Click here to add a New Event"
@@ -560,11 +610,6 @@ const EventTable = () => {
           onDuplicate={permissions.canDuplicate ? () => alert("Duplicate pressed") : undefined}
           onRowClick={(event) => {
             if (!loading && !error && permissions.canRead) {
-              console.log("Clicked event data:", {
-                id: event.id,
-                rawData: event.rawData,
-                allEventData: event
-              });
 
               navigate("/events/eventDetailPage", {
                 state: {

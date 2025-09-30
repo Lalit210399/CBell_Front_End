@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { BellRing, Building2 } from "lucide-react";
+import { BellRing, Building2, User, Mail, LogOut, Shield, ChevronDown } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
 import { logout } from "../../Services/AuthN";
 import CustomDropdown from "../Dropdown/CustomDropdown";
@@ -88,6 +88,15 @@ function Navbar() {
     (org) => org.id === selectedOrganizationId
   )?.data.organizationCode || "Select Organization";
 
+  // Generate user initials
+  const getUserInitials = (firstName = "", lastName = "") => {
+    const firstInitial = (firstName[0] || "").toUpperCase();
+    const lastInitial = (lastName[0] || "").toUpperCase();
+    return (firstInitial + lastInitial) || "U";
+  };
+
+  const userInitials = getUserInitials(user?.firstName, user?.lastName);
+
   return (
     <nav className="navbar">
       <div className="nav-links">
@@ -123,22 +132,67 @@ function Navbar() {
           </div>
         </div>
         
-        <BellRing size={22} className="bell-icon" />
+        {/* <BellRing size={22} className="bell-icon" /> */}
         <div className="user-info" ref={dropdownRef}>
-          <div className="user-details">
-            <span className="user-name">{user?.firstName}</span>
-            <span className="user-role">{user?.roles[0]?.name}</span>
-          </div>
+          
           <div className="avatar-dropdown-wrapper">
-            <img
-              src="https://randomuser.me/api/portraits/men/1.jpg"
-              alt="User"
-              className="user-avatar"
-              onClick={toggleDropdown}
-            />
+            <div className="profile-trigger" onClick={toggleDropdown}>
+              <div className="user-avatars user-avatar-initials">
+                {userInitials}
+              </div>
+              <ChevronDown size={16} className={`chevron-icon ${dropdownVisible ? 'rotated' : ''}`} />
+            </div>
             {dropdownVisible && (
-              <div className="logout_dropdown">
-                <button onClick={handleLogout}>Logout</button>
+              <div className="profile-dropdown">
+                <div className="profile-header">
+                  <div className="profile-avatar-section">
+                    <div className="profile-avatar-large profile-avatar-initials-large">
+                      {userInitials}
+                    </div>
+                    <div className="profile-status"></div>
+                  </div>
+                  <div className="profile-info">
+                    <h3 className="profile-name">{user?.firstName} {user?.lastName}</h3>
+                    <p className="profile-email">{user?.email}</p>
+                  </div>
+                </div>
+                
+                <div className="profile-details">
+                  <div className="profile-detail-item">
+                    <Building2 size={16} className="detail-icon" />
+                    <div className="detail-content">
+                      <span className="detail-label">Organization</span>
+                      <span className="detail-value">{user?.organization?.name || 'N/A'}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="profile-detail-item">
+                    <Shield size={16} className="detail-icon" />
+                    <div className="detail-content">
+                      <span className="detail-label">Role</span>
+                      <span className="detail-value">{user?.roles?.[0]?.name || user?.roles?.[0]?.displayName || 'User'}</span>
+                    </div>
+                  </div>
+                  
+               
+                  
+                  {user?.organizationId && (
+                    <div className="profile-detail-item">
+                      <Building2 size={16} className="detail-icon" />
+                      <div className="detail-content">
+                        <span className="detail-label">Organization Code</span>
+                        <span className="detail-value">{user?.organization?.code}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="profile-actions">
+                  <button className="logout-button" onClick={handleLogout}>
+                    <LogOut size={16} />
+                    <span>Logout</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>

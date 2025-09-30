@@ -3,7 +3,7 @@ import Quill from "quill";
 import "quill/dist/quill.snow.css";
 import "./TextEditor.css"; // Your custom styling
 
-const TextEditor = ({ initialContent = "", onContentChange, isFullWidth, mode = "edit" }) => {
+const TextEditor = ({ initialContent = "", onContentChange, isFullWidth, mode = "edit", hasError = false, errorMessage = "", showRequiredAsterisk = true }) => {
   const editorRef = useRef(null);
   const quillInstance = useRef(null);
   const [content, setContent] = useState(initialContent);
@@ -14,7 +14,7 @@ const TextEditor = ({ initialContent = "", onContentChange, isFullWidth, mode = 
         theme: "snow",
         readOnly: mode === "view",
         modules: {
-          toolbar: [
+          toolbar: mode === "view" ? false : [
             // Text styles
             ["bold", "italic", "underline", "strike"],
             ["blockquote", "code-block"],
@@ -71,11 +71,16 @@ const TextEditor = ({ initialContent = "", onContentChange, isFullWidth, mode = 
   }, [initialContent]);
 
   return (
-    <div className={`text-editor-container ${isFullWidth ? "full-width" : ""}`}>
+    <div className={`text-editor-container ${isFullWidth ? "full-width" : ""} ${hasError ? "error" : ""}`}>
       <label className="text-editor-label">
-        Content for Creation (Description) <span style={{ color: "red" }}>*</span>
+        Content for Creation (Description) {showRequiredAsterisk && <span style={{ color: "red" }}>*</span>}
       </label>
-      <div ref={editorRef} style={{ minHeight: 300 }} />
+      <div ref={editorRef} style={{ flex: 1, minHeight: 0 }} />
+      {hasError && errorMessage && (
+        <div className="text-editor-error-message">
+          {errorMessage}
+        </div>
+      )}
     </div>
   );
 };

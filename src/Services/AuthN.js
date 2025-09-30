@@ -41,7 +41,6 @@ export const signin = async (credentials) => {
     }
 
     const data = await response.json();
-    //console.log("Signin response data:", data);
 
     if (!response.ok) {
       throw new Error(data.message || `Login failed with status ${response.status}`);
@@ -216,7 +215,6 @@ export const getTaskTypeOptions = async () => {
     });
 
     if (response.status === 404) {
-      console.warn('Task types API endpoint not found, using default values');
       return null; // Return null to indicate API not available
     }
 
@@ -227,8 +225,31 @@ export const getTaskTypeOptions = async () => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching task types:', error);
     throw error.message || 'Error fetching task type options';
+  }
+};
+
+// Delete Task
+export const deleteTask = async (taskId) => {
+  try {
+    const response = await fetch(`/apis/task/delete/${taskId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: "application/json",
+        "ngrok-skip-browser-warning": "1",
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete task: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    throw error.message || 'Error deleting task';
   }
 };
 

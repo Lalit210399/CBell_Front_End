@@ -56,7 +56,15 @@ const YouTubeUploader = ({
         throw new Error('Publish function not available');
       }
     } catch (error) {
-      setMessage(`❌ YouTube error: ${error.message}`);
+      // Show user-friendly error message
+      const errorMessage = (error.message.includes('No social media account added') || 
+                           error.message.includes('Social media config not found') ||
+                           error.message.includes('social media account not configured') ||
+                           error.message.includes('Social media account not configured') ||
+                           error.message.includes('Social med')) 
+        ? 'No social media account added. Please contact your administrator to add social media accounts for your organization.'
+        : error.message;
+      setMessage(`❌ YouTube error: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
