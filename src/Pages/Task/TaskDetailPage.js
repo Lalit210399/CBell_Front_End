@@ -165,7 +165,7 @@ const TaskDetailPage = () => {
     // Otherwise, allow editing (Designers can now edit tasks)
     console.log("Edit allowed: All conditions passed");
     return true;
-  }, [taskData.canCRUD, taskData.accessLevel, taskStatus?.value]);
+  }, [taskData.canCRUD, taskData.accessLevel, taskStatus?.value, isDesigner, taskData.id]);
 
   const canSave = React.useMemo(() => {
     // In create mode, always allow saving
@@ -879,6 +879,39 @@ const TaskDetailPage = () => {
       return;
     }
     
+    // Special validation for Under Approval status - must have files uploaded
+    if (newStatus.value === "Under Approval") {
+      try {
+        // Check if there are any documents uploaded for this task
+        const response = await fetch(`/apis/document-details/task/${taskId}`, {
+          headers: { 'ngrok-skip-browser-warning': '1' }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to check task documents');
+        }
+        
+        const documents = await response.json();
+        
+        if (!documents || documents.length === 0) {
+          addMessage({
+            text: "You must upload at least one file before submitting for approval.",
+            type: "error",
+            duration: 5000
+          });
+          setActiveTab("Files & Uploads");
+          return;
+        }
+      } catch (error) {
+        addMessage({
+          text: "Failed to verify task documents. Please try again.",
+          type: "error",
+          duration: 3000
+        });
+        return;
+      }
+    }
+    
     // Special validation for Approved status - must have files selected
     if (newStatus.value === "Approved") {
       if (selectedFiles.length === 0) {
@@ -981,7 +1014,7 @@ const TaskDetailPage = () => {
         }
 
         // Make API call to update task
-        debugger;
+        // debugger;
         const response = await fetchWithRefresh(`/apis/task/update/${taskId}`, {
           method: "PUT",
           headers: {
@@ -1184,6 +1217,7 @@ const TaskDetailPage = () => {
           onStatusChange={handleStatusChange}
           isUpdatingStatus={isUpdatingStatus}
           user={user}
+          taskId={taskId}
         />
       </div>
 

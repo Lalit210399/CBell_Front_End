@@ -101,6 +101,20 @@
   transform: translateY(-2px);
 }
 
+.file-requirement-warning {
+  background-color: #fef3cd;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-right: 10px;
+}
+
+.file-requirement-warning .warning-text {
+  color: #d97706;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
 /* Image, Video, and Audio Previews */
 .image-preview {
   width: 100%;
