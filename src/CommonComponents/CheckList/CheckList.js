@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./CheckList.css";
 
-const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
+const Checklist = ({ initialItems = [], onChecklistChange, mode = "view", canEdit = null }) => {
   const createPlaceholderItem = () => ({ text: "", checked: false, isPlaceholder: true });
 
-  const transformItems = (items) => {
+  const transformItems = React.useCallback((items) => {
     let transformed = (items || [])
       .filter(item => item.text && item.text.trim() !== "")
       .map(item => ({
@@ -15,11 +15,10 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
 
     transformed.push(createPlaceholderItem());
     return transformed;
-  };
+  }, []);
 
   const [checklist, setChecklist] = useState(() => transformItems(initialItems));
   const inputRefs = useRef([]);
-  const prevChecklistRef = useRef(null);
 
   const normalizeItems = (items) =>
     (items || [])
@@ -35,7 +34,7 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
     if (JSON.stringify(currentNormalized) !== JSON.stringify(incomingNormalized)) {
       setChecklist(transformed);
     }
-  }, [initialItems]);
+  }, [initialItems, checklist, transformItems]);
 
   // Auto-resize textareas when component mounts or checklist changes
   useEffect(() => {
@@ -56,16 +55,19 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
     return () => clearTimeout(timeoutId);
   }, [checklist]);
 
+  // Determine if checklist can be edited
+  const isEditable = canEdit !== null ? canEdit : mode !== "view";
+
   // Notify parent when user makes changes (not on initial render or external updates)
   const notifyParent = React.useCallback((newChecklist) => {
-    if (mode === "view" || !onChecklistChange) return;
+    if (!isEditable || !onChecklistChange) return;
     
     const filteredChecklist = newChecklist.filter(item => item.text.trim() && !item.isPlaceholder);
     onChecklistChange(filteredChecklist);
-  }, [mode, onChecklistChange]);
+  }, [isEditable, onChecklistChange]);
 
   const toggleCheck = (index) => {
-    if (mode === "view") return;
+    if (!isEditable) return;
     setChecklist(prev => {
       const updated = prev.map((item, i) =>
         i === index ? { ...item, checked: !item.checked } : item
@@ -76,7 +78,7 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
   };
 
   const handleInputChange = (index, value) => {
-    if (mode === "view") return;
+    if (!isEditable) return;
     setChecklist(prev => {
       const updated = prev.map((item, i) =>
         i === index ? { ...item, text: value, isPlaceholder: false } : item
@@ -100,7 +102,7 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
   };
 
   const handleKeyDown = (index, event) => {
-    if (mode === "view") return;
+    if (!isEditable) return;
 
     if (event.key === "Enter") {
       event.preventDefault();
@@ -140,7 +142,7 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
   };
 
   // Filter out placeholder items in view mode
-  const displayItems = mode === "view" 
+  const displayItems = !isEditable 
     ? checklist.filter(item => !item.isPlaceholder && item.text.trim())
     : checklist;
 
@@ -154,18 +156,18 @@ const Checklist = ({ initialItems = [], onChecklistChange, mode = "view" }) => {
               type="checkbox"
               checked={item.checked}
               onChange={() => toggleCheck(originalIndex)}
-              disabled={mode === "view" || item.isPlaceholder}
+              disabled={!isEditable || item.isPlaceholder}
             />
             <span 
               className="checkbox-custom"
               onClick={(e) => {
-                if (!item.isPlaceholder && mode !== "view") {
+                if (!item.isPlaceholder && isEditable) {
                   e.preventDefault();
                   toggleCheck(originalIndex);
                 }
               }}
             ></span>
-          {mode === "view" ? (
+          {!isEditable ? (
             <div className="checklist-input checklist-view-text">
               {item.text}
             </div>

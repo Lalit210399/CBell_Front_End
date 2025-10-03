@@ -22,12 +22,14 @@ const YouTubeUploader = ({
   useEffect(() => {
     if (open) {
       setTitle(fileName.replace(/\.[^/.]+$/, "") || ''); // Remove file extension for title
-      setDescription('');
+      // Use file description as default description if available
+      const fileDescription = fileDetail?.document?.description || fileDetail?.description || '';
+      setDescription(fileDescription);
       setTags('');
       setPrivacyStatus('public');
       setMessage('');
     }
-  }, [open, fileName]);
+  }, [open, fileName, fileDetail]);
 
   if (!open) return null;
 

@@ -107,7 +107,8 @@ const TopSection = ({
     if (JSON.stringify(currentIds) !== JSON.stringify(newIds)) {
       setAssignedIds(ids);
     }
-  }, [assignedTo, assignedIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignedTo]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -190,9 +191,11 @@ const TopSection = ({
         }
       }
 
+      // Find the status option with the correct ID
       const newStatus = statusOptions.find(option => option.value === newStatusValue);
 
       if (newStatus) {
+        // Use the status option with the correct hardcoded ID
         onStatusChange(newStatus);
       } else {
         // Create a fallback status object with hardcoded ID
@@ -359,14 +362,24 @@ const TopSection = ({
 
                     {/* Approved button - show to everyone EXCEPT Designers when status is Under Approval */}
                     {!isDesigner && status?.value === "Under Approval" && (
-                      <button
-                        className="edit-top-status-btn edit-top-approved-btn"
-                        onClick={() => handleStatusChange("Approved")}
-                        title="Approve Task (requires file selection)"
-                        disabled={isUpdatingStatus}
-                      >
-                        {isUpdatingStatus ? "Updating..." : "Approve"}
-                      </button>
+                      <>
+                        <button
+                          className="edit-top-status-btn edit-top-approved-btn"
+                          onClick={() => handleStatusChange("Approved")}
+                          title="Approve Task (requires file selection)"
+                          disabled={isUpdatingStatus}
+                        >
+                          {isUpdatingStatus ? "Updating..." : "Approve"}
+                        </button>
+                        <button
+                          className="edit-top-status-btn edit-top-revert-btn"
+                          onClick={() => handleStatusChange("Active")}
+                          title="Revert to Active Status"
+                          disabled={isUpdatingStatus}
+                        >
+                          {isUpdatingStatus ? "Updating..." : "Revert"}
+                        </button>
+                      </>
                     )}
                   </div>
                 )}

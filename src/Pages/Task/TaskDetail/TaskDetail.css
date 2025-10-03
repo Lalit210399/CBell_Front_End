@@ -123,18 +123,14 @@
     text-align: center;
   }
   
-/* Chrome, Safari, Edge, Opera */
-input[type=number]::-webkit-inner-spin-button, 
+/* Style the native number input arrows */
+input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  appearance: none;
-  margin: 0;
-}
-
-/* Firefox */
-input[type=number] {
-  -moz-appearance: textfield;
-  appearance: textfield;
+  -webkit-appearance: inner-spin-button;
+  appearance: inner-spin-button;
+  opacity: 1;
+  height: 20px;
+  width: 16px;
 }
 
 
@@ -151,6 +147,9 @@ input[type=number] {
     font-size: 16px;
     font-weight: bold;
     padding: 4px 8px;
+    border: none;
+    outline: none;
+    background: transparent;
   }
 
   .checkList {
@@ -207,6 +206,13 @@ input[type=number] {
   /* No hover effects for quantity badge */
 
   /* Removed pulse animation for cleaner design */
+  
+  .updating-indicator {
+    color: #667eea;
+    font-size: 12px;
+    font-style: italic;
+    font-weight: normal;
+  }
   
   .custom-select {
     border: none;

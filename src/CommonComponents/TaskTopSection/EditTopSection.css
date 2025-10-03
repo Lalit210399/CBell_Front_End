@@ -464,6 +464,18 @@
     transform: translateY(-1px);
 }
 
+.edit-top-revert-btn {
+    background: transparent;
+    color: Black;
+    border: 1px solid var(--primary);
+}
+
+.edit-top-revert-btn:hover {
+    background: var(--primary);
+    transform: translateY(-1px);
+    color: white;
+}
+
 .edit-top-status-btn:active {
     transform: translateY(0);
 }

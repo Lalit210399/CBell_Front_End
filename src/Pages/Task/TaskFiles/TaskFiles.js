@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import FilesandUploads from "../../../CommonComponents/FileandUpload/FilesAndUploads";
+import { useUser } from "../../../Context/UserContext";
 
 const TasksFiles = ({ 
   files, 
@@ -12,10 +13,12 @@ const TasksFiles = ({
   onFileSelect,
   taskStatus
 }) => {
+  const { user } = useUser();
   const [fetchedFiles, setFetchedFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hasApprovedFile, setHasApprovedFile] = useState(false);
   const [hasAnyFiles, setHasAnyFiles] = useState(false);
+  const hasFetchedRef = useRef(false);
 
   useEffect(() => {
     const getFileTypeFromMime = (mime) => {
@@ -68,6 +71,8 @@ const TasksFiles = ({
               src,
               status: doc.status || 'Pending', // Add status field
               publishedTo: doc.publishedTo || [], // Add publishedTo field
+              uploadDate: doc.uploadDate, // Add uploadDate field
+              userInfo: doc.userInfo, // Add userInfo field with roles and fullName
               isApproved: doc.status === 'Approved' // Calculate isApproved
             };
           })
@@ -89,12 +94,14 @@ const TasksFiles = ({
       }
     };
 
-    if (taskId) {
+    if (taskId && !hasFetchedRef.current) {
+      hasFetchedRef.current = true;
       fetchDocuments();
     }
-  }, [taskId, onFileSelect]);
+  }, [taskId]); // Removed onFileSelect from dependencies to prevent unnecessary re-fetching
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 
-  const handleFileSelect = (fileId, isSelected) => {
+  const handleFileSelect = useCallback((fileId, isSelected) => {
     if (hasApprovedFile) {
       // Don't allow selection changes if there's an approved file
       return;
@@ -106,7 +113,8 @@ const TasksFiles = ({
       // The parent component should handle clearing previous selections
       onFileSelect(selectedFile, true);
     }
-  };
+  }, [hasApprovedFile, fetchedFiles]); // Removed onFileSelect from dependencies
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 
   // Function to check if task has any files (for external validation)
   const checkIfTaskHasFiles = () => {
@@ -131,6 +139,7 @@ const TasksFiles = ({
           taskId={taskId}
           eventId={eventId}
           organizationId={organizationId}
+          userId={user?.userId}
           readOnly={hasApprovedFile} // Only disable if approved file exists, not for view mode
           mode={mode}
           selectedFiles={selectedFiles.map(f => f.documentId)}

@@ -256,7 +256,9 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
     }
     
     console.log("Permission granted - opening modal");
-    setDescription(file.name || '');
+    // Use file description as default, fallback to file name
+    const fileDescription = file.document?.description || file.description || file.name || '';
+    setDescription(fileDescription);
     // Use the correct document ID from the document object - prioritize documentId
     const docId = file.document?.documentId || file.document?.fileId;
     setDocumentId(docId);

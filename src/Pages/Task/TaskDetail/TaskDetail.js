@@ -184,6 +184,7 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
 
   const handleChecklistChange = React.useCallback((newChecklist) => {
     setChecklistData(newChecklist);
+    // Only update local state - no automatic API calls
     onUpdate("checklist", newChecklist);
   }, [onUpdate]);
 
@@ -317,7 +318,6 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
                   type="number"
                   value={quantity}
                   onChange={handleQuantityChange}
-                  className="no-spinner"
                   disabled={isDisabled}
                   min={1}
                 />
@@ -332,7 +332,7 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
             initialItems={checklistData}
             onChecklistChange={handleChecklistChange}
             mode={mode}
-            canEdit={mode !== "view"}
+            canEdit={true}
           />
           {eventDateProp && (
             <div className="event-date-hint">Event date: {new Date(eventDateProp).toLocaleString()}</div>
