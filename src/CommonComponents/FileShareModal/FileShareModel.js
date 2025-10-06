@@ -37,7 +37,6 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
   const [showYouTubeUploader, setShowYouTubeUploader] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [platform, setPlatform] = useState(null);
-  const [showConfigWarning, setShowConfigWarning] = useState(false);
 
   // Handle click outside to close modal
   useEffect(() => {
@@ -86,9 +85,8 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
   };
 
   const handleSocialMediaClick = (platform) => {
-    // Show a warning that social media accounts need to be configured
-    setShowConfigWarning(true);
-    setTimeout(() => setShowConfigWarning(false), 5000);
+    // Don't show warning immediately - let the user proceed first
+    // The warning will be shown by the actual publishing process if needed
     handleShare(platform);
   };
 
@@ -154,11 +152,6 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
                 </button>
               )}
             </div>
-            {showConfigWarning && (
-              <div className="config-warning">
-                <p>⚠️ No social media account added. Please contact your administrator to add social media accounts for your organization.</p>
-              </div>
-            )}
           </div>
         </div>
       )}
