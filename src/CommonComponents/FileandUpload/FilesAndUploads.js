@@ -11,6 +11,8 @@ import {
   X,
   Trash2,
   Check,
+  Download,
+  Share2,
 } from 'lucide-react';
 import { useUser } from '../../Context/UserContext';
 import './FilesandUploads.css';
@@ -679,7 +681,7 @@ const FilesUploads = ({
         <div className="upload-modal">
           <div className="upload-modal-content" onClick={(e) => e.stopPropagation()}>
             <h3>Upload File: {currentFile?.name}</h3>
-            <p>File size: {(currentFile?.size / 1024 / 1024).toFixed(2)} MB</p>
+            {/* <p>File size: {(currentFile?.size / 1024 / 1024).toFixed(2)} MB</p> */}
 
             <div>
               <label>Description:</label>
@@ -855,46 +857,261 @@ const FilesUploads = ({
     </div>
   );
 
-  // Preview modal component using React Portal
+  // Enhanced Preview modal component using React Portal
   const PreviewModal = () => {
     if (!previewFile) return null;
 
+    // Get file metadata
+    const getFileSize = (file) => {
+      if (file.size) {
+        const bytes = file.size;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+      }
+      return 'Unknown size';
+    };
+
+    const getFileTypeIcon = (type) => {
+      switch (type) {
+        case 'image': return <ImageIcon size={20} />;
+        case 'video': return <Clapperboard size={20} />;
+        case 'audio': return <MusicIcon size={20} />;
+        case 'pdf': return <FileText size={20} />;
+        default: return <FileIcon size={20} />;
+      }
+    };
+
+    const getStatusColor = (status) => {
+      switch (status?.toLowerCase()) {
+        case 'approved': return '#10b981';
+        case 'pending': return '#f59e0b';
+        case 'published': return '#8b5cf6';
+        default: return '#6b7280';
+      }
+    };
+
+    const getStatusIcon = (status) => {
+      switch (status?.toLowerCase()) {
+        case 'approved': return <Check size={16} />;
+        case 'pending': return <Loader2 size={16} className="animate-spin" />;
+        case 'published': return <Share2 size={16} />;
+        default: return <FileIcon size={16} />;
+      }
+    };
+
+    const uploaderInfo = getUploaderInfo(previewFile);
+    const latestPublication = getLatestPublicationInfo(previewFile);
+    const isWorkSubmissionFile = isWorkSubmission(previewFile);
+    const isReferenceFileType = isReferenceFile(previewFile);
+
     const modalContent = (
-      <div className="popup" onClick={() => setPreviewFile(null)}>
-        <X size={30} className="close-icon" onClick={() => setPreviewFile(null)} />
-        <div className="popup-content" onClick={(e) => e.stopPropagation()}>
-
-          {previewFile.type === 'image' && <img src={previewFile.src} alt={previewFile.name} />}
-          {previewFile.type === 'video' && <video src={previewFile.src} controls autoPlay />}
-          {previewFile.type === 'audio' && (
-            <div className="audio-popup">
-              <h3>{previewFile.name}</h3>
-              <audio src={previewFile.src} controls autoPlay />
-            </div>
-          )}
-          {previewFile.type === 'pdf' && (
-            <div className="pdf-popup">
-              <h3>{previewFile.name}</h3>
-              <iframe src={previewFile.src} width="100%" height="500px" title={previewFile.name} />
-            </div>
-          )}
-          {!['image', 'video', 'audio', 'pdf'].includes(previewFile.type) && (
-            <div className="fallback-popup">
-              <h3>{previewFile.name}</h3>
-              <FileIcon size={100} />
-              <p>This file type cannot be previewed</p>
-            </div>
-          )}
-
-          <div className="file-description">
-            <p>{previewFile.name || 'No description provided'}</p>
-            {previewFile.status && (
-              <div className="file-status-popup">
-                <p className={`status-${previewFile.status.toLowerCase()}`}>
-                  {previewFile.status}
-                </p>
+      <div className="enhanced-popup-overlay" onClick={() => setPreviewFile(null)}>
+        <div className="enhanced-popup-container" onClick={(e) => e.stopPropagation()}>
+          {/* Header */}
+          <div className="popup-header">
+            <div className="popup-header-left">
+              <div className="file-type-icon-large">
+                {getFileTypeIcon(previewFile.type)}
               </div>
-            )}
+              <div className="file-title-section">
+                <h2 className="file-title" title={previewFile.name}>
+                  {previewFile.name}
+                </h2>
+                <div className="file-meta-basic">
+                  <span className="file-type-badge">
+                    {previewFile.type?.toUpperCase() || 'FILE'}
+                  </span>
+                  {/* <span className="file-size">{getFileSize(previewFile)}</span> */}
+                </div>
+              </div>
+            </div>
+            <div className="popup-header-right">
+              <button 
+                className="popup-close-btn" 
+                onClick={() => setPreviewFile(null)}
+                title="Close preview"
+              >
+                <X size={24} />
+              </button>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="popup-main-content">
+            {/* Preview Section */}
+            <div className="popup-preview-section">
+              {previewFile.type === 'image' && (
+                <div className="image-preview-container">
+                  <img 
+                    src={previewFile.src} 
+                    alt={previewFile.name} 
+                    className="enhanced-image-preview"
+                    loading="lazy"
+                  />
+                </div>
+              )}
+              {previewFile.type === 'video' && (
+                <div className="video-preview-container">
+                  <video 
+                    src={previewFile.src} 
+                    controls 
+                    autoPlay 
+                    className="enhanced-video-preview"
+                  />
+                </div>
+              )}
+              {previewFile.type === 'audio' && (
+                <div className="audio-preview-container">
+                  <div className="audio-visual">
+                    <MusicIcon size={80} />
+                  </div>
+                  <audio 
+                    src={previewFile.src} 
+                    controls 
+                    autoPlay 
+                    className="enhanced-audio-preview"
+                  />
+                </div>
+              )}
+              {previewFile.type === 'pdf' && (
+                <div className="pdf-preview-container">
+                  <iframe 
+                    src={previewFile.src} 
+                    className="enhanced-pdf-preview"
+                    title={previewFile.name}
+                  />
+                </div>
+              )}
+              {!['image', 'video', 'audio', 'pdf'].includes(previewFile.type) && (
+                <div className="fallback-preview-container">
+                  <div className="fallback-icon">
+                    <FileIcon size={100} />
+                  </div>
+                  <p className="fallback-message">This file type cannot be previewed</p>
+                  <button 
+                    className="download-btn"
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = previewFile.src;
+                      link.download = previewFile.name;
+                      link.click();
+                    }}
+                  >
+                    <Download size={16} />
+                    Download File
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Information Sidebar */}
+            <div className="popup-info-sidebar">
+              {/* File Status */}
+              <div className="info-section">
+                <h3 className="info-section-title">Status</h3>
+                <div className="status-container">
+                  {previewFile.status && (
+                    <div 
+                      className="status-badge-enhanced"
+                      style={{ backgroundColor: getStatusColor(previewFile.status) }}
+                    >
+                      {getStatusIcon(previewFile.status)}
+                      <span>{previewFile.status}</span>
+                    </div>
+                  )}
+                  {latestPublication && (
+                    <div className="publication-info">
+                      <span className="publication-label">Published to:</span>
+                      <span className="publication-platform">{latestPublication.platform}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* File Type & Category */}
+              <div className="info-section">
+                <h3 className="info-section-title">File Information</h3>
+                <div className="file-info-grid">
+                  <div className="info-item">
+                    <span className="info-label">Type:</span>
+                    <span className="info-value">{previewFile.type?.toUpperCase() || 'Unknown'}</span>
+                  </div>
+                  {/* <div className="info-item"> */}
+                    {/* <span className="info-label">Size:</span>
+                    <span className="info-value">{getFileSize(previewFile)}</span> */}
+                  {/* </div> */}
+                  {isWorkSubmissionFile && (
+                    <div className="info-item">
+                      <span className="info-label">Category:</span>
+                      <span className="info-value work-submission">🎨 Work Submission</span>
+                    </div>
+                  )}
+                  {isReferenceFileType && (
+                    <div className="info-item">
+                      <span className="info-label">Category:</span>
+                      <span className="info-value reference">📋 Reference</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Upload Information */}
+              <div className="info-section">
+                <h3 className="info-section-title">Upload Details</h3>
+                <div className="uploader-info-container">
+                  <div className="uploader-avatar-large">
+                    <span className="avatar-text-large">{uploaderInfo.avatar}</span>
+                  </div>
+                  <div className="uploader-details-large">
+                    <div className="uploader-name-large">{uploaderInfo.name}</div>
+                    <div className="uploader-designation-large">{uploaderInfo.designation}</div>
+                    <div className="upload-time-large">
+                      {formatUploadDate(getUploadDate(previewFile))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              {previewFile.description && (
+                <div className="info-section">
+                  <h3 className="info-section-title">Description</h3>
+                  <div className="description-content">
+                    <p>{previewFile.description}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="info-section">
+                <h3 className="info-section-title">Actions</h3>
+                <div className="action-buttons">
+                  <button 
+                    className="action-btn primary"
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = previewFile.src;
+                      link.download = previewFile.name;
+                      link.click();
+                    }}
+                  >
+                    <Download size={16} />
+                    Download
+                  </button>
+                  <button 
+                    className="action-btn secondary"
+                    onClick={() => {
+                      navigator.clipboard.writeText(previewFile.src);
+                      // You could add a toast notification here
+                    }}
+                  >
+                    <Share2 size={16} />
+                    Copy Link
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
