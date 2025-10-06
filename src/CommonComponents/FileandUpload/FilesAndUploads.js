@@ -235,7 +235,12 @@ const FilesUploads = ({
         type,
         src,
         documentId,
-        description: description || currentFile.name
+        description: description || currentFile.name,
+        // Add userInfo for immediate categorization
+        userInfo: {
+          fullName: user ? `${user.firstName} ${user.lastName}` : 'Unknown User',
+          roles: user?.roles || []
+        }
       };
 
       setUploadedFiles(prev => [...prev, newFile]);
@@ -395,6 +400,23 @@ const FilesUploads = ({
       }
     }
     
+    // For newly uploaded files without userInfo, check current user's role
+    if (!file.userInfo && user?.roles) {
+      const isCurrentUserDesigner = user.roles.some(role => 
+        role.name?.toLowerCase().includes('designer') || 
+        role.displayName?.toLowerCase().includes('designer') ||
+        role.name?.toLowerCase().includes('creative') ||
+        role.displayName?.toLowerCase().includes('creative')
+      );
+      
+      console.log('Current user designer check for new file:', { isCurrentUserDesigner, currentUserRoles: user.roles });
+      
+      if (isCurrentUserDesigner) {
+        console.log('✅ File is work submission (current user is designer)');
+        return true;
+      }
+    }
+    
     console.log('❌ File is NOT a work submission');
     return false;
   };
@@ -421,6 +443,25 @@ const FilesUploads = ({
       
       if (isFileUserAdminManager) {
         console.log('✅ File is reference (file user is admin/manager)');
+        return true;
+      }
+    }
+    
+    // For newly uploaded files without userInfo, check current user's role
+    if (!file.userInfo && user?.roles) {
+      const isCurrentUserAdminManager = user.roles.some(role => 
+        role.name?.toLowerCase().includes('admin') || 
+        role.displayName?.toLowerCase().includes('admin') ||
+        role.name?.toLowerCase().includes('manager') ||
+        role.displayName?.toLowerCase().includes('manager') ||
+        role.name?.toLowerCase().includes('lead') ||
+        role.displayName?.toLowerCase().includes('lead')
+      );
+      
+      console.log('Current user admin/manager check for new file:', { isCurrentUserAdminManager, currentUserRoles: user.roles });
+      
+      if (isCurrentUserAdminManager) {
+        console.log('✅ File is reference (current user is admin/manager)');
         return true;
       }
     }
