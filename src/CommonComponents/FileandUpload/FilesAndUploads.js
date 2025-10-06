@@ -559,8 +559,8 @@ const FilesUploads = ({
             </div>
           )}
 
-          {/* Compact status indicator in bottom right */}
-          {!latestPublication && file.status && (
+          {/* Compact status indicator in bottom right - only for work submissions */}
+          {!latestPublication && file.status && isWorkSubmissionFile && (
             <div className="file-status-compact">
               {file.status === 'Approved' && 'Ready to publish'}
               {file.status === 'Pending' && 'Awaiting approval'}
