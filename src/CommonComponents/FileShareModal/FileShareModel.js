@@ -98,7 +98,7 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
         <SocialMediaUploader
           open={showSocialUploader}
           onClose={() => setShowSocialUploader(false)}
-          defaultCaption={description}
+          defaultCaption={fileDetail?.document?.description || fileDetail?.description || description}
           fileDetail={fileDetail}
           platform={platform}
           onSuccess={handlePlatformSuccess}

@@ -144,6 +144,7 @@ const CommentsPreview = ({ onFilesChange = () => {}, taskId, eventId, isActive, 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const isFetchingRef = useRef(false);
   const onFilesChangeRef = useRef(onFilesChange);
+  const hasFetchedRef = useRef(false);
   
   // Update ref when onFilesChange changes
   useEffect(() => {
@@ -217,10 +218,11 @@ const CommentsPreview = ({ onFilesChange = () => {}, taskId, eventId, isActive, 
       setLoadingFiles(false);
       isFetchingRef.current = false;
     }
-  }, [taskId]);
+  }, [taskId]); // Keep taskId dependency but add ref to prevent unnecessary calls
 
   useEffect(() => {
-    if (taskId) {
+    if (taskId && !hasFetchedRef.current) {
+      hasFetchedRef.current = true;
       fetchAllDocuments();
     }
   }, [taskId, fetchAllDocuments]);

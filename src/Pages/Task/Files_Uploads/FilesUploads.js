@@ -3,9 +3,11 @@ import Accordion from '../../../CommonComponents/Accordian/Accordian';
 import FilesandUploads from '../../../CommonComponents/FileandUpload/FilesAndUploads';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+import { useUser } from '../../../Context/UserContext';
 import "../Tasks.css";
 
 const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
+  const { user } = useUser();
   const [fetchedEventFiles, setFetchedEventFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const isFetchingRef = useRef(false);
@@ -53,7 +55,11 @@ const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
             type,
             documentId: doc.documentId,
             description: doc.description,
-            src
+            src,
+            status: doc.status || 'Pending',
+            publishedTo: doc.publishedTo || [],
+            uploadDate: doc.uploadDate,
+            userInfo: doc.userInfo
           };
         })
       );
@@ -112,12 +118,12 @@ const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
         content={
           loading
             ? <SkeletonCards />
-            : <FilesandUploads files={fetchedEventFiles}  enableSelectionCheckbox={false}  eventId={eventId} organizationId={organizationId} />
+            : <FilesandUploads files={fetchedEventFiles}  enableSelectionCheckbox={false}  eventId={eventId} organizationId={organizationId} userId={user?.userId} />
         } 
       />
       <Accordion 
         title="Tasks File" 
-        content={<FilesandUploads files={filesFromTasks}  enableSelectionCheckbox={false}  eventId={eventId} organizationId={organizationId} />} 
+        content={<FilesandUploads files={filesFromTasks}  enableSelectionCheckbox={false}  eventId={eventId} organizationId={organizationId} userId={user?.userId} />} 
       />
     </div>
   );
