@@ -5,7 +5,7 @@ import Dropdown from "../../../CommonComponents/Dropdown/Dropdown";
 import { Wand } from "lucide-react";
 import "./TaskDetail.css";
 
-const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDate: eventDateProp, errors = {}, onClearError }) => {
+const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDate: eventDateProp, errors = {}, onClearError, onChecklistUpdate = null, taskId = null }) => {
   const prevModeRef = React.useRef(mode);
   
   // Merge taskData and formData for display using useMemo to prevent infinite re-renders
@@ -32,6 +32,7 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
     Array.isArray(mergedData.checklist) ? mergedData.checklist : []
   );
   const [content, setContent] = useState(mergedData.description || "");
+  const [isUpdatingChecklist, setIsUpdatingChecklist] = useState(false);
 
   // Hardcoded task types list
   const taskTypes = React.useMemo(() => [
@@ -188,6 +189,24 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
     onUpdate("checklist", newChecklist);
   }, [onUpdate]);
 
+  // Handle checklist update API call
+  const handleChecklistUpdate = React.useCallback(async () => {
+    if (!onChecklistUpdate || !taskId || isUpdatingChecklist) {
+      return;
+    }
+
+    setIsUpdatingChecklist(true);
+    try {
+      await onChecklistUpdate(taskId, checklistData);
+      // You can add a success message here if needed
+    } catch (error) {
+      console.error("Failed to update checklist:", error);
+      // You can add error handling here if needed
+    } finally {
+      setIsUpdatingChecklist(false);
+    }
+  }, [onChecklistUpdate, taskId, checklistData, isUpdatingChecklist]);
+
   const handleContentChange = React.useCallback((newContent) => {
     setContent(newContent);
     onUpdate("description", newContent);
@@ -333,6 +352,10 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
             onChecklistChange={handleChecklistChange}
             mode={mode}
             canEdit={true}
+            onChecklistUpdate={onChecklistUpdate}
+            taskId={taskId}
+            isUpdatingChecklist={isUpdatingChecklist}
+            onUpdateChecklist={handleChecklistUpdate}
           />
           {eventDateProp && (
             <div className="event-date-hint">Event date: {new Date(eventDateProp).toLocaleString()}</div>

@@ -540,7 +540,7 @@ const TaskDetailPage = () => {
         return {
           ...prev,
           checklist: value.map(item => ({
-            text: item?.text?.toString().trim() || "",
+            text: item?.text?.toString() || "",
             checked: Boolean(item?.checked),
             isPlaceholder: Boolean(item?.isPlaceholder)
           })).filter(item => item.text)
@@ -555,7 +555,7 @@ const TaskDetailPage = () => {
         const newData = {
           ...prev,
           checklist: value.map(item => ({
-            text: item?.text?.toString().trim() || "",
+            text: item?.text?.toString() || "",
             checked: Boolean(item?.checked),
             isPlaceholder: Boolean(item?.isPlaceholder)
           })).filter(item => item.text)
@@ -891,6 +891,75 @@ const TaskDetailPage = () => {
     }
   };
 
+  // API function for updating only the checklist
+  const updateChecklistOnly = React.useCallback(async (taskId, checklistData) => {
+    try {
+      const userId = user.userId;
+      
+      if (!userId) {
+        throw new Error("User information not available. Please log in again.");
+      }
+
+      const formattedChecklist = Array.isArray(checklistData)
+        ? checklistData.map(item => ({
+            text: item.text,
+            checked: item.checked,
+            isPlaceholder: item.isPlaceholder
+          }))
+        : [];
+
+      const payload = {
+        EventId: taskData.eventId,
+        TaskTitle: taskData.taskTitle,
+        taskStatusId: taskData.taskStatusId,
+        AssignedTo: (taskData.assignedTo || []).map((item) =>
+          typeof item === "object" ? item?.id : item
+        ),
+        CreatedBy: taskData.createdBy,
+        UpdatedBy: userId,
+        CreativeType: taskData.type,
+        DueDate: taskData.date,
+        CreativeNumbers: taskData.quantity,
+        checklistDetails: formattedChecklist,
+        Description: taskData.description,
+        OrganizationId: taskData.organizationId
+      };
+
+      const response = await fetchWithRefresh(`/apis/task/update/${taskId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Checklist update failed");
+      }
+
+      const result = await response.json();
+      
+      // Show success message
+      addMessage({
+        text: "Checklist updated successfully",
+        type: "success",
+        duration: 3000
+      });
+
+      return result;
+    } catch (error) {
+      // Show error message
+      addMessage({
+        text: `Failed to update checklist: ${error.message}`,
+        type: "error",
+        duration: 3000
+      });
+      throw error;
+    }
+  }, [user.userId, taskData, addMessage]);
+
   // Handle status change from buttons
   const handleStatusChange = async (newStatus) => {
     // Prevent multiple clicks while updating
@@ -1058,6 +1127,8 @@ const TaskDetailPage = () => {
             eventDate={eventDate}
             errors={validationErrors}
             onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
+            onChecklistUpdate={updateChecklistOnly}
+            taskId={taskId}
           />
         ),
       },
@@ -1104,7 +1175,7 @@ const TaskDetailPage = () => {
       return allTabs.filter(tab => tab.label === "Details");
     }
     return allTabs;
-  }, [mode, taskData, formData, handleFormFieldUpdate, eventDate, validationErrors, taskId, apiEventId, fileData.uploadedFiles, handleFilesChange, organizationId, memoizedSelectedFiles, handleFileSelect, activeTab, taskStatus]);
+  }, [mode, taskData, formData, handleFormFieldUpdate, eventDate, validationErrors, taskId, apiEventId, fileData.uploadedFiles, handleFilesChange, organizationId, memoizedSelectedFiles, handleFileSelect, activeTab, taskStatus, updateChecklistOnly]);
 
   const breadcrumbItems = React.useMemo(() => {
     // Ensure we have valid data before creating breadcrumb items
