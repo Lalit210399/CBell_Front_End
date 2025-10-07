@@ -20,6 +20,7 @@ const Table = ({
 }) => {
   const [menuOpenIndex, setMenuOpenIndex] = useState(null);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [dropdownPositions, setDropdownPositions] = useState({});
 
   const toggleMenu = (index, event) => {
     if (menuOpenIndex === index) {
@@ -71,7 +72,7 @@ const Table = ({
       position.bottom = '100%';
     }
     
-    setDropdownPosition({ [index]: position });
+    setDropdownPositions(prev => ({ ...prev, [index]: position }));
     setMenuOpenIndex(index);
   };
 
@@ -172,7 +173,7 @@ useEffect(() => {
                         ⋮
                       </button>
                       {menuOpenIndex === index && (
-                        <div className="dropdown_menu" ref={menuRef}>
+                        <div className="dropdown_menu" ref={menuRef} style={dropdownPositions[index]}>
                           {onDuplicate && (
                             <button
                               className="dropdown_item"

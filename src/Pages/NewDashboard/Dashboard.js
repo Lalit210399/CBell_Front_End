@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../Context/UserContext";
 import useApi from "../../Hooks/useApi";
+import { fetchSummaryData, fetchActiveEventsCount, fetchEventsCampaign, fetchTasksData, fetchActiveEventsData, fetchAssignedEvents } from "../../Services/Dashboard";
 import Tile from "../../CommonComponents/Tiles/Tiles";
 import EventCampaign from "../../CommonComponents/TimelineCard/TimelineCard";
 import RecentTasks from "../../CommonComponents/RecentTaskBox/RecentTask";
@@ -110,249 +110,66 @@ const Dashboard = () => {
 
   /** -------------------- API Functions -------------------- **/
   // Dashboard Summary API
-  const fetchSummaryData = useCallback(async () => {
+  const fetchSummaryDataCallback = useCallback(async () => {
     if (!orgIdReady) return null;
-    
-    const organizationId = selectedOrganizationId || user?.organizationId;
-    const includeChildren = isViewingOwnOrganization() ? "&includeChildren=true" : "&includeChildren=false";
-    
-    const response = await fetchWithRefresh(
-      `apis/dashboard/summary?orgid=${organizationId}&userid=${user?.userId}${includeChildren}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "1",
-        },
-      }
-    );
 
-    if (!response.ok) {
-      throw new Error("Dashboard summary API failed");
-    }
-    
-    return await response.json();
+    const organizationId = selectedOrganizationId || user?.organizationId;
+    const includeChildren = isViewingOwnOrganization();
+
+    return await fetchSummaryData(organizationId, user?.userId, includeChildren);
   }, [orgIdReady, selectedOrganizationId, user?.organizationId, user?.userId, isViewingOwnOrganization]);
 
   // Active Events Count API
-  const fetchActiveEventsCount = useCallback(async () => {
+  const fetchActiveEventsCountCallback = useCallback(async () => {
     if (!orgIdReady) return null;
-    
-    const organizationId = selectedOrganizationId || user?.organizationId || "685eb18207416b9271b800b3";
-    
-    const response = await fetchWithRefresh(
-      `apis/dashboard/active-events-count?organizationId=${organizationId}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "1",
-        },
-      }
-    );
 
-    if (!response.ok) {
-      throw new Error("Active events count API failed");
-    }
-    
-    const data = await response.json();
-    return data.count;
+    const organizationId = selectedOrganizationId || user?.organizationId || "685eb18207416b9271b800b3";
+
+    return await fetchActiveEventsCount(organizationId);
   }, [orgIdReady, selectedOrganizationId, user?.organizationId]);
 
   // Events Campaign API
-  const fetchEventsCampaign = useCallback(async () => {
+  const fetchEventsCampaignCallback = useCallback(async () => {
     if (!orgIdReady) return [];
-
     const organizationId = selectedOrganizationId || user?.organizationId;
-    const monthParam = `${selectedYear}-${String(selectedMonth).padStart(2, "0")}`;
-    
-        const response = await fetchWithRefresh(
-          `apis/dashboard/events?orgid=${organizationId}&filter=month&month=${monthParam}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              "ngrok-skip-browser-warning": "1",
-            },
-          }
-        );
-
-    if (!response.ok) {
-      throw new Error("Events campaign API failed");
-    }
-    
-          const data = await response.json();
-
-    // Transform API data into EventCampaign structure
-    return data.events.map((ev) => ({
-            date: new Date(ev.eventDate).toLocaleDateString("en-GB", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            }),
-            items: [{
-              name: ev.eventName,
-              id: ev.id,
-              // Use event's organization ID if available, otherwise use the current scope organization ID
-              organizationId: ev.organizationId || ev.orgId || organizationId,
-              eventData: {
-                ...ev,
-                organizationId: ev.organizationId || ev.orgId || organizationId
-              }
-            }],
-          }));
+    return await fetchEventsCampaign(organizationId, selectedMonth, selectedYear);
   }, [orgIdReady, selectedOrganizationId, user?.organizationId, selectedMonth, selectedYear]);
 
   // Tasks API
-  const fetchTasksData = useCallback(async (filterType = "all") => {
+  const fetchTasksDataCallback = useCallback(async (filterType = "all") => {
     if (!orgIdReady) return [];
-    
     const organizationId = selectedOrganizationId || user?.organizationId || "681460dcb8327b2e3417d8b1";
 
-      // Map tile titles to API filter values
-      const filterMap = {
-        "Total Tasks": "all",
-        "Tasks Due Next 7 Days": "due_soon",
-        "Overdue Tasks": "overdue",
-        "New Tasks": "new",
-        "Active Tasks": "active",
+    // Map tile titles to API filter values
+    const filterMap = {
+      "Total Tasks": "all",
+      "Tasks Due Next 7 Days": "due_soon",
+      "Overdue Tasks": "overdue",
+      "New Tasks": "new",
+      "Active Tasks": "active",
       "Under Review Tasks": "under_review",
-        "Approved Tasks": "approved",
-        "Published Tasks": "published",
-      };
+      "Approved Tasks": "approved",
+      "Published Tasks": "published",
+    };
 
     const apiFilter = filterMap[filterType] || "all";
-
-      const response = await fetchWithRefresh(
-        `apis/dashboard/tasks?orgid=${organizationId}&filter=${apiFilter}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "1",
-          },
-        }
-      );
-
-    if (!response.ok) {
-      throw new Error("Tasks API failed");
-    }
-    
-        const data = await response.json();
-
-        // Transform API data to match the expected format for RecentTasks component
-    return data.tasks.map((task) => ({
-      id: task.id || task.taskId,
-          status: task.taskStatusName,
-          taskName: task.taskTitle,
-          eventName: task.eventName,
-      eventId: task.eventId,
-          assignedTo: task.assignedToNames?.map((name, index) => ({
-            name: name,
-        src: "",
-        id: task.assignedTo?.[index] || `user-${index}`
-      })) || [],
-          dueDate: new Date(task.dueDate).toLocaleDateString("en-GB"),
-          description: task.description,
-          creativeType: task.creativeType,
-          daysUntilDue: task.daysUntilDue,
-          createdBy: task.createdByName || "Unknown",
-          updatedBy: task.updatedByName || "Unknown",
-        }));
+    return await fetchTasksData(organizationId, apiFilter);
   }, [orgIdReady, selectedOrganizationId, user?.organizationId]);
 
   // Active Events API
-  const fetchActiveEventsData = useCallback(async () => {
+  const fetchActiveEventsDataCallback = useCallback(async () => {
     if (!orgIdReady) return [];
-    
     const organizationId = selectedOrganizationId || user?.organizationId;
-
-      const response = await fetchWithRefresh(
-        `apis/dashboard/events?orgid=${organizationId}&filter=active`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "1",
-          },
-        }
-      );
-
-    if (!response.ok) {
-      throw new Error("Active Events API failed");
-    }
-    
-        const data = await response.json();
-
-        // Transform API data to match the expected format for ActiveEvents component
-    return data.events.map((event) => ({
-      status: "Active",
-          eventName: event.eventName,
-      // Use event's organization ID if available, otherwise use the current scope organization ID
-      organizationId: event.organizationId || event.orgId || organizationId,
-      assignTo: event.assignedUsers?.map((user, index) => ({
-        name: user.userName || user.name || user.fullName || `User ${index + 1}`,
-        src: user.src || "",
-        id: user.userId || user.id || `user-${index}`
-      })) || [],
-      displayDate: new Date(event.eventDate).toLocaleDateString("en-GB"),
-      eventDate: new Date(event.eventDate).toLocaleDateString("en-GB"),
-          createdBy: { 
-            name: event.createdByUser?.fullName || "Unknown", 
-        src: ""
-          },
-          description: event.eventDescription,
-          location: event.locationDetails,
-      eventType: event.eventTypeDesc || "Event",
-      id: event.id,
-    }));
+    return await fetchActiveEventsData(organizationId);
   }, [orgIdReady, selectedOrganizationId, user?.organizationId]);
 
   // Assigned Events API
-  const fetchAssignedEvents = useCallback(async () => {
+  const fetchAssignedEventsCallback = useCallback(async () => {
     if (!orgIdReady) return [];
-    
     const organizationId = selectedOrganizationId || user?.organizationId;
     const userId = user?.userId;
-    
-    const includeChildren = isViewingOwnOrganization() ? "&includeChildren=true" : "&includeChildren=false";
-    
-    const response = await fetchWithRefresh(
-      `apis/dashboard/assigned-events?orgid=${organizationId}&userid=${userId}${includeChildren}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "1",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Assigned events API failed");
-    }
-    
-    const data = await response.json();
-    
-    // Transform API data to match EventAssignToMe component format
-    return data.events.map((event) => ({
-      id: event.id || event.eventId,
-      status: event.status || "Active",
-      eventName: event.eventName,
-      collegeName: event.organizationName || event.collegeName || event.college || "",
-      // Use event's organization ID if available, otherwise use the current scope organization ID
-      organizationId: event.organizationId || event.orgId || organizationId,
-      assignTo: event.assignedUsers?.map((user, index) => ({
-        name: user.userName || user.name || user.fullName || `User ${index + 1}`,
-        src: user.src || "",
-        id: user.userId || user.id || `user-${index}`
-      })) || [],
-      eventDate: new Date(event.eventDate).toLocaleDateString("en-GB"),
-      createdBy: {
-        name: event.createdByUser?.fullName || event.createdByUser?.name || "Unknown",
-        src: event.createdByUser?.src || "",
-      },
-    }));
+    const includeChildren = isViewingOwnOrganization();
+    return await fetchAssignedEvents(organizationId, userId, includeChildren);
   }, [orgIdReady, selectedOrganizationId, user?.organizationId, user?.userId, isViewingOwnOrganization]);
 
   /** -------------------- Use API Hooks -------------------- **/
@@ -362,12 +179,12 @@ const Dashboard = () => {
     loading: loadingSummary,
     error: errorSummary,
     execute: executeSummary
-  } = useApi(fetchSummaryData, [orgIdReady], false);
+  } = useApi(fetchSummaryDataCallback, [orgIdReady], false);
 
   // Active Events Count
   const {
     execute: executeCount
-  } = useApi(fetchActiveEventsCount, [orgIdReady], false);
+  } = useApi(fetchActiveEventsCountCallback, [orgIdReady], false);
 
   // Events Campaign
   const {
@@ -375,12 +192,12 @@ const Dashboard = () => {
     loading: loadingEventsCampaign,
     error: errorEventsCampaign,
     execute: executeEventsCampaign
-  } = useApi(fetchEventsCampaign, [orgIdReady, selectedMonth, selectedYear], false);
+  } = useApi(fetchEventsCampaignCallback, [orgIdReady, selectedMonth, selectedYear], false);
 
   // Tasks - Create a memoized function for tasks
   const fetchTasksForCurrentTitle = useCallback(() => {
-    return fetchTasksData(currentTitle);
-  }, [fetchTasksData, currentTitle]);
+    return fetchTasksDataCallback(currentTitle);
+  }, [fetchTasksDataCallback, currentTitle]);
 
   const {
     data: tasksData,
@@ -395,7 +212,7 @@ const Dashboard = () => {
     loading: loadingActiveEvents,
     error: errorActiveEvents,
     execute: executeActiveEvents
-  } = useApi(fetchActiveEventsData, [orgIdReady], false);
+  } = useApi(fetchActiveEventsDataCallback, [orgIdReady], false);
 
   // Assigned Events
   const {
@@ -403,7 +220,7 @@ const Dashboard = () => {
     loading: loadingAssignToMe,
     error: errorAssignToMe,
     execute: executeAssignedEvents
-  } = useApi(fetchAssignedEvents, [orgIdReady], false);
+  } = useApi(fetchAssignedEventsCallback, [orgIdReady], false);
 
   // Execute APIs when orgIdReady changes or scope changes
   useEffect(() => {
