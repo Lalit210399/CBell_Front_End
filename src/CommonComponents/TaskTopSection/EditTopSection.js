@@ -335,8 +335,8 @@ const TopSection = ({
 
         <div className="edit-top-right-section">
           <div className="edit-top-save-button-section" style={{ display: "flex", gap: "8px" }}>
-            {/* Hide all buttons (Save, Under Review, Approved) when status is Approved */}
-            {status?.value !== "Approved" && (
+            {/* Hide all buttons (Save, Under Review, Approved) when status is Approved or Published */}
+            {status?.value !== "Approved" && status?.value !== "Published" && (
               <>
                 {(mode === "edit" || mode === "create") && (
                   <button className="edit-top-btn-save" onClick={onSaveClick}>
@@ -348,7 +348,7 @@ const TopSection = ({
                 {/* Status change buttons - only show in view mode */}
                 {mode === "view" && (
                   <div className="edit-top-status-change-buttons">
-                    {/* Submit for Approval button - show only for Designers and for all statuses except Under Approval */}
+                    {/* Submit for Approval button - show only for Designers and for all statuses except Under Approval, Approved, and Published */}
                     {isDesigner && status?.value !== "Under Approval" && (
                       <button
                         className="edit-top-status-btn edit-top-under-approval-btn"
