@@ -377,13 +377,6 @@ const FilesUploads = ({
 
   // Helper function to determine if file is a work submission (by designer)
   const isWorkSubmission = (file) => {
-    // Debug: Log the file being checked
-    console.log('🔍 Checking file for work submission:', {
-      fileName: file.name,
-      fileUserInfo: file.userInfo,
-      currentUser: user,
-      currentUserRoles: user?.roles
-    });
     
     // Check file's userInfo to determine if the uploader is a designer
     if (file.userInfo && file.userInfo.roles) {
@@ -394,10 +387,7 @@ const FilesUploads = ({
         role.displayName?.toLowerCase().includes('creative')
       );
       
-      console.log('File user designer check:', { isFileUserDesigner, fileUserRoles: file.userInfo.roles });
-      
       if (isFileUserDesigner) {
-        console.log('✅ File is work submission (file user is designer)');
         return true;
       }
     }
@@ -411,24 +401,16 @@ const FilesUploads = ({
         role.displayName?.toLowerCase().includes('creative')
       );
       
-      console.log('Current user designer check for new file:', { isCurrentUserDesigner, currentUserRoles: user.roles });
-      
       if (isCurrentUserDesigner) {
-        console.log('✅ File is work submission (current user is designer)');
         return true;
       }
     }
     
-    console.log('❌ File is NOT a work submission');
     return false;
   };
 
   // Helper function to determine if file is a reference file (by admin/manager)
   const isReferenceFile = (file) => {
-    console.log('🔍 Checking file for reference:', {
-      fileName: file.name,
-      fileUserInfo: file.userInfo
-    });
     
     // Check file's userInfo to determine if the uploader is admin/manager
     if (file.userInfo && file.userInfo.roles) {
@@ -441,10 +423,7 @@ const FilesUploads = ({
         role.displayName?.toLowerCase().includes('lead')
       );
       
-      console.log('File user admin/manager check:', { isFileUserAdminManager, fileUserRoles: file.userInfo.roles });
-      
       if (isFileUserAdminManager) {
-        console.log('✅ File is reference (file user is admin/manager)');
         return true;
       }
     }
@@ -460,15 +439,11 @@ const FilesUploads = ({
         role.displayName?.toLowerCase().includes('lead')
       );
       
-      console.log('Current user admin/manager check for new file:', { isCurrentUserAdminManager, currentUserRoles: user.roles });
-      
       if (isCurrentUserAdminManager) {
-        console.log('✅ File is reference (current user is admin/manager)');
         return true;
       }
     }
     
-    console.log('❌ File is NOT a reference');
     return false;
   };
 
@@ -561,8 +536,8 @@ const FilesUploads = ({
             </div>
           )}
 
-          {/* Compact status indicator in bottom right - only for work submissions */}
-          {!latestPublication && file.status && isWorkSubmissionFile && (
+          {/* Compact status indicator in bottom right - only for work submissions that are not published */}
+          {!latestPublication && file.status && isWorkSubmissionFile && !isPublished && (
             <div className="file-status-compact">
               {file.status === 'Approved' && 'Ready to publish'}
               {file.status === 'Pending' && 'Awaiting approval'}

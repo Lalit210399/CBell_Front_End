@@ -7,6 +7,7 @@ import "./Auth.css";
 import Button from "../Button/Button";
 import { signin, getPermissions, getAccessibleOrganizations } from "../../Services/AuthN";
 import { useUser } from "../../Context/UserContext";
+import { resetRefreshTokenState } from "../../Context/RefereshToken";
 import ERROR_MESSAGES from "../../Resources/ResourceFiles/ResourceFiles";
 
 const Login = () => {
@@ -82,6 +83,14 @@ const Login = () => {
       const response = await signin(formData);
 
       if (response.message === "Login successful") {
+        // ✅ Reset refresh token state for new session
+        resetRefreshTokenState();
+        
+        // ✅ Store access token if present
+        if (response.accessToken) {
+          localStorage.setItem("accessToken", response.accessToken);
+        }
+        
         // ✅ Store full login response
         localStorage.setItem("user", JSON.stringify(response));
         setUser(response);

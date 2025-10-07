@@ -388,15 +388,6 @@ const EventDetail = () => {
       canPublish: canPublish,
     };
     
-    // Debug logging
-    console.log("EventDetailPage permissions:", {
-      isOwnOrg,
-      isAssignedToEvent,
-      canPerformActions,
-      canPublish: permissionsResult.canPublish,
-      user: user?.userId,
-      assignedUsers: fetchedEvent?.assignedUsers
-    });
     
     return permissionsResult;
   }, [mode, userPermissions?.permissions?.Events, userPermissions?.permissions?.Tasks, fetchedEvent?.canCRUD, isViewingOwnOrganization, fetchedEvent?.assignedUsers, fetchedEvent?.createdBy, fetchedEvent?.createdById, user?.userId, user?.id, user?.roles]);

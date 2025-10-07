@@ -141,29 +141,18 @@ const TaskDetailPage = () => {
 
   // Enhanced permissions based on task data and user role
   const canEdit = React.useMemo(() => {
-    // Debug logging to help troubleshoot
-    console.log("Permission Check:", {
-      canCRUD: taskData.canCRUD,
-      accessLevel: taskData.accessLevel,
-      isDesigner,
-      taskStatus: taskStatus?.value,
-      taskId: taskData.id
-    });
     
     // If task has canCRUD: false or accessLevel: "READ_ONLY", user cannot edit
     if (taskData.canCRUD === false || taskData.accessLevel === "READ_ONLY") {
-      console.log("Edit blocked: canCRUD or accessLevel restriction");
       return false;
     }
     
     // If task status is Approved, it cannot be edited
     if (taskStatus?.value === "Approved") {
-      console.log("Edit blocked: Task is Approved");
       return false;
     }
     
     // Otherwise, allow editing (Designers can now edit tasks)
-    console.log("Edit allowed: All conditions passed");
     return true;
   }, [taskData.canCRUD, taskData.accessLevel, taskStatus?.value, isDesigner, taskData.id]);
 

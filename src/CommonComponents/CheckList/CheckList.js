@@ -67,11 +67,6 @@ const Checklist = ({
     const originalString = originalChecklist.current;
 
     const hasChangesNow = currentString !== originalString;
-    console.log('Checklist change detection:', {
-      hasChangesNow,
-      currentString: currentString.substring(0, 100) + '...',
-      originalString: originalString.substring(0, 100) + '...'
-    });
     setHasChanges(hasChangesNow);
     
     if (onChecklistChanges) {
