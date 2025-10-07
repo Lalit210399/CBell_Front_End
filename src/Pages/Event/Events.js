@@ -607,8 +607,8 @@ const EventTable = () => {
           onAddEventClick={permissions.canCreate ? handleNewEvent : undefined}
           sortableColumns={["name", "type", "date", "createdBy"]}
           onDelete={permissions.canDelete ? ({ id }) => handleDelete(id) : undefined}
-          onArchive={permissions.canArchive ? () => alert("Archive pressed") : undefined}
-          onDuplicate={permissions.canDuplicate ? () => alert("Duplicate pressed") : undefined}
+          // onArchive={permissions.canArchive ? () => alert("Archive pressed") : undefined}
+          // onDuplicate={permissions.canDuplicate ? () => alert("Duplicate pressed") : undefined}
           onRowClick={(event) => {
             if (!loading && !error && permissions.canRead) {
 
