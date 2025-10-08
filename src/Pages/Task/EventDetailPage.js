@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useNavigate, useLocation } from "react-router-dom";
 import TabMenu from "../../CommonComponents/TabMenu/TabMenu";
 import Detail from "./EventDetail/EventDetail";
@@ -15,6 +14,7 @@ import { useEventTypes } from "../../Hooks/useEventTypes";
 import { useDepartments } from "../../Hooks/useDepartments";
 import { DepartmentProvider } from "../../Context/DepartmentContext";
 import { getHierarchyUsers } from "../../Services/AuthN";
+import { fetchTasksByEvent, fetchEventDetails, createEvent, updateEvent } from "../../Services/Event";
 import { Building, Calendar, FileText } from "lucide-react";
 import "./Tasks.css";
 
@@ -70,57 +70,28 @@ const EventDetail = () => {
 
   /** -------------------- API Functions -------------------- **/
   const fetchTasks = useCallback(async () => {
-        // Use event's organization ID if available, otherwise fall back to current scope organization
-        const eventOrgId = fetchedEvent?.organizationId || location.state?.eventData?.organizationId;
-        const organizationId = eventOrgId || selectedOrganizationId || user?.organizationId;
-        const taskEventId = currentEventId || eventId;
-        
-        if (!taskEventId) {
-          return [];
-        }
-        
-        const response = await fetchWithRefresh(`/apis/task/by-event/${taskEventId}?organizationId=${organizationId}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            "ngrok-skip-browser-warning": "1",
-          },
-        });
+    // Use event's organization ID if available, otherwise fall back to current scope organization
+    const eventOrgId = fetchedEvent?.organizationId || location.state?.eventData?.organizationId;
+    const organizationId = eventOrgId || selectedOrganizationId || user?.organizationId;
+    const taskEventId = currentEventId || eventId;
 
-        if (response.status === 404) {
-      return []; // Gracefully handle missing endpoint/data without throwing
-        }
-
-        if (response.status === 500) {
-          addMessageRef.current({
-            text: "Unable to load tasks due to server error. Please try again later.",
-            type: "error",
-            duration: 5000,
-          });
+    if (!taskEventId) {
       return [];
-        }
+    }
 
-        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-        const data = await response.json();
-
-        const safeArray = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
-        
-        
-        const formattedTasks = safeArray.map((task) => ({
-          id: task.id,
-          creative_name: task.taskTitle,
-          creative_type: task.creativeType,
-          // Pass the complete assignedTo array with user objects for avatar display
-          assigned_to: Array.isArray(task.assignedTo) ? task.assignedTo : [],
-          due_date: task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "",
-          status: task.taskStatusName,
-          // Pass the complete task data for any additional fields needed
-          ...task
-        }));
-        
-
-    return formattedTasks;
+    try {
+      const data = await fetchTasksByEvent(taskEventId, organizationId);
+      return data;
+    } catch (error) {
+      if (error.message.includes("Unable to load tasks due to server error")) {
+        addMessageRef.current({
+          text: "Unable to load tasks due to server error. Please try again later.",
+          type: "error",
+          duration: 5000,
+        });
+      }
+      throw error;
+    }
   }, [currentEventId, eventId, selectedOrganizationId, user?.organizationId, fetchedEvent?.organizationId, location.state?.eventData?.organizationId]);
 
   const fetchEvent = useCallback(async () => {
@@ -128,59 +99,17 @@ const EventDetail = () => {
     if (!eventIdToUse) {
       return null;
     }
-    
-        // Use event's organization ID if available, otherwise fall back to current scope organization
-        const eventOrgId = location.state?.eventData?.organizationId;
-        const organizationId = eventOrgId || selectedOrganizationId || user?.organizationId;
-        
-        if (!organizationId) {
-          throw new Error("No organization selected");
-        }
 
-        // Determine if we need to include X-Context-Organization header
-    const isViewingOwnOrg = organizationId === user?.organizationId;
-        
-        // Prepare headers
-        const headers = {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "ngrok-skip-browser-warning": "1",
-        };
+    // Use event's organization ID if available, otherwise fall back to current scope organization
+    const eventOrgId = location.state?.eventData?.organizationId;
+    const organizationId = eventOrgId || selectedOrganizationId || user?.organizationId;
 
-        // Only add X-Context-Organization header when viewing a different organization
-    if (!isViewingOwnOrg) {
-          headers["X-Context-Organization"] = organizationId;
-        }
+    if (!organizationId) {
+      throw new Error("No organization selected");
+    }
 
-        // Use the new event details API endpoint
-        const response = await fetchWithRefresh(
-          `/apis/event/get_event/${eventIdToUse}?organizationId=${organizationId}&userId=${user?.userId}`,
-          {
-            method: "GET",
-            headers,
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        const responseData = await response.json();
-        const eventData = responseData.data || responseData;
-
-        const transformedData = {
-          ...eventData,
-          coordinators: Array.isArray(eventData.coordinators)
-            ? eventData.coordinators.map(coord => typeof coord === 'string' ? { name: coord, title: "Coordinator" } : coord)
-            : [],
-          specialGuests: Array.isArray(eventData.specialGuests)
-            ? eventData.specialGuests.map(guest => typeof guest === 'string' ? { name: guest, title: "Guest" } : guest)
-            : [],
-          assignedUsers: Array.isArray(eventData.assignedUsers) ? eventData.assignedUsers : [],
-        departmentIds: Array.isArray(eventData.departmentIds) ? eventData.departmentIds : []
-        };
-
-    return transformedData;
+    const data = await fetchEventDetails(eventIdToUse, organizationId, user?.userId);
+    return data;
   }, [currentEventId, eventId, selectedOrganizationId, user?.organizationId, user?.userId, location.state?.eventData?.organizationId]);
 
   /** -------------------- State Management -------------------- **/
@@ -516,24 +445,9 @@ const EventDetail = () => {
      };
 
     try {
-      const url = mode === "create"
-        ? "/apis/event/create_event"
-        : `/apis/event/update/${eventId}?userId=${user?.userId}`;
-      const method = mode === "create" ? "POST" : "PUT";
-
-      const response = await fetchWithRefresh(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "ngrok-skip-browser-warning": "1",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-      const result = await response.json();
+      const result = mode === "create"
+        ? await createEvent(payload)
+        : await updateEvent(eventId, user?.userId, payload);
 
       // For new events, get the ID from the response and update the state
       // Handle both possible response formats: result.id or result.eventId

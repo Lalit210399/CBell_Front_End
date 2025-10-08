@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useLocation, useNavigate } from "react-router-dom";
 import TabMenu from "../../CommonComponents/TabMenu/TabMenu";
 import CommentsPreview from "./Comments_Preview/CommentsPreview";
@@ -12,6 +11,7 @@ import { useUser } from "../../Context/UserContext";
 import { useMessages } from "../../Context/MessageContext";
 import { useTaskStatus } from "../../Hooks/useTaskStatus";
 import { getHierarchyUsers } from "../../Services/AuthN";
+import { fetchTaskDetails, createTask, updateTask, updateTaskStatus, checkTaskDocuments, approveDocument } from "../../Services/Task";
 import { Building, Calendar, Pencil, FileText } from "lucide-react";
 import "./Tasks.css";
 
@@ -226,59 +226,15 @@ const TaskDetailPage = () => {
     if (!taskId || mode === "create") {
       return null;
     }
-    
+
     try {
       const orgId = user?.organizationId || organizationId;
-      
+
       if (!orgId) {
         throw new Error("No organization selected");
       }
 
-      // Prepare headers similar to EventDetailPage
-      const headers = {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "ngrok-skip-browser-warning": "1",
-      };
-
-      // Add organization context if needed
-      if (orgId !== user?.organizationId) {
-        headers["X-Context-Organization"] = orgId;
-      }
-
-      const response = await fetchWithRefresh(`/apis/task/get_task/${taskId}?organizationId=${orgId}`, {
-        method: "GET",
-        headers,
-      });
-
-      if (response.status === 404) {
-        addMessage({
-          text: "Task not found",
-          type: "error",
-          duration: 3000
-        });
-        return null;
-      }
-
-      if (response.status === 500) {
-        addMessage({
-          text: "Unable to load task due to server error. Please try again later.",
-          type: "error",
-          duration: 5000,
-        });
-        return null;
-      }
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      const responseData = await response.json();
-      const data = Array.isArray(responseData) ? responseData[0] : responseData;
-      
-      if (!data) {
-        throw new Error("No task data found");
-      }
+      const data = await fetchTaskDetails(taskId, orgId, user?.userId);
 
       return data;
     } catch (err) {
@@ -289,7 +245,7 @@ const TaskDetailPage = () => {
       });
       throw err;
     }
-  }, [taskId, mode, organizationId, user?.organizationId, addMessage]);
+  }, [taskId, mode, organizationId, user?.organizationId, user?.userId, addMessage]);
 
   // State Management
   const [usersData, setUsersData] = useState(null);
@@ -698,21 +654,10 @@ const TaskDetailPage = () => {
         try {
           const approvalResults = await Promise.allSettled(
             selectedFiles.map(async (file) => {
-              const response = await fetchWithRefresh(`/apis/document/approve/${file.documentId}`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "ngrok-skip-browser-warning": "1",
-                },
-              });
-              
-              if (!response.ok) {
-                throw new Error(`Failed to approve file ${file.documentId}`);
-              }
-              return response.json();
+              return await approveDocument(file.documentId);
             })
           );
-          
+
           approvalResults.forEach((result, index) => {
             if (result.status === "rejected") {
             }
@@ -775,29 +720,9 @@ const TaskDetailPage = () => {
 
 
 
-      const url = mode === "edit" 
-        ? `/apis/task/update/${taskId}`
-        : `/apis/task/create_task`;
-      
-      const method = mode === "edit" ? "PUT" : "POST";
-
-
-      const response = await fetchWithRefresh(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "1",
-        },
-        body: JSON.stringify(payload),
-      });
-
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Save failed");
-      }
-
-      const result = await response.json();
+      const result = mode === "edit"
+        ? await updateTask(taskId, payload)
+        : await createTask(payload);
 
       if (mode === "create") {
         // Handle both possible response formats: result.taskId or result.id
@@ -866,30 +791,7 @@ const TaskDetailPage = () => {
   // Memoize selectedFiles to prevent unnecessary re-renders
   const memoizedSelectedFiles = useMemo(() => selectedFiles, [selectedFiles]);
 
-  // New API function for updating task status using single endpoint
-  const updateTaskStatus = async (taskId, statusId) => {
-    try {
-      const response = await fetchWithRefresh(`/apis/task/update-status/${taskId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "1",
-        },
-        body: JSON.stringify({
-          taskStatusId: statusId
-        }),
-      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Status update failed");
-      }
-
-      return await response.json();
-    } catch (error) {
-      throw new Error(`Failed to update task status: ${error.message}`);
-    }
-  };
 
   // API function for updating only the checklist
   const updateChecklistOnly = React.useCallback(async (taskId, checklistData) => {
@@ -925,14 +827,7 @@ const TaskDetailPage = () => {
         OrganizationId: taskData.organizationId
       };
 
-      const response = await fetchWithRefresh(`/apis/task/update/${taskId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "1",
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = await updateTask(taskId, payload);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -981,16 +876,8 @@ const TaskDetailPage = () => {
     if (newStatus.value === "Under Approval") {
       try {
         // Check if there are any documents uploaded for this task
-        const response = await fetch(`/apis/document-details/task/${taskId}`, {
-          headers: { 'ngrok-skip-browser-warning': '1' }
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to check task documents');
-        }
-        
-        const documents = await response.json();
-        
+        const documents = await checkTaskDocuments(taskId);
+
         if (!documents || documents.length === 0) {
           addMessage({
             text: "You must upload at least one file before submitting for approval.",
@@ -1048,21 +935,10 @@ const TaskDetailPage = () => {
           try {
             const approvalResults = await Promise.allSettled(
               selectedFiles.map(async (file) => {
-                const response = await fetchWithRefresh(`/apis/document/approve/${file.documentId}`, {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "ngrok-skip-browser-warning": "1",
-                  },
-                });
-                
-                if (!response.ok) {
-                  throw new Error(`Failed to approve file ${file.documentId}`);
-                }
-                return response.json();
+                return await approveDocument(file.documentId);
               })
             );
-            
+
             approvalResults.forEach((result, index) => {
               if (result.status === "rejected") {
               }
