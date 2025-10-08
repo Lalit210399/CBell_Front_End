@@ -11,9 +11,9 @@ const MainLayout = ({ children }) => {
   return (
     <div className={`layout-container ${hideNavAndSidebar ? 'no-nav-sidebar' : ''}`}>
       {!hideNavAndSidebar && <Sidebar />}
-      <div className="main-content-container">
+      <div className="main_content">
         {!hideNavAndSidebar && <Navbar />}
-        <div className="main-content">
+        <div className="children_content">
           {children}
         </div>
       </div>

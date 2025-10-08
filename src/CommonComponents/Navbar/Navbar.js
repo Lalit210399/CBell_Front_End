@@ -99,7 +99,7 @@ function Navbar() {
   const userInitials = getUserInitials(user?.firstName, user?.lastName);
 
   return (
-    <nav className="navbar">
+    <nav className="custom_navbar">
       <div className="nav-links">
         {hasDashboardPermission && (
           <Link to="/dashboard" className={location.pathname === "/dashboard" ? "active" : ""}>

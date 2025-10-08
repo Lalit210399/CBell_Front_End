@@ -6,6 +6,7 @@
   display:flex; 
   flex-direction: column;
   gap: 16px;
+  overflow: visible; /* Allow dropdown to be visible */
 }
 
 .recent-tasks-header {
@@ -35,31 +36,7 @@
   cursor: pointer;
 }
 
-.status-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #fff;
-}
-
-.status-badge::before {
-  content: '';
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: currentColor;
-  margin-right: 6px;
-}
-
-.status-badge.new { background: #F2F2F2; color: #5D6D7E}
-.status-badge.active { background: #D6EAF8; color: #1F618D; }
-.status-badge.under-review { background: #FDEBD0; color: #B9770E}  /* Updated for "Under Review" */
-.status-badge.under-approval { background: #FDEBD0; color: #B9770E}  /* Keep for backward compatibility */
-.status-badge.approved { background: #D5F5E3; color: #196F3D}
-.status-badge.published { background: #E8DAEF; color: #5B2C6F}
+/* Status badge styles moved to reusable StatusBadge component */
 
 .task-link {
   color: #0891b2;

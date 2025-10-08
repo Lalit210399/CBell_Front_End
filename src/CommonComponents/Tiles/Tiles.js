@@ -1,4 +1,5 @@
 import React from "react";
+import { ExternalLink } from "lucide-react";
 import "./Tiles.css";
 const Tile = ({
   icon,
@@ -9,8 +10,10 @@ const Tile = ({
   iconBgColor,
   borderColor,
   onClick,
+  onNewWindowClick,
   isSelected,
   textColor,
+  showNewWindowIcon = false,
 }) => {
   const backgroundColor = bgcolor;
   const iconBackgroundColor = iconBgColor || "#3B82F6"; // Default darker shade as per example
@@ -44,7 +47,16 @@ const Tile = ({
           {icon}
         </div>
         <div className="tile-count">{count}</div>
-      </div>{" "}
+        {showNewWindowIcon && (
+          <button
+            className="new-window-icon"
+            onClick={(e) => onNewWindowClick && onNewWindowClick(e)}
+            title="View all data in new screen"
+          >
+            <ExternalLink size={14} />
+          </button>
+        )}
+      </div>
       <div className="tile-body">
         <h3 className="tile-title">{title}</h3>
         <p className="tile-subtitle">{subtitle}</p>

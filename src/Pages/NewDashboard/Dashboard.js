@@ -117,7 +117,7 @@ const Dashboard = () => {
     const includeChildren = isViewingOwnOrganization() ? "&includeChildren=true" : "&includeChildren=false";
     
     const response = await fetchWithRefresh(
-      `apis/dashboard/summary?orgid=${organizationId}&userid=${user?.userId}${includeChildren}`,
+      `/apis/dashboard/summary?orgid=${organizationId}&userid=${user?.userId}${includeChildren}`,
       {
         method: "GET",
         headers: {
@@ -144,7 +144,7 @@ const Dashboard = () => {
     const monthParam = `${selectedYear}-${String(selectedMonth).padStart(2, "0")}`;
     
         const response = await fetchWithRefresh(
-          `apis/dashboard/events?orgid=${organizationId}&filter=month&month=${monthParam}`,
+          `/apis/dashboard/events?orgid=${organizationId}&filter=month&month=${monthParam}`,
           {
             method: "GET",
             headers: {
@@ -201,7 +201,7 @@ const Dashboard = () => {
     const apiFilter = filterMap[filterType] || "all";
 
       const response = await fetchWithRefresh(
-        `apis/dashboard/tasks?orgid=${organizationId}&filter=${apiFilter}`,
+        `/apis/dashboard/tasks?orgid=${organizationId}&filter=${apiFilter}`,
         {
           method: "GET",
           headers: {
@@ -245,7 +245,7 @@ const Dashboard = () => {
     const organizationId = selectedOrganizationId || user?.organizationId;
 
       const response = await fetchWithRefresh(
-        `apis/dashboard/events?orgid=${organizationId}&filter=active`,
+        `/apis/dashboard/events?orgid=${organizationId}&filter=active`,
         {
           method: "GET",
           headers: {
@@ -295,7 +295,7 @@ const Dashboard = () => {
     const includeChildren = isViewingOwnOrganization() ? "&includeChildren=true" : "&includeChildren=false";
     
     const response = await fetchWithRefresh(
-      `apis/dashboard/assigned-events?orgid=${organizationId}&userid=${userId}${includeChildren}`,
+      `/apis/dashboard/assigned-events?orgid=${organizationId}&userid=${userId}${includeChildren}`,
       {
         method: "GET",
         headers: {
@@ -343,13 +343,13 @@ const Dashboard = () => {
 
   // Active Events Count (removed)
 
-  // Events Campaign
+  // Events Campaign - Remove month dependencies from useApi
   const {
     data: allEvents,
     loading: loadingEventsCampaign,
     error: errorEventsCampaign,
     execute: executeEventsCampaign
-  } = useApi(fetchEventsCampaign, [orgIdReady, selectedMonth, selectedYear], false);
+  } = useApi(fetchEventsCampaign, [orgIdReady], false);
 
   // Tasks - Create a memoized function for tasks
   const fetchTasksForCurrentTitle = useCallback(() => {
@@ -379,15 +379,21 @@ const Dashboard = () => {
     execute: executeAssignedEvents
   } = useApi(fetchAssignedEvents, [orgIdReady], false);
 
-  // Execute APIs when orgIdReady changes or scope changes
+  // Execute APIs when orgIdReady changes
   useEffect(() => {
     if (orgIdReady) {
       executeSummary();
-      executeEventsCampaign();
       executeActiveEvents();
       executeAssignedEvents();
     }
-  }, [orgIdReady, scopeChangeTrigger, executeSummary, executeEventsCampaign, executeActiveEvents, executeAssignedEvents]);
+  }, [orgIdReady, scopeChangeTrigger, executeSummary, executeActiveEvents, executeAssignedEvents]);
+
+  // Separate useEffect for Events Campaign - only refetch when month changes
+  useEffect(() => {
+    if (orgIdReady) {
+      executeEventsCampaign();
+    }
+  }, [selectedMonth, selectedYear, orgIdReady, executeEventsCampaign]);
 
   // Define task tiles for reuse
   const taskTiles = useMemo(() => [
@@ -596,7 +602,7 @@ const Dashboard = () => {
     });
   };
 
-  // Handle tile click
+  // Handle tile click (original functionality - shows 5 records)
   const handleTileClick = (tile) => {
     setCurrentTitle(tile.title);
 
@@ -626,6 +632,39 @@ const Dashboard = () => {
 
       // Do not execute here; a dedicated effect will run when
       // currentTitle/activeComponent change to avoid stale state
+    }
+  };
+
+  // Handle new window icon click (navigate to comprehensive screens)
+  const handleNewWindowClick = (tile, event) => {
+    event.stopPropagation(); // Prevent tile click from firing
+    
+    if (tile.title === "Events Assigned to Me") {
+      navigate("/events/assigned-events", {
+        state: {
+          taskType: tile.title,
+          filter: "All"
+        }
+      });
+    } else {
+      // For all task-related tiles, navigate to comprehensive tasks list screen
+      const filterMap = {
+        "Total Tasks": "All",
+        "Tasks Due Next 7 Days": "All",
+        "Overdue Tasks": "All",
+        "New Tasks": "New",
+        "Active Tasks": "Active", 
+        "Under Approval Tasks": "Under Approval",
+        "Approved Tasks": "Approved",
+        "Published Tasks": "Published"
+      };
+      
+      navigate("/tasks/list", {
+        state: {
+          taskType: tile.title,
+          filter: filterMap[tile.title] || "All"
+        }
+      });
     }
   };
 
@@ -709,6 +748,8 @@ const Dashboard = () => {
               key={idx}
               {...tile}
               onClick={() => handleTileClick(tile)}
+              onNewWindowClick={(e) => handleNewWindowClick(tile, e)}
+              showNewWindowIcon={tile.title !== "Active Events"}
               isSelected={tile.title === currentTitle}
             />
           ))}

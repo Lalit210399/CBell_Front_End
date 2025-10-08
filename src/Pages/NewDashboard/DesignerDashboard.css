@@ -1,14 +1,13 @@
-.designer-dashboard-middle-container {
-  padding: 20px 20px;
+
+.designer_dashboard_content {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   background-color: #f9fafb;
-  /* min-height: 100vh; */
   font-family: 'Lato', sans-serif;
   color: #374151;
+  width: 100%;
 }
-
 /* Welcome Section */
 .welcome-section {
   display: flex;
@@ -101,45 +100,58 @@
 }
 
 /* Bottom Section */
-.bottom_section {
+.dynamic_table {
+  flex: 7; /* 70% width */
   display: flex;
+  flex-direction: column;
   gap: 20px;
 }
 
 /* Bottom Section */
-.Second_Row_Section {
+.designer_widgets {
   display: flex;
   gap: 20px;
+  align-items: stretch;
+  min-height: 400px;
+  height: auto;
 }
 
-.events-campaign {
-  min-width: 402px;
+.designer_events_campaign {
+  flex: 3; /* 30% width */
+  min-width: 300px;
   background-color: white;
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
-  height: 340px;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
   z-index: 10;
+  min-height: 300px;
+  height: auto;
 }
 
 .recent-tasks {
-  flex: 2 1 600px;
+  flex: 1;
   min-width: 600px;
   border-radius: 12px;
-  height: 380px;
-  top: -37px;
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+  height: auto;
+  overflow-x: auto;
+  overflow-y: visible; /* Allow dropdown to be visible */
 }
 
 /* Responsive adjustments */
 @media (max-width: 900px) {
-  .bottom-section {
+  .designer_widgets {
     flex-direction: column;
   }
 
-  .recent-tasks,
-  .events-campaign {
+  .dynamic_table,
+  .designer_events_campaign {
+    flex: 1;
     min-width: 100%;
   }
 }

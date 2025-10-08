@@ -1,5 +1,4 @@
 .dashboard-middle-container {
-  padding: 20px 20px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -114,42 +113,43 @@
 .bottom_section {
   display: flex;
   gap: 20px;
+  width: 70%;
   /* flex-wrap: wrap; */
 }
 /* Bottom Section */
 .Second_Row_Section {
   display: flex;
   gap: 20px;
-  /* flex-wrap: wrap; */
+  align-items: stretch;
+  min-height: 400px;
+  height: auto;
 }
 
 .events-campaign {
+  flex: 1;
   min-width: 402px;
   background-color: white;
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
-  /* top: -37px; */
-  height: 340px;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
   z-index: 10;
+  min-height: 300px;
+  height: auto;
 }
 
 .recent-tasks {
-  flex: 2 1 600px;
+  flex: 2;
   min-width: 600px;
-  /* background-color: white; */
   border-radius: 12px;
-  height: 380px;
   display: flex;
   flex-direction: column;
-  
-  /* border: 1px solid; */
-  top: -37px
-    /* padding: 20px; */
-    /* box-shadow: 0 1px 3px rgb(0 0 0 / 0.1); */
-  
+  min-height: 300px;
+  height: auto;
+  overflow-x: auto;
+  overflow-y: visible; /* Allow dropdown to be visible */
 }
 
 /* Responsive adjustments */
@@ -262,12 +262,13 @@
 /* Table height consistency fixes */
 .active-events,
 .event-assign-to-me {
-  flex: 2 1 600px;
+  flex: 2;
   min-width: 600px;
   border-radius: 12px;
-  height: 380px;
   display: flex;
   flex-direction: column;
+  min-height: 300px;
+  height: auto;
 }
 
 /* Ensure table containers maintain consistent height */

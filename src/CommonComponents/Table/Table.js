@@ -113,7 +113,7 @@ useEffect(() => {
                 <th
                   key={column.key}
                   onClick={() => handleSort(column.key)}
-                  className={sortableColumns.includes(column.key) ? "sortable" : ""}
+                  className={`sticky-header ${sortableColumns.includes(column.key) ? "sortable" : ""}`}
                 >
                   {column.label}{" "}
                   {sortableColumns.includes(column.key) &&

@@ -1,12 +1,12 @@
-.Events {
-  padding: 12px;
+.events_container {
+  display: flex;
+  gap: 16px;
+  flex-direction: column;
 }
 
 /* New Events Header Styles */
 .events-header {
-  margin-bottom: 10px;
   border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 10px;
 }
 
 .events-header-content {
@@ -74,7 +74,6 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
   gap: 12px;
 }
 

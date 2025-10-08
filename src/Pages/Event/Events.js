@@ -436,7 +436,7 @@ const EventTable = () => {
   ];
 
   return (
-    <div className="Events">
+    <div className="events_container">
       {/* New Header Section */}
       <div className="events-header">
         <div className="events-header-content">

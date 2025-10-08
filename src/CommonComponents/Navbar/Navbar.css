@@ -1,4 +1,23 @@
 /* Navbar.css */
+.custom_navbar {
+  height: var(--navbarHeight);
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  border: solid 1px #eaeaea;
+  background-color: var(--white);
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+  padding-left: 24px;
+  padding-right: 24px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  margin:24px;
+}
 
 .navbar {
   width: calc(100% - 154px);
@@ -179,6 +198,7 @@
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
