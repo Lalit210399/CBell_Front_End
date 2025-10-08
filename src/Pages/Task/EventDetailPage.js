@@ -388,15 +388,6 @@ const EventDetail = () => {
       canPublish: canPublish,
     };
     
-    // Debug logging
-    console.log("EventDetailPage permissions:", {
-      isOwnOrg,
-      isAssignedToEvent,
-      canPerformActions,
-      canPublish: permissionsResult.canPublish,
-      user: user?.userId,
-      assignedUsers: fetchedEvent?.assignedUsers
-    });
     
     return permissionsResult;
   }, [mode, userPermissions?.permissions?.Events, userPermissions?.permissions?.Tasks, fetchedEvent?.canCRUD, isViewingOwnOrganization, fetchedEvent?.assignedUsers, fetchedEvent?.createdBy, fetchedEvent?.createdById, user?.userId, user?.id, user?.roles]);
@@ -436,9 +427,16 @@ const EventDetail = () => {
       errors.time = "Event time is required";
     }
     
-    // Validate Description
-    const descriptionValue = (detailData?.description || "").trim();
-    if (!descriptionValue) {
+    // Validate Description - check for actual text content, not just HTML tags
+    const descriptionValue = detailData?.description || "";
+    const hasValidDescription = (description) => {
+      if (!description) return false;
+      // Remove HTML tags and check if there's actual text content
+      const textContent = description.replace(/<[^>]*>/g, '').trim();
+      return textContent.length > 0;
+    };
+    
+    if (!hasValidDescription(descriptionValue)) {
       errors.description = "Event description is required";
     }
     
@@ -576,6 +574,10 @@ const EventDetail = () => {
 
       // Switch to view mode after successful save/create
       setMode("view");
+      
+      // Clear all validation errors after successful save
+      setValidationErrors({});
+      
       addMessageRef.current({
         text: mode === "create" 
           ? "Event created successfully! You can now create tasks for this event." 

@@ -3,9 +3,11 @@ import Accordion from '../../../CommonComponents/Accordian/Accordian';
 import FilesandUploads from '../../../CommonComponents/FileandUpload/FilesAndUploads';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+import { useUser } from '../../../Context/UserContext';
 import "../Tasks.css";
 
 const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
+  const { user } = useUser();
   const [fetchedEventFiles, setFetchedEventFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const isFetchingRef = useRef(false);
@@ -53,7 +55,11 @@ const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
             type,
             documentId: doc.documentId,
             description: doc.description,
-            src
+            src,
+            status: doc.status || 'Pending',
+            publishedTo: doc.publishedTo || [],
+            uploadDate: doc.uploadDate,
+            userInfo: doc.userInfo
           };
         })
       );
@@ -74,24 +80,6 @@ const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
   }, [eventId]); // Only depend on eventId, not the function
 
   // Temporarily disable cleanup to test if it's causing the issue
-  // useEffect(() => {
-  //   isMountedRef.current = true;
-  //   return () => {
-  //     isMountedRef.current = false;
-  //     console.log("Component unmounting - cleaning up blob URLs");
-  //     // Only clean up if component is actually unmounting
-  //     setTimeout(() => {
-  //       if (!isMountedRef.current) {
-  //         filesRef.current.forEach(file => {
-  //           if (file.src && file.src.startsWith('blob:')) {
-  //             console.log(`Revoking blob URL: ${file.src}`);
-  //             URL.revokeObjectURL(file.src);
-  //           }
-  //         });
-  //       }
-  //     }, 1000); // Delay cleanup to prevent race conditions
-  //   };
-  // }, []); // Empty dependency array - only run on unmount
 
   // Skeleton placeholder for file cards
   const SkeletonCards = () => (
@@ -112,12 +100,12 @@ const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
         content={
           loading
             ? <SkeletonCards />
-            : <FilesandUploads files={fetchedEventFiles}  enableSelectionCheckbox={false}  eventId={eventId} organizationId={organizationId} />
+            : <FilesandUploads files={fetchedEventFiles}  enableSelectionCheckbox={false}  eventId={eventId} organizationId={organizationId} userId={user?.userId} />
         } 
       />
       <Accordion 
         title="Tasks File" 
-        content={<FilesandUploads files={filesFromTasks}  enableSelectionCheckbox={false}  eventId={eventId} organizationId={organizationId} />} 
+        content={<FilesandUploads files={filesFromTasks}  enableSelectionCheckbox={false}  eventId={eventId} organizationId={organizationId} userId={user?.userId} />} 
       />
     </div>
   );

@@ -183,8 +183,8 @@ const Task = ({ tasksData, eventId, eventName }) => {
         addEventText="Click here to add a New Task"
         onRowClick={handleRowClick}
         onDelete={permissions.canDelete ? handleDeleteTask : undefined}
-        onArchive={permissions.canArchive ? () => alert("Archive pressed") : undefined}
-        onDuplicate={permissions.canDuplicate ? () => alert("Duplicate pressed") : undefined}
+          // onArchive={permissions.canArchive ? () => alert("Archive pressed") : undefined}
+        // onDuplicate={permissions.canDuplicate ? () => alert("Duplicate pressed") : undefined}
       />
 
     </div>

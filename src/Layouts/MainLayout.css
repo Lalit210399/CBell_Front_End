@@ -1,20 +1,23 @@
 .layout-container {
   display: flex;
   height: 100vh;
+  flex-direction: row;  
+  background: #f9fafb;
 }
 
-.main-content-container {
+.main_content {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  margin-left: 80px; /* Adjust based on sidebar width */
+  
 }
 
-.main-content {
+.children_content {
   flex-grow: 1;
   /* padding: 20px; Adjust padding as needed */
   overflow-y: auto;
-  margin-top: 80px; /* Adjust based on navbar height */
+  padding-left: 24px;
+  padding-right: 24px;
 }
 
 .layout-container.no-nav-sidebar .main-content-container {

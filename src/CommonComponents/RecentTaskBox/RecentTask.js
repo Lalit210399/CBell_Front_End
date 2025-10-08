@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import Table from "../Table/TableNew";
 import AvatarList from "../Avatar/AvatarList";
 import CustomDropdown from "../Dropdown/CustomDropdown"; // import your reusable dropdown
+import StatusBadge from "../StatusBadge/StatusBadge";
 import { ListTodo } from "lucide-react";
 import { useTaskStatus } from "../../Hooks/useTaskStatus";
 import "./RecentTask.css";
@@ -56,12 +57,10 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
     switch (key) {
       case "status":
         return (
-          <span
-            className={`status-badge ${item.status?.toLowerCase().replace(" ", "-") || ""}`}
+          <StatusBadge 
+            status={item.status || getEmptyText(key)}
             onClick={handleClick}
-          >
-            {(item.status || getEmptyText(key)).charAt(0).toUpperCase() + (item.status || getEmptyText(key)).slice(1).toLowerCase()}
-          </span>
+          />
         );
       case "taskName":
         return (

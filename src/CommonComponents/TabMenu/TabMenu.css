@@ -1,9 +1,10 @@
 .tab-container {
+  display: flex;
+  flex-direction: column;
   width: 100%;
   border-bottom: 2px solid var(--grayLine);
-  position: sticky;
-  top: 110px; /* Adjust based on breadcrumb and top section height */
   background-color: #fff; /* Prevents content from overlapping */
+  gap: 10px;
 }
 
 .tab-header {
@@ -119,7 +120,6 @@
 .scrollable-tab-content {
   max-height: 30rem;
   overflow-y: auto;
-  padding: 10px;
 }
 
 .scrollable-tab-content::-webkit-scrollbar {

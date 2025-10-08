@@ -57,8 +57,6 @@ const isFileTypeSupported = (fileType, platform) => {
 };
 
 const Publish = ({ eventId, canPublish = true, user: userProp }) => {
-  // Debug logging for props
-  console.log("Publish component received canPublish:", canPublish);
   
   const [publishData, setPublishData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -151,7 +149,6 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
         
         try {
           const errorData = await response.json();
-          console.log('Facebook API Error Response:', errorData);
           errorMessage = errorData.message || errorMessage;
           
           // Handle specific error for social media config not found
@@ -168,7 +165,6 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
           // If response is not valid JSON, check for specific error patterns in text
           try {
             const responseText = await responseClone.text();
-            console.log('Facebook API Error Text:', responseText);
             if (response.status === 400 && (
               responseText.includes('Social media config not found') ||
               responseText.includes('social media account not configured') ||
@@ -245,18 +241,14 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
   };
 
   const handleShare = (file, fullTask) => {
-    // Debug logging
-    console.log("handleShare called with canPublish:", canPublish);
-    
     // Check if user has permission to publish
     if (!canPublish) {
-      console.log("Permission denied - blocking modal");
       alert("You don't have permission to publish content for this event. Only assigned users can perform this action.");
       return;
     }
-    
-    console.log("Permission granted - opening modal");
-    setDescription(file.name || '');
+    // Use file description as default, fallback to file name
+    const fileDescription = file.document?.description || file.description || file.name || '';
+    setDescription(fileDescription);
     // Use the correct document ID from the document object - prioritize documentId
     const docId = file.document?.documentId || file.document?.fileId;
     setDocumentId(docId);

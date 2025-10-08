@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
+import PropTypes from 'prop-types';
 import TextEditor from "../../../CommonComponents/TextEditor/TextEditor";
 import NewList from "../../../CommonComponents/List/NewList";
 import "./EventDetail.css";
 
-const Detail = ({
+const EventDetail = ({
   guestsData = [],
   organizersData = [],
   mode,
@@ -11,6 +12,7 @@ const Detail = ({
   initialDescription = "",
   validationErrors = {},
   onClearError,
+  location = "Pune",
 }) => {
   const [guests, setGuests] = useState([]);
   const [organizers, setOrganizers] = useState([]);
@@ -18,17 +20,41 @@ const Detail = ({
 
   // Transform data between old format (name/title) and new format (name/designation)
   const transformToNewFormat = (data) => {
-    return data.map(item => ({
-      name: item.name || "",
-      designation: item.title || item.designation || ""
-    }));
+    if (!Array.isArray(data)) {
+      console.warn('transformToNewFormat: Expected array, got', typeof data);
+      return [];
+    }
+    
+    return data.map(item => {
+      if (!item || typeof item !== 'object') {
+        console.warn('transformToNewFormat: Invalid item', item);
+        return { name: "", designation: "" };
+      }
+      
+      return {
+        name: String(item.name || "").trim(),
+        designation: String(item.title || item.designation || "").trim()
+      };
+    });
   };
 
   const transformToOldFormat = (data) => {
-    return data.map(item => ({
-      name: item.name || "",
-      title: item.designation || item.title || ""
-    }));
+    if (!Array.isArray(data)) {
+      console.warn('transformToOldFormat: Expected array, got', typeof data);
+      return [];
+    }
+    
+    return data.map(item => {
+      if (!item || typeof item !== 'object') {
+        console.warn('transformToOldFormat: Invalid item', item);
+        return { name: "", title: "" };
+      }
+      
+      return {
+        name: String(item.name || "").trim(),
+        title: String(item.designation || item.title || "").trim()
+      };
+    });
   };
 
   useEffect(() => {
@@ -54,6 +80,15 @@ const Detail = ({
     setOrganizers(newOrganizers);
   }, []);
 
+  // Helper function to check if description has actual content
+  const hasValidDescription = (description) => {
+    if (!description) return false;
+    
+    // Remove HTML tags and check if there's actual text content
+    const textContent = description.replace(/<[^>]*>/g, '').trim();
+    return textContent.length > 0;
+  };
+
   // Set up the save handler
   useEffect(() => {
     if (onSave) {
@@ -61,26 +96,31 @@ const Detail = ({
         const transformedGuests = transformToOldFormat(guests).filter(g => g.name && g.name.trim());
         const transformedOrganizers = transformToOldFormat(organizers).filter(o => o.name && o.name.trim());
         
+        // Validate description content
+        const description = editorRef.current;
+        if (!hasValidDescription(description)) {
+          console.warn('EventDetail: Description is empty or contains only HTML tags');
+        }
         
         return {
-          description: editorRef.current,
-          location: "Pune",
+          description: description,
+          location: location,
           guests: transformedGuests,
           organizers: transformedOrganizers,
         };
       };
     }
-  }, [onSave, guests, organizers]); // Include guests and organizers to update when data changes
+  }, [onSave, guests, organizers, location]); // Include location in dependencies
 
   return (
-    <div className="detail_container">
-      <div className="ED_Right_Section">
+    <div className="event-detail-container">
+      <div className="event-detail-right-section">
         <TextEditor
           initialContent={initialDescription}
           onContentChange={(val) => {
             editorRef.current = val;
-            // Clear description error when user starts typing
-            if (validationErrors.description && onClearError) {
+            // Clear description error when user adds valid content
+            if (validationErrors.description && onClearError && hasValidDescription(val)) {
               onClearError('description');
             }
           }}
@@ -91,8 +131,8 @@ const Detail = ({
           showRequiredAsterisk={mode === "create" || mode === "edit"}
         />
       </div>
-      <div className="ED_Left_Section">
-        <div className="Special_Guest">
+      <div className="event-detail-left-section">
+        <div className="special-guest-section">
           <NewList 
             guests={guests}
             onGuestsChange={handleGuestsChange}
@@ -101,7 +141,7 @@ const Detail = ({
           />
         </div>
         
-        <div className="Event_Organizer">
+        <div className="event-organizer-section">
           <NewList 
             guests={organizers}
             onGuestsChange={handleOrganizersChange}
@@ -114,4 +154,23 @@ const Detail = ({
   );
 };
 
-export default Detail;
+EventDetail.propTypes = {
+  guestsData: PropTypes.arrayOf(PropTypes.shape({
+    name: PropTypes.string,
+    title: PropTypes.string,
+    designation: PropTypes.string,
+  })),
+  organizersData: PropTypes.arrayOf(PropTypes.shape({
+    name: PropTypes.string,
+    title: PropTypes.string,
+    designation: PropTypes.string,
+  })),
+  mode: PropTypes.oneOf(['view', 'edit', 'create']).isRequired,
+  onSave: PropTypes.object,
+  initialDescription: PropTypes.string,
+  validationErrors: PropTypes.object,
+  onClearError: PropTypes.func,
+  location: PropTypes.string,
+};
+
+export default EventDetail;

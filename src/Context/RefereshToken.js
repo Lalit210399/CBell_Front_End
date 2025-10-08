@@ -18,7 +18,7 @@ function getCookieValue(name) {
 
 // Utility function to validate token format
 function isValidToken(token) {
-  if (!token || typeof token !== 'string') return false;
+  if (!token || typeof token !== 'string' || token === 'null' || token === 'undefined') return false;
   // Basic JWT format validation (3 parts separated by dots)
   const parts = token.split('.');
   return parts.length === 3;
@@ -139,9 +139,10 @@ export async function fetchWithRefresh(input, init = {}) {
   // Validate access token format
   if (!isValidToken(accessToken)) {
     console.warn('Invalid access token format, attempting refresh', {
-      token: accessToken ? `${accessToken.substring(0, 20)}...` : 'null',
+      token: accessToken === 'null' ? 'null' : (accessToken ? `${accessToken.substring(0, 20)}...` : 'undefined'),
       length: accessToken?.length || 0,
-      parts: accessToken?.split('.').length || 0
+      parts: accessToken?.split('.').length || 0,
+      type: typeof accessToken
     });
     accessToken = null;
   }

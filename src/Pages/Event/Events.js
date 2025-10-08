@@ -436,7 +436,7 @@ const EventTable = () => {
   ];
 
   return (
-    <div className="Events">
+    <div className="events_container">
       {/* New Header Section */}
       <div className="events-header">
         <div className="events-header-content">
@@ -607,8 +607,8 @@ const EventTable = () => {
           onAddEventClick={permissions.canCreate ? handleNewEvent : undefined}
           sortableColumns={["name", "type", "date", "createdBy"]}
           onDelete={permissions.canDelete ? ({ id }) => handleDelete(id) : undefined}
-          onArchive={permissions.canArchive ? () => alert("Archive pressed") : undefined}
-          onDuplicate={permissions.canDuplicate ? () => alert("Duplicate pressed") : undefined}
+          // onArchive={permissions.canArchive ? () => alert("Archive pressed") : undefined}
+          // onDuplicate={permissions.canDuplicate ? () => alert("Duplicate pressed") : undefined}
           onRowClick={(event) => {
             if (!loading && !error && permissions.canRead) {
 

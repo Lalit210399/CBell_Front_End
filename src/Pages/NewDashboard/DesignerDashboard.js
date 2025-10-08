@@ -296,14 +296,14 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
   } = useApi(fetchSummaryData, [orgIdReady], false);
 
 
-  // Events Campaign
+  // Events Campaign - Remove month dependencies from useApi
   const {
     data: allEvents,
     loading: loadingEventsCampaign,
     error: errorEventsCampaign,
     execute: executeEventsCampaign,
     reset: resetEventsCampaign
-  } = useApi(fetchEventsCampaign, [orgIdReady, selectedMonth, selectedYear], false);
+  } = useApi(fetchEventsCampaign, [orgIdReady], false);
 
   // Tasks - Create a memoized function for tasks
   const fetchTasksForCurrentTitle = useCallback(() => {
@@ -336,22 +336,28 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
 
 
 
-  // Execute APIs when orgIdReady changes or scope changes
+  // Execute APIs when orgIdReady changes
   useEffect(() => {
     if (orgIdReady) {
       executeSummary();
       // Tasks API will be executed automatically by useApi hook when currentTitle changes
     }
-  }, [orgIdReady, scopeChangeTrigger, executeSummary]);
+  }, [orgIdReady, executeSummary]);
 
-  // Separate useEffect for Events Campaign to prevent unnecessary re-execution
+  // Separate useEffect for Events Campaign - only refetch when month changes
   useEffect(() => {
     if (orgIdReady) {
-      // Clear stale events before fetching new scope
+      executeEventsCampaign();
+    }
+  }, [selectedMonth, selectedYear, orgIdReady, executeEventsCampaign]);
+
+  // Separate useEffect for scope changes - only affects Events Campaign
+  useEffect(() => {
+    if (orgIdReady) {
       resetEventsCampaign();
       executeEventsCampaign();
     }
-  }, [selectedMonth, selectedYear, orgIdReady, scopeChangeTrigger, executeEventsCampaign, resetEventsCampaign]);
+  }, [scopeChangeTrigger, orgIdReady, executeEventsCampaign, resetEventsCampaign]);
 
   // Clear and refetch summary on scope change to avoid stale counts
   useEffect(() => {
@@ -498,7 +504,7 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
   }
 
   return (
-    <div className="designer-dashboard-middle-container">
+    <div className="designer_dashboard_content">
       {/* Welcome Section */}
       <div className="welcome-section">
         <h2>Welcome {user?.firstName}, here's your creative dashboard.</h2>
@@ -518,9 +524,9 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
         ))}
       </div>
 
-      {/* Bottom Section */}
-      <div className="Second_Row_Section">
-        <div className="bottom_section">
+      {/* Designe Widgets Section */}
+      <div className="designer_widgets">
+        <div className="dynamic_table">
           {/* Recent Tasks */}
           {activeComponent === "recent" && (
             <div className="recent-tasks">
@@ -546,7 +552,7 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
         </div>
 
         {/* Events Campaign Section */}
-        <div className="events-campaign">
+        <div className="designer_events_campaign">
           <div className="event-header">
             <div className="event-title">
               <Calendar size={20} />

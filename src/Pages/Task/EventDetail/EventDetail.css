@@ -1,16 +1,16 @@
-.detail_container {
+.event-detail-container {
     height: 30rem; 
-    border: 1px solid #c2a7a7;
     display: flex;
     width: 100%;
-    gap: 15px;
+    gap: 12px;
+    flex-direction: row;
     align-items: stretch;
     box-sizing: border-box;
 }
 
 /* Base section styles - specific widths defined below */
 
-.ED_Right_Section {
+.event-detail-right-section {
     width: 70%;
     padding: 10px;
     box-sizing: border-box;
@@ -19,7 +19,7 @@
     height: 100%;
 }
 
-.ED_Left_Section {
+.event-detail-left-section {
     width: 30%;
     padding: 10px;
     box-sizing: border-box;
@@ -29,72 +29,19 @@
     gap: 20px;
 }
 
-/* Container for input fields to align them side by side */
-.form-row {
-    display: flex;
-    gap: 10px; /* Space between input fields */
-    margin-bottom: 10px; /* Space below the row */
-}
-
-.form-row label {
-    flex: 1; /* Make input fields take equal space */
-}
-
-.guest-input[type="text"] {
-    width: 100%; /* Ensure inputs fill their container */
-    padding: 10px;
-    margin: 0; /* Remove default margin */
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 14px;
-    box-sizing: border-box;
-    transition: border-color 0.3s ease;
-}
-
-.guest-input[type="text"]:focus {
-    border-color: #007bff;
-    outline: none;
-}
-
-/* Style for buttons */
-.guest-button {
-    padding: 10px 15px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.3s ease;
-}
-
-.guest-button:hover {
-    background-color: #0056b3;
-}
-
-.guest-button:active {
-    background-color: #003f7f;
-}
-
-.editable-entry {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin: 10px 0 10px 0; /* Space below each entry */
-    gap: 10px;
-}
+/* Unused CSS classes removed - these were not being used in the component */
 
 /* Styles for NewList components in EventDetail */
-.Special_Guest,
-.Event_Organizer {
+.special-guest-section,
+.event-organizer-section {
     flex: 1;
     display: flex;
     flex-direction: column;
     min-height: 0; /* Important for flex children to shrink */
 }
 
-.Special_Guest .special-guests-wrapper,
-.Event_Organizer .special-guests-wrapper {
+.special-guest-section .special-guests-wrapper,
+.event-organizer-section .special-guests-wrapper {
     height: 100%;
     margin: 0;
     border: 1px solid #ddd;
@@ -108,7 +55,7 @@
 }
 
 /* TextEditor specific styles for EventDetail */
-.ED_Right_Section .text-editor-container {
+.event-detail-right-section .text-editor-container {
   height: 100%;
   margin-bottom: 0;
   flex: 1;
@@ -116,7 +63,7 @@
   flex-direction: column;
 }
 
-.ED_Right_Section .text-editor-container .ql-container {
+.event-detail-right-section .text-editor-container .ql-container {
   flex: 1;
   min-height: 0;
 }
@@ -125,23 +72,23 @@
 
 /* Responsive design for smaller screens */
 @media (max-width: 768px) {
-    .detail_container {
+    .event-detail-container {
         flex-direction: column;
         height: auto;
     }
     
-    .ED_Right_Section,
-    .ED_Left_Section {
+    .event-detail-right-section,
+    .event-detail-left-section {
         width: 100%;
         height: auto;
     }
     
-    .ED_Left_Section {
+    .event-detail-left-section {
         margin-top: 20px;
     }
     
-    .Special_Guest,
-    .Event_Organizer {
+    .special-guest-section,
+    .event-organizer-section {
         height: 14rem;
         flex: none;
     }

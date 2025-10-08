@@ -141,29 +141,18 @@ const TaskDetailPage = () => {
 
   // Enhanced permissions based on task data and user role
   const canEdit = React.useMemo(() => {
-    // Debug logging to help troubleshoot
-    console.log("Permission Check:", {
-      canCRUD: taskData.canCRUD,
-      accessLevel: taskData.accessLevel,
-      isDesigner,
-      taskStatus: taskStatus?.value,
-      taskId: taskData.id
-    });
     
     // If task has canCRUD: false or accessLevel: "READ_ONLY", user cannot edit
     if (taskData.canCRUD === false || taskData.accessLevel === "READ_ONLY") {
-      console.log("Edit blocked: canCRUD or accessLevel restriction");
       return false;
     }
     
     // If task status is Approved, it cannot be edited
     if (taskStatus?.value === "Approved") {
-      console.log("Edit blocked: Task is Approved");
       return false;
     }
     
     // Otherwise, allow editing (Designers can now edit tasks)
-    console.log("Edit allowed: All conditions passed");
     return true;
   }, [taskData.canCRUD, taskData.accessLevel, taskStatus?.value, isDesigner, taskData.id]);
 
@@ -296,8 +285,6 @@ const TaskDetailPage = () => {
   const [taskDataFromAPI, setTaskDataFromAPI] = useState(null);
   const [usersLoading, setUsersLoading] = useState(false);
   const [taskLoading, setTaskLoading] = useState(false);
-  const [usersError, setUsersError] = useState(null);
-  const [taskError, setTaskError] = useState(null);
   const isFetchingUsersRef = useRef(false);
   const isFetchingTaskRef = useRef(false);
 
@@ -361,13 +348,12 @@ const TaskDetailPage = () => {
       
       isFetchingUsersRef.current = true;
       setUsersLoading(true);
-      setUsersError(null);
       
       try {
         const data = await fetchUsers();
         setUsersData(data);
       } catch (err) {
-        setUsersError(err.message);
+        console.error("Error fetching users:", err.message);
       } finally {
         setUsersLoading(false);
         isFetchingUsersRef.current = false;
@@ -382,13 +368,12 @@ const TaskDetailPage = () => {
       
       isFetchingTaskRef.current = true;
       setTaskLoading(true);
-      setTaskError(null);
       
       try {
         const data = await fetchTask();
         setTaskDataFromAPI(data);
       } catch (err) {
-        setTaskError(err.message);
+        console.error("Error fetching task:", err.message);
       } finally {
         setTaskLoading(false);
         isFetchingTaskRef.current = false;
@@ -544,7 +529,7 @@ const TaskDetailPage = () => {
         return {
           ...prev,
           checklist: value.map(item => ({
-            text: item?.text?.toString().trim() || "",
+            text: item?.text?.toString() || "",
             checked: Boolean(item?.checked),
             isPlaceholder: Boolean(item?.isPlaceholder)
           })).filter(item => item.text)
@@ -559,7 +544,7 @@ const TaskDetailPage = () => {
         const newData = {
           ...prev,
           checklist: value.map(item => ({
-            text: item?.text?.toString().trim() || "",
+            text: item?.text?.toString() || "",
             checked: Boolean(item?.checked),
             isPlaceholder: Boolean(item?.isPlaceholder)
           })).filter(item => item.text)
@@ -741,7 +726,7 @@ const TaskDetailPage = () => {
         : [];
 
       // Try to get user ID from various possible field names
-      const userId = user?.id || user?._id || user?.userId || user?.user_id || user?.uid;
+      const userId = user.userId;
       
       // Validate that we have a valid user ID
       if (!userId) {
@@ -862,6 +847,108 @@ const TaskDetailPage = () => {
     });
   }, []);
 
+  // Wrap setFileData in useCallback to prevent unnecessary re-renders
+  const handleFilesChange = useCallback((data) => {
+    setFileData(data);
+  }, []);
+
+  // Memoize selectedFiles to prevent unnecessary re-renders
+  const memoizedSelectedFiles = useMemo(() => selectedFiles, [selectedFiles]);
+
+  // New API function for updating task status using single endpoint
+  const updateTaskStatus = async (taskId, statusId) => {
+    try {
+      const response = await fetchWithRefresh(`/apis/task/update-status/${taskId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1",
+        },
+        body: JSON.stringify({
+          taskStatusId: statusId
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Status update failed");
+      }
+
+      return await response.json();
+    } catch (error) {
+      throw new Error(`Failed to update task status: ${error.message}`);
+    }
+  };
+
+  // API function for updating only the checklist
+  const updateChecklistOnly = React.useCallback(async (taskId, checklistData) => {
+    try {
+      const userId = user.userId;
+      
+      if (!userId) {
+        throw new Error("User information not available. Please log in again.");
+      }
+
+      const formattedChecklist = Array.isArray(checklistData)
+        ? checklistData.map(item => ({
+            text: item.text,
+            checked: item.checked,
+            isPlaceholder: item.isPlaceholder
+          }))
+        : [];
+
+      const payload = {
+        EventId: taskData.eventId,
+        TaskTitle: taskData.taskTitle,
+        taskStatusId: taskData.taskStatusId,
+        AssignedTo: (taskData.assignedTo || []).map((item) =>
+          typeof item === "object" ? item?.id : item
+        ),
+        CreatedBy: taskData.createdBy,
+        UpdatedBy: userId,
+        CreativeType: taskData.type,
+        DueDate: taskData.date,
+        CreativeNumbers: taskData.quantity,
+        checklistDetails: formattedChecklist,
+        Description: taskData.description,
+        OrganizationId: taskData.organizationId
+      };
+
+      const response = await fetchWithRefresh(`/apis/task/update/${taskId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Checklist update failed");
+      }
+
+      const result = await response.json();
+      
+      // Show success message
+      addMessage({
+        text: "Checklist updated successfully",
+        type: "success",
+        duration: 3000
+      });
+
+      return result;
+    } catch (error) {
+      // Show error message
+      addMessage({
+        text: `Failed to update checklist: ${error.message}`,
+        type: "error",
+        duration: 3000
+      });
+      throw error;
+    }
+  }, [user.userId, taskData, addMessage]);
+
   // Handle status change from buttons
   const handleStatusChange = async (newStatus) => {
     // Prevent multiple clicks while updating
@@ -925,6 +1012,12 @@ const TaskDetailPage = () => {
       }
     }
     
+    // Special validation for Active status (revert) - no additional requirements
+    if (newStatus.value === "Active") {
+      // No special validation needed for reverting to Active
+      // This allows reverting from Under Approval back to Active
+    }
+    
     // Update local state immediately for UI feedback
     setTaskStatus(newStatus);
     
@@ -932,52 +1025,12 @@ const TaskDetailPage = () => {
     if (taskId) {
       setIsUpdatingStatus(true);
       try {
-        // Get current form data
-        const currentFormData = { ...taskData, ...formData };
-        
-        // Get user ID
-        const userId = user?.id || user?._id || user?.userId || user?.user_id || user?.uid;
-        
-        if (!userId) {
-          addMessage({
-            text: "User information not available. Please log in again.",
-            type: "error",
-            duration: 3000
-          });
-          return;
-        }
-        
         // Ensure we have a valid status ID for the new status using hardcoded mapping
         let statusId = newStatus.id;
         if (!statusId || statusId === "" || statusId === null) {
           // Use hardcoded status ID mapping
           statusId = HARDCODED_STATUS_IDS[newStatus.value] || null;
         }
-
-        // Prepare payload for status update
-        const payload = {
-          EventId: currentFormData.eventId,
-          TaskTitle: taskTitle,
-          taskStatusId: statusId, // Use the validated status ID
-          AssignedTo: (selectedParticipantIds || []).map((item) =>
-            typeof item === "object" ? item?.id : item
-          ),
-          CreatedBy: userId,
-          UpdatedBy: userId,
-          CreativeType: currentFormData.type,
-          DueDate: currentFormData.date ? new Date(currentFormData.date).toISOString() : new Date().toISOString(),
-          CreativeNumbers: currentFormData.quantity,
-          checklistDetails: Array.isArray(currentFormData.checklist)
-            ? currentFormData.checklist.map(item => ({
-                text: item.text,
-                checked: item.checked,
-                isPlaceholder: item.isPlaceholder
-              }))
-            : [],
-          Description: currentFormData.description,
-          OrganizationId: organizationId || currentFormData.organizationId
-        };
-
 
         // If approving task, first approve the selected files
         if (newStatus.value === "Approved" && selectedFiles.length > 0) {
@@ -1013,27 +1066,14 @@ const TaskDetailPage = () => {
           }
         }
 
-        // Make API call to update task
-        // debugger;
-        const response = await fetchWithRefresh(`/apis/task/update/${taskId}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "1",
-          },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Status update failed");
-        }
-
-        await response.json();
+        // Use the new single API endpoint for status update
+        await updateTaskStatus(taskId, statusId);
         
         // Show success message with file approval info if applicable
         const successMessage = newStatus.value === "Approved" && selectedFiles.length > 0
           ? `Task approved successfully! ${selectedFiles.length} file(s) approved.`
+          : newStatus.value === "Active" && taskStatus?.value === "Under Approval"
+          ? `Task reverted to Active status successfully.`
           : `Task status updated to ${newStatus.label}`;
           
         addMessage({
@@ -1076,6 +1116,8 @@ const TaskDetailPage = () => {
             eventDate={eventDate}
             errors={validationErrors}
             onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
+            onChecklistUpdate={updateChecklistOnly}
+            taskId={taskId}
           />
         ),
       },
@@ -1104,12 +1146,12 @@ const TaskDetailPage = () => {
         ) : (
           <TasksFiles
             files={fileData.uploadedFiles}
-            onFilesChange={setFileData}
+            onFilesChange={handleFilesChange}
             mode={mode}
             taskId={taskId || taskData.id}
             eventId={apiEventId || taskData.eventId}
             organizationId={organizationId || taskData.organizationId}
-            selectedFiles={selectedFiles}
+            selectedFiles={memoizedSelectedFiles}
             onFileSelect={handleFileSelect}
             taskStatus={taskStatus}
           />
@@ -1122,7 +1164,7 @@ const TaskDetailPage = () => {
       return allTabs.filter(tab => tab.label === "Details");
     }
     return allTabs;
-  }, [mode, taskData, formData, handleFormFieldUpdate, eventDate, validationErrors, taskId, apiEventId, fileData.uploadedFiles, setFileData, organizationId, selectedFiles, handleFileSelect, activeTab, taskStatus]);
+  }, [mode, taskData, formData, handleFormFieldUpdate, eventDate, validationErrors, taskId, apiEventId, fileData.uploadedFiles, handleFilesChange, organizationId, memoizedSelectedFiles, handleFileSelect, activeTab, taskStatus, updateChecklistOnly]);
 
   const breadcrumbItems = React.useMemo(() => {
     // Ensure we have valid data before creating breadcrumb items
@@ -1224,7 +1266,7 @@ const TaskDetailPage = () => {
       <div className="Inner-Content">
         <TabMenu
           tabs={tabs}
-          showEditButton={mode === "view" && canEdit} // Show edit button only in view mode and when user has edit permissions
+          showEditButton={mode === "view" && canEdit && !isDesigner} // Show edit button only in view mode, when user has edit permissions, and user is not a Designer
           isEditMode={mode === "edit"}
           onEditClick={() => {
             setMode("edit");

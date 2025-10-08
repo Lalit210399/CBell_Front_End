@@ -1,24 +1,26 @@
 .task-creation-module {
     /* height: 100%; */
     /* width: 100%; */
-    padding: 15px;
+    /* padding: 15px; */
   }
   .event-detail-module {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     /* height: 100%; */
     /* width: 100%; */
-    padding: 15px;
+    /* padding: 15px; */
   }
   
   .BreadCrumb {
     height: auto;
     width: 100%;
-    padding: 5px 0;
-    margin-bottom: 10px;
+    /* padding: 5px 0; */
+    /* margin-bottom: 10px; */
   }
   
   .Top-Section {
     height: auto;
-    margin-bottom: 15px;
   }
   
   .Inner-Content {

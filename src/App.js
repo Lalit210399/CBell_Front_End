@@ -12,6 +12,8 @@ import Schedule from "./Pages/Schedules/Schedule";
 import EventDetailPage from "./Pages/Task/EventDetailPage";
 import ForgotPassword from "./CommonComponents/UserAuth/ForgotPassword";
 import TasksDetail from "./Pages/Task/TaskDetailPage";
+import TasksList from "./Pages/Tasks/TasksList";
+import AssignedEventsList from "./Pages/Events/AssignedEventsList";
 import Instagram from "./InstagramPost";
 import ProtectedRoute, { RequirePermission } from "./Context/ProtectedRoute";
 import { useUser } from "./Context/UserContext"; 
@@ -75,6 +77,8 @@ function App() {
                   {/* <Route path="/schedule/stepForm" element={<StepForm />} /> */}
                   <Route path="/events/eventDetailPage" element={<EventDetailPage />} />
                   <Route path="/events/eventDetailPage/tasks" element={<TasksDetail />} />
+                  <Route path="/events/assigned-events" element={<AssignedEventsList />} />
+                  <Route path="/tasks/list" element={<TasksList />} />
                   <Route path="/instagram" element={<Instagram />} />
                 </Routes>
               </MainLayout>

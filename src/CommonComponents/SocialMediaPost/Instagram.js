@@ -21,11 +21,13 @@ const SocialMediaUploader = ({
 
   useEffect(() => {
     if (open) {
-      setCaption(defaultCaption || '');
+      // Use file description as default caption if available, otherwise use defaultCaption
+      const fileDescription = fileDetail?.document?.description || fileDetail?.description || '';
+      setCaption(fileDescription || defaultCaption || '');
       setMessage('');
       if (forcedPlatform) setPlatform(forcedPlatform);
     }
-  }, [open, defaultCaption, forcedPlatform]);
+  }, [open, defaultCaption, forcedPlatform, fileDetail]);
 
   if (!open) return null;
 
