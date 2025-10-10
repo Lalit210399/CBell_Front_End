@@ -850,7 +850,17 @@ const TaskDetailPage = () => {
 
   // Wrap setFileData in useCallback to prevent unnecessary re-renders
   const handleFilesChange = useCallback((data) => {
-    setFileData(data);
+    // If a file was deleted, we need to refresh the files from the backend
+    if (data.refreshFiles || data.deletedFileId) {
+      // Trigger a refresh of the files by updating the fileData
+      // This will cause the TaskFiles component to re-fetch files
+      setFileData(prev => ({
+        ...prev,
+        refreshTrigger: (prev.refreshTrigger || 0) + 1
+      }));
+    } else {
+      setFileData(data);
+    }
   }, []);
 
   // Handle work submission file changes

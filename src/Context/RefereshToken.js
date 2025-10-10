@@ -16,13 +16,6 @@ function getCookieValue(name) {
   return null;
 }
 
-// Utility function to validate token format
-function isValidToken(token) {
-  if (!token || typeof token !== 'string' || token === 'null' || token === 'undefined') return false;
-  // Basic JWT format validation (3 parts separated by dots)
-  const parts = token.split('.');
-  return parts.length === 3;
-}
 
 // Centralized function to handle token expiration
 async function handleTokenExpired() {
@@ -102,7 +95,7 @@ async function performTokenRefresh() {
       return res.json();
     })
     .then((data) => {
-      if (!data.accessToken || !isValidToken(data.accessToken)) {
+      if (!data.accessToken || typeof data.accessToken !== 'string' || data.accessToken.trim() === '') {
         throw new Error('Invalid access token in refresh response');
       }
       
@@ -136,14 +129,9 @@ export async function fetchWithRefresh(input, init = {}) {
   // Get current access token
   let accessToken = localStorage.getItem('accessToken');
   
-  // Validate access token format
-  if (!isValidToken(accessToken)) {
-    console.warn('Invalid access token format, attempting refresh', {
-      token: accessToken === 'null' ? 'null' : (accessToken ? `${accessToken.substring(0, 20)}...` : 'undefined'),
-      length: accessToken?.length || 0,
-      parts: accessToken?.split('.').length || 0,
-      type: typeof accessToken
-    });
+  // Since access token is backend-only, we don't need to validate its format
+  // Just check if it exists and is not null/undefined
+  if (!accessToken || accessToken === 'null' || accessToken === 'undefined') {
     accessToken = null;
   }
 

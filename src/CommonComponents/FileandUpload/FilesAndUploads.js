@@ -39,6 +39,18 @@ const FilesUploads = ({
   
   // Use userId from props, or fallback to user.userId from context
   const effectiveUserId = userId || user?.userId;
+
+  // Helper function to check if current user is a designer
+  const isCurrentUserDesigner = useCallback(() => {
+    if (!user?.roles) return false;
+    
+    return user.roles.some(role => 
+      role.name?.toLowerCase().includes('designer') || 
+      role.displayName?.toLowerCase().includes('designer') ||
+      role.name?.toLowerCase().includes('creative') ||
+      role.displayName?.toLowerCase().includes('creative')
+    );
+  }, [user?.roles]);
   
  
   
@@ -49,6 +61,7 @@ const FilesUploads = ({
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [currentFile, setCurrentFile] = useState(null);
   const [description, setDescription] = useState('');
+  const [deletedFileIds, setDeletedFileIds] = useState([]);
   
   // Memoize the description change handler to prevent unnecessary re-renders
   const handleDescriptionChange = useCallback((e) => {
@@ -302,6 +315,9 @@ const FilesUploads = ({
         throw new Error(errorData.message || 'Failed to delete file');
       }
 
+      // Add file ID to deleted list to hide it from UI
+      setDeletedFileIds(prev => [...prev, fileId]);
+      
       // Remove file from local state
       setUploadedFiles(prev => prev.filter(f => f.documentId !== fileId));
       
@@ -313,6 +329,12 @@ const FilesUploads = ({
           duration: 3000
         });
       }
+      
+      // Notify parent component about the deletion
+      onDataChange?.({ 
+        deletedFileId: fileId,
+        uploadedFiles: uploadedFiles.filter(f => f.documentId !== fileId)
+      });
     } catch (error) {
       console.error('Error deleting file:', error);
       
@@ -553,6 +575,7 @@ const FilesUploads = ({
     return false;
   };
 
+
   // Helper function to get file category
   // const getFileCategory = (file) => {
   //   if (isWorkSubmission(file)) return 'work-submission';
@@ -687,8 +710,10 @@ const FilesUploads = ({
                 {!['image', 'video', 'audio', 'pdf'].includes(file.type) && <FileIcon size={16} />}
               </div>
               <span className="file-name" title={file.name}>{file.name}</span>
-              {/* Delete button - visible in view mode and edit mode, but not for approved files */}
-              {!isApproved && (
+              {/* Delete button - visible for all files except approved ones, but designers can only delete work submissions */}
+              {!approvedFiles.includes(file.documentId) && (
+                !isCurrentUserDesigner() || isWorkSubmission(file)
+              ) && (
                 <button
                   className="file-action-btn delete-btn"
                   onClick={(e) => {
@@ -864,6 +889,7 @@ const FilesUploads = ({
             {(() => {
               const workFiles = [...files, ...uploadedFiles]
                 .filter(file => isWorkSubmission(file))
+                .filter(file => !deletedFileIds.includes(file.documentId))
                 .sort((a, b) => new Date(b.uploadDate || b.createdAt || 0) - new Date(a.uploadDate || a.createdAt || 0));
               
               return workFiles.length > 0 && (
@@ -888,6 +914,7 @@ const FilesUploads = ({
             {(() => {
               const referenceFiles = [...files, ...uploadedFiles]
                 .filter(file => isReferenceFile(file))
+                .filter(file => !deletedFileIds.includes(file.documentId))
                 .sort((a, b) => new Date(b.uploadDate || b.createdAt || 0) - new Date(a.uploadDate || a.createdAt || 0));
               
               return referenceFiles.length > 0 && (
@@ -912,6 +939,7 @@ const FilesUploads = ({
             {(() => {
               const otherFiles = [...files, ...uploadedFiles]
                 .filter(file => !isWorkSubmission(file) && !isReferenceFile(file))
+                .filter(file => !deletedFileIds.includes(file.documentId))
                 .sort((a, b) => new Date(b.uploadDate || b.createdAt || 0) - new Date(a.uploadDate || a.createdAt || 0));
               
               return otherFiles.length > 0 && (
