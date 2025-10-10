@@ -528,6 +528,18 @@ const FilesUploads = ({
     return false;
   };
 
+  // Helper function to check if current user is a designer
+  const isCurrentUserDesigner = useCallback(() => {
+    if (!user?.roles) return false;
+    
+    return user.roles.some(role => 
+      role.name?.toLowerCase().includes('designer') || 
+      role.displayName?.toLowerCase().includes('designer') ||
+      role.name?.toLowerCase().includes('creative') ||
+      role.displayName?.toLowerCase().includes('creative')
+    );
+  }, [user?.roles]);
+
   // Helper function to get file category
   // const getFileCategory = (file) => {
   //   if (isWorkSubmission(file)) return 'work-submission';
@@ -662,8 +674,8 @@ const FilesUploads = ({
                 {!['image', 'video', 'audio', 'pdf'].includes(file.type) && <FileIcon size={16} />}
               </div>
               <span className="file-name" title={file.name}>{file.name}</span>
-              {/* Delete button - visible in view mode and edit mode, but not for approved files */}
-              {!isApproved && (
+              {/* Delete button - visible in view mode and edit mode, but not for approved files or for designers */}
+              {!isApproved && !isCurrentUserDesigner() && (
                 <button
                   className="file-action-btn delete-btn"
                   onClick={(e) => {
