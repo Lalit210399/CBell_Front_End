@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-
+import { useUser } from "../../Context/UserContext";
 import { Upload, ChevronLeft, ChevronRight, X, ExternalLink } from "lucide-react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -23,6 +23,7 @@ const FileUpload = ({
   initialFiles = [],
   externalLoading = false
 }) => {
+  const { user } = useUser();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [dragOver, setDragOver] = useState(false);
@@ -83,6 +84,8 @@ const FileUpload = ({
     const formData = new FormData();
     formData.append("File", file);
     formData.append("description", file.name);
+    formData.append('status', 'Pending');
+    formData.append('UserId', user?.userId);
 
     const response = await fetch("/apis/document/upload_document", {
       method: "POST",
@@ -97,11 +100,12 @@ const FileUpload = ({
 
   const linkDocumentToTask = async (documentId) => {
     const payload = {
-      eventId,
-      organizationId,
-      documentId,
+      DocumentId: documentId,
+      EventId: eventId,
+      OrganizationId: organizationId,
+      userId: user?.userId,
     };
-    if (taskId) payload.taskId = taskId;
+    if (taskId) payload.TaskId = taskId;
 
     const response = await fetch("/apis/Document-Details", {
       method: "POST",

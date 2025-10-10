@@ -221,6 +221,82 @@
   background-color: #f0f0f0;
 }
 
+/* Clickable Cell Styles */
+/* .tn-clickable_cell {
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.tn-clickable_cell:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.tn-hover_effect {
+  position: relative;
+}
+
+.tn-hover_effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.05), transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  pointer-events: none;
+}
+
+.tn-hover_effect:hover::before {
+  opacity: 1;
+} */
+
+/* Row Clickable Cell Styles */
+.tn-row_clickable_cell {
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.tn-row_clickable_cell:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Visual distinction between cell-specific and row clickable */
+/* .tn-clickable_cell {
+  position: relative;
+}
+
+.tn-clickable_cell::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  background: rgba(59, 130, 246, 0.6);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.tn-clickable_cell:hover::after {
+  opacity: 1;
+}
+
+/* Different hover effects for different click types */
+.tn-clickable_cell:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-left: 3px solid rgba(59, 130, 246, 0.8);
+} */
+
+.tn-row_clickable_cell:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-left: 2px solid rgba(0, 0, 0, 0.2);
+}
+
 /* Alternate row coloring */
 .tn-table_wrapper tbody tr:nth-child(even) {
   background-color: #fafafa;

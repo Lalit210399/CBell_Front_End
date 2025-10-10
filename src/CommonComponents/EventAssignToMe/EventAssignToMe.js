@@ -65,7 +65,7 @@ const EventAssignToMe = ({ events, onEventClick, title = "Events Assigned to Me"
         );
       case "createdBy":
         return (
-          <div onClick={handleClick} className="created-by-name">
+          <div onClick={handleClick} className="created-by-name" title={item.createdBy?.name || getEmptyText(key)}>
             {item.createdBy?.name || getEmptyText(key)}
           </div>
         );

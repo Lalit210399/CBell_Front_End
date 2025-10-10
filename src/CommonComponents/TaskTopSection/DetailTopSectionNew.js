@@ -3,6 +3,7 @@ import { ArrowLeft, Save, Users } from "lucide-react";
 import CustomDropdown from "../Dropdown/CustomDropdown";
 import MultiSelectDropdown from "../Dropdown/MultiSelectDropdown";
 import UserDropdown from "../UserDropdown";
+import AvatarList from "../Avatar/index";
 import { useUser } from "../../Context/UserContext";
 import { useEventTypes } from "../../Hooks/useEventTypes";
 import { useDepartments } from "../../Hooks/useDepartments";
@@ -304,25 +305,12 @@ const DetailTopSectionNew = ({
             <span className="label">Team:</span>
             <div className="avatar-group-new">
               {hasAssignedUsers ? (
-                <div className="team-avatars-container">
-                  {selectedParticipants.slice(0, 2).map((participant, index) => (
-                    <div 
-                      key={participant.id || index} 
-                      className="team-avatar"
-                      title={participant.name || 'Unknown User'}
-                    >
-                      {participant.name ? participant.name.charAt(0).toUpperCase() : 'U'}
-                    </div>
-                  ))}
-                  {selectedParticipants.length > 2 && (
-                    <div 
-                      className="team-avatar"
-                      title={`${selectedParticipants.slice(2).map(p => p.name).join(', ')}`}
-                    >
-                      +{selectedParticipants.length - 2}
-                    </div>
-                  )}
-                </div>
+                <AvatarList 
+                  avatars={selectedParticipants} 
+                  maxVisible={2} 
+                  showTooltip={true}
+                  tooltipPosition="top"
+                />
               ) : (
                 <div className="no-assigned-users-placeholder">
                   <Users size={14} className="placeholder-icon" />

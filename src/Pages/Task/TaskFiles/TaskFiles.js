@@ -11,13 +11,15 @@ const TasksFiles = ({
   mode = "view",
   selectedFiles,
   onFileSelect,
-  taskStatus
+  taskStatus,
+  onWorkSubmissionFilesChange
 }) => {
   const { user } = useUser();
   const [fetchedFiles, setFetchedFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hasApprovedFile, setHasApprovedFile] = useState(false);
   const [hasAnyFiles, setHasAnyFiles] = useState(false);
+  const [hasWorkSubmissionFiles, setHasWorkSubmissionFiles] = useState(false);
   const hasFetchedRef = useRef(false);
 
   useEffect(() => {
@@ -48,6 +50,22 @@ const TasksFiles = ({
         // Check if there are any files at all
         setHasAnyFiles(data.length > 0);
 
+        // Check for work submission files (files uploaded by designers)
+        const workSubmissionFiles = data.filter(doc => {
+          // Check if the uploader is a designer based on userInfo
+          if (doc.userInfo && doc.userInfo.roles) {
+            return doc.userInfo.roles.some(role => 
+              role.name?.toLowerCase().includes('designer') || 
+              role.displayName?.toLowerCase().includes('designer') ||
+              role.name?.toLowerCase().includes('creative') ||
+              role.displayName?.toLowerCase().includes('creative')
+            );
+          }
+          return false;
+        });
+        
+        setHasWorkSubmissionFiles(workSubmissionFiles.length > 0);
+
         const filesWithPreview = await Promise.all(
           data.map(async (doc) => {
             const type = getFileTypeFromMime(doc.contentType);
@@ -72,6 +90,7 @@ const TasksFiles = ({
               status: doc.status || 'Pending', // Add status field
               publishedTo: doc.publishedTo || [], // Add publishedTo field
               uploadDate: doc.uploadDate, // Add uploadDate field
+              size: doc.fileSize || doc.size, // Add file size field
               userInfo: doc.userInfo, // Add userInfo field with roles and fullName
               isApproved: doc.status === 'Approved' // Calculate isApproved
             };
@@ -98,8 +117,14 @@ const TasksFiles = ({
       hasFetchedRef.current = true;
       fetchDocuments();
     }
-  }, [taskId]); // Removed onFileSelect from dependencies to prevent unnecessary re-fetching
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taskId, onFileSelect]); // Include onFileSelect in dependencies
+
+  // Notify parent component when work submission files change
+  useEffect(() => {
+    if (onWorkSubmissionFilesChange) {
+      onWorkSubmissionFilesChange(hasWorkSubmissionFiles);
+    }
+  }, [hasWorkSubmissionFiles, onWorkSubmissionFilesChange]);
 
   const handleFileSelect = useCallback((fileId, isSelected) => {
     if (hasApprovedFile) {
@@ -113,8 +138,7 @@ const TasksFiles = ({
       // The parent component should handle clearing previous selections
       onFileSelect(selectedFile, true);
     }
-  }, [hasApprovedFile, fetchedFiles]); // Removed onFileSelect from dependencies
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasApprovedFile, fetchedFiles, onFileSelect]); // Include onFileSelect in dependencies
 
   // Function to check if task has any files (for external validation)
   const checkIfTaskHasFiles = () => {
@@ -146,6 +170,7 @@ const TasksFiles = ({
           onFileSelect={handleFileSelect}
           hasApprovedFile={hasApprovedFile} // Pass this prop to child
           enableSelectionRadio={taskStatus?.value === "Under Approval"}
+          onWorkSubmissionFilesChange={onWorkSubmissionFilesChange}
         />
       )}
     </div>

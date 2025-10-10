@@ -214,6 +214,7 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
         src: "",
         id: task.assignedTo?.[index] || `user-${index}`
       })) || [],
+      assignedBy: task.assignmentDetails?.[0]?.assignedByName || task.createdByName || "Unknown",
       dueDate: new Date(task.dueDate).toLocaleDateString("en-GB"),
       description: task.description,
       creativeType: task.creativeType,
@@ -257,30 +258,41 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
     const data = await response.json();
 
     // Transform API data to match the expected format for RecentTasks component
-    return data.tasks.map((task) => ({
-      id: task.id,
-      status: task.statusName,
-      taskName: task.taskName,
-      eventName: task.eventName,
-      eventId: task.eventId,
-      assignedTo: task.assignedTo?.map((name, index) => ({
-        name: name,
-        src: "",
-        id: `user-${index}`
-      })) || [],
-      dueDate: new Date(task.dueDate).toLocaleDateString("en-GB"),
-      description: task.taskDescription,
-      creativeType: task.priority,
-      daysUntilDue: task.isDueSoon ? "Due Soon" : task.isDueToday ? "Due Today" : task.isOverdue ? "Overdue" : "",
-      createdBy: "Unknown", // Not provided in API response
-      updatedBy: "Unknown", // Not provided in API response
-      isOverdue: task.isOverdue,
-      isDueSoon: task.isDueSoon,
-      isDueToday: task.isDueToday,
-      eventDate: task.eventDate ? new Date(task.eventDate).toLocaleDateString("en-GB") : "",
-      organizationId: task.organizationId,
-      organizationName: task.organizationName,
-    }));
+    return data.tasks.map((task) => {
+      // Find the assignment detail where userId matches current user ID
+      const currentUserAssignment = task.assignmentDetails?.find(
+        detail => detail.userId === user?.userId
+      );
+      
+      // Console log for debugging
+      
+      
+      return {
+        id: task.id,
+        status: task.statusName,
+        taskName: task.taskName,
+        eventName: task.eventName,
+        eventId: task.eventId,
+        assignedTo: task.assignedTo?.map((assignee, index) => ({
+          name: assignee.name,
+          src: "",
+          id: assignee.id || `user-${index}`
+        })) || [],
+        assignedBy: currentUserAssignment?.assignedByName || task.assignmentDetails?.[0]?.assignedByName || "Unknown",
+        dueDate: new Date(task.dueDate).toLocaleDateString("en-GB"),
+        description: task.taskDescription,
+        creativeType: task.priority,
+        daysUntilDue: task.isDueSoon ? "Due Soon" : task.isDueToday ? "Due Today" : task.isOverdue ? "Overdue" : "",
+        createdBy: "Unknown", // Not provided in API response
+        updatedBy: "Unknown", // Not provided in API response
+        isOverdue: task.isOverdue,
+        isDueSoon: task.isDueSoon,
+        isDueToday: task.isDueToday,
+        eventDate: task.eventDate ? new Date(task.eventDate).toLocaleDateString("en-GB") : "",
+        organizationId: task.organizationId,
+        organizationName: task.organizationName,
+      };
+    });
   }, [orgIdReady, selectedOrganizationId, user?.organizationId, user?.userId, isViewingOwnOrganization]);
 
 
@@ -344,14 +356,12 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
     }
   }, [orgIdReady, scopeChangeTrigger, executeSummary]);
 
-  // Separate useEffect for Events Campaign to prevent unnecessary re-execution
+  // Separate useEffect for Events Campaign to only run when month/year changes
   useEffect(() => {
     if (orgIdReady) {
-      // Clear stale events before fetching new scope
-      resetEventsCampaign();
       executeEventsCampaign();
     }
-  }, [selectedMonth, selectedYear, orgIdReady, scopeChangeTrigger, executeEventsCampaign, resetEventsCampaign]);
+  }, [orgIdReady, selectedMonth, selectedYear, executeEventsCampaign]);
 
   // Clear and refetch summary on scope change to avoid stale counts
   useEffect(() => {
@@ -477,6 +487,20 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
     });
   };
 
+  // Handle event click
+  const handleEventClick = (task) => {
+    if (task && task.eventId) {
+      navigate("/events/eventDetailPage", {
+        state: {
+          eventId: task.eventId,
+          mode: "view",
+        },
+      });
+    } else {
+      console.warn("Task missing eventId:", task);
+    }
+  };
+
 
   // Handle event campaign item click
   const handleEventCampaignClick = (item) => {
@@ -530,6 +554,7 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
                 filter={filter}
                 onFilterChange={setFilter}
                 onTaskClick={handleTaskClick}
+                onEventClick={handleEventClick}
                 loading={currentTitle === "Tasks Assigned to Me" ? loadingMyTasks : loadingTasks}
                 error={currentTitle === "Tasks Assigned to Me" ? errorMyTasks : errorTasks}
                 showDropdown={[
@@ -538,6 +563,7 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
                 hideAssignedToColumn={currentTitle === "New Tasks"}
                 disableClientFiltering={true}
                 showOrganizationColumn={currentTitle === "Tasks Assigned to Me"}
+                showAssignedByColumn={true}
               />
             </div>
           )}

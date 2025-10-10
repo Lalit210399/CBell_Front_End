@@ -67,6 +67,7 @@ const TaskDetailPage = () => {
   const [validationErrors, setValidationErrors] = useState({});
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [apiEventId, setApiEventId] = useState(locationEventId); // Store eventId from API response
+  const [hasWorkSubmissionFiles, setHasWorkSubmissionFiles] = useState(false); // Track work submission files
   
   // Use task status context
   const { loading: statusLoading } = useTaskStatus();
@@ -154,7 +155,7 @@ const TaskDetailPage = () => {
     
     // Otherwise, allow editing (Designers can now edit tasks)
     return true;
-  }, [taskData.canCRUD, taskData.accessLevel, taskStatus?.value, isDesigner, taskData.id]);
+  }, [taskData.canCRUD, taskData.accessLevel, taskStatus?.value]);
 
   const canSave = React.useMemo(() => {
     // In create mode, always allow saving
@@ -852,6 +853,11 @@ const TaskDetailPage = () => {
     setFileData(data);
   }, []);
 
+  // Handle work submission file changes
+  const handleWorkSubmissionFilesChange = useCallback((hasWorkFiles) => {
+    setHasWorkSubmissionFiles(hasWorkFiles);
+  }, []);
+
   // Memoize selectedFiles to prevent unnecessary re-renders
   const memoizedSelectedFiles = useMemo(() => selectedFiles, [selectedFiles]);
 
@@ -966,35 +972,16 @@ const TaskDetailPage = () => {
       return;
     }
     
-    // Special validation for Under Approval status - must have files uploaded
+    // Special validation for Under Approval status - must have work submission files
     if (newStatus.value === "Under Approval") {
-      try {
-        // Check if there are any documents uploaded for this task
-        const response = await fetch(`/apis/document-details/task/${taskId}`, {
-          headers: { 'ngrok-skip-browser-warning': '1' }
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to check task documents');
-        }
-        
-        const documents = await response.json();
-        
-        if (!documents || documents.length === 0) {
-          addMessage({
-            text: "You must upload at least one file before submitting for approval.",
-            type: "error",
-            duration: 5000
-          });
-          setActiveTab("Files & Uploads");
-          return;
-        }
-      } catch (error) {
+      // Check if there are work submission files available
+      if (!hasWorkSubmissionFiles) {
         addMessage({
-          text: "Failed to verify task documents. Please try again.",
+          text: "You must upload at least one work submission file before submitting for approval.",
           type: "error",
-          duration: 3000
+          duration: 5000
         });
+        setActiveTab("Files & Uploads");
         return;
       }
     }
@@ -1154,6 +1141,7 @@ const TaskDetailPage = () => {
             selectedFiles={memoizedSelectedFiles}
             onFileSelect={handleFileSelect}
             taskStatus={taskStatus}
+            onWorkSubmissionFilesChange={handleWorkSubmissionFilesChange}
           />
         ),
         disabled: mode === "create",
@@ -1164,7 +1152,7 @@ const TaskDetailPage = () => {
       return allTabs.filter(tab => tab.label === "Details");
     }
     return allTabs;
-  }, [mode, taskData, formData, handleFormFieldUpdate, eventDate, validationErrors, taskId, apiEventId, fileData.uploadedFiles, handleFilesChange, organizationId, memoizedSelectedFiles, handleFileSelect, activeTab, taskStatus, updateChecklistOnly]);
+  }, [mode, taskData, formData, handleFormFieldUpdate, eventDate, validationErrors, taskId, apiEventId, fileData.uploadedFiles, handleFilesChange, organizationId, memoizedSelectedFiles, handleFileSelect, activeTab, taskStatus, updateChecklistOnly, handleWorkSubmissionFilesChange]);
 
   const breadcrumbItems = React.useMemo(() => {
     // Ensure we have valid data before creating breadcrumb items
@@ -1260,6 +1248,8 @@ const TaskDetailPage = () => {
           isUpdatingStatus={isUpdatingStatus}
           user={user}
           taskId={taskId}
+          hasWorkSubmissionFiles={hasWorkSubmissionFiles}
+          onTabChange={handleTabChange}
         />
       </div>
 

@@ -16,6 +16,10 @@ const Table = ({
   showActions = true,
   onRowClick,
   onColumnClick, // ✅ NEW prop for column clicks
+  onCellClick, // ✅ NEW prop for individual cell clicks
+  clickableColumns = [], // ✅ NEW prop to specify which columns are clickable
+  rowClickable = true, // ✅ NEW prop to enable/disable row clicks
+  cellClickPriority = true, // ✅ NEW prop - if true, cell clicks override row clicks
   loading = false,
   skeletonCount = 5, // Number of skeleton rows to show
   className = "", // New prop for additional className
@@ -107,29 +111,67 @@ const Table = ({
               data.map((item, rowIndex) => (
                 <tr
                   key={rowIndex}
-                  className={onRowClick ? "tn-clickable_row" : ""}
-                  onClick={() => onRowClick?.(item)}
+                  className={
+                    (onRowClick && rowClickable) 
+                      ? "tn-clickable_row" 
+                      : ""
+                  }
+                  onClick={(e) => {
+                    // Only handle row click if no cell click occurred and row is clickable
+                    if (rowClickable && onRowClick && !e.defaultPrevented) {
+                      onRowClick(item);
+                    }
+                  }}
                 >
-                  {columns.map((column) => (
-                    <td
-                      key={column.key}
-                      className={onColumnClick ? "tn-clickable_cell" : ""}
-                      onClick={(e) => {
-                        if (onColumnClick) {
-                          e.stopPropagation(); // prevent row click from firing
-                          onColumnClick(column, item);
+                  {columns.map((column) => {
+                    // const isClickable = clickableColumns.includes(column.key) || onCellClick;
+                    // const hasColumnClick = onColumnClick;
+                    const isRowClickable = rowClickable && onRowClick;
+                    
+                    return (
+                      <td
+                        key={column.key}
+                        className={
+                          // isClickable || hasColumnClick 
+                          //   ? "tn-clickable_cell tn-hover_effect" 
+                          //   : 
+                          isRowClickable 
+                            ? "tn-row_clickable_cell"
+                            : ""
                         }
-                      }}
-                    >
-                      <span
-                        className="tn-tooltip_wrapper"
-                        title={item[column.key] ? item[column.key].toString() : ""}
+                        // onClick={(e) => {
+                        //   if (isClickable && onCellClick) {
+                        //     e.stopPropagation(); // prevent row click from firing
+                        //     e.preventDefault(); // prevent default behavior
+                        //     onCellClick(column, item, e);
+                        //   } else if (hasColumnClick) {
+                        //     e.stopPropagation(); // prevent row click from firing
+                        //     e.preventDefault(); // prevent default behavior
+                        //     onColumnClick(column, item);
+                        //   } else if (cellClickPriority && isClickable) {
+                        //     // If cell click priority is enabled and this is a clickable cell,
+                        //     // prevent row click even if no cell handler is provided
+                        //     e.stopPropagation();
+                        //   }
+                        // }}
+                        style={{
+                          // cursor: isClickable || hasColumnClick 
+                          //   ? 'pointer' 
+                          //   : 
+                          cursor: isRowClickable 
+                            ? 'pointer' 
+                            : 'default'
+                        }}
                       >
-                        {renderCell ? renderCell(column.key, item) : item[column.key]}
-                      </span>
-
-                    </td>
-                  ))}
+                        <span
+                          className="tn-tooltip_wrapper"
+                          title={item[column.key] ? item[column.key].toString() : ""}
+                        >
+                          {renderCell ? renderCell(column.key, item) : item[column.key]}
+                        </span>
+                      </td>
+                    );
+                  })}
                   {showActions && (
                     <td
                       className="tn-action_container"

@@ -44,7 +44,9 @@ const TopSection = ({
   onClearError,
   isUpdatingStatus = false,
   createdBy = "",
-  taskId = null
+  taskId = null,
+  hasWorkSubmissionFiles = false,
+  onTabChange // Add callback to change tabs
 }) => {
   const { user } = useUser();
 
@@ -181,12 +183,13 @@ const TopSection = ({
   // Handle status change button clicks
   const handleStatusChange = async (newStatusValue) => {
     if (onStatusChange) {
-      // Special validation for Under Approval status
-      if (newStatusValue === "Under Approval" && taskId) {
-        const hasFiles = await checkTaskFiles(taskId);
-        if (!hasFiles) {
-          // Show error message and don't proceed with status change
-          alert("You must upload at least one file before submitting for approval.");
+      // Special validation for Under Approval status - check for work submission files
+      if (newStatusValue === "Under Approval") {
+        if (!hasWorkSubmissionFiles) {
+          // Redirect to Files & Uploads tab
+          if (onTabChange) {
+            onTabChange("Files & Uploads");
+          }
           return;
         }
       }
@@ -207,6 +210,13 @@ const TopSection = ({
         };
         onStatusChange(fallbackStatus);
       }
+    }
+  };
+
+  // Handle disabled button click to redirect to Files & Uploads tab
+  const handleDisabledSubmitClick = () => {
+    if (!hasWorkSubmissionFiles && onTabChange) {
+      onTabChange("Files & Uploads");
     }
   };
 
@@ -348,17 +358,23 @@ const TopSection = ({
                 {/* Status change buttons - only show in view mode */}
                 {mode === "view" && (
                   <div className="edit-top-status-change-buttons">
-                    {/* Submit for Approval button - show only for Designers and for all statuses except Under Approval, Approved, and Published */}
-                    {isDesigner && status?.value !== "Under Approval" && (
-                      <button
-                        className="edit-top-status-btn edit-top-under-approval-btn"
-                        onClick={() => handleStatusChange("Under Approval")}
-                        title="Submit for Approval"
-                        disabled={isUpdatingStatus}
-                      >
-                        {isUpdatingStatus ? "Updating..." : "Submit for Approval"}
-                      </button>
-                    )}
+                     {/* Submit for Approval button - show only for Designers and for all statuses except Under Approval, Approved, and Published */}
+                     {isDesigner && status?.value !== "Under Approval" && (
+                       <button
+                         className={`edit-top-status-btn edit-top-under-approval-btn ${!hasWorkSubmissionFiles ? 'disabled-clickable' : ''}`}
+                         onClick={() => {
+                           if (hasWorkSubmissionFiles) {
+                             handleStatusChange("Under Approval");
+                           } else {
+                             handleDisabledSubmitClick();
+                           }
+                         }}
+                         title={hasWorkSubmissionFiles ? "Submit for Approval" : "Click to go to Files & Uploads tab to upload work submission files"}
+                         disabled={isUpdatingStatus}
+                       >
+                         {isUpdatingStatus ? "Updating..." : "Submit for Approval"}
+                       </button>
+                     )}
 
                     {/* Approved button - show to everyone EXCEPT Designers when status is Under Approval */}
                     {!isDesigner && status?.value === "Under Approval" && (
