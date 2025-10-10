@@ -272,6 +272,7 @@ const CommentsPreview = ({ onFilesChange = () => {}, taskId, eventId, isActive, 
           organizationId={organizationId}
           initialFiles={allFiles}
           externalLoading={loadingFiles}
+          loadingType="fetch"
         />
       </div>
     </div>

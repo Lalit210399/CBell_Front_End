@@ -31,6 +31,8 @@ const FilesUploads = ({
   enableSelectionRadio = false, // ← NEW PROP for radio button selection
   showFileRequirementWarning = false, // ← NEW PROP for showing file requirement warning
   onWorkSubmissionFilesChange, // ← NEW PROP for work submission file tracking
+  externalLoading = false, // ← NEW PROP for external loading state
+  loadingType = "upload" // ← NEW PROP for loading type
 }) => {
   const { user } = useUser();
   
@@ -56,6 +58,44 @@ const FilesUploads = ({
   const [hasWorkSubmissionFiles, setHasWorkSubmissionFiles] = useState(false);
   const filesRef = useRef([]);
   const uploadedFilesRef = useRef([]);
+
+  // Loading skeleton component
+  const SkeletonPreviewGrid = () => {
+    const isUploadingState = isUploading;
+    const isFetchingState = externalLoading || (files.length === 0 && !isUploading);
+    
+    const getLoadingText = () => {
+      if (isUploadingState) {
+        return "Uploading files...";
+      } else if (isFetchingState) {
+        return "Loading files...";
+      }
+      return "Processing files...";
+    };
+    
+    const getSubText = () => {
+      if (isUploadingState) {
+        return "Please wait while your files are being uploaded and processed";
+      } else if (isFetchingState) {
+        return "Please wait while we fetch your files";
+      }
+      return "Please wait while your files are being processed";
+    };
+    
+    const containerClass = `loading-container ${isUploadingState ? 'uploading' : isFetchingState ? 'fetching' : ''}`;
+    
+    return (
+      <div className={containerClass}>
+        <div className="loading-content">
+          <div className="loading-spinner">
+            <div className="spinner"></div>
+          </div>
+          <p className="loading-text">{getLoadingText()}</p>
+          <p className="loading-subtext">{getSubText()}</p>
+        </div>
+      </div>
+    );
+  };
 
 
   // Handle click outside to close preview modal
@@ -752,7 +792,9 @@ const FilesUploads = ({
           )}
         </div>
 
-        {[...files, ...uploadedFiles].length === 0 && !isUploading ? (
+        {isUploading || externalLoading ? (
+          <SkeletonPreviewGrid />
+        ) : [...files, ...uploadedFiles].length === 0 ? (
           <div className="empty-files-state">
             <div className="empty-files-illustration">
               <FileIcon size={64} className="empty-icon" />

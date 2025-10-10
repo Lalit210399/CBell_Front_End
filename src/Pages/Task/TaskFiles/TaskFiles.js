@@ -152,27 +152,23 @@ const TasksFiles = ({
 
   return (
     <div>
-      {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
-          <p>Loading files...</p>
-        </div>
-      ) : (
-        <FilesandUploads
-          files={fetchedFiles}
-          onDataChange={onFilesChange}
-          taskId={taskId}
-          eventId={eventId}
-          organizationId={organizationId}
-          userId={user?.userId}
-          readOnly={hasApprovedFile} // Only disable if approved file exists, not for view mode
-          mode={mode}
-          selectedFiles={selectedFiles.map(f => f.documentId)}
-          onFileSelect={handleFileSelect}
-          hasApprovedFile={hasApprovedFile} // Pass this prop to child
-          enableSelectionRadio={taskStatus?.value === "Under Approval"}
-          onWorkSubmissionFilesChange={onWorkSubmissionFilesChange}
-        />
-      )}
+      <FilesandUploads
+        files={fetchedFiles}
+        onDataChange={onFilesChange}
+        taskId={taskId}
+        eventId={eventId}
+        organizationId={organizationId}
+        userId={user?.userId}
+        readOnly={hasApprovedFile} // Only disable if approved file exists, not for view mode
+        mode={mode}
+        selectedFiles={selectedFiles.map(f => f.documentId)}
+        onFileSelect={handleFileSelect}
+        hasApprovedFile={hasApprovedFile} // Pass this prop to child
+        enableSelectionRadio={taskStatus?.value === "Under Approval"}
+        onWorkSubmissionFilesChange={onWorkSubmissionFilesChange}
+        externalLoading={loading}
+        loadingType="fetch"
+      />
     </div>
   );
 };
