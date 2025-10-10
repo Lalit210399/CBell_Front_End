@@ -77,6 +77,26 @@
   font-size: 14px;
 }
 
+.assigned-by-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #E3F2FD;
+  color: #1565C0;
+  border: 1px solid #BBDEFB;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.assigned-by-badge:hover {
+  background: #BBDEFB;
+  color: #0D47A1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(21, 101, 192, 0.2);
+}
+
 /* Skeleton styles */
 .skeleton-row-cell {
   width: 100%;

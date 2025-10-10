@@ -27,10 +27,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #392B58;
+  background-color: #043E54;
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   font-size: 16px;
   color: #fff;
   flex-shrink: 0; /* Prevents it from shrinking */

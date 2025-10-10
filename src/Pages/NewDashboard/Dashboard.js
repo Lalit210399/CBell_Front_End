@@ -388,12 +388,12 @@ const Dashboard = () => {
     }
   }, [orgIdReady, scopeChangeTrigger, executeSummary, executeActiveEvents, executeAssignedEvents]);
 
-  // Separate useEffect for Events Campaign - only refetch when month changes
+  // Separate effect for events campaign to only run when month/year changes
   useEffect(() => {
     if (orgIdReady) {
       executeEventsCampaign();
     }
-  }, [selectedMonth, selectedYear, orgIdReady, executeEventsCampaign]);
+  }, [orgIdReady, selectedMonth, selectedYear, executeEventsCampaign]);
 
   // Define task tiles for reuse
   const taskTiles = useMemo(() => [
@@ -775,6 +775,7 @@ const Dashboard = () => {
                 filter={filter}
                 onFilterChange={setFilter}
                 onTaskClick={handleTaskClick}
+                onEventClick={handleEventClick}
                 loading={loadingTasks}
                 error={errorTasks}
                 showDropdown={[

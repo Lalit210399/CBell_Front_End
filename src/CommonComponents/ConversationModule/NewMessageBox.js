@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Paperclip, Send } from 'lucide-react';
 import Avatar from './Avatar';
 import MessageStrip from '../MessageStrip/MessageStrip';
+import { useUser } from '../../Context/UserContext';
 
 const FilePreviewBox = ({ file, uploading, onRemove }) => {
   if (!file) return null;
@@ -34,6 +35,7 @@ const FilePreviewBox = ({ file, uploading, onRemove }) => {
 };
 
 const NewMessageBox = ({ onSend, currentUser }) => {
+  const { user } = useUser();
   const [message, setMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -50,11 +52,18 @@ const NewMessageBox = ({ onSend, currentUser }) => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('description', file.name);
+      formData.append('status', 'Pending');
+      formData.append('UserId', user?.userId);
+      
       const response = await fetch('/apis/document/upload_document', {
         method: 'POST',
         body: formData,
+        headers: { 'ngrok-skip-browser-warning': '1' }
       });
-      if (!response.ok) throw new Error('File upload failed');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`File upload failed: ${response.status} - ${errorText}`);
+      }
       const data = await response.json();
       setUploadedDocId(data.documentId);
     } catch (err) {

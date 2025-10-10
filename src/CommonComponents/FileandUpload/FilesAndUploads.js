@@ -31,11 +31,16 @@ const FilesUploads = ({
   enableSelectionRadio = false, // ← NEW PROP for radio button selection
   showFileRequirementWarning = false, // ← NEW PROP for showing file requirement warning
   addMessage, // ← NEW PROP for toast notifications
+  onWorkSubmissionFilesChange, // ← NEW PROP for work submission file tracking
+  externalLoading = false, // ← NEW PROP for external loading state
+  loadingType = "upload" // ← NEW PROP for loading type
 }) => {
   const { user } = useUser();
   
   // Use userId from props, or fallback to user.userId from context
   const effectiveUserId = userId || user?.userId;
+  
+ 
   
   // const [links, setLinks] = useState([]); // commented out for now
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -51,8 +56,47 @@ const FilesUploads = ({
   }, []);
   const [approvedFiles, setApprovedFiles] = useState([]);
   const [hasApprovedOrPublishedFile, setHasApprovedOrPublishedFile] = useState(false);
+  const [hasWorkSubmissionFiles, setHasWorkSubmissionFiles] = useState(false);
   const filesRef = useRef([]);
   const uploadedFilesRef = useRef([]);
+
+  // Loading skeleton component
+  const SkeletonPreviewGrid = () => {
+    const isUploadingState = isUploading;
+    const isFetchingState = externalLoading || (files.length === 0 && !isUploading);
+    
+    const getLoadingText = () => {
+      if (isUploadingState) {
+        return "Uploading files...";
+      } else if (isFetchingState) {
+        return "Loading files...";
+      }
+      return "Processing files...";
+    };
+    
+    const getSubText = () => {
+      if (isUploadingState) {
+        return "Please wait while your files are being uploaded and processed";
+      } else if (isFetchingState) {
+        return "Please wait while we fetch your files";
+      }
+      return "Please wait while your files are being processed";
+    };
+    
+    const containerClass = `loading-container ${isUploadingState ? 'uploading' : isFetchingState ? 'fetching' : ''}`;
+    
+    return (
+      <div className={containerClass}>
+        <div className="loading-content">
+          <div className="loading-spinner">
+            <div className="spinner"></div>
+          </div>
+          <p className="loading-text">{getLoadingText()}</p>
+          <p className="loading-subtext">{getSubText()}</p>
+        </div>
+      </div>
+    );
+  };
 
 
   // Handle click outside to close preview modal
@@ -81,29 +125,6 @@ const FilesUploads = ({
     }
   }, [previewFile]);
 
-  useEffect(() => {
-    // Update refs
-    filesRef.current = files;
-    
-    // Extract approved files from the files data
-    const approved = files.filter(file => file.status === 'Approved');
-    setApprovedFiles(approved.map(file => file.documentId));
-
-    // Check if any file is approved or published
-    const hasApprovedOrPublished = files.some(file => 
-      file.status === 'Approved' || file.status === 'Published' || 
-      (file.publishedTo && file.publishedTo.length > 0 && file.publishedTo.some(p => p.isPublished === true))
-    );
-    setHasApprovedOrPublishedFile(hasApprovedOrPublished);
-
-    // If there are approved files, automatically select them
-    if (approved.length > 0 && onFileSelect) {
-      approved.forEach(file => {
-        onFileSelect(file.documentId, true);
-      });
-    }
-  }, [files]); // Removed onFileSelect from dependencies to prevent unnecessary re-renders
-  // eslint-disable-next-line react-hooks/exhaustive-deps
 
   // Temporarily disable cleanup to test if it's causing the issue
   // useEffect(() => {
@@ -122,8 +143,48 @@ const FilesUploads = ({
     if (uploadedFiles.length > 0) {
       onDataChange?.({ uploadedFiles });
     }
-  }, [uploadedFiles]); // Removed onDataChange from dependencies
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploadedFiles, onDataChange]); // Include onDataChange in dependencies
+
+  // Notify parent component when work submission files change
+  useEffect(() => {
+    if (onWorkSubmissionFilesChange) {
+      onWorkSubmissionFilesChange(hasWorkSubmissionFiles);
+    }
+  }, [hasWorkSubmissionFiles, onWorkSubmissionFilesChange]);
+
+  // Helper function to determine if file is a work submission (by designer)
+  const isWorkSubmission = useCallback((file) => {
+    
+    // Check file's userInfo to determine if the uploader is a designer
+    if (file.userInfo && file.userInfo.roles) {
+      const isFileUserDesigner = file.userInfo.roles.some(role => 
+        role.name?.toLowerCase().includes('designer') || 
+        role.displayName?.toLowerCase().includes('designer') ||
+        role.name?.toLowerCase().includes('creative') ||
+        role.displayName?.toLowerCase().includes('creative')
+      );
+      
+      if (isFileUserDesigner) {
+        return true;
+      }
+    }
+    
+    // For newly uploaded files without userInfo, check current user's role
+    if (!file.userInfo && user?.roles) {
+      const isCurrentUserDesigner = user.roles.some(role => 
+        role.name?.toLowerCase().includes('designer') || 
+        role.displayName?.toLowerCase().includes('designer') ||
+        role.name?.toLowerCase().includes('creative') ||
+        role.displayName?.toLowerCase().includes('creative')
+      );
+      
+      if (isCurrentUserDesigner) {
+        return true;
+      }
+    }
+    
+    return false;
+  }, [user?.roles]);
 
   const getFileTypeFromMime = (mime) => {
     if (!mime) return 'file';
@@ -140,6 +201,33 @@ const FilesUploads = ({
            file.publishedTo.some(p => p.isPublished === true);
   };
 
+  useEffect(() => {
+    // Update refs
+    filesRef.current = files;
+    
+    // Extract approved files from the files data
+    const approved = files.filter(file => file.status === 'Approved');
+    setApprovedFiles(approved.map(file => file.documentId));
+
+    // Check if any file is approved or published
+    const hasApprovedOrPublished = files.some(file => 
+      file.status === 'Approved' || file.status === 'Published' || 
+      (file.publishedTo && file.publishedTo.length > 0 && file.publishedTo.some(p => p.isPublished === true))
+    );
+    setHasApprovedOrPublishedFile(hasApprovedOrPublished);
+
+    // Check for work submission files (files uploaded by designers)
+    const workSubmissionFiles = files.filter(file => isWorkSubmission(file));
+    setHasWorkSubmissionFiles(workSubmissionFiles.length > 0);
+
+    // If there are approved files, automatically select them
+    if (approved.length > 0 && onFileSelect) {
+      approved.forEach(file => {
+        onFileSelect(file.documentId, true);
+      });
+    }
+  }, [files, isWorkSubmission, onFileSelect]); // Include all dependencies
+
   // const handleAddLink = () => {
   //   const newLink = prompt("Enter the new link URL:");
   //   if (newLink) {
@@ -155,6 +243,12 @@ const FilesUploads = ({
     formData.append('description', description || file.name);
     formData.append('status', 'Pending');
     formData.append('UserId', effectiveUserId);
+
+    // Debug logging
+
+    // for (let [key, value] of formData.entries()) {
+    //   console.log(key, value);
+    // }
 
     const response = await fetch('/apis/document/upload_document', {
       method: 'POST',
@@ -263,6 +357,8 @@ const FilesUploads = ({
         src,
         documentId,
         description: description || currentFile.name,
+        uploadDate: new Date().toISOString(), // Set current date/time for newly uploaded files
+        size: currentFile.size, // Add file size for newly uploaded files
         // Add userInfo for immediate categorization
         userInfo: {
           fullName: user ? `${user.firstName} ${user.lastName}` : 'Unknown User',
@@ -273,6 +369,11 @@ const FilesUploads = ({
       setUploadedFiles(prev => [...prev, newFile]);
       setDescription('');
       setCurrentFile(null);
+      
+      // Check if the newly uploaded file is a work submission and notify parent
+      if (isWorkSubmission(newFile) && onWorkSubmissionFilesChange) {
+        onWorkSubmissionFilesChange(true);
+      }
     } catch (error) {
       console.error('Failed to process file:', error);
       alert('File upload failed. Please try again.');
@@ -358,17 +459,30 @@ const FilesUploads = ({
     try {
       const date = new Date(dateString);
       const now = new Date();
-      const diffTime = Math.abs(now - date);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
-      const diffMinutes = Math.ceil(diffTime / (1000 * 60));
+      
+      // Reset time to start of day for accurate day comparison
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const uploadDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      
+      // Calculate the difference in days
+      const diffTime = today - uploadDate;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      
+      // Calculate time differences for same day
+      const diffTimeMinutes = Math.floor((now - date) / (1000 * 60));
+      const diffTimeHours = Math.floor((now - date) / (1000 * 60 * 60));
       
       // Handle same day
       if (diffDays === 0) {
-        if (diffHours === 0) {
-          return diffMinutes <= 1 ? 'Just now' : `${diffMinutes} minutes ago`;
+        if (diffTimeMinutes < 1) {
+          return 'Just now';
+        } else if (diffTimeMinutes < 60) {
+          return diffTimeMinutes === 1 ? '1 minute ago' : `${diffTimeMinutes} minutes ago`;
+        } else if (diffTimeHours < 24) {
+          return diffTimeHours === 1 ? '1 hour ago' : `${diffTimeHours} hours ago`;
+        } else {
+          return 'Today';
         }
-        return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
       }
       
       // Handle yesterday
@@ -379,7 +493,7 @@ const FilesUploads = ({
       
       // Handle this month
       if (diffDays < 30) {
-        const weeks = Math.ceil(diffDays / 7);
+        const weeks = Math.floor(diffDays / 7);
         return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
       }
       
@@ -400,39 +514,6 @@ const FilesUploads = ({
     return file.uploadDate || file.createdAt || file.uploadedAt;
   };
 
-  // Helper function to determine if file is a work submission (by designer)
-  const isWorkSubmission = (file) => {
-    
-    // Check file's userInfo to determine if the uploader is a designer
-    if (file.userInfo && file.userInfo.roles) {
-      const isFileUserDesigner = file.userInfo.roles.some(role => 
-        role.name?.toLowerCase().includes('designer') || 
-        role.displayName?.toLowerCase().includes('designer') ||
-        role.name?.toLowerCase().includes('creative') ||
-        role.displayName?.toLowerCase().includes('creative')
-      );
-      
-      if (isFileUserDesigner) {
-        return true;
-      }
-    }
-    
-    // For newly uploaded files without userInfo, check current user's role
-    if (!file.userInfo && user?.roles) {
-      const isCurrentUserDesigner = user.roles.some(role => 
-        role.name?.toLowerCase().includes('designer') || 
-        role.displayName?.toLowerCase().includes('designer') ||
-        role.name?.toLowerCase().includes('creative') ||
-        role.displayName?.toLowerCase().includes('creative')
-      );
-      
-      if (isCurrentUserDesigner) {
-        return true;
-      }
-    }
-    
-    return false;
-  };
 
   // Helper function to determine if file is a reference file (by admin/manager)
   const isReferenceFile = (file) => {
@@ -473,11 +554,11 @@ const FilesUploads = ({
   };
 
   // Helper function to get file category
-  const getFileCategory = (file) => {
-    if (isWorkSubmission(file)) return 'work-submission';
-    if (isReferenceFile(file)) return 'reference';
-    return 'other';
-  };
+  // const getFileCategory = (file) => {
+  //   if (isWorkSubmission(file)) return 'work-submission';
+  //   if (isReferenceFile(file)) return 'reference';
+  //   return 'other';
+  // };
 
   const LazyFileCard = ({ file, mode }) => {
     const ref = useRef();
@@ -491,7 +572,6 @@ const FilesUploads = ({
     const canSelect = !isApproved && !hasApprovedFile && !isPublished;
     
     // Determine file category and type
-    const fileCategory = getFileCategory(file);
     const isWorkSubmissionFile = isWorkSubmission(file);
     const isReferenceFileType = isReferenceFile(file);
 
@@ -681,7 +761,7 @@ const FilesUploads = ({
         <div className="upload-modal">
           <div className="upload-modal-content" onClick={(e) => e.stopPropagation()}>
             <h3>Upload File: {currentFile?.name}</h3>
-            {/* <p>File size: {(currentFile?.size / 1024 / 1024).toFixed(2)} MB</p> */}
+            <p>File size: {(currentFile?.size / 1024 / 1024).toFixed(2)} MB</p>
 
             <div>
               <label>Description:</label>
@@ -737,7 +817,9 @@ const FilesUploads = ({
           )}
         </div>
 
-        {[...files, ...uploadedFiles].length === 0 && !isUploading ? (
+        {isUploading || externalLoading ? (
+          <SkeletonPreviewGrid />
+        ) : [...files, ...uploadedFiles].length === 0 ? (
           <div className="empty-files-state">
             <div className="empty-files-illustration">
               <FileIcon size={64} className="empty-icon" />
@@ -862,15 +944,15 @@ const FilesUploads = ({
     if (!previewFile) return null;
 
     // Get file metadata
-    const getFileSize = (file) => {
-      if (file.size) {
-        const bytes = file.size;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(1024));
-        return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
-      }
-      return 'Unknown size';
-    };
+    // const getFileSize = (file) => {
+    //   if (file.size) {
+    //     const bytes = file.size;
+    //     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    //     const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    //     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+    //   }
+    //   return 'Unknown size';
+    // };
 
     const getFileTypeIcon = (type) => {
       switch (type) {
@@ -1037,10 +1119,10 @@ const FilesUploads = ({
                     <span className="info-label">Type:</span>
                     <span className="info-value">{previewFile.type?.toUpperCase() || 'Unknown'}</span>
                   </div>
-                  {/* <div className="info-item"> */}
-                    {/* <span className="info-label">Size:</span>
-                    <span className="info-value">{getFileSize(previewFile)}</span> */}
-                  {/* </div> */}
+                  {/* <div className="info-item">
+                    <span className="info-label">Size:</span>
+                    <span className="info-value">{getFileSize(previewFile)}</span>
+                  </div> */}
                   {isWorkSubmissionFile && (
                     <div className="info-item">
                       <span className="info-label">Category:</span>

@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-
-import { Upload, ChevronLeft, ChevronRight, X, ExternalLink } from "lucide-react";
-import Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
+import { useUser } from "../../Context/UserContext";
+import { Upload, X, ExternalLink } from "lucide-react";
 import "./FileUpload.css";
 
 const isOfficeDoc = (name) => {
@@ -21,29 +19,55 @@ const FileUpload = ({
   eventId,
   organizationId,
   initialFiles = [],
-  externalLoading = false
+  externalLoading = false,
+  loadingType = "upload" // "upload" or "fetch"
 }) => {
+  const { user } = useUser();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [dragOver, setDragOver] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed] = useState(false);
   const dropRef = useRef(null);
 
   const effectiveLoading = externalLoading || loading;
 
-  const toggleCollapse = () => setIsCollapsed(!isCollapsed);
-
-  const SkeletonPreviewGrid = () => (
-    <div className="preview-grid">
-      {[1, 2, 3].map((_, i) => (
-        <div className="file-preview" key={i}>
-          <Skeleton height={100} />
-          <Skeleton height={15} width={`60%`} style={{ marginTop: 8 }} />
+  const SkeletonPreviewGrid = () => {
+    const isUploading = loadingType === "upload" && loading;
+    const isFetching = loadingType === "fetch" && externalLoading;
+    
+    const getLoadingText = () => {
+      if (isUploading) {
+        return "Uploading files...";
+      } else if (isFetching) {
+        return "Loading files...";
+      }
+      return "Processing files...";
+    };
+    
+    const getSubText = () => {
+      if (isUploading) {
+        return "Please wait while your files are being uploaded and processed";
+      } else if (isFetching) {
+        return "Please wait while we fetch your files";
+      }
+      return "Please wait while your files are being processed";
+    };
+    
+    const containerClass = `loading-container ${isUploading ? 'uploading' : isFetching ? 'fetching' : ''}`;
+    
+    return (
+      <div className={containerClass}>
+        <div className="loading-content">
+          <div className="loading-spinner">
+            <div className="spinner"></div>
+          </div>
+          <p className="loading-text">{getLoadingText()}</p>
+          <p className="loading-subtext">{getSubText()}</p>
         </div>
-      ))}
-    </div>
-  );
+      </div>
+    );
+  };
 
   const sortByNewest = (arr) =>
     [...arr].sort(
@@ -83,6 +107,8 @@ const FileUpload = ({
     const formData = new FormData();
     formData.append("File", file);
     formData.append("description", file.name);
+    formData.append('status', 'Pending');
+    formData.append('UserId', user?.userId);
 
     const response = await fetch("/apis/document/upload_document", {
       method: "POST",
@@ -97,11 +123,12 @@ const FileUpload = ({
 
   const linkDocumentToTask = async (documentId) => {
     const payload = {
-      eventId,
-      organizationId,
-      documentId,
+      DocumentId: documentId,
+      EventId: eventId,
+      OrganizationId: organizationId,
+      userId: user?.userId,
     };
-    if (taskId) payload.taskId = taskId;
+    if (taskId) payload.TaskId = taskId;
 
     const response = await fetch("/apis/Document-Details", {
       method: "POST",
@@ -120,9 +147,13 @@ const FileUpload = ({
     setLoading(true);
     const processed = [];
 
-    for (const file of files) {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
       try {
+        // Upload file to backend
         const documentId = await uploadFileToBackend(file);
+        
+        // Link document to task
         await linkDocumentToTask(documentId);
 
         const preview = {
@@ -138,6 +169,9 @@ const FileUpload = ({
         console.error(`Failed to process ${file.name}:`, error);
       }
     }
+
+    // Add a small delay to ensure backend processing is complete
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     const updated = sortByNewest([...processed, ...uploadedFiles]);
     const newDescription = updated.map((f) => `${f.name} (${f.type})`).join(", ");
@@ -199,17 +233,6 @@ const FileUpload = ({
     });
   };
 
-  const handlePrev = () => {
-    setCurrentIndex((prev) =>
-      prev === 0 ? uploadedFiles.length - 1 : prev - 1
-    );
-  };
-
-  const handleNext = () => {
-    setCurrentIndex((prev) =>
-      prev === uploadedFiles.length - 1 ? 0 : prev + 1
-    );
-  };
 
   return (
     <div

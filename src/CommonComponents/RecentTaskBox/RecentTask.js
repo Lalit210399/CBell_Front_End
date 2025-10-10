@@ -7,19 +7,39 @@ import { ListTodo } from "lucide-react";
 import { useTaskStatus } from "../../Hooks/useTaskStatus";
 import "./RecentTask.css";
 
-const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChange, showDropdown = true, loading = false, disableClientFiltering = false, hideAssignedToColumn = false, showOrganizationColumn = false }) => {
+const RecentTasks = ({ tasks, onTaskClick, onEventClick, title = "Tasks", filter, onFilterChange, showDropdown = true, loading = false, disableClientFiltering = false, hideAssignedToColumn = false, showOrganizationColumn = false, showAssignedByColumn = false }) => {
   const { getActiveTaskStatuses } = useTaskStatus();
   
   // Generate filter options from task status context
   const filterOptions = useMemo(() => {
     const activeStatuses = getActiveTaskStatuses();
-    return [
+    
+    // Debug logging to understand what's happening
+    
+    // Fallback filter options if context doesn't provide data
+    const fallbackOptions = [
       { label: "All" },
-      ...activeStatuses.map(status => ({
-        label: status.statusName || status.name,
-        value: status.statusName || status.name
-      }))
+      { label: "New", value: "New" },
+      { label: "Active", value: "Active" },
+      { label: "Under Approval", value: "Under Approval" },
+      { label: "Approved", value: "Approved" },
+      { label: "Published", value: "Published" },
+      // { label: "Cancelled", value: "Cancelled" }
     ];
+    
+    // If we have active statuses from context, use them; otherwise use fallback
+    if (activeStatuses && activeStatuses.length > 0) {
+      const contextOptions = [
+        { label: "All" },
+        ...activeStatuses.map(status => ({
+          label: status.statusName || status.name,
+          value: status.statusName || status.name
+        }))
+      ];
+      return contextOptions;
+    }
+    
+    return fallbackOptions;
   }, [getActiveTaskStatuses]);
 
   // 🔹 filter tasks (only if client-side filtering is enabled)
@@ -49,6 +69,8 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
           return "No Due Date";
         case "organizationName":
           return "No Organization";
+        case "assignedBy":
+          return "Unknown";
         default:
           return "N/A";
       }
@@ -84,6 +106,16 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
             )}
           </div>
         );
+      case "assignedBy":
+        return (
+          <span 
+            className="assigned-by-badge" 
+            onClick={handleClick}
+            title={`Assigned by: ${item.assignedBy || getEmptyText(key)}`}
+          >
+            {item.assignedBy || getEmptyText(key)}
+          </span>
+        );
       default:
         return (
           <span className="clickable-cell" onClick={handleClick}>
@@ -99,6 +131,7 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
     taskName: "",
     eventName: "",
     assignedTo: [],
+    assignedBy: "",
     dueDate: "",
     id: `skeleton-${i}`,
   }));
@@ -128,13 +161,27 @@ const RecentTasks = ({ tasks, onTaskClick, title = "Tasks", filter, onFilterChan
           { key: "eventName", label: "Event Name" },
           ...(showOrganizationColumn ? [{ key: "organizationName", label: "Organization Name" }] : []),
           ...(hideAssignedToColumn ? [] : [{ key: "assignedTo", label: "Assigned To" }]),
+          ...(showAssignedByColumn ? [{ key: "assignedBy", label: "Assigned By" }] : []),
           { key: "dueDate", label: "Due Date" },
         ]}
         data={loading ? skeletonRows : filteredTasks}
         renderCell={loading ? () => <div className="skeleton-row-cell" /> : renderCell}
         sortableColumns={["taskName", "eventName", ...(showOrganizationColumn ? ["organizationName"] : []), "dueDate"]}
         showActions={false}
-        onRowClick={loading ? undefined : (task) => onTaskClick?.(task)}
+        onRowClick={loading ? undefined : (task) => {
+          // Row click - navigate to task detail page
+          onTaskClick?.(task);
+        }}
+        // onCellClick={loading ? undefined : (column, task, event) => {
+        //   // Only eventName cell is clickable - navigate to event detail
+        //   if (column.key === "eventName") {
+        //     // Call the onEventClick handler if provided
+        //     onEventClick?.(task);
+        //   }
+        // }}
+        // clickableColumns={["eventName"]} // Only eventName cell is clickable
+        rowClickable={true} // Enable row clicks for task navigation
+        // cellClickPriority={true} // Event name click overrides row click
         className="fixed-height"
       />
     </div>
