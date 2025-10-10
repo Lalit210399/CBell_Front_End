@@ -122,11 +122,11 @@ const TasksFiles = ({
       }
     };
 
-    if (taskId && !hasFetchedRef.current) {
+    if (taskId && (!hasFetchedRef.current || files?.refreshTrigger)) {
       hasFetchedRef.current = true;
       fetchDocuments();
     }
-  }, [taskId, onFileSelect]); // Include onFileSelect in dependencies
+  }, [taskId, onFileSelect, files]); // Include files to listen for refresh triggers
 
   // Notify parent component when work submission files change
   useEffect(() => {

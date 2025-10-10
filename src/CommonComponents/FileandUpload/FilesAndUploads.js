@@ -38,6 +38,18 @@ const FilesUploads = ({
   
   // Use userId from props, or fallback to user.userId from context
   const effectiveUserId = userId || user?.userId;
+
+  // Helper function to check if current user is a designer
+  const isCurrentUserDesigner = useCallback(() => {
+    if (!user?.roles) return false;
+    
+    return user.roles.some(role => 
+      role.name?.toLowerCase().includes('designer') || 
+      role.displayName?.toLowerCase().includes('designer') ||
+      role.name?.toLowerCase().includes('creative') ||
+      role.displayName?.toLowerCase().includes('creative')
+    );
+  }, [user?.roles]);
   
  
   
@@ -298,7 +310,16 @@ const FilesUploads = ({
 
       if (!response.ok) throw new Error('Failed to delete file');
 
+      // Update local state for uploaded files
       setUploadedFiles(prev => prev.filter(f => f.documentId !== fileId));
+      
+      // Notify parent component about the deletion to trigger a refresh
+      onDataChange?.({ 
+        deletedFileId: fileId,
+        uploadedFiles: uploadedFiles.filter(f => f.documentId !== fileId),
+        refreshFiles: true // Signal to parent to refresh files
+      });
+      
     } catch (error) {
       console.error('Error deleting file:', error);
       alert('Failed to delete file');
@@ -528,17 +549,6 @@ const FilesUploads = ({
     return false;
   };
 
-  // Helper function to check if current user is a designer
-  const isCurrentUserDesigner = useCallback(() => {
-    if (!user?.roles) return false;
-    
-    return user.roles.some(role => 
-      role.name?.toLowerCase().includes('designer') || 
-      role.displayName?.toLowerCase().includes('designer') ||
-      role.name?.toLowerCase().includes('creative') ||
-      role.displayName?.toLowerCase().includes('creative')
-    );
-  }, [user?.roles]);
 
   // Helper function to get file category
   // const getFileCategory = (file) => {
@@ -674,8 +684,10 @@ const FilesUploads = ({
                 {!['image', 'video', 'audio', 'pdf'].includes(file.type) && <FileIcon size={16} />}
               </div>
               <span className="file-name" title={file.name}>{file.name}</span>
-              {/* Delete button - visible in view mode and edit mode, but not for approved files or for designers */}
-              {!isApproved && !isCurrentUserDesigner() && (
+              {/* Delete button - visible for all files except approved ones, but designers can only delete work submissions */}
+              {!approvedFiles.includes(file.documentId) && (
+                !isCurrentUserDesigner() || isWorkSubmission(file)
+              ) && (
                 <button
                   className="file-action-btn delete-btn"
                   onClick={(e) => {
