@@ -11,7 +11,8 @@ const TasksFiles = ({
   mode = "view",
   selectedFiles,
   onFileSelect,
-  taskStatus
+  taskStatus,
+  addMessage // ← NEW PROP for toast notifications
 }) => {
   const { user } = useUser();
   const [fetchedFiles, setFetchedFiles] = useState([]);
@@ -146,6 +147,7 @@ const TasksFiles = ({
           onFileSelect={handleFileSelect}
           hasApprovedFile={hasApprovedFile} // Pass this prop to child
           enableSelectionRadio={taskStatus?.value === "Under Approval"}
+          addMessage={addMessage} // Pass toast notification function
         />
       )}
     </div>

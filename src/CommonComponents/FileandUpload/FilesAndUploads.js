@@ -30,6 +30,7 @@ const FilesUploads = ({
   onFileSelect,
   enableSelectionRadio = false, // ← NEW PROP for radio button selection
   showFileRequirementWarning = false, // ← NEW PROP for showing file requirement warning
+  addMessage, // ← NEW PROP for toast notifications
 }) => {
   const { user } = useUser();
   
@@ -202,12 +203,36 @@ const FilesUploads = ({
         headers: { 'ngrok-skip-browser-warning': '1' }
       });
 
-      if (!response.ok) throw new Error('Failed to delete file');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to delete file');
+      }
 
+      // Remove file from local state
       setUploadedFiles(prev => prev.filter(f => f.documentId !== fileId));
+      
+      // Show success toast notification
+      if (addMessage) {
+        addMessage({
+          text: 'File deleted successfully',
+          type: 'success',
+          duration: 3000
+        });
+      }
     } catch (error) {
       console.error('Error deleting file:', error);
-      alert('Failed to delete file');
+      
+      // Show error toast notification
+      if (addMessage) {
+        addMessage({
+          text: `Failed to delete file: ${error.message}`,
+          type: 'error',
+          duration: 4000
+        });
+      } else {
+        // Fallback to alert if addMessage is not available
+        alert(`Failed to delete file: ${error.message}`);
+      }
     }
   };
 

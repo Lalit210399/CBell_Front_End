@@ -51,7 +51,11 @@ const Tile = ({
           <button
             className="new-window-icon"
             onClick={(e) => onNewWindowClick && onNewWindowClick(e)}
-            title="View all data in new screen"
+            title={`View all ${title.toLowerCase()} in detailed screen`}
+            style={{
+              '--tile-border-color': borderColor,
+              '--tile-icon-bg-color': iconBgColor,
+            }}
           >
             <ExternalLink size={14} />
           </button>

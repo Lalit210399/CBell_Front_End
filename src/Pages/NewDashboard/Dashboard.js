@@ -727,7 +727,7 @@ const Dashboard = () => {
           {/* Only show New Event button when viewing own organization */}
           {isViewingOwnOrganization() && (
             <button
-              className="dashboard-btn dashboard-btn-primary"
+              className="new_event_button"
               onClick={handleNewEvent}
             >
               + New Event

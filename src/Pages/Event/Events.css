@@ -2,6 +2,10 @@
   display: flex;
   gap: 16px;
   flex-direction: column;
+  /* Ensure container doesn't affect sidebar width */
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* New Events Header Styles */
@@ -221,12 +225,15 @@
 .Table_Container {
   height: 100%;
   width: 100%;
-  /* max-width: 1169px; */
-  /* box-sizing: border-box; */
-  /* border: 1px solid red; */
+  /* Prevent table from affecting layout */
+  max-width: 100%;
+  box-sizing: border-box;
   display: flex;
   justify-content: center;
   align-items: center;
+  /* Ensure table doesn't cause layout shifts */
+  min-width: 0;
+  overflow: hidden;
 }
 
 .Welcome-to-AISSMS-IOIT-College {

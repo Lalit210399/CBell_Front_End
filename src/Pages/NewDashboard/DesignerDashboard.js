@@ -470,6 +470,26 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
     }
   }, [orgIdReady, currentTitle, filter, scopeChangeTrigger, executeMyTasks, resetMyTasks, executeTasks, resetTasks]);
 
+  // Handle new window icon click (navigate to comprehensive screens)
+  const handleNewWindowClick = (tile, event) => {
+    event.stopPropagation(); // Prevent tile click from firing
+    
+    // For all task-related tiles, navigate to comprehensive tasks list screen
+    const filterMap = {
+      "Total Tasks": "All",
+      "Tasks Assigned to Me": "All",
+      "Tasks Under Approval": "Under Approval",
+      "Approved Tasks": "Approved"
+    };
+    
+    navigate("/tasks/list", {
+      state: {
+        taskType: tile.title,
+        filter: filterMap[tile.title] || "All"
+      }
+    });
+  };
+
   // Handle task click
   const handleTaskClick = (task, key) => {
     navigate('/events/eventDetailPage/tasks', { 
@@ -519,6 +539,8 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
             key={idx}
             {...tile}
             onClick={() => handleTileClick(tile)}
+            onNewWindowClick={(e) => handleNewWindowClick(tile, e)}
+            showNewWindowIcon={true}
             isSelected={tile.title === currentTitle}
           />
         ))}

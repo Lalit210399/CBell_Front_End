@@ -1,7 +1,11 @@
 .assigned-events-container {
   background-color: #f8fafc;
   min-height: 100vh;
-  overflow-y: auto
+  overflow-y: auto;
+  /* Ensure container doesn't affect sidebar width */
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .assigned-events-header {
@@ -145,6 +149,9 @@
 
 .assigned-events-table {
   width: 100%;
+  /* Prevent table from affecting layout */
+  table-layout: fixed;
+  min-width: 0;
 }
 
 .assigned-events-table .table-header {

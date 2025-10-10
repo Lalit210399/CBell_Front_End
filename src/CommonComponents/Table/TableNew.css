@@ -248,6 +248,7 @@
 
 .tn-clickable_row {
   cursor: pointer;
+  height: 58px;
 }
 
 .tn-clickable_row:hover {

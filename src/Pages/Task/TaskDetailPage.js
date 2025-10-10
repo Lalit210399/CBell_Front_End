@@ -1154,6 +1154,7 @@ const TaskDetailPage = () => {
             selectedFiles={memoizedSelectedFiles}
             onFileSelect={handleFileSelect}
             taskStatus={taskStatus}
+            addMessage={addMessage} // Pass toast notification function
           />
         ),
         disabled: mode === "create",

@@ -1,8 +1,7 @@
 .event-campaign-container {
   background: #fff;
   border-radius: 12px;
-  padding: 16px;
-  width: 100%;
+  width: auto;
   font-family: 'Lato', sans-serif;
   display: flex;
   flex-direction: column;
@@ -45,9 +44,10 @@
   flex-direction: column;
   gap: 16px;
   flex: 1;
-  overflow-y: auto;
+  overflow-x: hidden;
   scroll-behavior: smooth;
   min-height: 200px;
+  padding: 16px;
 }
 
 .event-group {
