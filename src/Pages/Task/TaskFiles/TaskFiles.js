@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import FilesandUploads from "../../../CommonComponents/FileandUpload/FilesAndUploads";
 import { useUser } from "../../../Context/UserContext";
+import { fetchWithRefresh } from "../../../Context/RefereshToken";
 
 const TasksFiles = ({ 
   files, 
@@ -35,8 +36,12 @@ const TasksFiles = ({
     const fetchDocuments = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/apis/document-details/task/${taskId}`, {
-          headers: { 'ngrok-skip-browser-warning': '1' }
+        const res = await fetchWithRefresh(`/apis/document-details/task/${taskId}`, {
+          method: "GET",
+          headers: { 
+            'ngrok-skip-browser-warning': '1',
+            'Content-Type': 'application/json'
+          }
         });
         const data = await res.json();
 
@@ -72,8 +77,12 @@ const TasksFiles = ({
             let src = '';
 
             if (type === 'image') {
-              const response = await fetch(`/apis/document/view/${doc.documentId}`, {
-                headers: { 'ngrok-skip-browser-warning': '1' }
+              const response = await fetchWithRefresh(`/apis/document/view/${doc.documentId}`, {
+                method: "GET",
+                headers: { 
+                  'ngrok-skip-browser-warning': '1',
+                  'Content-Type': 'application/json'
+                }
               });
               const blob = await response.blob();
               src = URL.createObjectURL(blob);
