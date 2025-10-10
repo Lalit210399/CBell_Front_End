@@ -60,6 +60,7 @@ const FilesUploads = ({
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [currentFile, setCurrentFile] = useState(null);
   const [description, setDescription] = useState('');
+  const [deletedFileIds, setDeletedFileIds] = useState([]);
   
   // Memoize the description change handler to prevent unnecessary re-renders
   const handleDescriptionChange = useCallback((e) => {
@@ -310,14 +311,19 @@ const FilesUploads = ({
 
       if (!response.ok) throw new Error('Failed to delete file');
 
+      // Show success message
+      alert('File deleted successfully!');
+      
+      // Add file ID to deleted list to hide it from UI
+      setDeletedFileIds(prev => [...prev, fileId]);
+      
       // Update local state for uploaded files
       setUploadedFiles(prev => prev.filter(f => f.documentId !== fileId));
       
-      // Notify parent component about the deletion to trigger a refresh
+      // Notify parent component about the deletion
       onDataChange?.({ 
         deletedFileId: fileId,
-        uploadedFiles: uploadedFiles.filter(f => f.documentId !== fileId),
-        refreshFiles: true // Signal to parent to refresh files
+        uploadedFiles: uploadedFiles.filter(f => f.documentId !== fileId)
       });
       
     } catch (error) {
@@ -863,6 +869,7 @@ const FilesUploads = ({
             {(() => {
               const workFiles = [...files, ...uploadedFiles]
                 .filter(file => isWorkSubmission(file))
+                .filter(file => !deletedFileIds.includes(file.documentId))
                 .sort((a, b) => new Date(b.uploadDate || b.createdAt || 0) - new Date(a.uploadDate || a.createdAt || 0));
               
               return workFiles.length > 0 && (
@@ -887,6 +894,7 @@ const FilesUploads = ({
             {(() => {
               const referenceFiles = [...files, ...uploadedFiles]
                 .filter(file => isReferenceFile(file))
+                .filter(file => !deletedFileIds.includes(file.documentId))
                 .sort((a, b) => new Date(b.uploadDate || b.createdAt || 0) - new Date(a.uploadDate || a.createdAt || 0));
               
               return referenceFiles.length > 0 && (
@@ -911,6 +919,7 @@ const FilesUploads = ({
             {(() => {
               const otherFiles = [...files, ...uploadedFiles]
                 .filter(file => !isWorkSubmission(file) && !isReferenceFile(file))
+                .filter(file => !deletedFileIds.includes(file.documentId))
                 .sort((a, b) => new Date(b.uploadDate || b.createdAt || 0) - new Date(a.uploadDate || a.createdAt || 0));
               
               return otherFiles.length > 0 && (
