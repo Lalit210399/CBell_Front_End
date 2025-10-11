@@ -286,8 +286,8 @@
   opacity: 1;
 }
 
-/* Different hover effects for different click types */
-.tn-clickable_cell:hover {
+Different hover effects for different click types */
+/* .tn-clickable_cell:hover {
   background-color: rgba(59, 130, 246, 0.1);
   border-left: 3px solid rgba(59, 130, 246, 0.8);
 } */
