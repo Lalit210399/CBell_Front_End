@@ -12,12 +12,27 @@ import { useUser } from "../../Context/UserContext";
 const localizer = momentLocalizer(moment);
 
 
-const CustomCalendar = ({ events = [], loading = true, error = null, isViewingOwnOrganization = null }) => {
+const CustomCalendar = ({ 
+  events = [], 
+  loading = true, 
+  error = null, 
+  onEventClick = () => {},
+  onDateSelect = () => {},
+  onMonthChange = () => {},
+  selectedDate: externalSelectedDate = null,
+  currentMonth = new Date(),
+  isViewingOwnOrganization = null 
+}) => {
   const navigate = useNavigate();
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(currentMonth);
   const [isNavigating, setIsNavigating] = useState(false);
   const [showDateModal, setShowDateModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
+
+  // Sync with external currentMonth prop
+  useEffect(() => {
+    setCurrentDate(currentMonth);
+  }, [currentMonth]);
   const { addMessage } = useMessages();
   const { permissions: userPermissions } = useUser();
 
@@ -29,6 +44,7 @@ const CustomCalendar = ({ events = [], loading = true, error = null, isViewingOw
       : new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
     
     setCurrentDate(newDate);
+    onMonthChange(newDate); // Notify parent component of month change
     
     // Reset navigation state after a short delay
     setTimeout(() => setIsNavigating(false), 300);
@@ -63,6 +79,9 @@ const CustomCalendar = ({ events = [], loading = true, error = null, isViewingOw
   };
 
   const handleSelectSlot = ({ start }) => {
+    // Call the date selection handler for events list
+    onDateSelect(start);
+
     // Check if user has permission to create events
     if (!permissions.canCreate) {
       addMessage({
@@ -294,7 +313,10 @@ const CustomCalendar = ({ events = [], loading = true, error = null, isViewingOw
         endAccessor="end"
         selectable
         date={currentDate}
-        onNavigate={(date) => setCurrentDate(date)}
+        onNavigate={(date) => {
+          setCurrentDate(date);
+          onMonthChange(date);
+        }}
         onSelectSlot={handleSelectSlot}
         onSelectEvent={(event) => {
           if (!permissions.canRead) {

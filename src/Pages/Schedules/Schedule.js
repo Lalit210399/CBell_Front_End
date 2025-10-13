@@ -1,7 +1,8 @@
 // Schedule.js
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import CustomCalendar from "../../CommonComponents/Calendar/CustomCalendar";
+import NewCalendar from "../../CommonComponents/Calendar/NewCalendar";
+import ScheduleEventsList from "../../CommonComponents/ScheduleEventsList/ScheduleEventsList";
 import { useUser } from "../../Context/UserContext";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import "./Schedule.css";
@@ -64,7 +65,7 @@ const Schedule = () => {
       } else if (daysDiff <= 30) {
         category = "on-track";
       } else {
-        category = "new";
+        category = "future-event";
       }
 
       return {
@@ -84,6 +85,9 @@ const Schedule = () => {
   const [eventsData, setEventsData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [viewMode, setViewMode] = useState('month'); // 'month' or 'day'
+  const [currentMonth, setCurrentMonth] = useState(new Date()); // Track current month
   const isFetchingRef = useRef(false);
 
   // Execute API when organization is ready or scope changes
@@ -117,7 +121,20 @@ const Schedule = () => {
     return eventsData || [];
   }, [eventsData]);
 
-  // Original handle click - just pass event ID to EventDetailPage
+  // Handle date selection from calendar
+  const handleDateSelect = (date) => {
+    setSelectedDate(date);
+    setViewMode('day');
+  };
+
+  // Handle month navigation from calendar
+  const handleMonthChange = (date) => {
+    setCurrentMonth(date);
+    setViewMode('month'); // Reset to month view when changing months
+    setSelectedDate(null); // Clear selected date
+  };
+
+  // Handle event click - navigate to event detail
   const handleEventClick = (event) => {
     navigate("/events/eventDetailPage", {
       state: {
@@ -128,15 +145,125 @@ const Schedule = () => {
     });
   };
 
+  // Handle create event
+  const handleCreateEvent = (selectedDate) => {
+    // Only allow event creation when viewing own organization
+    if (!isViewingOwnOrganization()) {
+      console.warn("Event creation is only allowed in your own organization");
+      return;
+    }
+    
+    navigate("/events/eventDetailPage", {
+      state: {
+        mode: "create",
+        selectedDate: selectedDate,
+      },
+    });
+  };
+
+  // Get events to display based on view mode
+  const getDisplayEvents = () => {
+    let filteredEvents = events;
+
+    if (viewMode === 'day' && selectedDate) {
+      // Filter events for selected date
+      const selectedDateStr = selectedDate.toDateString();
+      filteredEvents = events.filter(event => 
+        new Date(event.start).toDateString() === selectedDateStr
+      );
+    } else {
+      // Filter events for current month
+      const currentYear = currentMonth.getFullYear();
+      const currentMonthNum = currentMonth.getMonth();
+      
+      filteredEvents = events.filter(event => {
+        const eventDate = new Date(event.start);
+        return eventDate.getFullYear() === currentYear && 
+               eventDate.getMonth() === currentMonthNum;
+      });
+    }
+
+    // Sort events by priority (critical first, then by date)
+    const priorityOrder = { 'critical': 1, 'on-track': 2, 'future-event': 3, 'completed': 4 };
+    
+    return filteredEvents.sort((a, b) => {
+      // First sort by priority
+      const priorityA = priorityOrder[a.category] || 5;
+      const priorityB = priorityOrder[b.category] || 5;
+      
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+      
+      // Then sort by date
+      return new Date(a.start) - new Date(b.start);
+    });
+  };
+
+  // Get events list title based on view mode
+  const getEventsListTitle = () => {
+    if (viewMode === 'day' && selectedDate) {
+      return `Events for ${selectedDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric'
+      })}`;
+    }
+    return `Events for ${currentMonth.toLocaleDateString('en-US', {
+      month: 'long',
+      year: 'numeric'
+    })}`;
+  };
+
+  // Get events list subtitle based on view mode
+  const getEventsListSubtitle = () => {
+    const displayEvents = getDisplayEvents();
+    if (viewMode === 'day' && selectedDate) {
+      return `${displayEvents.length} event${displayEvents.length !== 1 ? 's' : ''} found`;
+    }
+    return `${displayEvents.length} event${displayEvents.length !== 1 ? 's' : ''} this month`;
+  };
+
   return (
     <div className="schedule-container">
-      <CustomCalendar 
-        events={events}
-        loading={loading}
-        error={error}
-        onEventClick={handleEventClick} // pass to calendar
-        isViewingOwnOrganization={isViewingOwnOrganization} // pass organization check
-      />
+      <div className="schedule-split-layout">
+        {/* Left Section - Events List */}
+        <ScheduleEventsList
+          events={getDisplayEvents()}
+          title={getEventsListTitle()}
+          subtitle={getEventsListSubtitle()}
+          onEventClick={handleEventClick}
+          onCreateEvent={handleCreateEvent}
+          loading={loading}
+          error={error}
+          emptyStateMessage={viewMode === 'day' 
+            ? `No events found for ${selectedDate?.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`
+            : 'No events found for this month'
+          }
+          viewMode={viewMode}
+          selectedDate={selectedDate}
+          onBackToMonth={() => {
+            setViewMode('month');
+            setSelectedDate(null);
+          }}
+          isViewingOwnOrganization={isViewingOwnOrganization}
+        />
+
+        {/* Right Section - Calendar */}
+        <div className="calendar-section">
+          <NewCalendar 
+            events={events}
+            loading={loading}
+            error={error}
+            onEventClick={handleEventClick}
+            onDateSelect={handleDateSelect}
+            onMonthChange={handleMonthChange}
+            selectedDate={selectedDate}
+            currentMonth={currentMonth}
+            isViewingOwnOrganization={isViewingOwnOrganization}
+          />
+        </div>
+      </div>
     </div>
   );
 };

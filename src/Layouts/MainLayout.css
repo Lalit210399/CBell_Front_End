@@ -3,26 +3,21 @@
   height: 100vh;
   flex-direction: row;  
   background: #f9fafb;
-  /* Ensure sidebar width is consistent */
-  /* min-width: calc(var(--sidebarWidth) + 100vw); */
   min-width: 100vw;
+  position: fixed;
 }
 
 .main_content {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  /* Ensure main content doesn't shrink below minimum */
-  min-width: 0;
-  width: calc(100vw - var(--sidebarWidth));
+  gap: 24px;
+  margin: 24px;
 }
 
 .children_content {
   flex-grow: 1;
-  /* padding: 20px; Adjust padding as needed */
   overflow-y: auto;
-  padding-left: 24px;
-  padding-right: 24px;
 }
 
 .layout-container.no-nav-sidebar .main-content-container {

@@ -7,6 +7,8 @@
   flex-direction: column;
   height: 100%;
   min-height: 200px;
+  max-height: calc(100vh - 280px);
+  overflow: hidden;
 }
 
 /* Card hover */
@@ -44,10 +46,39 @@
   flex-direction: column;
   gap: 16px;
   flex: 1;
+  overflow-y: auto;
   overflow-x: hidden;
   scroll-behavior: smooth;
   min-height: 200px;
+  max-height: calc(100vh - 300px);
   padding: 16px;
+  padding-right: 8px; /* Space for scrollbar */
+}
+
+/* Custom scrollbar styling */
+.event-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.event-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.event-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.event-list::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Firefox scrollbar */
+.event-list {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
 }
 
 .event-group {
@@ -172,5 +203,36 @@
 
   100% {
     background-position: -200% 0;
+  }
+}
+
+/* Responsive design for scrolling */
+@media (max-width: 1024px) {
+  .event-list {
+    max-height: calc(100vh - 250px);
+  }
+  
+  .event-campaign-container {
+    max-height: calc(100vh - 240px);
+  }
+}
+
+@media (max-width: 768px) {
+  .event-list {
+    max-height: calc(100vh - 200px);
+  }
+  
+  .event-campaign-container {
+    max-height: calc(100vh - 190px);
+  }
+}
+
+@media (max-width: 480px) {
+  .event-list {
+    max-height: calc(100vh - 180px);
+  }
+  
+  .event-campaign-container {
+    max-height: calc(100vh - 170px);
   }
 }
