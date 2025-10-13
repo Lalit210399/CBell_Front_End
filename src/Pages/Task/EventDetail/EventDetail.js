@@ -60,10 +60,16 @@ const Detail = ({
       onSave.current = () => {
         const transformedGuests = transformToOldFormat(guests).filter(g => g.name && g.name.trim());
         const transformedOrganizers = transformToOldFormat(organizers).filter(o => o.name && o.name.trim());
-        
-        
+
+        // Normalize description: trim whitespace and handle empty content
+        const rawDescription = editorRef.current || "";
+        const trimmedDescription = rawDescription.trim();
+        // If description is empty or only contains HTML tags with no text, set to empty string
+        const textContent = trimmedDescription.replace(/<[^>]*>/g, '').trim();
+        const normalizedDescription = textContent ? trimmedDescription : "";
+
         return {
-          description: editorRef.current,
+          description: normalizedDescription,
           location: "Pune",
           guests: transformedGuests,
           organizers: transformedOrganizers,

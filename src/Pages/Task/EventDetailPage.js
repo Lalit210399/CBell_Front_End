@@ -429,14 +429,16 @@ const EventDetail = () => {
     
     // Validate Description
     const descriptionValue = (detailData?.description || "").trim();
-    if (!descriptionValue) {
+    // Check if description has actual text content (not just HTML tags)
+    const textContent = descriptionValue.replace(/<[^>]*>/g, '').trim();
+    if (!textContent) {
       errors.description = "Event description is required";
     }
     
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       setIsSubmitting(false);
-      addMessage({ text: "Please fix the highlighted fields", type: "error", duration: 2500 });
+      addMessage({ text: "Please fill the highlighted fields", type: "error", duration: 2500 });
       return;
     }
     

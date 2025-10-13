@@ -119,17 +119,17 @@ export const DepartmentProvider = ({ children, eventOrganizationId = null }) => 
 
   // Fetch departments when organization changes or on mount
   useEffect(() => {
-    const organizationId = selectedOrganizationId || user?.organizationId;
-    
+    const organizationId = eventOrganizationId || selectedOrganizationId || user?.organizationId;
+
     if (organizationId) {
       // Check if organization supports departments before fetching
       const currentOrg = user?.scope?.accessibleOrganizations?.find(org => org.id === organizationId);
       const orgCode = currentOrg?.data?.organizationCode?.toLowerCase();
-      
+
       // Business logic: Only colleges have departments, institutes don't
-      const supportsDepartments = orgCode?.includes('college') || orgCode?.includes('university') || 
+      const supportsDepartments = orgCode?.includes('college') || orgCode?.includes('university') ||
                                  (!orgCode?.includes('institute') && !orgCode?.includes('school'));
-      
+
       if (supportsDepartments) {
         fetchDepartments();
       } else {
@@ -144,7 +144,7 @@ export const DepartmentProvider = ({ children, eventOrganizationId = null }) => 
       setLastFetched(null);
       setError(null);
     }
-  }, [selectedOrganizationId, user?.organizationId, user?.scope, eventOrganizationId]);
+  }, [eventOrganizationId, selectedOrganizationId, user?.organizationId, user?.scope]);
 
   // Clear cache when organization changes
   useEffect(() => {
