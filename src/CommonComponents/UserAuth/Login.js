@@ -87,9 +87,9 @@ const Login = () => {
         resetRefreshTokenState();
         
         // ✅ Store access token if present
-        if (response.accessToken) {
-          localStorage.setItem("accessToken", response.accessToken);
-        }
+        // if (response.accessToken) {
+        //   localStorage.setItem("accessToken", response.accessToken);
+        // }
         
         // ✅ Store full login response
         localStorage.setItem("user", JSON.stringify(response));

@@ -16,6 +16,11 @@ function getCookieValue(name) {
   return null;
 }
 
+// Utility function to delete cookie (only for non-HttpOnly cookies)
+function deleteCookieValue(name) {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;SameSite=Strict;Secure`;
+}
+
 
 // Centralized function to handle token expiration
 async function handleTokenExpired() {
@@ -40,10 +45,10 @@ async function handleTokenExpired() {
   }
   
   // Clear all auth-related data
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('user');
-  localStorage.removeItem('permissions');
-  localStorage.removeItem('dashboard-selected-organization');
+  // Note: Don't clear LocalAccessToken and LocalRefreshToken as they are HttpOnly and managed by backend
+  deleteCookieValue('user');
+  deleteCookieValue('permissions');
+  localStorage.removeItem('dashboard-selected-organization'); // Keep this in localStorage as it's not sensitive
   
   // Redirect to login page
   if (typeof window !== 'undefined') {
@@ -99,15 +104,17 @@ async function performTokenRefresh() {
         throw new Error('Invalid access token in refresh response');
       }
       
-      const newToken = data.accessToken;
-      localStorage.setItem('accessToken', newToken);
+      // Don't store access token in frontend - backend already sets it in LocalAccessToken cookie
+      // The backend will handle setting the access token cookie automatically
+      // We just need to validate that we received a valid token response
       
       // Reset refresh state
       isRefreshing = false;
       refreshPromise = null;
       refreshAttempts = 0; // Reset attempts on successful refresh
       
-      return newToken;
+      // Return the token from the response (backend will set it in cookie)
+      return data.accessToken;
     })
     .catch(async (err) => {
       isRefreshing = false;
@@ -126,8 +133,8 @@ export async function fetchWithRefresh(input, init = {}) {
     throw new Error('Refresh token expired');
   }
 
-  // Get current access token
-  let accessToken = localStorage.getItem('accessToken');
+  // Get current access token from backend-set cookie
+  let accessToken = getCookieValue('LocalAccessToken');
   
   // Since access token is backend-only, we don't need to validate its format
   // Just check if it exists and is not null/undefined
