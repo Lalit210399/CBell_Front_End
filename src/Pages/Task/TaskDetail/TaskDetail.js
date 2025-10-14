@@ -359,6 +359,8 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
             taskId={taskId}
             isUpdatingChecklist={isUpdatingChecklist}
             onUpdateChecklist={handleChecklistUpdate}
+            hasError={!!errors?.specification}
+            errorMessage={errors?.specification}
           />
           {errors?.specification && (
             <div className="field-error">{errors.specification}</div>
@@ -376,6 +378,8 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
           isFullWidth={true}
           mode={mode}
           canEdit={mode !== "view"}
+          hasError={!!errors?.description}
+          errorMessage={errors?.description}
         />
         {errors?.description && (
           <div className="field-error">{errors.description}</div>

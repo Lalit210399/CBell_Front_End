@@ -86,8 +86,8 @@
 }
 
 .edit-top-title-input.error {
-    border-color: #dc2626;
-    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
+    border-color: #d32f2f;
+    box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.1);
 }
 
 .edit-top-required-asterisk {
