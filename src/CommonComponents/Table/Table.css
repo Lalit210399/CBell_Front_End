@@ -145,6 +145,31 @@ th:hover {
   background-color: #f0f0f0;
 }
 
+.delete-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #dc2626;
+  width: 32px;
+  height: 32px;
+}
+
+.delete-button:hover {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  transform: scale(1.05);
+}
+
+.delete-button:active {
+  transform: scale(0.95);
+}
+
 .dropdown_menu {
   position: absolute;
   right: 0;
@@ -280,6 +305,11 @@ tbody tr:nth-child(even) {
     font-size: 16px;
   }
 
+  .delete-button {
+    width: 28px;
+    height: 28px;
+  }
+
   .dropdown_menu {
     min-width: 100px;
     right: 0;
@@ -317,6 +347,11 @@ tbody tr:nth-child(even) {
     width: 24px;
     height: 24px;
     font-size: 14px;
+  }
+
+  .delete-button {
+    width: 24px;
+    height: 24px;
   }
 
   .dropdown_menu {
