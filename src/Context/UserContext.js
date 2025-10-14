@@ -40,6 +40,20 @@ export const UserProvider = ({ children }) => {
     }
   }, [user?.organizationId, scope?.accessibleOrganizations, selectedOrganizationId]);
 
+  // Listen for auth expiration events
+  useEffect(() => {
+    const handleAuthExpired = (event) => {
+      console.log('Auth expired event received:', event.detail);
+      resetUserState();
+    };
+
+    window.addEventListener('auth-expired', handleAuthExpired);
+    
+    return () => {
+      window.removeEventListener('auth-expired', handleAuthExpired);
+    };
+  }, []);
+
   // Helper function to check if user is viewing their own organization
   const isViewingOwnOrganization = () => {
     return selectedOrganizationId === user?.organizationId;

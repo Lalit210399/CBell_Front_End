@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../Context/UserContext";
+import { useMessages } from "../../Context/MessageContext";
 import useApi from "../../Hooks/useApi";
 import Tile from "../../CommonComponents/Tiles/Tiles";
 import EventCampaign from "../../CommonComponents/TimelineCard/TimelineCard";
@@ -28,6 +29,7 @@ import "./Dashboard.css";
 
 const Dashboard = () => {
   const { user, selectedOrganizationId, isViewingOwnOrganization, loading: userLoading, scopeChangeTrigger } = useUser();
+  const { showError, showWarning } = useMessages();
   const navigate = useNavigate();
 
   // State for orgIdReady - now based on global selectedOrganizationId
@@ -378,6 +380,37 @@ const Dashboard = () => {
     error: errorAssignToMe,
     execute: executeAssignedEvents
   } = useApi(fetchAssignedEvents, [orgIdReady], false);
+
+  // Handle API errors and show user-friendly messages
+  useEffect(() => {
+    if (errorSummary) {
+      showError('Failed to load dashboard summary. Please try again.', { duration: 5000 });
+    }
+  }, [errorSummary, showError]);
+
+  useEffect(() => {
+    if (errorEventsCampaign) {
+      showError('Failed to load events campaign data. Please try again.', { duration: 5000 });
+    }
+  }, [errorEventsCampaign, showError]);
+
+  useEffect(() => {
+    if (errorTasks) {
+      showError('Failed to load tasks data. Please try again.', { duration: 5000 });
+    }
+  }, [errorTasks, showError]);
+
+  useEffect(() => {
+    if (errorActiveEvents) {
+      showError('Failed to load active events. Please try again.', { duration: 5000 });
+    }
+  }, [errorActiveEvents, showError]);
+
+  useEffect(() => {
+    if (errorAssignToMe) {
+      showError('Failed to load assigned events. Please try again.', { duration: 5000 });
+    }
+  }, [errorAssignToMe, showError]);
 
   // Execute APIs when orgIdReady changes or scope changes
   useEffect(() => {

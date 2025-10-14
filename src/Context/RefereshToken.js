@@ -1,4 +1,5 @@
 import { logout } from '../Services/AuthN';
+import { showGlobalMessage } from '../Utils/MessageDispatcher';
 
 // State management for token refresh
 let isRefreshing = false;
@@ -38,21 +39,42 @@ async function handleTokenExpired() {
   });
   pendingRequests.clear();
   
+  // Clear all auth-related data
+  localStorage.removeItem('user');
+  localStorage.removeItem('permissions');
+  localStorage.removeItem('scope');
+  localStorage.removeItem('dashboard-selected-organization');
+  
+  // Clear non-HttpOnly cookies
+  deleteCookieValue('user');
+  deleteCookieValue('permissions');
+  
   try {
     await logout();
   } catch (logoutErr) {
     console.error('Logout after refresh token failure failed:', logoutErr);
   }
   
-  // Clear all auth-related data
-  // Note: Don't clear LocalAccessToken and LocalRefreshToken as they are HttpOnly and managed by backend
-  deleteCookieValue('user');
-  deleteCookieValue('permissions');
-  localStorage.removeItem('dashboard-selected-organization'); // Keep this in localStorage as it's not sensitive
-  
-  // Redirect to login page
+  // Use a more graceful redirect approach
   if (typeof window !== 'undefined') {
-    window.location.href = '/login';
+    // Show user-friendly message
+    showGlobalMessage(
+      'Your session has expired. Please log in again to continue.',
+      'warning',
+      5000
+    );
+    
+    // Dispatch a custom event that components can listen to
+    window.dispatchEvent(new CustomEvent('auth-expired', { 
+      detail: { reason: 'refresh-token-missing' } 
+    }));
+    
+    // Fallback to redirect if no listener handles the event
+    setTimeout(() => {
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }, 2000); // Give user time to see the message
   }
 }
 
@@ -164,6 +186,25 @@ export async function fetchWithRefresh(input, init = {}) {
   }
 
   // If we get 401, we need to refresh the token
+  // Only check for refresh token availability when we actually need to refresh
+  const refreshToken = getCookieValue('LocalRefreshToken');
+  
+  if (!refreshToken || refreshToken === 'null' || refreshToken === 'undefined') {
+    // No refresh token available, user needs to log in again
+    console.warn('Access token expired and no refresh token available, logging out');
+    await handleTokenExpired();
+    
+    // Don't throw error, just return a failed response
+    return new Response(
+      JSON.stringify({ error: 'Session expired. Please log in again.' }),
+      { 
+        status: 401, 
+        statusText: 'Unauthorized',
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
+
   try {
     // Wait for token refresh (this will handle concurrent requests properly)
     const newToken = await performTokenRefresh();

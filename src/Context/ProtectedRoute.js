@@ -13,14 +13,32 @@ function getCookieValue(name) {
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useUser();
   const location = useLocation();
-  const refreshToken = getCookieValue("LocalRefreshToken");
 
   // Wait until auth state is restored to avoid redirecting away on refresh
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontSize: '16px',
+        color: '#666'
+      }}>
+        Loading...
+      </div>
+    );
+  }
 
-  // ✅ Check both refreshToken + user context after loading
-  if (!refreshToken || !user) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+  // Only check user context - let the API calls handle refresh token validation
+  if (!user) {
+    // Prevent multiple redirects by checking if we're already on login page
+    if (location.pathname !== '/login') {
+      return <Navigate to="/login" replace state={{ from: location }} />;
+    }
+    
+    // If already on login page, just return null to prevent blinking
+    return null;
   }
 
   return children;
