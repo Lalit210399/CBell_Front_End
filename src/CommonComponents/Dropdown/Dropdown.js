@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./Dropdown.css";
 
-const Dropdown = ({ options, selectedOption, onSelect, disabled, multiSelect = false }) => {
+const Dropdown = ({ options, selectedOption, onSelect, disabled, multiSelect = false, className = "" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState(multiSelect ? [] : null);
   const dropdownRef = useRef(null);
@@ -53,7 +53,7 @@ const Dropdown = ({ options, selectedOption, onSelect, disabled, multiSelect = f
   }, []);
 
   return (
-    <div className={`dropdown ${disabled ? "disabled" : ""}`} ref={dropdownRef}>
+    <div className={`dropdown ${disabled ? "disabled" : ""} ${className}`} ref={dropdownRef}>
       <button
         className="dropdown-toggle"
         onClick={handleToggle}

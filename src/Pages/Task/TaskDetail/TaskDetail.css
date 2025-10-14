@@ -163,10 +163,15 @@ input[type=number]::-webkit-outer-spin-button {
     flex-direction: column;
   }
   .input-group.error .input-box {
-    border-color: red;
+    border-color: #d32f2f;
+  }
+
+  .input-box input.error,
+  .input-box .custom-select.error {
+    border-color: #d32f2f;
   }
   .field-error {
-    color: red;
+    color: #d32f2f;
     font-size: 12px;
     margin-top: 4px;
   }

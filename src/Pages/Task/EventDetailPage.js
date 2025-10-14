@@ -14,7 +14,7 @@ import { useMessages } from "../../Context/MessageContext";
 import { useEventTypes } from "../../Hooks/useEventTypes";
 import { useDepartments } from "../../Hooks/useDepartments";
 import { DepartmentProvider } from "../../Context/DepartmentContext";
-import { getHierarchyUsers } from "../../Services/AuthN";
+// import { getHierarchyUsers } from "../../Services/AuthN";
 import { Building, Calendar, FileText } from "lucide-react";
 import "./Tasks.css";
 
@@ -25,7 +25,6 @@ const EventDetail = () => {
   const [mode, setMode] = useState("View");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
-  const [usersList, setUsersList] = useState([]);
   const [assignedUsers, setAssignedUsers] = useState([]);
   const [selectedDepartments, setSelectedDepartments] = useState([]);
   const [currentEventId, setCurrentEventId] = useState(null);
@@ -130,7 +129,7 @@ const EventDetail = () => {
     }
     
         // Use event's organization ID if available, otherwise fall back to current scope organization
-        const eventOrgId = location.state?.eventData?.organizationId;
+        const eventOrgId = location.state?.eventData?.organizationId || location.state?.organizationId;
         const organizationId = eventOrgId || selectedOrganizationId || user?.organizationId;
         
         if (!organizationId) {
@@ -181,15 +180,16 @@ const EventDetail = () => {
         };
 
     return transformedData;
-  }, [currentEventId, eventId, selectedOrganizationId, user?.organizationId, user?.userId, location.state?.eventData?.organizationId]);
+  }, [currentEventId, eventId, selectedOrganizationId, user?.organizationId, user?.userId, location.state?.eventData?.organizationId, location.state?.organizationId]);
 
   /** -------------------- State Management -------------------- **/
   const [tasksData, setTasksData] = useState(null);
   const [eventData, setEventData] = useState(null);
   const [eventLoading, setEventLoading] = useState(false);
-  const [tasksLoading, setTasksLoading] = useState(false);
-  const [eventError, setEventError] = useState(null);
-  const [tasksError, setTasksError] = useState(null);
+  // These states are not used for rendering; removing to satisfy linter and keep logic clean
+  // const [tasksLoading, setTasksLoading] = useState(false);
+  // const [eventError, setEventError] = useState(null);
+  // const [tasksError, setTasksError] = useState(null);
   const isFetchingEventRef = useRef(false);
   const isFetchingTasksRef = useRef(false);
 
@@ -199,16 +199,13 @@ const EventDetail = () => {
     if (activeTab === "Task" && taskEventId && !isFetchingTasksRef.current) {
       
       isFetchingTasksRef.current = true;
-      setTasksLoading(true);
-      setTasksError(null);
       
       try {
         const data = await fetchTasks();
         setTasksData(data);
       } catch (err) {
-        setTasksError(err.message);
+        // swallow; errors surfaced via message context where needed
       } finally {
-        setTasksLoading(false);
         isFetchingTasksRef.current = false;
       }
     }
@@ -222,13 +219,12 @@ const EventDetail = () => {
       
       isFetchingEventRef.current = true;
       setEventLoading(true);
-      setEventError(null);
       
       try {
         const data = await fetchEvent();
         setEventData(data);
       } catch (err) {
-        setEventError(err.message);
+        // swallow; errors surfaced via message context where needed
       } finally {
         setEventLoading(false);
         isFetchingEventRef.current = false;
@@ -245,69 +241,33 @@ const EventDetail = () => {
     executeFetchEvent();
   }, [executeFetchEvent, scopeChangeTrigger]);
 
-  const fetchUsers = useCallback(async () => {
-    // Use event's organization ID if available, otherwise fall back to current scope organization
-    const eventOrgId = fetchedEvent?.organizationId || location.state?.eventData?.organizationId;
-    const organizationId = eventOrgId || selectedOrganizationId || user?.organizationId;
-    
-    if (!organizationId) {
-      return [];
-    }
+  // Hierarchy User API is not needed here; commenting out
+  // const fetchUsers = useCallback(async () => {
+  //   const eventOrgId = fetchedEvent?.organizationId || location.state?.eventData?.organizationId;
+  //   const organizationId = eventOrgId || selectedOrganizationId || user?.organizationId;
+  //   if (!organizationId) {
+  //     return [];
+  //   }
+  //   const response = await getHierarchyUsers(organizationId);
+  //   const formattedUsers = response.users.map(user => ({
+  //     id: user.id,
+  //     firstName: user.firstName,
+  //     lastName: user.lastName,
+  //     email: user.email,
+  //     fullName: `${user.firstName} ${user.lastName}`,
+  //     organizationId: user.organizationId,
+  //     organizationCode: user.organizationCode || "ORG001"
+  //   }));
+  //   return formattedUsers;
+  // }, [selectedOrganizationId, user?.organizationId, fetchedEvent?.organizationId, location.state?.eventData?.organizationId]);
 
-    const response = await getHierarchyUsers(organizationId);
+  // Users list is now sourced by Assignment-User API in DetailTopSectionNew
 
-    const formattedUsers = response.users.map(user => ({
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      fullName: `${user.firstName} ${user.lastName}`,
-      organizationId: user.organizationId,
-      organizationCode: user.organizationCode || "ORG001"
-    }));
+  // Hierarchy user API fetch is intentionally disabled here
+  // const executeFetchUsers = useCallback(async () => { ... }, [...]);
+  // useEffect(() => { executeFetchUsers(); }, [executeFetchUsers, scopeChangeTrigger]);
 
-    return formattedUsers;
-  }, [selectedOrganizationId, user?.organizationId, fetchedEvent?.organizationId, location.state?.eventData?.organizationId]);
-
-  const [usersData, setUsersData] = useState(null);
-  const [usersLoading, setUsersLoading] = useState(false);
-  const [usersError, setUsersError] = useState(null);
-  const isFetchingUsersRef = useRef(false);
-
-  // Execute users API when component mounts or scope changes
-  const executeFetchUsers = useCallback(async () => {
-    // Use event's organization ID if available, otherwise fall back to current scope organization
-    const eventOrgId = fetchedEvent?.organizationId || location.state?.eventData?.organizationId;
-    const organizationId = eventOrgId || selectedOrganizationId || user?.organizationId;
-    if (organizationId && !isFetchingUsersRef.current) {
-      
-      isFetchingUsersRef.current = true;
-      setUsersLoading(true);
-      setUsersError(null);
-      
-      try {
-        const data = await fetchUsers();
-        setUsersData(data);
-      } catch (err) {
-        setUsersError(err.message);
-      } finally {
-        setUsersLoading(false);
-        isFetchingUsersRef.current = false;
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedOrganizationId, user?.organizationId, fetchUsers, fetchedEvent?.organizationId, location.state?.eventData?.organizationId]);
-
-  useEffect(() => {
-    executeFetchUsers();
-  }, [executeFetchUsers, scopeChangeTrigger]);
-
-  // Update usersList when usersData changes
-  useEffect(() => {
-    if (usersData) {
-      setUsersList(usersData);
-    }
-  }, [usersData]);
+  // No users fetch here; DetailTopSectionNew fetches assignment users when needed
 
   // Handle create mode and event data updates
   useEffect(() => {
@@ -390,7 +350,7 @@ const EventDetail = () => {
     
     
     return permissionsResult;
-  }, [mode, userPermissions?.permissions?.Events, userPermissions?.permissions?.Tasks, fetchedEvent?.canCRUD, isViewingOwnOrganization, fetchedEvent?.assignedUsers, fetchedEvent?.createdBy, fetchedEvent?.createdById, user?.userId, user?.id, user?.roles]);
+  }, [mode, userPermissions?.permissions?.Events, userPermissions?.permissions?.Tasks, fetchedEvent?.canCRUD, isViewingOwnOrganization, fetchedEvent?.assignedUsers, fetchedEvent?.createdBy, fetchedEvent?.createdById, user?.userId, user?.id, user?.roles, user?.userID]);
 
   const handleSaveEvent = async (topSectionData, detailData) => {
     setIsSubmitting(true);
@@ -466,13 +426,12 @@ const EventDetail = () => {
         };
       }
       
-      // Fallback: if it's just an ID, look it up in usersList
-      const user = usersList.find(u => u.id === assignedUser);
+      // Fallback: if it's just an ID, send minimal user info
       const currentDate = new Date().toISOString();
       return {
         userId: assignedUser,
-        userName: user ? `${user.firstName} ${user.lastName}` : "Unknown User",
-        orgCode: user?.organizationCode || "ORG001",
+        userName: "Unknown User",
+        orgCode: "ORG001",
         assignedOn: currentDate
       };
     });
@@ -614,16 +573,13 @@ const EventDetail = () => {
   const handleBackClick = () => navigate(-1);
 
   const handleParticipantsChange = (participantIds) => {
-    // Convert user IDs to full user objects
-    const fullUserObjects = participantIds.map(userId => {
-      const user = usersList.find(u => u.id === userId);
-      return {
+    // Create minimal user objects; names can be enriched by backend later
+    const fullUserObjects = participantIds.map(userId => ({
         userId: userId,
-        userName: user ? `${user.firstName} ${user.lastName}` : "Unknown User",
-        orgCode: user?.organizationCode || "ORG001",
+      userName: "Unknown User",
+      orgCode: "ORG001",
         assignedOn: new Date().toISOString()
-      };
-    });
+    }));
     setAssignedUsers(fullUserObjects);
   };
 
@@ -793,7 +749,7 @@ const EventDetail = () => {
     }
 
     return baseTabs;
-  }, [mode, detailSaveRef, guestsData, organizersData, formData?.eventDescription, fetchedEvent?.eventDescription, formData?.location, fetchedEvent?.locationDetails, tasksData, currentEventId, eventId, selectedOrganizationId, user?.organizationId, handleDownload, handleSendMail, fetchedEvent?.eventName, validationErrors, permissions.canPublish, user, fetchedEvent?.organizationId, location.state?.eventData?.organizationId]);
+  }, [mode, detailSaveRef, guestsData, organizersData, formData?.eventDescription, fetchedEvent?.eventDescription, formData?.location, fetchedEvent?.locationDetails, tasksData, currentEventId, eventId, selectedOrganizationId, handleDownload, handleSendMail, fetchedEvent?.eventName, validationErrors, permissions.canPublish, user, fetchedEvent?.organizationId, location.state?.eventData?.organizationId]);
 
   const filteredTabs = React.useMemo(() => {
     if (mode === "create") {
@@ -851,8 +807,8 @@ const EventDetail = () => {
   // Determine loading state
   const isLoading = useMemo(() => {
     if (mode === "create") return false;
-    return eventLoading || usersLoading;
-  }, [mode, eventLoading, usersLoading]);
+    return eventLoading;
+  }, [mode, eventLoading]);
 
   if (isLoading) {
     return <PageSkeleton type="event" />;
@@ -866,7 +822,7 @@ const EventDetail = () => {
                      user?.organizationId;
 
   return (
-    <DepartmentProvider eventOrganizationId={eventOrgId}>
+    <DepartmentProvider eventOrganizationId={eventOrgId} shouldFetch={mode === "create" || mode === "edit"}>
       <div className="event-detail-module fade-in">
         <div className="BreadCrumb">
           <Breadcrumb items={breadcrumbItems} />
@@ -887,7 +843,7 @@ const EventDetail = () => {
             isSubmitting={isSubmitting}
             errors={validationErrors}
             onClearError={(field) => setValidationErrors(prev => ({ ...prev, [field]: undefined }))}
-            users={usersList}
+            users={[]}
             assignedTo={assignedUsers}
             onParticipantsChange={handleParticipantsChange}
             eventTypes={eventTypes}

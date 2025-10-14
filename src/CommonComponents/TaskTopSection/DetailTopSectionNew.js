@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { ArrowLeft, Save, Users } from "lucide-react";
 import CustomDropdown from "../Dropdown/CustomDropdown";
 import MultiSelectDropdown from "../Dropdown/MultiSelectDropdown";
@@ -59,6 +59,7 @@ const DetailTopSectionNew = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [assignedIds, setAssignedIds] = useState([]);
   const [fetchedUsers, setFetchedUsers] = useState([]);
+  const hasFetchedUsersRef = useRef(false);
 
   // Use event types from props or context
   const eventTypes = useMemo(() => {
@@ -152,13 +153,14 @@ const DetailTopSectionNew = ({
 
         const data = await response.json();
         setFetchedUsers(data.users || []);
+        hasFetchedUsersRef.current = true;
       } catch (error) {
         console.error("Error fetching users:", error);
         setFetchedUsers([]);
       }
     };
 
-    if (mode === "edit" || mode === "create") {
+    if ((mode === "edit" || mode === "create") && !hasFetchedUsersRef.current) {
       fetchUsers();
     } else {
       setFetchedUsers(users);

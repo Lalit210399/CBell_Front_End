@@ -113,33 +113,9 @@ const TopSection = ({
   }, [assignedTo]);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch(`/apis/auth/hierarchy-users/${user?.organizationId}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            "ngrok-skip-browser-warning": "1",
-          },
-        });
-
-        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-        const data = await response.json();
-
-        setFetchedUsers(data.users || []);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        setFetchedUsers([]);
-      }
-    };
-
-    if (mode === "edit" || mode === "create") {
-      fetchUsers();
-    } else {
-      setFetchedUsers(users);
-    }
-  }, [mode, users, user?.organizationId]);
+    // Rely on parent-provided users to avoid redundant API calls.
+    setFetchedUsers(users);
+  }, [users]);
 
   const handleTitleChange = (e) => {
     setEditableTitle(e.target.value);
@@ -160,25 +136,7 @@ const TopSection = ({
   };
 
   // Helper function to check if task has uploaded files
-  const checkTaskFiles = async (taskId) => {
-    if (!taskId) return false;
-    
-    try {
-      const response = await fetch(`/apis/document-details/task/${taskId}`, {
-        headers: { 'ngrok-skip-browser-warning': '1' }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to check task documents');
-      }
-      
-      const documents = await response.json();
-      return documents && documents.length > 0;
-    } catch (error) {
-      console.error('Error checking task files:', error);
-      return false;
-    }
-  };
+  // kept previously for potential reuse; currently unused to avoid extra calls
 
   // Handle status change button clicks
   const handleStatusChange = async (newStatusValue) => {
