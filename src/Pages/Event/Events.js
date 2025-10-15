@@ -189,10 +189,20 @@ const EventTable = () => {
           participantName = user.name;
         }
 
+        // Generate proper initials from the full name
+        const generateInitials = (name) => {
+          if (!name || name === "Unknown") return "?";
+          const words = name.trim().split(/\s+/);
+          if (words.length === 1) {
+            return words[0].charAt(0).toUpperCase();
+          }
+          return words.slice(0, 2).map(word => word.charAt(0).toUpperCase()).join('');
+        };
+
         return {
-          name: toCamelCase(participantName),
+          name: toTitleCase(participantName), // Use title case for display
           src: participantName,
-          fallback: participantName.charAt(0).toUpperCase() || "?",
+          fallback: generateInitials(participantName),
           size: "32px",
           shape: "circle",
         };
