@@ -185,16 +185,22 @@ const TaskDetailPage = () => {
     }
     try {
       const response = await getHierarchyUsers(currentOrgId);
-      const formattedUsers = response.users.map(user => ({
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        fullName: `${user.firstName} ${user.lastName}`,
-        organizationId: user.organizationId,
-        organizationCode: user.organizationCode || "ORG001",
-        role: user.role || user.roles?.[0]?.name || ""
-      }));
+      const formattedUsers = response.users.map(user => {
+        // Use the roles array that's already present in each user object
+        const userRoles = Array.isArray(user.roles) ? user.roles : [];
+        
+        return {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          fullName: `${user.firstName} ${user.lastName}`,
+          organizationId: user.organizationId,
+          organizationCode: user.organizationCode || "ORG001",
+          roles: userRoles, // Provide roles array for UserDropdown
+          role: userRoles[0]?.name || userRoles[0]?.displayName || "" // Keep backward compatibility
+        };
+      });
       return formattedUsers;
     } catch (error) {
       addMessage({ text: "Failed to load users list", type: "error", duration: 3000 });
