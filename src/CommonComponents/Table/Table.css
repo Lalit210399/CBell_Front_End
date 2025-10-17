@@ -52,6 +52,7 @@ th:hover {
   max-width: 60px;
   text-align: center;
   padding: 8px 4px;
+  vertical-align: middle;
 }
 
 /* Skeleton Loading Styles */
@@ -124,6 +125,7 @@ th:hover {
   display: flex;
   justify-content: center;
   align-items: center;
+  min-height: 48px; /* Ensure consistent height for proper centering */
 }
 
 .action-button {
@@ -158,6 +160,7 @@ th:hover {
   color: #dc2626;
   width: 32px;
   height: 32px;
+  margin: 0 auto; /* Additional centering for extra assurance */
 }
 
 .delete-button:hover {

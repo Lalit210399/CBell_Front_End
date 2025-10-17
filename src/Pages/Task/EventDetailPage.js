@@ -572,15 +572,20 @@ const EventDetail = () => {
 
   const handleBackClick = () => navigate(-1);
 
-  const handleParticipantsChange = (participantIds) => {
-    // Create minimal user objects; names can be enriched by backend later
-    const fullUserObjects = participantIds.map(userId => ({
+  const handleParticipantsChange = (participantIds, selectedUsers) => {
+    // Use the provided user objects if available, otherwise create minimal objects
+    if (selectedUsers && selectedUsers.length > 0) {
+      setAssignedUsers(selectedUsers);
+    } else {
+      // Fallback: Create minimal user objects; names can be enriched by backend later
+      const fullUserObjects = participantIds.map(userId => ({
         userId: userId,
-      userName: "Unknown User",
-      orgCode: "ORG001",
+        userName: "Unknown User",
+        orgCode: "ORG001",
         assignedOn: new Date().toISOString()
-    }));
-    setAssignedUsers(fullUserObjects);
+      }));
+      setAssignedUsers(fullUserObjects);
+    }
   };
 
   const handleDepartmentsChange = (departmentIds) => {
