@@ -232,16 +232,17 @@
 }
 
 .notification-item {
-  display: flex;
-  align-items: flex-start;
-  padding: 16px 24px;
-  border-bottom: 1px solid #C9FFD4;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  margin: 0 8px;
-  border-radius: 8px;
-  margin-bottom: 4px;
+    display: flex;
+    align-items: flex-start;
+    padding: 16px 24px;
+    border-bottom: 1px solid #C9FFD4;
+    border-left: 4px solid #02968A;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    margin: 0 8px;
+    border-radius: 8px;
+    margin-bottom: 4px;
 }
 
 .notification-item:hover {
@@ -359,21 +360,24 @@
 }
 
 .mark-read-btn:hover {
-  background: linear-gradient(135deg, #C9FFD4, #B8F5C8);
+  /* background: linear-gradient(135deg, #C9FFD4, #B8F5C8); */
+  background: linear-gradient(135deg, #C9FFD4, #C9FFD4);
   color: #02968A;
   transform: scale(1.1);
   box-shadow: 0 2px 8px rgba(2, 150, 138, 0.3);
 }
 
 .delete-btn:hover {
-  background: linear-gradient(135deg, #ffebee, #ffcdd2);
+  /* background: linear-gradient(135deg, #ffebee, #ffcdd2); */
+  background: linear-gradient(135deg, #ffebee, #ffebee);
   color: #d32f2f;
   transform: scale(1.1);
   box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
 }
 
 .external-btn:hover {
-  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  /* background: linear-gradient(135deg, #e3f2fd, #bbdefb); */
+  background: linear-gradient(135deg, #e3f2fd, #e3f2fd);
   color: #1976d2;
   transform: scale(1.1);
   box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
@@ -411,82 +415,26 @@
     width: 340px;
     right: -10px;
   }
-  
+
   .notification-header {
     padding: 16px 20px;
   }
-  
+
   .notification-item {
     padding: 12px 20px;
     margin: 0 4px;
   }
-  
+
   .notification-footer {
     padding: 12px 20px;
   }
-  
+
   .notification-bell {
     padding: 6px;
   }
-  
+
   .bell-icon {
     font-size: 20px;
-  }
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .notification-panel {
-    background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
-    border-color: #02968A;
-  }
-  
-  .notification-header {
-    background: linear-gradient(135deg, #043E54, #02968A);
-    border-bottom-color: #C9FFD4;
-  }
-  
-  .notification-header h3 {
-    color: white;
-  }
-  
-  .notification-item {
-    border-bottom-color: #02968A;
-  }
-  
-  .notification-item:hover {
-    background: linear-gradient(135deg, #2a2a2a, #3a3a3a);
-  }
-  
-  .notification-item.unread {
-    background: linear-gradient(135deg, #1a2a1a, #2a3a2a);
-    border-left-color: #02968A;
-  }
-  
-  .notification-item.unread:hover {
-    background: linear-gradient(135deg, #2a3a2a, #3a4a3a);
-  }
-  
-  .notification-title {
-    color: #C9FFD4;
-  }
-  
-  .notification-body {
-    color: #02968A;
-  }
-  
-  .notification-footer {
-    background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
-    border-top-color: #02968A;
-  }
-  
-  .view-all-btn {
-    background: linear-gradient(135deg, #02968A, #043E54);
-    color: white;
-  }
-  
-  .view-all-btn:hover {
-    background: linear-gradient(135deg, #043E54, #02968A);
   }
 }
 
