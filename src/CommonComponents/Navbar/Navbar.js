@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { BellRing, Building2, User, Mail, LogOut, Shield, ChevronDown } from "lucide-react";
+import { Building2, LogOut, Shield, ChevronDown } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
 import { logout } from "../../Services/AuthN";
 import CustomDropdown from "../Dropdown/CustomDropdown";
+import NotificationDropdown from "../NotificationDropdown/NotificationDropdown";
 import "./Navbar.css";
 
 function Navbar() {
@@ -12,8 +13,6 @@ function Navbar() {
   const { 
     user, 
     permissions: userPermissions, 
-    setUser, 
-    setPermissions, 
     scope, 
     selectedOrganizationId, 
     handleScopeChange,
@@ -133,7 +132,9 @@ function Navbar() {
           </div>
         </div>
         
-        {/* <BellRing size={22} className="bell-icon" /> */}
+        {/* Notification Bell */}
+        <NotificationDropdown />
+        
         <div className="user-info" ref={dropdownRef}>
           
           <div className="avatar-dropdown-wrapper">

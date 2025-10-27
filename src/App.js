@@ -15,6 +15,7 @@ import TasksDetail from "./Pages/Task/TaskDetailPage";
 import Instagram from "./InstagramPost";
 import ProtectedRoute, { RequirePermission } from "./Context/ProtectedRoute";
 import { useUser } from "./Context/UserContext";
+import { NotificationProvider } from "./Context/NotificationContext";
 import ErrorBoundary from "./CommonComponents/ErrorBoundary"; 
 
 // Component to render appropriate dashboard based on user role
@@ -34,17 +35,18 @@ function App() {
     <ErrorBoundary>
       <Router>
         <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Login />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+        {/* Public Routes */}
+        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* Protected Routes */}
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
+        {/* Protected Routes */}
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <NotificationProvider>
                 <MainLayout>
                   <Routes>
                     <Route path="/auth" element={<AuthN />} />
@@ -80,9 +82,10 @@ function App() {
                     <Route path="/instagram" element={<Instagram />} />
                   </Routes>
                 </MainLayout>
-              </ProtectedRoute>
-            }
-          />
+              </NotificationProvider>
+            </ProtectedRoute>
+          }
+        />
 
         </Routes>
       </Router>

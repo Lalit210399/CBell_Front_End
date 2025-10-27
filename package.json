@@ -5,6 +5,7 @@
   "dependencies": {
     "cra-template": "1.2.0",
     "eslint": "^8.57.1",
+    "firebase": "^12.4.0",
     "framer-motion": "^12.12.1",
     "jodit-react": "^5.2.19",
     "js-cookie": "^2.2.1",

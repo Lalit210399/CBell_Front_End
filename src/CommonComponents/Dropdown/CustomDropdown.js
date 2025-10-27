@@ -48,7 +48,7 @@ const CustomDropdown = ({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
       >
-        <txt>{selected}</txt>
+        <span>{selected}</span>
         <ChevronDown size={18} color="#8B8B8B"/>
       </button>
 
