@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Building2, LogOut, Shield, ChevronDown } from "lucide-react";
+import { Building2, LogOut, Shield, ChevronDown, BellRing } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
 import { logout } from "../../Services/AuthN";
 import CustomDropdown from "../Dropdown/CustomDropdown";
@@ -83,24 +83,6 @@ function Navbar() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  // Removed duplicate toggleDropdown
-
-  // ✅ Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target)
-      ) {
-        setDropdownVisible(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
 
   // Check permissions for each tab
   const hasDashboardPermission =
@@ -130,121 +112,119 @@ function Navbar() {
   const userInitials = getUserInitials(user?.firstName, user?.lastName);
 
   return (
-    <nav className="navbar">
-      <div className="nav-links">
-        {hasDashboardPermission && (
-          <Link to="/dashboard" className={location.pathname === "/dashboard" ? "active" : ""}>
-            Dashboard
-          </Link>
-        )}
-        {hasEventsPermission && (
-          <Link to="/events" className={location.pathname.startsWith("/events") ? "active" : ""}>
-            Events
-          </Link>
-        )}
-        {hasSchedulePermission && (
-          <Link to="/schedule" className={location.pathname === "/schedule" ? "active" : ""}>
-            Schedule
-          </Link>
-        )}
-      </div>
-      <div className="nav-right">
-        {/* Scope Selection */}
-        <div className="scope-section">
-          <span className="scope-label">
-            <Building2 size={16} />
-            Scope:
-          </span>
-          <div className="scope-dropdown">
-            <CustomDropdown
-              options={scopeOptions}
-              defaultLabel={currentScopeLabel}
-              onSelect={(option) => handleScopeChange(option.value, location)}
-            />
-          </div>
+    <>
+      <nav className="navbar">
+        <div className="nav-links">
+          {hasDashboardPermission && (
+            <Link to="/dashboard" className={location.pathname === "/dashboard" ? "active" : ""}>
+              Dashboard
+            </Link>
+          )}
+          {hasEventsPermission && (
+            <Link to="/events" className={location.pathname.startsWith("/events") ? "active" : ""}>
+              Events
+            </Link>
+          )}
+          {hasSchedulePermission && (
+            <Link to="/schedule" className={location.pathname === "/schedule" ? "active" : ""}>
+              Schedule
+            </Link>
+          )}
         </div>
-        
-        {/* Notification Bell */}
-        <NotificationDropdown />
-        
-        <div className="user-info" ref={dropdownRef}>
-          
-          <div className="avatar-dropdown-wrapper">
-            <div className="profile-trigger" onClick={toggleDropdown}>
-              <div className="user-avatars user-avatar-initials">
-                {userInitials}
-              </div>
-              <ChevronDown size={16} className={`chevron-icon ${dropdownVisible ? 'rotated' : ''}`} />
+        <div className="nav-right">
+          {/* Scope Selection */}
+          <div className="scope-section">
+            <span className="scope-label">
+              <Building2 size={16} />
+              Scope:
+            </span>
+            <div className="scope-dropdown">
+              <CustomDropdown
+                options={scopeOptions}
+                defaultLabel={currentScopeLabel}
+                onSelect={(option) => handleScopeChange(option.value, location)}
+              />
             </div>
-            {dropdownVisible && (
-              <div className="profile-dropdown">
-                <div className="profile-header">
-                  <div className="profile-avatar-section">
-                    <div className="profile-avatar-large profile-avatar-initials-large">
-                      {userInitials}
-                    </div>
-                    <div className="profile-status"></div>
-                  </div>
-                  <div className="profile-info">
-                    <h3 className="profile-name">{user?.firstName} {user?.lastName}</h3>
-                    <p className="profile-email">{user?.email}</p>
-                  </div>
+          </div>
+          
+          {/* Notification Bell */}
+          <NotificationDropdown />
+          
+          <div className="user-info" ref={dropdownRef}>
+            
+            <div className="avatar-dropdown-wrapper">
+              <div className="profile-trigger" onClick={toggleDropdown}>
+                <div className="user-avatars user-avatar-initials">
+                  {userInitials}
                 </div>
-                
-                <div className="profile-details">
-                  <div className="profile-detail-item">
-                    <Building2 size={16} className="detail-icon" />
-                    <div className="detail-content">
-                      <span className="detail-label">Organization</span>
-                      <span className="detail-value">{user?.organization?.name || 'N/A'}</span>
+                <ChevronDown size={16} className={`chevron-icon ${dropdownVisible ? 'rotated' : ''}`} />
+              </div>
+              {dropdownVisible && (
+                <div className="profile-dropdown">
+                  <div className="profile-header">
+                    <div className="profile-avatar-section">
+                      <div className="profile-avatar-large profile-avatar-initials-large">
+                        {userInitials}
+                      </div>
+                      <div className="profile-status"></div>
+                    </div>
+                    <div className="profile-info">
+                      <h3 className="profile-name">{user?.firstName} {user?.lastName}</h3>
+                      <p className="profile-email">{user?.email}</p>
                     </div>
                   </div>
                   
-                  <div className="profile-detail-item">
-                    <Shield size={16} className="detail-icon" />
-                    <div className="detail-content">
-                      <span className="detail-label">Role</span>
-                      <span className="detail-value">{user?.roles?.[0]?.name || user?.roles?.[0]?.displayName || 'User'}</span>
-                    </div>
-                  </div>
-                  
-               
-                  
-                  {user?.organizationId && (
+                  <div className="profile-details">
                     <div className="profile-detail-item">
                       <Building2 size={16} className="detail-icon" />
                       <div className="detail-content">
-                        <span className="detail-label">Organization Code</span>
-                        <span className="detail-value">{user?.organization?.code}</span>
+                        <span className="detail-label">Organization</span>
+                        <span className="detail-value">{user?.organization?.name || 'N/A'}</span>
                       </div>
                     </div>
-                  )}
+                    
+                    <div className="profile-detail-item">
+                      <Shield size={16} className="detail-icon" />
+                      <div className="detail-content">
+                        <span className="detail-label">Role</span>
+                        <span className="detail-value">{user?.roles?.[0]?.name || user?.roles?.[0]?.displayName || 'User'}</span>
+                      </div>
+                    </div>
+                    
+                    {user?.organizationId && (
+                      <div className="profile-detail-item">
+                        <Building2 size={16} className="detail-icon" />
+                        <div className="detail-content">
+                          <span className="detail-label">Organization Code</span>
+                          <span className="detail-value">{user?.organization?.code}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="profile-actions">
+                    <button className="logout-button" onClick={handleLogout}>
+                      <LogOut size={16} />
+                      <span>Logout</span>
+                    </button>
+                  </div>
                 </div>
-                
-                <div className="profile-actions">
-                  <button className="logout-button" onClick={handleLogout}>
-                    <LogOut size={16} />
-                    <span>Logout</span>
-                  </button>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
       </nav>
+      
       {/* Mobile Dropdown - Only shown on mobile (<768px) */}
       {window.innerWidth <= 768 && (
         <div className={`mobile-dropdown ${mobileDropdownVisible ? 'active' : ''}`}>
           <div className="mobile-dropdown-header">
-            <img
-              src="https://randomuser.me/api/portraits/men/1.jpg"
-              alt="User"
-              className="user-avatar"
-              style={{ width: '48px', height: '48px' }}
-            />
+            <div className="user-avatar-initials" style={{ width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', backgroundColor: '#3b82f6', color: 'white', fontSize: '16px', fontWeight: 'bold' }}>
+              {userInitials}
+            </div>
             <div>
-              <div className="user-name">{user?.firstName}</div>
-              <div className="user-role">Creator</div>
+              <div className="user-name">{user?.firstName} {user?.lastName}</div>
+              <div className="user-role">{user?.roles?.[0]?.name || user?.roles?.[0]?.displayName || 'User'}</div>
             </div>
           </div>
           <div className="mobile-dropdown-item">
@@ -264,8 +244,6 @@ function Navbar() {
 }
 
 export default Navbar;
-
-
 
 
 
