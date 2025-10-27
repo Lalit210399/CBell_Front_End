@@ -118,7 +118,7 @@ export const greenTheme = {
     xl: "24px",
   },
   font: {
-    family: "'Jost', sans-serif",
+    family: "'Lato', sans-serif",
     size: "16px",
   },
 };

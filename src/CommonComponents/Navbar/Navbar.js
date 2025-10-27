@@ -1,15 +1,23 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { BellRing, Menu, X } from "lucide-react";
+import { Building2, LogOut, Shield, ChevronDown } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
 import { logout } from "../../Services/AuthN";
+import CustomDropdown from "../Dropdown/CustomDropdown";
+import NotificationDropdown from "../NotificationDropdown/NotificationDropdown";
 import "./Navbar.css";
 
 function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  // const { user, permissions: userPermissions } = useUser();
-  const { user, permissions: userPermissions, setUser, setPermissions } = useUser();
+  const { 
+    user, 
+    permissions: userPermissions, 
+    scope, 
+    selectedOrganizationId, 
+    handleScopeChange,
+    resetUserState
+  } = useUser();
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const [mobileDropdownVisible, setMobileDropdownVisible] = useState(false);
@@ -23,8 +31,9 @@ function Navbar() {
       // ✅ clear frontend state
       localStorage.removeItem("user");
       localStorage.removeItem("permissions");
-      setUser(null);
-      setPermissions(null);
+      localStorage.removeItem("scope");
+      localStorage.removeItem("dashboard-selected-organization");
+      resetUserState();
 
       // ✅ redirect after state cleared
       navigate("/login", { replace: true });
@@ -34,8 +43,9 @@ function Navbar() {
       // still force clear on failure
       localStorage.removeItem("user");
       localStorage.removeItem("permissions");
-      setUser(null);
-      setPermissions(null);
+      localStorage.removeItem("scope");
+      localStorage.removeItem("dashboard-selected-organization");
+      resetUserState();
 
       navigate("/login", { replace: true });
     }
@@ -100,76 +110,123 @@ function Navbar() {
   const hasSchedulePermission =
     userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
 
+  // Prepare scope options
+  const scopeOptions = scope?.accessibleOrganizations?.map((org) => ({
+    label: org.data.organizationCode,
+    value: org.id,
+  })) || [];
+
+  const currentScopeLabel = scope?.accessibleOrganizations?.find(
+    (org) => org.id === selectedOrganizationId
+  )?.data.organizationCode || "Select Organization";
+
+  // Generate user initials
+  const getUserInitials = (firstName = "", lastName = "") => {
+    const firstInitial = (firstName[0] || "").toUpperCase();
+    const lastInitial = (lastName[0] || "").toUpperCase();
+    return (firstInitial + lastInitial) || "U";
+  };
+
+  const userInitials = getUserInitials(user?.firstName, user?.lastName);
+
   return (
-    <>
-      <nav className="navbar" ref={mobileMenuRef}>
-        <button className="menu-button" onClick={toggleMobileMenu}>
-          {mobileMenuVisible ? <X className="menu-icon" /> : <Menu className="menu-icon" />}
-        </button>
-        <div className={`mobile-menu ${mobileMenuVisible ? 'active' : ''}`}> 
-          {hasDashboardPermission && (
-            <Link 
-              to="/dashboard" 
-              className={location.pathname === "/dashboard" ? "active" : ""}
-              onClick={() => setMobileMenuVisible(false)}
-            >
-              Dashboard
-            </Link>
-          )}
-          {hasEventsPermission && (
-            <Link 
-              to="/events" 
-              className={location.pathname.startsWith("/events") ? "active" : ""}
-              onClick={() => setMobileMenuVisible(false)}
-            >
-              Events
-            </Link>
-          )}
-          {hasSchedulePermission && (
-            <Link 
-              to="/schedule" 
-              className={location.pathname === "/schedule" ? "active" : ""}
-              onClick={() => setMobileMenuVisible(false)}
-            >
-              Schedule
-            </Link>
-          )}
+    <nav className="navbar">
+      <div className="nav-links">
+        {hasDashboardPermission && (
+          <Link to="/dashboard" className={location.pathname === "/dashboard" ? "active" : ""}>
+            Dashboard
+          </Link>
+        )}
+        {hasEventsPermission && (
+          <Link to="/events" className={location.pathname.startsWith("/events") ? "active" : ""}>
+            Events
+          </Link>
+        )}
+        {hasSchedulePermission && (
+          <Link to="/schedule" className={location.pathname === "/schedule" ? "active" : ""}>
+            Schedule
+          </Link>
+        )}
+      </div>
+      <div className="nav-right">
+        {/* Scope Selection */}
+        <div className="scope-section">
+          <span className="scope-label">
+            <Building2 size={16} />
+            Scope:
+          </span>
+          <div className="scope-dropdown">
+            <CustomDropdown
+              options={scopeOptions}
+              defaultLabel={currentScopeLabel}
+              onSelect={(option) => handleScopeChange(option.value, location)}
+            />
+          </div>
         </div>
-        <div className="nav-links">
-          {hasDashboardPermission && (
-            <Link to="/dashboard" className={location.pathname === "/dashboard" ? "active" : ""}>
-              Dashboard
-            </Link>
-          )}
-          {hasEventsPermission && (
-            <Link to="/events" className={location.pathname.startsWith("/events") ? "active" : ""}>
-              Events
-            </Link>
-          )}
-          {hasSchedulePermission && (
-            <Link to="/schedule" className={location.pathname === "/schedule" ? "active" : ""}>
-              Schedule
-            </Link>
-          )}
-        </div>
-        <div className="nav-right">
-          <BellRing size={22} className="bell-icon" />
-          <div className="user-info" ref={dropdownRef} onClick={toggleDropdown}>
-            <div className="user-details">
-              <span className="user-name">{user?.firstName}</span>
-              <span className="user-role">Creator</span>
+        
+        {/* Notification Bell */}
+        <NotificationDropdown />
+        
+        <div className="user-info" ref={dropdownRef}>
+          
+          <div className="avatar-dropdown-wrapper">
+            <div className="profile-trigger" onClick={toggleDropdown}>
+              <div className="user-avatars user-avatar-initials">
+                {userInitials}
+              </div>
+              <ChevronDown size={16} className={`chevron-icon ${dropdownVisible ? 'rotated' : ''}`} />
             </div>
-            <div className="avatar-dropdown-wrapper">
-              <img
-                src="https://randomuser.me/api/portraits/men/1.jpg"
-                alt="User"
-                className="user-avatar"
-                onClick={toggleDropdown}
-              />
-              <div className={`logout_dropdown ${dropdownVisible ? 'active' : ''}`}>
-                <button onClick={handleLogout} className="danger">
-                  Logout
-                </button>
+            {dropdownVisible && (
+              <div className="profile-dropdown">
+                <div className="profile-header">
+                  <div className="profile-avatar-section">
+                    <div className="profile-avatar-large profile-avatar-initials-large">
+                      {userInitials}
+                    </div>
+                    <div className="profile-status"></div>
+                  </div>
+                  <div className="profile-info">
+                    <h3 className="profile-name">{user?.firstName} {user?.lastName}</h3>
+                    <p className="profile-email">{user?.email}</p>
+                  </div>
+                </div>
+                
+                <div className="profile-details">
+                  <div className="profile-detail-item">
+                    <Building2 size={16} className="detail-icon" />
+                    <div className="detail-content">
+                      <span className="detail-label">Organization</span>
+                      <span className="detail-value">{user?.organization?.name || 'N/A'}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="profile-detail-item">
+                    <Shield size={16} className="detail-icon" />
+                    <div className="detail-content">
+                      <span className="detail-label">Role</span>
+                      <span className="detail-value">{user?.roles?.[0]?.name || user?.roles?.[0]?.displayName || 'User'}</span>
+                    </div>
+                  </div>
+                  
+               
+                  
+                  {user?.organizationId && (
+                    <div className="profile-detail-item">
+                      <Building2 size={16} className="detail-icon" />
+                      <div className="detail-content">
+                        <span className="detail-label">Organization Code</span>
+                        <span className="detail-value">{user?.organization?.code}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="profile-actions">
+                  <button className="logout-button" onClick={handleLogout}>
+                    <LogOut size={16} />
+                    <span>Logout</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

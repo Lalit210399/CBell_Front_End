@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import FilesandUploads from "../../../CommonComponents/FileandUpload/FilesAndUploads";
+import { useUser } from "../../../Context/UserContext";
+import { fetchWithRefresh } from "../../../Context/RefereshToken";
 
 const TasksFiles = ({ 
   files, 
@@ -9,11 +11,17 @@ const TasksFiles = ({
   organizationId, 
   mode = "view",
   selectedFiles,
-  onFileSelect
+  onFileSelect,
+  taskStatus,
+  onWorkSubmissionFilesChange
 }) => {
+  const { user } = useUser();
   const [fetchedFiles, setFetchedFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hasApprovedFile, setHasApprovedFile] = useState(false);
+  const [hasAnyFiles, setHasAnyFiles] = useState(false);
+  const [hasWorkSubmissionFiles, setHasWorkSubmissionFiles] = useState(false);
+  const hasFetchedRef = useRef(false);
 
   useEffect(() => {
     const getFileTypeFromMime = (mime) => {
@@ -28,14 +36,40 @@ const TasksFiles = ({
     const fetchDocuments = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`/apis/document-details/task/${taskId}`, {
-          headers: { 'ngrok-skip-browser-warning': '1' }
+        const res = await fetchWithRefresh(`/apis/document-details/task/${taskId}`, {
+          method: "GET",
+          headers: { 
+            'ngrok-skip-browser-warning': '1',
+            'Content-Type': 'application/json'
+          }
         });
         const data = await res.json();
 
-        // Check if any file is already approved
-        const approvedExists = data.some(doc => doc.status === 'Approved');
-        setHasApprovedFile(approvedExists);
+        // Check if any file is already approved or published
+        const approvedOrPublishedExists = data.some(doc => 
+          doc.status === 'Approved' || doc.status === 'Published' || 
+          (doc.publishedTo && doc.publishedTo.length > 0 && doc.publishedTo.some(p => p.isPublished === true))
+        );
+        setHasApprovedFile(approvedOrPublishedExists);
+        
+        // Check if there are any files at all
+        setHasAnyFiles(data.length > 0);
+
+        // Check for work submission files (files uploaded by designers)
+        const workSubmissionFiles = data.filter(doc => {
+          // Check if the uploader is a designer based on userInfo
+          if (doc.userInfo && doc.userInfo.roles) {
+            return doc.userInfo.roles.some(role => 
+              role.name?.toLowerCase().includes('designer') || 
+              role.displayName?.toLowerCase().includes('designer') ||
+              role.name?.toLowerCase().includes('creative') ||
+              role.displayName?.toLowerCase().includes('creative')
+            );
+          }
+          return false;
+        });
+        
+        setHasWorkSubmissionFiles(workSubmissionFiles.length > 0);
 
         const filesWithPreview = await Promise.all(
           data.map(async (doc) => {
@@ -43,8 +77,12 @@ const TasksFiles = ({
             let src = '';
 
             if (type === 'image') {
-              const response = await fetch(`/apis/document/view/${doc.documentId}`, {
-                headers: { 'ngrok-skip-browser-warning': '1' }
+              const response = await fetchWithRefresh(`/apis/document/view/${doc.documentId}`, {
+                method: "GET",
+                headers: { 
+                  'ngrok-skip-browser-warning': '1',
+                  'Content-Type': 'application/json'
+                }
               });
               const blob = await response.blob();
               src = URL.createObjectURL(blob);
@@ -60,6 +98,9 @@ const TasksFiles = ({
               src,
               status: doc.status || 'Pending', // Add status field
               publishedTo: doc.publishedTo || [], // Add publishedTo field
+              uploadDate: doc.uploadDate, // Add uploadDate field
+              size: doc.fileSize || doc.size, // Add file size field
+              userInfo: doc.userInfo, // Add userInfo field with roles and fullName
               isApproved: doc.status === 'Approved' // Calculate isApproved
             };
           })
@@ -81,12 +122,20 @@ const TasksFiles = ({
       }
     };
 
-    if (taskId) {
+    if (taskId && (!hasFetchedRef.current || files?.refreshTrigger)) {
+      hasFetchedRef.current = true;
       fetchDocuments();
     }
-  }, [taskId]);
+  }, [taskId, onFileSelect, files]); // Include files to listen for refresh triggers
 
-  const handleFileSelect = (fileId, isSelected) => {
+  // Notify parent component when work submission files change
+  useEffect(() => {
+    if (onWorkSubmissionFilesChange) {
+      onWorkSubmissionFilesChange(hasWorkSubmissionFiles);
+    }
+  }, [hasWorkSubmissionFiles, onWorkSubmissionFilesChange]);
+
+  const handleFileSelect = useCallback((fileId, isSelected) => {
     if (hasApprovedFile) {
       // Don't allow selection changes if there's an approved file
       return;
@@ -94,31 +143,41 @@ const TasksFiles = ({
 
     const selectedFile = fetchedFiles.find(f => f.documentId === fileId);
     if (selectedFile) {
-      onFileSelect(selectedFile, isSelected);
+      // For radio buttons, always pass true (single selection)
+      // The parent component should handle clearing previous selections
+      onFileSelect(selectedFile, true);
     }
+  }, [hasApprovedFile, fetchedFiles, onFileSelect]); // Include onFileSelect in dependencies
+
+  // Function to check if task has any files (for external validation)
+  const checkIfTaskHasFiles = () => {
+    return hasAnyFiles;
   };
+
+  // Expose the check function to parent component
+  React.useImperativeHandle(React.forwardRef(() => null), () => ({
+    checkIfTaskHasFiles
+  }));
 
   return (
     <div>
-      {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
-          <p>Loading files...</p>
-        </div>
-      ) : (
-        <FilesandUploads
-          files={fetchedFiles}
-          onDataChange={onFilesChange}
-          taskId={taskId}
-          eventId={eventId}
-          organizationId={organizationId}
-          readOnly={hasApprovedFile || mode === 'view'} // Disable editing if approved file exists
-          mode={mode}
-          selectedFiles={selectedFiles.map(f => f.documentId)}
-          onFileSelect={handleFileSelect}
-          hasApprovedFile={hasApprovedFile} // Pass this prop to child
-          enableSelectionCheckbox={true}
-        />
-      )}
+      <FilesandUploads
+        files={fetchedFiles}
+        onDataChange={onFilesChange}
+        taskId={taskId}
+        eventId={eventId}
+        organizationId={organizationId}
+        userId={user?.userId}
+        readOnly={hasApprovedFile} // Only disable if approved file exists, not for view mode
+        mode={mode}
+        selectedFiles={selectedFiles.map(f => f.documentId)}
+        onFileSelect={handleFileSelect}
+        hasApprovedFile={hasApprovedFile} // Pass this prop to child
+        enableSelectionRadio={taskStatus?.value === "Under Approval"}
+        onWorkSubmissionFilesChange={onWorkSubmissionFilesChange}
+        externalLoading={loading}
+        loadingType="fetch"
+      />
     </div>
   );
 };

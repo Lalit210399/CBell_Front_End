@@ -47,7 +47,10 @@ const DetailTopSection = ({
   permissions = {},
   initialDate = "",
   errors = {},
-  onClearError
+  onClearError,
+  users = [],
+  assignedTo = [],
+  onParticipantsChange
 }) => {
   const [editableTitle, setEditableTitle] = useState(
     mode === "create" ? (data?.title || "") : (data?.title || "")
@@ -58,6 +61,19 @@ const DetailTopSection = ({
   const [editableTypeDesc, setEditableTypeDesc] = useState(
     mode === "create" ? (data?.typeDesc || "") : (data?.typeDesc || "")
   );
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+  const [assignedIds, setAssignedIds] = useState([]);
+
+  // Sync local assignedIds with incoming prop
+  useEffect(() => {
+    const ids = (assignedTo || [])
+      .map((item) =>
+        typeof item === "string" || typeof item === "number" ? item : item?.id
+      )
+      .filter(Boolean);
+    setAssignedIds(ids);
+  }, [assignedTo]);
 
   // Only update state when data or mode changes, not on every render
   useEffect(() => {
@@ -84,6 +100,57 @@ const DetailTopSection = ({
 
   const handleTypeDescChange = (e) => {
     setEditableTypeDesc(e.target.value);
+  };
+
+  // Prepare selected participants (from local assignedIds so avatars update instantly)
+  const selectedParticipants = assignedIds.map((assignedId) => {
+    const fullUser = users.find((u) => u.id === assignedId);
+    const firstName = fullUser?.firstName || "User";
+    const lastName = fullUser?.lastName || "";
+    const fullName = `${firstName} ${lastName}`.trim();
+
+    return {
+      id: assignedId,
+      name: fullName,
+      fallback: (firstName?.charAt(0) || "?").toUpperCase(),
+      size: "20px",
+      shape: "circle",
+    };
+  });
+
+  const hasAssignedUsers = selectedParticipants && selectedParticipants.length > 0;
+
+  const filteredUsers = React.useMemo(() => {
+    const q = userSearch.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter((u) =>
+      `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase().includes(q) ||
+      (u.email || "").toLowerCase().includes(q) ||
+      (u.organizationCode || "").toLowerCase().includes(q) ||
+      (u.role || "").toLowerCase().includes(q)
+    );
+  }, [users, userSearch]);
+
+  const isUserSelected = (id) => assignedIds.includes(id);
+
+  const toggleUserSelection = (id) => {
+    const next = isUserSelected(id)
+      ? assignedIds.filter((x) => x !== id)
+      : [...assignedIds, id];
+    setAssignedIds(next);
+    if (onParticipantsChange) {
+      onParticipantsChange(next); // notify parent immediately
+    }
+  };
+
+  const getUserInitials = (firstName = "", lastName = "") => {
+    const a = (firstName[0] || "").toUpperCase();
+    const b = (lastName[0] || "").toUpperCase();
+    return (a + b) || "?";
+  };
+
+  const handleAddButtonClick = () => {
+    setIsDropdownOpen((prev) => !prev);
   };
 
   const handleSaveClick = () => {
@@ -129,20 +196,85 @@ const DetailTopSection = ({
             )}
           </div>
         </div>
-        {mode === "view" && (
-          <div className="avatar-dropdown-container">
-            {hasParticipants ? (
-              <div className="avatar-group">
-                <AvatarList avatars={participants} maxVisible={2} />
-              </div>
+        <div className="avatar-dropdown-container">
+          <div className="avatar-group">
+            {hasAssignedUsers ? (
+              <AvatarList avatars={selectedParticipants} maxVisible={2} />
             ) : (
-              <div className="no-participants-placeholder">
-                <Users size={16} className="placeholder-icon" />
-                <span className="placeholder-text">No participants yet</span>
+              <div className="no-assigned-users-placeholder">
+                <Users size={14} className="placeholder-icon" />
+                <span className="placeholder-text">No assigned users</span>
+              </div>
+            )}
+
+            {(mode === "edit" || mode === "create") && (
+              <div className="add-participant-section">
+                <button
+                  className="avatar-add-button"
+                  onClick={handleAddButtonClick}
+                >
+                  +
+                </button>
+                {isDropdownOpen && (
+                  <div className="inline-dropdown">
+                    <div className="user-dropdown">
+                      <div className="user-dropdown-header">
+                        <input
+                          type="text"
+                          className="user-search"
+                          placeholder="Search users..."
+                          value={userSearch}
+                          onChange={(e) => setUserSearch(e.target.value)}
+                        />
+                        <button
+                          className="user-done"
+                          onClick={() => setIsDropdownOpen(false)}
+                        >
+                          Done
+                        </button>
+                      </div>
+                      <div className="user-dropdown-list">
+                        {filteredUsers.length === 0 ? (
+                          <div className="user-empty">No users found</div>
+                        ) : (
+                          filteredUsers.map((u) => (
+                            <label
+                              key={u.id}
+                              className={`user-item ${
+                                isUserSelected(u.id) ? "selected" : ""
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isUserSelected(u.id)}
+                                onChange={() => toggleUserSelection(u.id)}
+                              />
+                              <span className="user-avatar">
+                                {getUserInitials(u.firstName, u.lastName)}
+                              </span>
+                              <div className="user-info">
+                                <div className="user-name">{`${u.firstName || "User"} ${u.lastName || ""}`}</div>
+                                <div className="user-details">
+                                  <span className="user-role">{u.roles?.[0]?.name || u.roles?.[0]?.displayName || "No role"}</span>
+                                  {u.organizationCode && (
+                                    <span className="user-org">• {u.organizationCode}</span>
+                                  )}
+                                  {u.email && (
+                                    <span className="user-email">• {u.email}</span>
+                                  )}         
+                                </div>
+                              </div>
+                            </label>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
-        )}
+        </div>
       </div>
 
       <div className="right-section">

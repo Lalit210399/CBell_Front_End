@@ -7,6 +7,7 @@
     background-color: white;
     border: none;
     /* margin-top: 10px; */
+    /* border: 1px solid #ccc; */
     padding: 8px 12px;
     cursor: pointer;
     display: flex;
@@ -54,6 +55,10 @@
   .dropdown.disabled .dropdown-toggle {
     color: #000000;
     cursor: not-allowed; /* Change cursor to indicate it's disabled */
+  }
+
+  .dropdown.error .dropdown-toggle {
+    border-color: #d32f2f;
   }
   
   .dropdown.disabled .dropdown-menu {

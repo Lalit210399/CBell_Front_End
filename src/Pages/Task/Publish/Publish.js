@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Table from "../../../CommonComponents/Table/Table";
 import { Download, Share2 } from "lucide-react";
 import { useUser } from "../../../Context/UserContext";
-import { FaInstagram, FaFacebook, FaEnvelope } from 'react-icons/fa';
+import { useMessages } from "../../../Context/MessageContext";
+import { FaInstagram, FaFacebook, FaEnvelope, FaYoutube } from 'react-icons/fa';
 import FileShareModel from '../../../CommonComponents/FileShareModal/FileShareModel';
 import "./Publish.css";
 
@@ -22,6 +23,8 @@ const getPlatformIcon = (platform) => {
       return <FaInstagram size={size} color="#E1306C" title="Published on Instagram" />;
     case 'facebook':
       return <FaFacebook size={size} color="#4267B2" title="Published on Facebook" />;
+    case 'youtube':
+      return <FaYoutube size={size} color="#FF0000" title="Published on YouTube" />;
     case 'mail':
       return <FaEnvelope size={size} color="#0072C6" title="Published via Email" />;
     default:
@@ -29,16 +32,42 @@ const getPlatformIcon = (platform) => {
   }
 };
 
-const Publish = ({ eventId }) => {
+// Helper function to check if file type is supported by platform
+const isFileTypeSupported = (fileType, platform) => {
+  if (!fileType) return true; // If no file type info, allow all platforms
+  
+  const lowerFileType = fileType.toLowerCase();
+  
+  switch (platform.toLowerCase()) {
+    case 'youtube':
+      // YouTube only supports video files
+      return lowerFileType.startsWith('video/');
+    case 'instagram':
+      // Instagram supports image and video files
+      return lowerFileType.startsWith('image/') || lowerFileType.startsWith('video/');
+    case 'facebook':
+      // Facebook supports all file types
+      return true;
+    case 'email':
+      // Email supports all file types
+      return true;
+    default:
+      return true;
+  }
+};
+
+const Publish = ({ eventId, canPublish = true, user: userProp }) => {
+  
   const [publishData, setPublishData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [documentId, setDocumentId] = useState('');
   const [description, setDescription] = useState('');
   const [fileDetail, setFileDetail] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
-  const { user } = useUser();
-
-  //console.log('fileDetail in Publish' ,fileDetail, );
+  const { user: contextUser } = useUser();
+  const { addMessage } = useMessages();
+  const user = userProp || contextUser;
+  const isFetchingRef = useRef(false);
 
   const handleDownload = (files) => {
     files.forEach(file => {
@@ -52,13 +81,145 @@ const Publish = ({ eventId }) => {
     });
   };
 
-  const handlePlatformPublish = (docId, platform) => {
-    handlePublishRecord(docId, platform);
+  const handlePlatformPublish = async (docId, platform, publishData = {}) => {
+    // Check if user has permission to publish
+    if (!canPublish) {
+      alert("You don't have permission to publish content for this event. Only assigned users can perform this action.");
+      return;
+    }
+    
+    // For email platform, we don't need to make an API call here
+    // The email API call is already handled in EmailForm.js
+    if (platform === 'email') {
+      await handlePublishRecord(docId, platform);
+      fetchPublishedTasks();
+      // Show success notification for email
+      addMessage({
+        text: "Email published successfully!",
+        type: "success",
+        duration: 3000,
+      });
+      return;
+    }
+    
+    const organizationId = user?.organizationId;
+    const taskId = fileDetail?.fullTask?.id || fileDetail?.id;
+    
+    let payload;
+    let endpoint;
+
+    if (platform === 'youtube') {
+      endpoint = '/apis/youtube/upload';
+      payload = {
+        organizationId,
+        documentId: docId,
+        taskId: taskId,
+        title: publishData.title || `${fileDetail?.name || 'Video'}`,
+        description: publishData.description || '',
+        tags: publishData.tags || [],
+        privacyStatus: publishData.privacyStatus || 'public'
+      };
+    } else {
+      endpoint = platform === 'instagram' 
+        ? '/apis/socialmedia/post/instagram' 
+        : '/apis/socialmedia/post/facebook';
+      payload = {
+        organizationId,
+        documentId: docId,
+        taskId: taskId,
+        caption: publishData.caption || `${fileDetail?.name || 'Creative'} shared via platform`
+      };
+    }
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': '1',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Failed to post to ${platform}`;
+        
+        // Clone the response to avoid "body stream already read" error
+        const responseClone = response.clone();
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+          
+          // Handle specific error for social media config not found
+          if (response.status === 400 && (
+            errorData.message?.includes('Social media config not found') ||
+            errorData.message?.includes('social media account not configured') ||
+            errorData.message?.includes('Social media account not configured') ||
+            errorData.message?.includes('config not found') ||
+            errorData.message?.includes('account not configured')
+          )) {
+            throw new Error('No social media account added. Please contact your administrator to add social media accounts for your organization.');
+          }
+        } catch (jsonError) {
+          // If response is not valid JSON, check for specific error patterns in text
+          try {
+            const responseText = await responseClone.text();
+            if (response.status === 400 && (
+              responseText.includes('Social media config not found') ||
+              responseText.includes('social media account not configured') ||
+              responseText.includes('Social media account not configured') ||
+              responseText.includes('config not found') ||
+              responseText.includes('account not configured')
+            )) {
+              throw new Error('No social media account added. Please contact your administrator to add social media accounts for your organization.');
+            }
+            errorMessage = responseText || errorMessage;
+          } catch (textError) {
+            // If both JSON and text parsing fail, use default message
+            console.error('Failed to parse response:', textError);
+          }
+        }
+        
+        // For any 400 error on social media platforms, show the social media account error
+        if (response.status === 400 && (platform === 'facebook' || platform === 'instagram' || platform === 'youtube')) {
+          throw new Error('No social media account added. Please contact your administrator to add social media accounts for your organization.');
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      await handlePublishRecord(docId, platform);
+      fetchPublishedTasks();
+      
+      // Show success notification for social media platforms
+      const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);
+      addMessage({
+        text: `${platformName} published successfully!`,
+        type: "success",
+        duration: 3000,
+      });
+    } catch (err) {
+      // Show error message using the message system for better UX
+      addMessage({
+        text: err.message,
+        type: "error",
+        duration: 5000,
+      });
+    }
   };
 
   const handlePublishRecord = async (docId, platform) => {
-    const userId = user?.userID || '';
+    // Try to get user ID from various possible field names
+    const userId = user?.id || user?._id || user?.userId || user?.user_id || user?.uid || user?.userID;
     const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
+    
+    // Validate that we have a valid user ID
+    if (!userId) {
+      console.error("User ID not available for publish record");
+      return;
+    }
+    
     const payload = {
       platforms: [platform],
       userId,
@@ -75,23 +236,31 @@ const Publish = ({ eventId }) => {
         body: JSON.stringify(payload),
       });
       if (!response.ok) throw new Error('Failed to record publish');
-      fetchPublishedTasks(); // Refresh after publish
     } catch (err) {
-      console.error('Error calling publish-record:', err);
     }
   };
 
   const handleShare = (file, fullTask) => {
-    // debugger;
-    // console.log('Publish Share Button Pressed. File data:', file, 'Full Task data:', fullTask);
-    // console.log('File URL:', file.document.fileId);
-    setDescription(file.name || '');
-    setDocumentId(file.document.fileId);
+    // Check if user has permission to publish
+    if (!canPublish) {
+      alert("You don't have permission to publish content for this event. Only assigned users can perform this action.");
+      return;
+    }
+    // Use file description as default, fallback to file name
+    const fileDescription = file.document?.description || file.description || file.name || '';
+    setDescription(fileDescription);
+    // Use the correct document ID from the document object - prioritize documentId
+    const docId = file.document?.documentId || file.document?.fileId;
+    setDocumentId(docId);
     setFileDetail({ ...file, fullTask });
     setShowShareModal(true);
   };
 
-  const fetchPublishedTasks = async () => {
+  const fetchPublishedTasks = useCallback(async () => {
+    if (!eventId || isFetchingRef.current) return;
+    
+    
+    isFetchingRef.current = true;
     setLoading(true);
     try {
       const response = await fetch(`/apis/task/get_published_tasks_with_documents/${eventId}`, {
@@ -105,15 +274,14 @@ const Publish = ({ eventId }) => {
       if (!response.ok) throw new Error("Failed to fetch published tasks");
 
       const data = await response.json();
-      //console.log('Fetched published tasks:', data);
       const formatted = data.map(task => {
         const fileLinks = (task.documents || []).map(doc => ({
           name: doc.filename,
           url: `/apis/task/download_document/${doc.documentId}`,
           status: doc.status || "Not Published",
           publishedTo: doc.publishedTo || [],
-          fullTask: task, // Attach the whole task object here
-          document: doc    // Attach the full document object as well
+          fullTask: task,
+          document: doc // This contains the document object with documentId field
         }));
 
         return {
@@ -127,28 +295,37 @@ const Publish = ({ eventId }) => {
 
       setPublishData(formatted);
     } catch (err) {
-      console.error("Error fetching published tasks:", err);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
-  };
+  }, [eventId]);
 
   useEffect(() => {
-    if (eventId) fetchPublishedTasks();
-  }, [eventId]);
+    fetchPublishedTasks();
+  }, [fetchPublishedTasks]);
 
   const renderCell = (key, item) => {
     if (key === 'download') {
       return (
-        <button className="icon-btn" onClick={() => handleDownload(item.files)} title="Download File">
+        <button type="button" className="icon-btn" onClick={() => handleDownload(item.files)} title="Download File">
           <Download size={18} />
         </button>
       );
     }
     if (key === 'publish') {
+      if (!canPublish) {
+        return (
+          <span className="permission-denied" title="You don't have permission to publish content for this event">
+            No Access
+          </span>
+        );
+      }
+      
       return item.files?.map((file, idx) => (
         <button
           key={idx}
+          type="button"
           className="icon-btn"
           onClick={() => handleShare(file, file.fullTask)}
           title="Publish"
@@ -160,23 +337,41 @@ const Publish = ({ eventId }) => {
     if (key === 'files') {
       return item.files?.map((file, idx) => (
         <div key={idx} className="file-entry">
-          <a
-            href={file.url.replace('/apis/task/download_document/', '/apis/document/view/')}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {file.name}
-          </a>
+          <span className="file-badge">
+            <a
+              href={file.url.replace('/apis/task/download_document/', '/apis/document/view/')}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {file.name}
+            </a>
+          </span>
           <span className="platform-icons">
-            {file.publishedTo?.map((p, i) => (
-              <span key={i} className="platform-icon">
-                {getPlatformIcon(p.platform)}
-              </span>
-            ))}
+            {file.publishedTo?.map((p, i) => {
+              // Check if the platform supports this file type
+              const fileType = file.document?.contentType || file.document?.type || file.type;
+              const isSupported = isFileTypeSupported(fileType, p.platform);
+              return isSupported ? (
+                <span key={i} className="platform-icon">
+                  {getPlatformIcon(p.platform)}
+                </span>
+              ) : null;
+            }).filter(Boolean)}
           </span>
         </div>
       )) || "No File";
     }
+    
+    if (key === 'status') {
+      const status = item[key] || "Unknown";
+      const statusClass = status.toLowerCase().replace(/\s+/g, '-');
+      return (
+        <span className={`status-badge status-${statusClass}`}>
+          {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
+        </span>
+      );
+    }
+    
     return item[key] || "-";
   };
 
@@ -199,6 +394,7 @@ const Publish = ({ eventId }) => {
           fileDetail={fileDetail}
           documentId={documentId}
           description={description}
+          taskId={fileDetail?.fullTask?.id || fileDetail?.id}
           onPlatformPublish={handlePlatformPublish}
           documents={fileDetail && fileDetail.document ? [fileDetail.document] : []}
         />

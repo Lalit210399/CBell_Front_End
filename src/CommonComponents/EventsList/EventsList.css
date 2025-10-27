@@ -179,3 +179,16 @@
 .task-item .react-loading-skeleton {
   line-height: 2;
 }
+
+/* Add to your EventsList.css */
+.event-item {
+  transition: background-color 0.2s ease;
+}
+
+.event-item:hover {
+  background-color: #f5f5f5;
+}
+
+/* .event-item.upcoming:hover {
+  background-color: #b8b8b8;
+} */

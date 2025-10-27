@@ -51,7 +51,6 @@ const Signup = () => {
     setErrors({});
     setMessage("");
     if (validate()) {
-      //console.log("Form submitted successfully:", formData);
 
       setFormData({
         firstName: "",

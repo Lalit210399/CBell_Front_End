@@ -155,10 +155,10 @@
 }
 
 .avatar {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  background-color: var(--primary-color);
+  background-color: #043E54;
   color: white;
   display: flex;
   align-items: center;

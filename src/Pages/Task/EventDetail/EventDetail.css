@@ -1,14 +1,32 @@
 .detail_container {
-    /* border: #c2a7a7 solid 1px;    */
-    height: 100%; 
+    height: 30rem; 
+    /* border: 1px solid #c2a7a7; */
     display: flex;
     width: 100%;
-    gap: 10px;
+    gap: 15px;
+    align-items: stretch;
+    box-sizing: border-box;
 }
 
-.Section {
-    /* border: red solid 1px; */
-    width: 50%;
+/* Base section styles - specific widths defined below */
+
+.ED_Right_Section {
+    width: 70%;
+    padding: 10px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.ED_Left_Section {
+    width: 30%;
+    padding: 10px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 20px;
 }
 
 /* Container for input fields to align them side by side */
@@ -64,4 +82,67 @@
     justify-content: space-between;
     margin: 10px 0 10px 0; /* Space below each entry */
     gap: 10px;
+}
+
+/* Styles for NewList components in EventDetail */
+.Special_Guest,
+.Event_Organizer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Important for flex children to shrink */
+}
+
+.Special_Guest .special-guests-wrapper,
+.Event_Organizer .special-guests-wrapper {
+    height: 100%;
+    margin: 0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* TextEditor specific styles for EventDetail */
+.ED_Right_Section .text-editor-container {
+  height: 100%;
+  margin-bottom: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.ED_Right_Section .text-editor-container .ql-container {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Ensure the Left_Section content fits well in 30% width */
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+    .detail_container {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .ED_Right_Section,
+    .ED_Left_Section {
+        width: 100%;
+        height: auto;
+    }
+    
+    .ED_Left_Section {
+        margin-top: 20px;
+    }
+    
+    .Special_Guest,
+    .Event_Organizer {
+        height: 14rem;
+        flex: none;
+    }
 }

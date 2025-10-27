@@ -1,88 +1,197 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { ArrowLeft, Save, Users } from "lucide-react";
 import AvatarList from "../Avatar/index";
-import Dropdown from "../../CommonComponents/Dropdown/Dropdown";
+import UserDropdown from "../UserDropdown";
+import { useUser } from "../../Context/UserContext";
 import "./EditTopSection.css";
+
+const HARDCODED_STATUS_IDS = {
+  "New": "68baab0b9a31a52d62646ca1",
+  "Active": "68bee09b522caf6ac9f65bdc",
+  "Under Approval": "68bee0b1522caf6ac9f65bdd",
+  "Approved": "68bee0c2522caf6ac9f65bde",
+  "Published": "68bee0d1522caf6ac9f65bdf"
+};
+
+const getDefaultColor = (status) => {
+  const colors = {
+    "New": "#6b7280",
+    "Active": "#10b981",
+    "Under Approval": "#f59e0b",
+    "Approved": "#059669",
+    "Published": "#8b5cf6"
+  };
+  return colors[status] || "#6b7280";
+};
+
+const getStatusClass = (status) => {
+  if (!status) return "unknown";
+  return status.toLowerCase().replace(/\s+/g, "-");
+};
 
 const TopSection = ({
   mode,
+  onBackClick,
+  onSaveClick,
+  onStatusChange,
   title,
   setTitle,
   status,
-  setStatus,
-  statusOptions,
-  createdBy,
-  onBackClick,
-  onSaveClick,
-  users = [],
   assignedTo = [],
   onParticipantsChange,
-  permissions = {},
+  users = [],
+  errors = {},
+  onClearError,
+  isUpdatingStatus = false,
+  createdBy = "",
+  taskId = null,
+  hasWorkSubmissionFiles = false,
+  onTabChange // Add callback to change tabs
 }) => {
+  const { user } = useUser();
+
+  // Check if user is a Designer based on the roles array
+  const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
+
   const [editableTitle, setEditableTitle] = useState(title || "");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
-  const titleRef = useRef(null);
-  const [userSearch, setUserSearch] = useState("");
-
-  // Local state for assigned user IDs
   const [assignedIds, setAssignedIds] = useState([]);
+  const [fetchedUsers, setFetchedUsers] = useState([]);
+  const titleRef = useRef(null);
+  const isTitleManuallyEdited = useRef(false);
 
-  // Sync local assignedIds with incoming prop
-  useEffect(() => {
-    const ids = (assignedTo || [])
-      .map((item) =>
-        typeof item === "string" || typeof item === "number" ? item : item?.id
-      )
-      .filter(Boolean);
-    setAssignedIds(ids);
-  }, [assignedTo]);
+  // Status options for dropdown
+  const statusOptions = [
+    { id: "68baab0b9a31a52d62646ca1", label: "New", value: "New", color: "#6b7280" },
+    { id: "68bee09b522caf6ac9f65bdc", label: "Active", value: "Active", color: "#10b981" },
+    { id: "68bee0b1522caf6ac9f65bdd", label: "Under Approval", value: "Under Approval", color: "#f59e0b" },
+    { id: "68bee0c2522caf6ac9f65bde", label: "Approved", value: "Approved", color: "#059669" },
+    { id: "68bee0d1522caf6ac9f65bdf", label: "Published", value: "Published", color: "#8b5cf6" }
+  ];
 
-  // Find creator user from users list or create a fallback
-  const creatorUser =
-    users.find(
-      (user) =>
-        user.id === createdBy?.id ||
-        `${user.firstName} ${user.lastName}` === createdBy
-    ) || {
-      firstName:
-        createdBy?.name?.split(" ")[0] || createdBy?.split(" ")[0] || "User",
-      lastName:
-        createdBy?.name?.split(" ")[1] || createdBy?.split(" ")[1] || "",
+  // Get creator user info - use passed createdBy prop or fallback to current user for new tasks
+  const creatorUser = useMemo(() => {
+    if (createdBy && createdBy !== "") {
+      // Parse the createdBy name (e.g., "Rohan Kulkarni" -> firstName: "Rohan", lastName: "Kulkarni")
+      const nameParts = createdBy.trim().split(" ");
+      return {
+        firstName: nameParts[0] || "Unknown",
+        lastName: nameParts.slice(1).join(" ") || "User"
+      };
+    }
+    
+    // Fallback to current user for new tasks
+    if (!user) return { firstName: "Unknown", lastName: "User" };
+    return {
+      firstName: user.firstName || "Unknown",
+      lastName: user.lastName || "User"
     };
-
-  const creatorAvatar = {
-    id: "creator",
-    name: creatorUser.firstName + " " + creatorUser.lastName,
-    fallback: creatorUser.firstName?.charAt(0).toUpperCase() || "U",
-    size: "24px",
-    shape: "circle",
-  };
+  }, [createdBy, user]);
 
   useEffect(() => {
     setEditableTitle(title || "");
   }, [title]);
 
   useEffect(() => {
-    if (mode === "create" && titleRef.current && !title) {
-      titleRef.current.focus();
+    const ids = (assignedTo || [])
+      .map((item) => {
+        if (typeof item === "string" || typeof item === "number") {
+          return item;
+        } else if (item && typeof item === "object") {
+          return item.userId || item.id;
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    const currentIds = assignedIds.sort();
+    const newIds = ids.sort();
+    if (JSON.stringify(currentIds) !== JSON.stringify(newIds)) {
+      setAssignedIds(ids);
     }
-  }, [mode, title]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignedTo]);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
+    // Rely on parent-provided users to avoid redundant API calls.
+    setFetchedUsers(users);
+  }, [users]);
+
+  const handleTitleChange = (e) => {
+    setEditableTitle(e.target.value);
+    if (setTitle) setTitle(e.target.value);
+    isTitleManuallyEdited.current = true;
+
+    if (errors && errors.title && onClearError) {
+      onClearError('title');
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") e.preventDefault();
+  };
+
+  const handleAddButtonClick = () => {
+    setIsDropdownOpen((prev) => !prev);
+  };
+
+  // Helper function to check if task has uploaded files
+  // kept previously for potential reuse; currently unused to avoid extra calls
+
+  // Handle status change button clicks
+  const handleStatusChange = async (newStatusValue) => {
+    if (onStatusChange) {
+      // Special validation for Under Approval status - check for work submission files
+      if (newStatusValue === "Under Approval") {
+        if (!hasWorkSubmissionFiles) {
+          // Redirect to Files & Uploads tab
+          if (onTabChange) {
+            onTabChange("Files & Uploads");
+          }
+          return;
+        }
       }
-    };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+      // Find the status option with the correct ID
+      const newStatus = statusOptions.find(option => option.value === newStatusValue);
 
-  // Prepare selected participants (from local assignedIds so avatars update instantly)
+      if (newStatus) {
+        // Use the status option with the correct hardcoded ID
+        onStatusChange(newStatus);
+      } else {
+        // Create a fallback status object with hardcoded ID
+        const fallbackStatus = {
+          id: HARDCODED_STATUS_IDS[newStatusValue] || "",
+          label: newStatusValue,
+          value: newStatusValue,
+          color: getDefaultColor(newStatusValue)
+        };
+        onStatusChange(fallbackStatus);
+      }
+    }
+  };
+
+  // Handle disabled button click to redirect to Files & Uploads tab
+  const handleDisabledSubmitClick = () => {
+    if (!hasWorkSubmissionFiles && onTabChange) {
+      onTabChange("Files & Uploads");
+    }
+  };
+
   const selectedParticipants = assignedIds.map((assignedId) => {
-    const fullUser = users.find((u) => u.id === assignedId);
+    const assignedUser = assignedTo.find((u) => (u.userId || u.id) === assignedId);
+
+    if (assignedUser) {
+      return {
+        id: assignedUser.userId || assignedUser.id,
+        name: assignedUser.userName || assignedUser.name,
+        fallback: (assignedUser.userName || assignedUser.name || "?").charAt(0).toUpperCase(),
+        size: "20px",
+        shape: "circle",
+      };
+    }
+
+    const fullUser = fetchedUsers.find((u) => u.id === assignedId);
     const firstName = fullUser?.firstName || "User";
     const lastName = fullUser?.lastName || "";
     const fullName = `${firstName} ${lastName}`.trim();
@@ -98,23 +207,6 @@ const TopSection = ({
 
   const hasAssignedUsers = selectedParticipants && selectedParticipants.length > 0;
 
-  const filteredUsers = React.useMemo(() => {
-    const q = userSearch.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter((u) =>
-      `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase().includes(q)
-    );
-  }, [users, userSearch]);
-
-  const isUserSelected = (id) => assignedIds.includes(id);
-
-  const toggleUserSelection = (id) => {
-    const next = isUserSelected(id)
-      ? assignedIds.filter((x) => x !== id)
-      : [...assignedIds, id];
-    setAssignedIds(next);
-    onParticipantsChange(next); // notify parent immediately
-  };
 
   const getUserInitials = (firstName = "", lastName = "") => {
     const a = (firstName[0] || "").toUpperCase();
@@ -122,150 +214,152 @@ const TopSection = ({
     return (a + b) || "?";
   };
 
-  const handleTitleChange = (e) => {
-    const newTitle = e.target.innerText;
-    setEditableTitle(newTitle);
-    setTitle(newTitle);
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") e.preventDefault();
-  };
-
-  const handleDropdownSelect = (option) => {
-    setStatus(option);
-  };
-
-  const handleAddButtonClick = () => {
-    setIsDropdownOpen((prev) => !prev);
-  };
-
   return (
-    <div className="header-wrapper">
-      <div className="header-left">
-        <div className="header-top-left">
-          <button className="header-back-button" onClick={onBackClick}>
-            <ArrowLeft size={20} />
-          </button>
-          <div className="header-title-container">
-            {mode === "edit" || mode === "create" ? (
-              <h2
-                className="header-title-input"
-                contentEditable
-                suppressContentEditableWarning
-                onBlur={handleTitleChange}
-                onKeyDown={handleKeyDown}
-                ref={titleRef}
-                dangerouslySetInnerHTML={{ __html: editableTitle }}
-                placeholder={mode === "create" ? "Enter title..." : ""}
-              />
-            ) : (
-              <h2 className="header-title">{editableTitle}</h2>
-            )}
-          </div>
+    <div className="edit-top-header-wrapper">
+      <div className="edit-top-row">
+        <button className="edit-top-back-button" onClick={onBackClick}>
+          <ArrowLeft size={18} />
+        </button>
+        <div className="edit-top-title-container">
+          <input
+            type="text"
+            className={`edit-top-title-input ${errors && errors.title ? "error" : ""}`}
+            value={editableTitle}
+            onChange={handleTitleChange}
+            onKeyDown={handleKeyDown}
+            ref={titleRef}
+            placeholder="Enter task title"
+            autoFocus={mode === "create"}
+            readOnly={mode === "view"}
+          />
+          {(mode === "create" || mode === "edit") && <span className="edit-top-required-asterisk">*</span>}
         </div>
+        <div className="edit-top-created-by">
+          <span className="edit-top-creator-name">{creatorUser.firstName} {creatorUser.lastName}</span>
+          <div className="edit-top-creator-avatar">
+            <div className="edit-top-avatar-initials">
+              {getUserInitials(creatorUser.firstName, creatorUser.lastName)}
+            </div>
+          </div>
+          <span></span>
+        </div>
+      </div>
 
-        <div className="header-avatar-dropdown">
-          <div className="header-avatar-group">
-            {hasAssignedUsers ? (
-              <AvatarList avatars={selectedParticipants} maxVisible={2} />
-            ) : (
-              <div className="no-assigned-users-placeholder">
-                <Users size={14} className="placeholder-icon" />
-                <span className="placeholder-text">No assigned users</span>
-              </div>
-            )}
-
-            {(mode === "edit" || mode === "create") &&
-              permissions.canAssignUsers && (
-                <div className="add-participant-section">
+      <div className="edit-top-bottom-row">
+        <div className="edit-top-left-section">
+          <div className="edit-top-team-section">
+            <span className="edit-top-label">Team:</span>
+            <div className="edit-top-avatar-group">
+              {hasAssignedUsers ? (
+                <AvatarList 
+                  avatars={selectedParticipants} 
+                  maxVisible={2} 
+                  showTooltip={true}
+                  tooltipPosition="top"
+                />
+              ) : (
+                <div className="edit-top-no-assigned-users">
+                  <Users size={14} className="edit-top-placeholder-icon" />
+                  <span className="edit-top-placeholder-text">No assigned users</span>
+                </div>
+              )}
+              {(mode === "edit" || mode === "create") && (
+                <div className="edit-top-add-participant-section">
                   <button
-                    className="avatar-add-button"
+                    className="edit-top-avatar-add-button"
                     onClick={handleAddButtonClick}
                   >
                     +
                   </button>
-                  {isDropdownOpen && (
-                    <div className="inline-dropdown" ref={dropdownRef}>
-                      <div className="user-dropdown">
-                        <div className="user-dropdown-header">
-                          <input
-                            type="text"
-                            className="user-search"
-                            placeholder="Search users..."
-                            value={userSearch}
-                            onChange={(e) => setUserSearch(e.target.value)}
-                          />
-                          <button
-                            className="user-done"
-                            onClick={() => setIsDropdownOpen(false)}
-                          >
-                            Done
-                          </button>
-                        </div>
-                        <div className="user-dropdown-list">
-                          {filteredUsers.length === 0 ? (
-                            <div className="user-empty">No users found</div>
-                          ) : (
-                            filteredUsers.map((u) => (
-                              <label
-                                key={u.id}
-                                className={`user-item ${
-                                  isUserSelected(u.id) ? "selected" : ""
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isUserSelected(u.id)}
-                                  onChange={() => toggleUserSelection(u.id)}
-                                />
-                                <span className="user-avatar">
-                                  {getUserInitials(u.firstName, u.lastName)}
-                                </span>
-                                <span className="user-name">{`${u.firstName || "User"} ${u.lastName || ""}`}</span>
-                              </label>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  <UserDropdown
+                    isOpen={isDropdownOpen}
+                    onClose={() => setIsDropdownOpen(false)}
+                    users={fetchedUsers}
+                    selectedUserIds={assignedIds}
+                    onUserSelectionChange={(newIds) => {
+                      setAssignedIds(newIds);
+                      if (onParticipantsChange) {
+                        onParticipantsChange(newIds);
+                      }
+                    }}
+                    placeholder="Search by name, email, org, or role..."
+                    className="edit-top-user-dropdown-wrapper"
+                  />
                 </div>
               )}
+            </div>
           </div>
 
-          <div className="header-dropdown-container">
-            <Dropdown
-              options={statusOptions}
-              selectedOption={status}
-              onSelect={handleDropdownSelect}
-              disabled={mode === "view" || !permissions.canChangeStatus}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="header-right">
-        <div className="header-date-creator">
-          <div className="header-creator">
-            <span>
-              {creatorUser.firstName} {creatorUser.lastName}
-            </span>
-            <AvatarList
-              avatars={[creatorAvatar]}
-              showTooltip={false}
-              stack={false}
-            />
+          <div className="edit-top-status-section">
+            <span className="edit-top-label">Status:</span>
+            <div
+              className={`edit-top-status-badge edit-top-status-${getStatusClass(status?.value)}`}
+              data-status={status?.value || status?.label}
+            >
+              <span className="edit-top-status-text">{status?.label || status?.value || "Unknown"}</span>
+            </div>
           </div>
         </div>
 
-        <div className="header-actions">
-          {(mode === "edit" || mode === "create") && permissions.canSave && (
-            <button className="header-save" onClick={onSaveClick}>
-              <Save size={16} />
-              Save
-            </button>
-          )}
+        <div className="edit-top-right-section">
+          <div className="edit-top-save-button-section" style={{ display: "flex", gap: "8px" }}>
+            {/* Hide all buttons (Save, Under Review, Approved) when status is Approved or Published */}
+            {status?.value !== "Approved" && status?.value !== "Published" && (
+              <>
+                {(mode === "edit" || mode === "create") && (
+                  <button className="edit-top-btn-save" onClick={onSaveClick}>
+                    <Save size={16} />
+                    Save
+                  </button>
+                )}
+
+                {/* Status change buttons - only show in view mode */}
+                {mode === "view" && (
+                  <div className="edit-top-status-change-buttons">
+                     {/* Submit for Approval button - show only for Designers and for all statuses except Under Approval, Approved, and Published */}
+                     {isDesigner && status?.value !== "Under Approval" && (
+                       <button
+                         className={`edit-top-status-btn edit-top-under-approval-btn ${!hasWorkSubmissionFiles ? 'disabled-clickable' : ''}`}
+                         onClick={() => {
+                           if (hasWorkSubmissionFiles) {
+                             handleStatusChange("Under Approval");
+                           } else {
+                             handleDisabledSubmitClick();
+                           }
+                         }}
+                         title={hasWorkSubmissionFiles ? "Submit for Approval" : "Click to go to Files & Uploads tab to upload work submission files"}
+                         disabled={isUpdatingStatus}
+                       >
+                         {isUpdatingStatus ? "Updating..." : "Submit for Approval"}
+                       </button>
+                     )}
+
+                    {/* Approved button - show to everyone EXCEPT Designers when status is Under Approval */}
+                    {!isDesigner && status?.value === "Under Approval" && (
+                      <>
+                        <button
+                          className="edit-top-status-btn edit-top-approved-btn"
+                          onClick={() => handleStatusChange("Approved")}
+                          title="Approve Task (requires file selection)"
+                          disabled={isUpdatingStatus}
+                        >
+                          {isUpdatingStatus ? "Updating..." : "Approve"}
+                        </button>
+                        <button
+                          className="edit-top-status-btn edit-top-revert-btn"
+                          onClick={() => handleStatusChange("Active")}
+                          title="Revert to Active Status"
+                          disabled={isUpdatingStatus}
+                        >
+                          {isUpdatingStatus ? "Updating..." : "Revert"}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

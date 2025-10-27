@@ -1,9 +1,47 @@
-.detail_container {
+.task-detail-container {
   height: auto; /* allow it to grow based on content */
   display: flex;
-  flex-wrap: wrap; /* allow wrapping */
   width: 100%;
   gap: 35px;
+  margin-top: 10px;
+  position: relative;
+}
+
+.task-detail-container::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #e0e0e0;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .task-detail-container::before {
+    display: none;
+  }
+}
+
+.task-section {
+  flex: 1;
+  min-width: 0; /* Prevent flex items from overflowing */
+  display: flex;
+  flex-direction: column;
+}
+
+.task-right-section {
+  flex: 1;
+  max-width: 50%;
+}
+
+.task-left-section {
+  flex: 1;
+  max-width: 50%;
+  display: flex;
+  flex-direction: column;
 }
 
 
@@ -15,42 +53,85 @@
 
 
 .form-container {
-    display: flex;
-    gap: 10px;
-    align-items: center;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 15px;
+    align-items: start;
+    max-width: 100%;
+  }
+
+  @media (max-width: 1200px) {
+    .form-container {
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .form-container {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    
+    .task-detail-container {
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .task-right-section,
+    .task-left-section {
+      max-width: 100%;
+    }
   }
   
-  .input-box {
+  /* Scoped to task detail components only */
+  .task-detail-container .input-box {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     border: 1px solid #8b6f6f;
     border-radius: 10px;
-    padding: 8px;
+    padding: 0px 6px;
     gap: 5px;
     height: 25px;
     margin-top: 10px;
+    min-height: 40px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .task-detail-container .number-input {
+    min-height: 40px;
+    padding: 0px 8px;
+  }
+
+  .task-detail-container .input-box:focus-within {
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
   }
   
-  .input-box input {
+  .task-detail-container .input-box input {
     border: none;
     outline: none;
     font-size: 16px;
     background: transparent;
-    width: 190px;
+    width: 100%;
     text-align: end ;
     height: 20px;
   }
-  
-/* Chrome, Safari, Edge, Opera */
-input[type=number]::-webkit-inner-spin-button, 
-input[type=number]::-webkit-outer-spin-button {
-  /* -webkit-appearance: none; */
-  margin: 0;
-}
 
-/* Firefox */
-input[type=number] {
-  -moz-appearance: textfield;
+  .task-detail-container .input-box input[type="date"],
+  .task-detail-container .input-box input[type="time"] {
+    text-align: center;
+  }
+  
+/* Style the native number input arrows */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: inner-spin-button;
+  appearance: inner-spin-button;
+  opacity: 1;
+  height: 20px;
+  width: 16px;
 }
 
 
@@ -58,70 +139,122 @@ input[type=number] {
   .icon {
     font-size: 18px;
     color: #8b6f6f;
-    margin-right: 50px;
+    /* margin-right: 50px; */
   }
   
-  .number-input input{
+  .task-detail-container .number-input input{
     text-align: center;
-    width: 34px;
+    width: 100%;
+    font-size: 16px;
+    font-weight: bold;
+    padding: 4px 8px;
+    border: none;
+    outline: none;
+    background: transparent;
   }
 
   .checkList {
-    height: 100%;
+    flex: 1;
     margin-top: 10px;
+    min-height: auto;
   }
 
-  .input-group {
+  /* Scoped to task detail components only */
+  .task-detail-container .input-group {
     display: flex;
     flex-direction: column;
   }
-  .input-group.error .input-box {
-    border-color: red;
+  .task-detail-container .input-group.error .input-box {
+    border-color: #d32f2f;
+  }
+
+  .task-detail-container .input-box input.error,
+  .task-detail-container .input-box .custom-select.error {
+    border-color: #d32f2f;
   }
   .field-error {
-    color: red;
+    color: #d32f2f;
     font-size: 12px;
     margin-top: 4px;
   }
   
-  .input-group label {
+  .field-hint {
+    color: #6c757d;
+    font-size: 11px;
+    margin-top: 4px;
+    font-style: italic;
+  }
+  
+  .task-detail-container .input-group label {
     font-size: 14px;
     margin-bottom: 4px;
     color: #333;
+    font-weight: 500;
+  }
+
+  /* View Mode Styles */
+  .view-mode-text {
+    font-size: 16px;
+    color: #333;
+    font-weight: 400;
+    text-align: end;
+    width: 100%;
+    padding: 4px 0;
+  }
+
+  .quantity-badge {
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
+    padding: 2px 4px;
+    min-width: 30px;
+  }
+
+  /* No hover effects for quantity badge */
+
+  /* Removed pulse animation for cleaner design */
+  
+  .updating-indicator {
+    color: #667eea;
+    font-size: 12px;
+    font-style: italic;
+    font-weight: normal;
   }
   
-  .custom-select {
+  .task-detail-container .custom-select {
     border: none;
     border-style: none;
-    width: 230px;
+    width: 100%;
     text-align: end;
     -webkit-appearance: none;
+    appearance: none;
     font-size: 16px;
     outline: none;
     direction: ltr; /* Add this line */
   }
   
   /* For the dropdown options */
-  .custom-select option {
+  .task-detail-container .custom-select option {
     direction: rlt; /* Keep options left-aligned in dropdown */
     text-align: left; /* Align text to right in dropdown */
   }
 
   @media (max-width: 600px) {
-    .input-box input,
-    .custom-select {
+    .task-detail-container .input-box input,
+    .task-detail-container .custom-select {
       width: 100%;
       font-size: 14px;
     }
   
-    .input-box {
+    .task-detail-container .input-box {
       flex-direction: column;
       align-items: flex-start;
       gap: 8px;
     }
   
-    .form-container {
+    .task-detail-container .form-container {
       flex-direction: column;
     }
   }
+
   

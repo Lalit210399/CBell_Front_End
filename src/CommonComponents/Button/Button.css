@@ -44,3 +44,24 @@
     background: #b82e39;
     transform: scale(1.05);
 }
+
+.table-btn-primary {
+    background: #392B58;
+    color: white;
+}
+
+.table-btn-primary:hover {
+    background: #371b54;
+    transform: scale(1.05);
+}
+
+.table-btn-secondary {
+    background: #ffffff;
+    color: black;
+    border: 1px solid #8d8a8a;
+}
+
+.table-btn-secondary:hover {
+    background: #e7e7e7;
+    transform: scale(1.05);
+}

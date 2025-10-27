@@ -1,7 +1,7 @@
 import React from 'react';
 import './Avatar.css';
 
-const Avatar = ({ src, alt = '', name = '', size = '32px', shape = 'circle' }) => {
+const Avatar = ({ src, alt = '', name = '', size = '32px', shape = 'circle', showTooltip = false, tooltipPosition = 'top' }) => {
   const avatarClass = `avatar ${size} ${shape}`;
 
   const getInitials = (nameStr) => {
@@ -20,7 +20,12 @@ const Avatar = ({ src, alt = '', name = '', size = '32px', shape = 'circle' }) =
   const fallbackContent = getInitials(name) || alt?.charAt(0).toUpperCase() || '?';
 
   return (
-    <div className={avatarClass}>
+    <div 
+      className={avatarClass} 
+      title={showTooltip ? name : undefined}
+      data-tooltip={showTooltip ? name : undefined}
+      data-tooltip-position={showTooltip ? tooltipPosition : undefined}
+    >
       {src ? (
         <img src={src} alt={alt} className="avatar-image" onError={(e) => {
           e.target.style.display = 'none';
