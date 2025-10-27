@@ -13,19 +13,20 @@ const Tile = ({
   textColor,
 }) => {
   const backgroundColor = bgcolor;
-  const iconBackgroundColor = iconBgColor || "#3B82F6"; // Default darker shade as per example
-  const tileBorderColor = isSelected ? borderColor : "#E4E6E9"; // Default border color for unselected
-  const tileTextColor = textColor || "#111827"; // Default text color (dark gray)
+  const iconBackgroundColor = iconBgColor || "#EFF6FF";
+  const tileBorderColor = isSelected ? borderColor : "#F3F4F6";
+  const tileTextColor = textColor || "#1E293B";
   return (
     <div
-      className="tile-container"
+      className="new-tile-container"
       style={{
-        backgroundColor,
-        borderColor: tileBorderColor,
-        borderStyle: "solid",
-        borderWidth: "1px",
-        cursor: onClick ? "pointer" : "default",
+        background: `linear-gradient(105deg, ${backgroundColor}, #fff 80%)`,
+        border: `2px solid ${tileBorderColor}`,
         color: tileTextColor,
+        cursor: onClick ? "pointer" : "default",
+        boxShadow: isSelected
+          ? `0 2px 12px 0 ${borderColor}55`
+          : "0 2px 8px rgba(30, 41, 59, 0.04)",
       }}
       onClick={onClick}
       role={onClick ? "button" : undefined}
@@ -36,18 +37,15 @@ const Tile = ({
         }
       }}
     >
-      <div className="tile-header">
-        <div
-          className="tile-icon"
-          style={{ backgroundColor: iconBackgroundColor }}
-        >
-          {icon}
+      <div className="tile-icon-accent" style={{ background: iconBackgroundColor, borderColor: borderColor }}>
+        {icon}
+      </div>
+      <div className="tile-main-content">
+        <div className="tile-text-content">
+          <span className="tile-title">{title}</span>
+          <span className="tile-subtitle">{subtitle}</span>
         </div>
-        <div className="tile-count">{count}</div>
-      </div>{" "}
-      <div className="tile-body">
-        <h3 className="tile-title">{title}</h3>
-        <p className="tile-subtitle">{subtitle}</p>
+        <span className="tile-large-count">{count}</span>
       </div>
     </div>
   );
