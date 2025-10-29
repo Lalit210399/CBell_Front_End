@@ -181,10 +181,7 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
           }
         }
         
-        // For any 400 error on social media platforms, show the social media account error
-        if (response.status === 400 && (platform === 'facebook' || platform === 'instagram' || platform === 'youtube')) {
-          throw new Error('No social media account added. Please contact your administrator to add social media accounts for your organization.');
-        }
+
         
         throw new Error(errorMessage);
       }
