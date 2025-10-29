@@ -44,6 +44,18 @@ const Table = ({
 
   const menuRef = useRef(null);
 
+  // Function to generate meaningful tooltip text for objects and arrays
+  const getTooltipText = (value) => {
+    if (!value) return "";
+    if (Array.isArray(value)) {
+      return value.map(item => typeof item === 'object' ? (item.name || item.toString()) : item).join(', ');
+    }
+    if (typeof value === 'object') {
+      return value.name || value.toString();
+    }
+    return value.toString();
+  };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -165,7 +177,7 @@ const Table = ({
                       >
                         <span
                           className="tn-tooltip_wrapper"
-                          title={item[column.key] ? item[column.key].toString() : ""}
+                          title={getTooltipText(item[column.key])}
                         >
                           {renderCell ? renderCell(column.key, item) : item[column.key]}
                         </span>
