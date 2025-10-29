@@ -384,8 +384,8 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
         showActions={false}
         loading={loading}
         noDataText="No Publish Scheduled at this time"
-        addEventText="Click here to add a New Publish"
-        onAddEventClick={() => alert("Add Publish clicked")}
+        // addEventText="Click here to add a New Publish"
+        // onAddEventClick={() => alert("Add Publish clicked")}
       />
 
       {showShareModal && (
