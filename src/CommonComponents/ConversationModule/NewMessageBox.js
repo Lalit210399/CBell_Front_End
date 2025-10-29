@@ -137,7 +137,7 @@ const NewMessageBox = ({ onSend, currentUser }) => {
           />
         </div>
       )}
-      <Avatar user={currentUser} />
+      {/* <Avatar user={currentUser} /> */}
       <div className="message-input-wrapper">
         <textarea
           ref={textareaRef}

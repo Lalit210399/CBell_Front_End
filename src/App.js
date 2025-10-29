@@ -8,6 +8,7 @@ import Event from "./Pages/Event/Events";
 import Dashboard from "./Pages/NewDashboard/Dashboard";
 import DesignerDashboard from "./Pages/NewDashboard/DesignerDashboard";
 import Schedule from "./Pages/Schedules/Schedule";
+import NewChatLayout from "./Pages/ChatLayout/NewChatLayout";
 // import StepForm from "./CommonComponents/MultiStepForm";
 import EventDetailPage from "./Pages/Task/EventDetailPage";
 import ForgotPassword from "./CommonComponents/UserAuth/ForgotPassword";
@@ -71,6 +72,14 @@ function App() {
                       element={
                         <RequirePermission resource="Events" managementKey="Event Management" action="Read">
                           <Schedule />
+                        </RequirePermission>
+                      }
+                    />
+                    <Route
+                      path="/NewChatLayout"
+                      element={
+                        <RequirePermission resource="Events" managementKey="Event Management" action="Read">
+                          <NewChatLayout />
                         </RequirePermission>
                       }
                     />
