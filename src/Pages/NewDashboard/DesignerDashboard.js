@@ -7,7 +7,7 @@ import useApi from "../../Hooks/useApi";
 import Tile from "../../CommonComponents/Tiles/Tiles";
 import EventCampaign from "../../CommonComponents/TimelineCard/TimelineCard";
 import RecentTasks from "../../CommonComponents/RecentTaskBox/RecentTask";
-import ActiveEvents from "../../CommonComponents/ActiveEvents/ActiveEvents";
+
 import CustomDropdown from "../../CommonComponents/Dropdown/CustomDropdown";
 import PageSkeleton from "../../CommonComponents/SkeletonLoading/PageSkeleton";
 import {
@@ -46,10 +46,10 @@ const DesignerDashboard = () => {
 
 
   // State for active component
-  const [activeComponent, setActiveComponent] = useState("activeEvents");
+  const [activeComponent, setActiveComponent] = useState("recent");
 
   // State for current title
-  const [currentTitle, setCurrentTitle] = useState("Active Events");
+  const [currentTitle, setCurrentTitle] = useState("Total Tasks");
 
   // State for filter
   const [filter, setFilter] = useState("All");
@@ -635,18 +635,6 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
       {/* Bottom Section */}
       <div className="Second_Row_Section">
         <div className="bottom_section">
-          {/* Active Events */}
-          {activeComponent === "activeEvents" && (
-            <div className="active-events">
-              <ActiveEvents
-                events={activeEventsData || []}
-                onEventClick={handleEventCampaignClick}
-                loading={loadingActiveEvents}
-                error={errorActiveEvents}
-              />
-            </div>
-          )}
-
           {/* Recent Tasks */}
           {activeComponent === "recent" && (
             <div className="recent-tasks">
