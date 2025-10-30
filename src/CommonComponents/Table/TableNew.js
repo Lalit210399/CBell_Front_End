@@ -48,7 +48,7 @@ const Table = ({
   const getTooltipText = (value) => {
     if (!value) return "";
     if (Array.isArray(value)) {
-      return value.map(item => typeof item === 'object' ? (item.name || item.toString()) : item).join(', ');
+      return value.map(item => typeof item === 'object' ? (item.name || item.toString()) : item).join(',  ');
     }
     if (typeof value === 'object') {
       return value.name || value.toString();

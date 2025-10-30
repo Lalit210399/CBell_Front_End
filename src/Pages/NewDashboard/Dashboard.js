@@ -628,9 +628,13 @@ const Dashboard = () => {
 
   const scrollTiles = (direction) => {
     if (!tilesRef.current) return;
-    const scrollAmount = tilesRef.current.offsetWidth; // scroll one viewport width
-    tilesRef.current.scrollBy({
-      left: direction === "left" ? -scrollAmount : scrollAmount,
+    const container = tilesRef.current;
+    const scrollAmount = container.offsetWidth; // scroll one viewport width
+    const newScrollLeft = direction === "left"
+      ? Math.max(0, container.scrollLeft - scrollAmount)
+      : Math.min(container.scrollWidth - container.offsetWidth, container.scrollLeft + scrollAmount);
+    container.scrollTo({
+      left: newScrollLeft,
       behavior: "smooth",
     });
   };

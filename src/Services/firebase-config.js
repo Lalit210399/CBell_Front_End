@@ -21,5 +21,5 @@ export const messaging = getMessaging(app);
 // VAPID key for web push notifications
 // 🔑 REPLACE WITH YOUR ACTUAL VAPID KEY FROM FIREBASE CONSOLE
 // Go to: Firebase Console → Project Settings → Cloud Messaging → Web Push certificates → Generate key pair
-export const vapidKey = "BIdfidiWG-Ur8rF7RxbHK0DNqDm-IUF6DJH8oQ1Qo9vEk2sDadaMDTonJIk4mhimSn7PD7uokBg5eN9qnwggjCc"; // ← Replace this with your actual VAPID key
+export const vapidKey = "BLTVoRwr-gHiIVdTmQvDUGpibqQzhWPKVUC0o6cYOitlYeN4dYVxjGJ2147LnO6MhOJ1RIiTyKpp2morJlmDUpw"; // ← Replace this with your actual VAPID key
 
