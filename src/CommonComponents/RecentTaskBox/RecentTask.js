@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import Table from "../Table/TableNew";
 import AvatarList from "../Avatar/AvatarList";
 import CustomDropdown from "../Dropdown/CustomDropdown"; // import your reusable dropdown
@@ -8,14 +8,6 @@ import "./RecentTask.css";
 
 const RecentTasks = ({ tasks, onTaskClick, onEventClick, title = "Tasks", filter, onFilterChange, showDropdown = true, loading = false, disableClientFiltering = false, hideAssignedToColumn = false, showOrganizationColumn = false, showAssignedByColumn = false }) => {
   const { getActiveTaskStatuses } = useTaskStatus();
-
-  // State for sorting
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
-
-  // Handle sorting
-  const handleSort = (key, direction) => {
-    setSortConfig({ key, direction });
-  };
 
   // Generate filter options from task status context
   const filterOptions = useMemo(() => {
@@ -50,47 +42,14 @@ const RecentTasks = ({ tasks, onTaskClick, onEventClick, title = "Tasks", filter
   }, [getActiveTaskStatuses]);
 
   // 🔹 filter tasks (only if client-side filtering is enabled)
+  // Sorting is now handled by the Table component
   const filteredTasks = useMemo(() => {
-    let filtered = disableClientFiltering
+    return disableClientFiltering
       ? tasks
       : (filter === "All"
           ? tasks
           : tasks.filter((task) => task.status === filter));
-
-    // Apply sorting if sortConfig is set
-    if (sortConfig.key) {
-      filtered = [...filtered].sort((a, b) => {
-        const aValue = a[sortConfig.key];
-        const bValue = b[sortConfig.key];
-
-        // Handle null/undefined values
-        if (aValue == null && bValue == null) return 0;
-        if (aValue == null) return sortConfig.direction === "asc" ? -1 : 1;
-        if (bValue == null) return sortConfig.direction === "asc" ? 1 : -1;
-
-        // Handle string sorting
-        if (typeof aValue === "string" && typeof bValue === "string") {
-          const comparison = aValue.localeCompare(bValue);
-          return sortConfig.direction === "asc" ? comparison : -comparison;
-        }
-
-        // Handle date sorting (assuming dueDate is a string in DD/MM/YYYY format)
-        if (sortConfig.key === "dueDate") {
-          const aDate = new Date(aValue.split('/').reverse().join('-'));
-          const bDate = new Date(bValue.split('/').reverse().join('-'));
-          const comparison = aDate - bDate;
-          return sortConfig.direction === "asc" ? comparison : -comparison;
-        }
-
-        // Default comparison for other types
-        if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
-        if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
-        return 0;
-      });
-    }
-
-    return filtered;
-  }, [tasks, filter, disableClientFiltering, sortConfig]);
+  }, [tasks, filter, disableClientFiltering]);
 
   const renderCell = (key, item) => {
     const handleClick = (e) => {
@@ -211,9 +170,8 @@ const RecentTasks = ({ tasks, onTaskClick, onEventClick, title = "Tasks", filter
         ]}
         data={loading ? skeletonRows : filteredTasks}
         renderCell={loading ? () => <div className="skeleton-row-cell" /> : renderCell}
-        sortableColumns={["taskName", "eventName", ...(showOrganizationColumn ? ["organizationName"] : []), "dueDate"]}
+        sortableColumns={["status", "taskName", "eventName", ...(showOrganizationColumn ? ["organizationName"] : []), "dueDate"]}
         showActions={false}
-        onSort={handleSort}
         onRowClick={loading ? undefined : (task) => {
           // Row click - navigate to task detail page
           onTaskClick?.(task);

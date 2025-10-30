@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import "./TableNew.css";
 
 const Table = ({
@@ -41,6 +41,65 @@ const Table = ({
     setSortConfig({ key, direction });
     onSort?.(key, direction);
   };
+
+  // Sort data based on sortConfig
+  const sortedData = useMemo(() => {
+    if (!sortConfig.key || !data) return data;
+
+    const sorted = [...data].sort((a, b) => {
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+
+      // Handle null/undefined values
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return 1;
+      if (bValue == null) return -1;
+
+      // Handle nested objects (like createdBy.name)
+      let aCompare = aValue;
+      let bCompare = bValue;
+
+      if (typeof aValue === 'object' && aValue.name) {
+        aCompare = aValue.name;
+      }
+      if (typeof bValue === 'object' && bValue.name) {
+        bCompare = bValue.name;
+      }
+
+      // Handle dates
+      const aDate = new Date(aCompare);
+      const bDate = new Date(bCompare);
+      const isDateColumn = !isNaN(aDate.getTime()) && !isNaN(bDate.getTime()) && 
+                          (String(aCompare).includes('/') || String(aCompare).includes('-'));
+      
+      if (isDateColumn) {
+        return sortConfig.direction === "asc" 
+          ? aDate - bDate 
+          : bDate - aDate;
+      }
+
+      // Handle strings
+      if (typeof aCompare === 'string' && typeof bCompare === 'string') {
+        return sortConfig.direction === "asc"
+          ? aCompare.localeCompare(bCompare)
+          : bCompare.localeCompare(aCompare);
+      }
+
+      // Handle numbers
+      if (typeof aCompare === 'number' && typeof bCompare === 'number') {
+        return sortConfig.direction === "asc"
+          ? aCompare - bCompare
+          : bCompare - aCompare;
+      }
+
+      // Default string comparison
+      return sortConfig.direction === "asc"
+        ? String(aCompare).localeCompare(String(bCompare))
+        : String(bCompare).localeCompare(String(aCompare));
+    });
+
+    return sorted;
+  }, [data, sortConfig]);
 
   const menuRef = useRef(null);
 
@@ -85,10 +144,13 @@ const Table = ({
                   className={sortableColumns.includes(column.key) ? "tn-sortable tn-clickable_header" : "tn-clickable_header"}
                 >
                   {column.label}{" "}
-                  {sortableColumns.includes(column.key) &&
-                    sortConfig.key === column.key && (
-                      <span>{sortConfig.direction === "asc" ? "▲" : "▼"}</span>
-                    )}
+                  {sortableColumns.includes(column.key) && (
+                    <span className={sortConfig.key === column.key ? "tn-sort-active" : "tn-sort-inactive"}>
+                      {sortConfig.key === column.key 
+                        ? (sortConfig.direction === "asc" ? "↑" : "↓")
+                        : "⇅"}
+                    </span>
+                  )}
                 </th>
               ))}
               {showActions && <th className="tn-sticky_header">Action</th>}
@@ -119,8 +181,8 @@ const Table = ({
                   )}
                 </tr>
               ))
-            ) : data.length > 0 ? (
-              data.map((item, rowIndex) => (
+            ) : sortedData && sortedData.length > 0 ? (
+              sortedData.map((item, rowIndex) => (
                 <tr
                   key={rowIndex}
                   className={
