@@ -46,7 +46,7 @@ const NewPage = () => {
   return (
     <div className="new-page-container">
       <div className="page-header">
-        <h1>Task Conversations</h1>
+        {/* <h1>Task Conversations</h1> */}
         {/* <p>Chat with your team about specific tasks</p> */}
       </div>
       <ChatLayout
