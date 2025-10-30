@@ -23,3 +23,8 @@ body {
 body:hover ::-webkit-scrollbar {
   opacity: 1; /* Show scrollbar when hovered */
 }
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

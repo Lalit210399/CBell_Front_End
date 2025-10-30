@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../Context/UserContext";
+import { useMessages } from "../../Context/MessageContext";
 import useApi from "../../Hooks/useApi";
 import { fetchSummaryData, fetchEventsCampaign, fetchTasksData, fetchMyTasksData } from "../../Services/Dashboard";
 import Tile from "../../CommonComponents/Tiles/Tiles";
@@ -19,6 +20,7 @@ import "./DesignerDashboard.css";
 
 const DesignerDashboard = () => {
   const { user, selectedOrganizationId, isViewingOwnOrganization, loading: userLoading, scopeChangeTrigger } = useUser();
+  const { showError, showWarning } = useMessages();
   const navigate = useNavigate();
 
   // State for orgIdReady - now based on global selectedOrganizationId
@@ -108,6 +110,7 @@ const DesignerDashboard = () => {
   }, [orgIdReady, selectedOrganizationId, user?.organizationId, selectedMonth, selectedYear]);
 
   // Tasks API
+<<<<<<< HEAD
   const fetchTasksDataCallback = useCallback(async (filterType = "all") => {
     if (!orgIdReady) return [];
     const organizationId = selectedOrganizationId || user?.organizationId || "681460dcb8327b2e3417d8b1";
@@ -133,11 +136,149 @@ const DesignerDashboard = () => {
 
   // My Tasks API - for "Tasks Assigned to Me" tile
   const fetchMyTasksDataCallback = useCallback(async () => {
+=======
+  // Tasks API
+const fetchTasksData = useCallback(async (filterType = "all") => {
+  if (!orgIdReady) {
+    return [];
+  }
+  
+  const organizationId = selectedOrganizationId || user?.organizationId || "681460dcb8327b2e3417d8b1";
+  
+  // Map UI filter labels to API filter parameters
+  const filterMap = {
+    "Total Tasks": "all",
+    "Tasks Under Approval": "under_review", // API uses under_review
+    "Approved Tasks": "approved", // API uses approved
+    // Handle dropdown filter values
+    "All": "all",
+    "New": "new",
+    "Active": "active", 
+    "Under Approval": "under_review", // API uses under_review
+    "Approved": "approved", // API uses approved
+    "Published": "published",
+    "Cancelled": "cancelled",
+  };
+
+  const apiFilter = filterMap[filterType] || "all";
+
+  try {
+    const response = await fetchWithRefresh(
+      `apis/dashboard/tasks?orgid=${organizationId}&filter=${apiFilter}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Tasks API failed: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+
+    // Check if data has tasks array or if it's the response structure
+    const tasksArray = data.tasks || data.data?.tasks || data;
+
+    // Transform API data to match the expected format for RecentTasks component
+    const transformedTasks = (Array.isArray(tasksArray) ? tasksArray : []).map((task) => ({
+      id: task.id,
+      status: task.taskStatusName, // This will be "Under Approval" from API response
+      taskName: task.taskTitle,
+      eventName: task.eventName,
+      eventId: task.eventId,
+      assignedTo: task.assignedToNames?.map((name, index) => ({
+        name: name,
+        src: "",
+        id: task.assignedTo?.[index] || `user-${index}`
+      })) || [],
+      assignedBy: task.assignmentDetails?.[0]?.assignedByName || task.createdByName || "Unknown",
+      dueDate: new Date(task.dueDate).toLocaleDateString("en-GB"),
+      description: task.description,
+      creativeType: task.creativeType,
+      daysUntilDue: task.daysUntilDue,
+      createdBy: task.createdByName || "Unknown",
+      updatedBy: task.updatedByName || "Unknown",
+      taskStatusId: task.taskStatusId,
+      createdOn: task.createdOn,
+      createdById: task.createdBy,
+      updatedById: task.updatedBy,
+    }));
+    
+     return transformedTasks;
+  } catch (error) {
+    throw error;
+  }
+}, [orgIdReady, selectedOrganizationId, user?.organizationId]);
+  // My Tasks API - for "Tasks Assigned to Me" tile
+  const fetchMyTasksData = useCallback(async () => {
+>>>>>>> f88ac0c2bcc489808a9865f1616882a3a5750ddb
     if (!orgIdReady) return [];
     const organizationId = selectedOrganizationId || user?.organizationId;
     const userId = user?.userId;
+<<<<<<< HEAD
     const includeChildren = isViewingOwnOrganization();
     return await fetchMyTasksData(organizationId, userId, includeChildren);
+=======
+    const includeChildren = isViewingOwnOrganization() ? "true" : "false";
+    
+    const response = await fetchWithRefresh(
+      `apis/dashboard/my-tasks?orgid=${organizationId}&userid=${userId}&includeChildren=${includeChildren}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("My Tasks API failed");
+    }
+    
+    const data = await response.json();
+
+    // Transform API data to match the expected format for RecentTasks component
+    return data.tasks.map((task) => {
+      // Find the assignment detail where userId matches current user ID
+      const currentUserAssignment = task.assignmentDetails?.find(
+        detail => detail.userId === user?.userId
+      );
+      
+      // Console log for debugging
+      
+      
+      return {
+        id: task.id,
+        status: task.statusName,
+        taskName: task.taskName,
+        eventName: task.eventName,
+        eventId: task.eventId,
+        assignedTo: task.assignedTo?.map((assignee, index) => ({
+          name: assignee.name,
+          src: "",
+          id: assignee.id || `user-${index}`
+        })) || [],
+        assignedBy: currentUserAssignment?.assignedByName || task.assignmentDetails?.[0]?.assignedByName || "Unknown",
+        dueDate: new Date(task.dueDate).toLocaleDateString("en-GB"),
+        description: task.taskDescription,
+        creativeType: task.priority,
+        daysUntilDue: task.isDueSoon ? "Due Soon" : task.isDueToday ? "Due Today" : task.isOverdue ? "Overdue" : "",
+        createdBy: "Unknown", // Not provided in API response
+        updatedBy: "Unknown", // Not provided in API response
+        isOverdue: task.isOverdue,
+        isDueSoon: task.isDueSoon,
+        isDueToday: task.isDueToday,
+        eventDate: task.eventDate ? new Date(task.eventDate).toLocaleDateString("en-GB") : "",
+        organizationId: task.organizationId,
+        organizationName: task.organizationName,
+      };
+    });
+>>>>>>> f88ac0c2bcc489808a9865f1616882a3a5750ddb
   }, [orgIdReady, selectedOrganizationId, user?.organizationId, user?.userId, isViewingOwnOrganization]);
 
 
@@ -190,7 +331,30 @@ const DesignerDashboard = () => {
     reset: resetMyTasks
   } = useApi(fetchMyTasksDataCallback, [orgIdReady], false);
 
+  // Handle API errors and show user-friendly messages
+  useEffect(() => {
+    if (errorSummary) {
+      showError('Failed to load dashboard summary. Please try again.', { duration: 5000 });
+    }
+  }, [errorSummary, showError]);
 
+  useEffect(() => {
+    if (errorEventsCampaign) {
+      showError('Failed to load events campaign data. Please try again.', { duration: 5000 });
+    }
+  }, [errorEventsCampaign, showError]);
+
+  useEffect(() => {
+    if (errorTasks) {
+      showError('Failed to load tasks data. Please try again.', { duration: 5000 });
+    }
+  }, [errorTasks, showError]);
+
+  useEffect(() => {
+    if (errorMyTasks) {
+      showError('Failed to load assigned tasks. Please try again.', { duration: 5000 });
+    }
+  }, [errorMyTasks, showError]);
 
   // Execute APIs when orgIdReady changes or scope changes
   useEffect(() => {
@@ -200,14 +364,12 @@ const DesignerDashboard = () => {
     }
   }, [orgIdReady, scopeChangeTrigger, executeSummary]);
 
-  // Separate useEffect for Events Campaign to prevent unnecessary re-execution
+  // Separate useEffect for Events Campaign to only run when month/year changes
   useEffect(() => {
     if (orgIdReady) {
-      // Clear stale events before fetching new scope
-      resetEventsCampaign();
       executeEventsCampaign();
     }
-  }, [selectedMonth, selectedYear, orgIdReady, scopeChangeTrigger, executeEventsCampaign, resetEventsCampaign]);
+  }, [orgIdReady, selectedMonth, selectedYear, executeEventsCampaign]);
 
   // Clear and refetch summary on scope change to avoid stale counts
   useEffect(() => {
@@ -333,6 +495,20 @@ const DesignerDashboard = () => {
     });
   };
 
+  // Handle event click
+  const handleEventClick = (task) => {
+    if (task && task.eventId) {
+      navigate("/events/eventDetailPage", {
+        state: {
+          eventId: task.eventId,
+          mode: "view",
+        },
+      });
+    } else {
+      console.warn("Task missing eventId:", task);
+    }
+  };
+
 
   // Handle event campaign item click
   const handleEventCampaignClick = (item) => {
@@ -386,6 +562,7 @@ const DesignerDashboard = () => {
                 filter={filter}
                 onFilterChange={setFilter}
                 onTaskClick={handleTaskClick}
+                onEventClick={handleEventClick}
                 loading={currentTitle === "Tasks Assigned to Me" ? loadingMyTasks : loadingTasks}
                 error={currentTitle === "Tasks Assigned to Me" ? errorMyTasks : errorTasks}
                 showDropdown={[
@@ -394,6 +571,7 @@ const DesignerDashboard = () => {
                 hideAssignedToColumn={currentTitle === "New Tasks"}
                 disableClientFiltering={true}
                 showOrganizationColumn={currentTitle === "Tasks Assigned to Me"}
+                showAssignedByColumn={true}
               />
             </div>
           )}

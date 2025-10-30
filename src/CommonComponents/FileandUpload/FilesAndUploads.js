@@ -11,6 +11,8 @@ import {
   X,
   Trash2,
   Check,
+  Download,
+  Share2,
 } from 'lucide-react';
 import { useUser } from '../../Context/UserContext';
 import './FilesandUploads.css';
@@ -28,11 +30,28 @@ const FilesUploads = ({
   onFileSelect,
   enableSelectionRadio = false, // ← NEW PROP for radio button selection
   showFileRequirementWarning = false, // ← NEW PROP for showing file requirement warning
+  onWorkSubmissionFilesChange, // ← NEW PROP for work submission file tracking
+  externalLoading = false, // ← NEW PROP for external loading state
+  loadingType = "upload" // ← NEW PROP for loading type
 }) => {
   const { user } = useUser();
   
   // Use userId from props, or fallback to user.userId from context
   const effectiveUserId = userId || user?.userId;
+
+  // Helper function to check if current user is a designer
+  const isCurrentUserDesigner = useCallback(() => {
+    if (!user?.roles) return false;
+    
+    return user.roles.some(role => 
+      role.name?.toLowerCase().includes('designer') || 
+      role.displayName?.toLowerCase().includes('designer') ||
+      role.name?.toLowerCase().includes('creative') ||
+      role.displayName?.toLowerCase().includes('creative')
+    );
+  }, [user?.roles]);
+  
+ 
   
   // const [links, setLinks] = useState([]); // commented out for now
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -41,6 +60,7 @@ const FilesUploads = ({
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [currentFile, setCurrentFile] = useState(null);
   const [description, setDescription] = useState('');
+  const [deletedFileIds, setDeletedFileIds] = useState([]);
   
   // Memoize the description change handler to prevent unnecessary re-renders
   const handleDescriptionChange = useCallback((e) => {
@@ -48,8 +68,47 @@ const FilesUploads = ({
   }, []);
   const [approvedFiles, setApprovedFiles] = useState([]);
   const [hasApprovedOrPublishedFile, setHasApprovedOrPublishedFile] = useState(false);
+  const [hasWorkSubmissionFiles, setHasWorkSubmissionFiles] = useState(false);
   const filesRef = useRef([]);
   const uploadedFilesRef = useRef([]);
+
+  // Loading skeleton component
+  const SkeletonPreviewGrid = () => {
+    const isUploadingState = isUploading;
+    const isFetchingState = externalLoading || (files.length === 0 && !isUploading);
+    
+    const getLoadingText = () => {
+      if (isUploadingState) {
+        return "Uploading files...";
+      } else if (isFetchingState) {
+        return "Loading files...";
+      }
+      return "Processing files...";
+    };
+    
+    const getSubText = () => {
+      if (isUploadingState) {
+        return "Please wait while your files are being uploaded and processed";
+      } else if (isFetchingState) {
+        return "Please wait while we fetch your files";
+      }
+      return "Please wait while your files are being processed";
+    };
+    
+    const containerClass = `loading-container ${isUploadingState ? 'uploading' : isFetchingState ? 'fetching' : ''}`;
+    
+    return (
+      <div className={containerClass}>
+        <div className="loading-content">
+          <div className="loading-spinner">
+            <div className="spinner"></div>
+          </div>
+          <p className="loading-text">{getLoadingText()}</p>
+          <p className="loading-subtext">{getSubText()}</p>
+        </div>
+      </div>
+    );
+  };
 
 
   // Handle click outside to close preview modal
@@ -78,29 +137,6 @@ const FilesUploads = ({
     }
   }, [previewFile]);
 
-  useEffect(() => {
-    // Update refs
-    filesRef.current = files;
-    
-    // Extract approved files from the files data
-    const approved = files.filter(file => file.status === 'Approved');
-    setApprovedFiles(approved.map(file => file.documentId));
-
-    // Check if any file is approved or published
-    const hasApprovedOrPublished = files.some(file => 
-      file.status === 'Approved' || file.status === 'Published' || 
-      (file.publishedTo && file.publishedTo.length > 0 && file.publishedTo.some(p => p.isPublished === true))
-    );
-    setHasApprovedOrPublishedFile(hasApprovedOrPublished);
-
-    // If there are approved files, automatically select them
-    if (approved.length > 0 && onFileSelect) {
-      approved.forEach(file => {
-        onFileSelect(file.documentId, true);
-      });
-    }
-  }, [files]); // Removed onFileSelect from dependencies to prevent unnecessary re-renders
-  // eslint-disable-next-line react-hooks/exhaustive-deps
 
   // Temporarily disable cleanup to test if it's causing the issue
   // useEffect(() => {
@@ -119,8 +155,48 @@ const FilesUploads = ({
     if (uploadedFiles.length > 0) {
       onDataChange?.({ uploadedFiles });
     }
-  }, [uploadedFiles]); // Removed onDataChange from dependencies
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploadedFiles, onDataChange]); // Include onDataChange in dependencies
+
+  // Notify parent component when work submission files change
+  useEffect(() => {
+    if (onWorkSubmissionFilesChange) {
+      onWorkSubmissionFilesChange(hasWorkSubmissionFiles);
+    }
+  }, [hasWorkSubmissionFiles, onWorkSubmissionFilesChange]);
+
+  // Helper function to determine if file is a work submission (by designer)
+  const isWorkSubmission = useCallback((file) => {
+    
+    // Check file's userInfo to determine if the uploader is a designer
+    if (file.userInfo && file.userInfo.roles) {
+      const isFileUserDesigner = file.userInfo.roles.some(role => 
+        role.name?.toLowerCase().includes('designer') || 
+        role.displayName?.toLowerCase().includes('designer') ||
+        role.name?.toLowerCase().includes('creative') ||
+        role.displayName?.toLowerCase().includes('creative')
+      );
+      
+      if (isFileUserDesigner) {
+        return true;
+      }
+    }
+    
+    // For newly uploaded files without userInfo, check current user's role
+    if (!file.userInfo && user?.roles) {
+      const isCurrentUserDesigner = user.roles.some(role => 
+        role.name?.toLowerCase().includes('designer') || 
+        role.displayName?.toLowerCase().includes('designer') ||
+        role.name?.toLowerCase().includes('creative') ||
+        role.displayName?.toLowerCase().includes('creative')
+      );
+      
+      if (isCurrentUserDesigner) {
+        return true;
+      }
+    }
+    
+    return false;
+  }, [user?.roles]);
 
   const getFileTypeFromMime = (mime) => {
     if (!mime) return 'file';
@@ -137,6 +213,33 @@ const FilesUploads = ({
            file.publishedTo.some(p => p.isPublished === true);
   };
 
+  useEffect(() => {
+    // Update refs
+    filesRef.current = files;
+    
+    // Extract approved files from the files data
+    const approved = files.filter(file => file.status === 'Approved');
+    setApprovedFiles(approved.map(file => file.documentId));
+
+    // Check if any file is approved or published
+    const hasApprovedOrPublished = files.some(file => 
+      file.status === 'Approved' || file.status === 'Published' || 
+      (file.publishedTo && file.publishedTo.length > 0 && file.publishedTo.some(p => p.isPublished === true))
+    );
+    setHasApprovedOrPublishedFile(hasApprovedOrPublished);
+
+    // Check for work submission files (files uploaded by designers)
+    const workSubmissionFiles = files.filter(file => isWorkSubmission(file));
+    setHasWorkSubmissionFiles(workSubmissionFiles.length > 0);
+
+    // If there are approved files, automatically select them
+    if (approved.length > 0 && onFileSelect) {
+      approved.forEach(file => {
+        onFileSelect(file.documentId, true);
+      });
+    }
+  }, [files, isWorkSubmission, onFileSelect]); // Include all dependencies
+
   // const handleAddLink = () => {
   //   const newLink = prompt("Enter the new link URL:");
   //   if (newLink) {
@@ -152,6 +255,12 @@ const FilesUploads = ({
     formData.append('description', description || file.name);
     formData.append('status', 'Pending');
     formData.append('UserId', effectiveUserId);
+
+    // Debug logging
+
+    // for (let [key, value] of formData.entries()) {
+    //   console.log(key, value);
+    // }
 
     const response = await fetch('/apis/document/upload_document', {
       method: 'POST',
@@ -202,7 +311,21 @@ const FilesUploads = ({
 
       if (!response.ok) throw new Error('Failed to delete file');
 
+      // Show success message
+      alert('File deleted successfully!');
+      
+      // Add file ID to deleted list to hide it from UI
+      setDeletedFileIds(prev => [...prev, fileId]);
+      
+      // Update local state for uploaded files
       setUploadedFiles(prev => prev.filter(f => f.documentId !== fileId));
+      
+      // Notify parent component about the deletion
+      onDataChange?.({ 
+        deletedFileId: fileId,
+        uploadedFiles: uploadedFiles.filter(f => f.documentId !== fileId)
+      });
+      
     } catch (error) {
       console.error('Error deleting file:', error);
       alert('Failed to delete file');
@@ -236,6 +359,8 @@ const FilesUploads = ({
         src,
         documentId,
         description: description || currentFile.name,
+        uploadDate: new Date().toISOString(), // Set current date/time for newly uploaded files
+        size: currentFile.size, // Add file size for newly uploaded files
         // Add userInfo for immediate categorization
         userInfo: {
           fullName: user ? `${user.firstName} ${user.lastName}` : 'Unknown User',
@@ -246,6 +371,11 @@ const FilesUploads = ({
       setUploadedFiles(prev => [...prev, newFile]);
       setDescription('');
       setCurrentFile(null);
+      
+      // Check if the newly uploaded file is a work submission and notify parent
+      if (isWorkSubmission(newFile) && onWorkSubmissionFilesChange) {
+        onWorkSubmissionFilesChange(true);
+      }
     } catch (error) {
       console.error('Failed to process file:', error);
       alert('File upload failed. Please try again.');
@@ -331,17 +461,30 @@ const FilesUploads = ({
     try {
       const date = new Date(dateString);
       const now = new Date();
-      const diffTime = Math.abs(now - date);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
-      const diffMinutes = Math.ceil(diffTime / (1000 * 60));
+      
+      // Reset time to start of day for accurate day comparison
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const uploadDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      
+      // Calculate the difference in days
+      const diffTime = today - uploadDate;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      
+      // Calculate time differences for same day
+      const diffTimeMinutes = Math.floor((now - date) / (1000 * 60));
+      const diffTimeHours = Math.floor((now - date) / (1000 * 60 * 60));
       
       // Handle same day
       if (diffDays === 0) {
-        if (diffHours === 0) {
-          return diffMinutes <= 1 ? 'Just now' : `${diffMinutes} minutes ago`;
+        if (diffTimeMinutes < 1) {
+          return 'Just now';
+        } else if (diffTimeMinutes < 60) {
+          return diffTimeMinutes === 1 ? '1 minute ago' : `${diffTimeMinutes} minutes ago`;
+        } else if (diffTimeHours < 24) {
+          return diffTimeHours === 1 ? '1 hour ago' : `${diffTimeHours} hours ago`;
+        } else {
+          return 'Today';
         }
-        return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
       }
       
       // Handle yesterday
@@ -352,7 +495,7 @@ const FilesUploads = ({
       
       // Handle this month
       if (diffDays < 30) {
-        const weeks = Math.ceil(diffDays / 7);
+        const weeks = Math.floor(diffDays / 7);
         return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
       }
       
@@ -373,60 +516,9 @@ const FilesUploads = ({
     return file.uploadDate || file.createdAt || file.uploadedAt;
   };
 
-  // Helper function to determine if file is a work submission (by designer)
-  const isWorkSubmission = (file) => {
-    // Debug: Log the file being checked
-    console.log('🔍 Checking file for work submission:', {
-      fileName: file.name,
-      fileUserInfo: file.userInfo,
-      currentUser: user,
-      currentUserRoles: user?.roles
-    });
-    
-    // Check file's userInfo to determine if the uploader is a designer
-    if (file.userInfo && file.userInfo.roles) {
-      const isFileUserDesigner = file.userInfo.roles.some(role => 
-        role.name?.toLowerCase().includes('designer') || 
-        role.displayName?.toLowerCase().includes('designer') ||
-        role.name?.toLowerCase().includes('creative') ||
-        role.displayName?.toLowerCase().includes('creative')
-      );
-      
-      console.log('File user designer check:', { isFileUserDesigner, fileUserRoles: file.userInfo.roles });
-      
-      if (isFileUserDesigner) {
-        console.log('✅ File is work submission (file user is designer)');
-        return true;
-      }
-    }
-    
-    // For newly uploaded files without userInfo, check current user's role
-    if (!file.userInfo && user?.roles) {
-      const isCurrentUserDesigner = user.roles.some(role => 
-        role.name?.toLowerCase().includes('designer') || 
-        role.displayName?.toLowerCase().includes('designer') ||
-        role.name?.toLowerCase().includes('creative') ||
-        role.displayName?.toLowerCase().includes('creative')
-      );
-      
-      console.log('Current user designer check for new file:', { isCurrentUserDesigner, currentUserRoles: user.roles });
-      
-      if (isCurrentUserDesigner) {
-        console.log('✅ File is work submission (current user is designer)');
-        return true;
-      }
-    }
-    
-    console.log('❌ File is NOT a work submission');
-    return false;
-  };
 
   // Helper function to determine if file is a reference file (by admin/manager)
   const isReferenceFile = (file) => {
-    console.log('🔍 Checking file for reference:', {
-      fileName: file.name,
-      fileUserInfo: file.userInfo
-    });
     
     // Check file's userInfo to determine if the uploader is admin/manager
     if (file.userInfo && file.userInfo.roles) {
@@ -439,10 +531,7 @@ const FilesUploads = ({
         role.displayName?.toLowerCase().includes('lead')
       );
       
-      console.log('File user admin/manager check:', { isFileUserAdminManager, fileUserRoles: file.userInfo.roles });
-      
       if (isFileUserAdminManager) {
-        console.log('✅ File is reference (file user is admin/manager)');
         return true;
       }
     }
@@ -458,24 +547,21 @@ const FilesUploads = ({
         role.displayName?.toLowerCase().includes('lead')
       );
       
-      console.log('Current user admin/manager check for new file:', { isCurrentUserAdminManager, currentUserRoles: user.roles });
-      
       if (isCurrentUserAdminManager) {
-        console.log('✅ File is reference (current user is admin/manager)');
         return true;
       }
     }
     
-    console.log('❌ File is NOT a reference');
     return false;
   };
 
+
   // Helper function to get file category
-  const getFileCategory = (file) => {
-    if (isWorkSubmission(file)) return 'work-submission';
-    if (isReferenceFile(file)) return 'reference';
-    return 'other';
-  };
+  // const getFileCategory = (file) => {
+  //   if (isWorkSubmission(file)) return 'work-submission';
+  //   if (isReferenceFile(file)) return 'reference';
+  //   return 'other';
+  // };
 
   const LazyFileCard = ({ file, mode }) => {
     const ref = useRef();
@@ -489,7 +575,6 @@ const FilesUploads = ({
     const canSelect = !isApproved && !hasApprovedFile && !isPublished;
     
     // Determine file category and type
-    const fileCategory = getFileCategory(file);
     const isWorkSubmissionFile = isWorkSubmission(file);
     const isReferenceFileType = isReferenceFile(file);
 
@@ -559,8 +644,8 @@ const FilesUploads = ({
             </div>
           )}
 
-          {/* Compact status indicator in bottom right - only for work submissions */}
-          {!latestPublication && file.status && isWorkSubmissionFile && (
+          {/* Compact status indicator in bottom right - only for work submissions that are not published */}
+          {!latestPublication && file.status && isWorkSubmissionFile && !isPublished && (
             <div className="file-status-compact">
               {file.status === 'Approved' && 'Ready to publish'}
               {file.status === 'Pending' && 'Awaiting approval'}
@@ -605,8 +690,10 @@ const FilesUploads = ({
                 {!['image', 'video', 'audio', 'pdf'].includes(file.type) && <FileIcon size={16} />}
               </div>
               <span className="file-name" title={file.name}>{file.name}</span>
-              {/* Delete button - visible in view mode and edit mode, but not for approved files */}
-              {!isApproved && (
+              {/* Delete button - visible for all files except approved ones, but designers can only delete work submissions */}
+              {!approvedFiles.includes(file.documentId) && (
+                !isCurrentUserDesigner() || isWorkSubmission(file)
+              ) && (
                 <button
                   className="file-action-btn delete-btn"
                   onClick={(e) => {
@@ -735,7 +822,9 @@ const FilesUploads = ({
           )}
         </div>
 
-        {[...files, ...uploadedFiles].length === 0 && !isUploading ? (
+        {isUploading || externalLoading ? (
+          <SkeletonPreviewGrid />
+        ) : [...files, ...uploadedFiles].length === 0 ? (
           <div className="empty-files-state">
             <div className="empty-files-illustration">
               <FileIcon size={64} className="empty-icon" />
@@ -780,6 +869,7 @@ const FilesUploads = ({
             {(() => {
               const workFiles = [...files, ...uploadedFiles]
                 .filter(file => isWorkSubmission(file))
+                .filter(file => !deletedFileIds.includes(file.documentId))
                 .sort((a, b) => new Date(b.uploadDate || b.createdAt || 0) - new Date(a.uploadDate || a.createdAt || 0));
               
               return workFiles.length > 0 && (
@@ -804,6 +894,7 @@ const FilesUploads = ({
             {(() => {
               const referenceFiles = [...files, ...uploadedFiles]
                 .filter(file => isReferenceFile(file))
+                .filter(file => !deletedFileIds.includes(file.documentId))
                 .sort((a, b) => new Date(b.uploadDate || b.createdAt || 0) - new Date(a.uploadDate || a.createdAt || 0));
               
               return referenceFiles.length > 0 && (
@@ -828,6 +919,7 @@ const FilesUploads = ({
             {(() => {
               const otherFiles = [...files, ...uploadedFiles]
                 .filter(file => !isWorkSubmission(file) && !isReferenceFile(file))
+                .filter(file => !deletedFileIds.includes(file.documentId))
                 .sort((a, b) => new Date(b.uploadDate || b.createdAt || 0) - new Date(a.uploadDate || a.createdAt || 0));
               
               return otherFiles.length > 0 && (
@@ -855,46 +947,261 @@ const FilesUploads = ({
     </div>
   );
 
-  // Preview modal component using React Portal
+  // Enhanced Preview modal component using React Portal
   const PreviewModal = () => {
     if (!previewFile) return null;
 
+    // Get file metadata
+    // const getFileSize = (file) => {
+    //   if (file.size) {
+    //     const bytes = file.size;
+    //     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    //     const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    //     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+    //   }
+    //   return 'Unknown size';
+    // };
+
+    const getFileTypeIcon = (type) => {
+      switch (type) {
+        case 'image': return <ImageIcon size={20} />;
+        case 'video': return <Clapperboard size={20} />;
+        case 'audio': return <MusicIcon size={20} />;
+        case 'pdf': return <FileText size={20} />;
+        default: return <FileIcon size={20} />;
+      }
+    };
+
+    const getStatusColor = (status) => {
+      switch (status?.toLowerCase()) {
+        case 'approved': return '#10b981';
+        case 'pending': return '#f59e0b';
+        case 'published': return '#8b5cf6';
+        default: return '#6b7280';
+      }
+    };
+
+    const getStatusIcon = (status) => {
+      switch (status?.toLowerCase()) {
+        case 'approved': return <Check size={16} />;
+        case 'pending': return <Loader2 size={16} className="animate-spin" />;
+        case 'published': return <Share2 size={16} />;
+        default: return <FileIcon size={16} />;
+      }
+    };
+
+    const uploaderInfo = getUploaderInfo(previewFile);
+    const latestPublication = getLatestPublicationInfo(previewFile);
+    const isWorkSubmissionFile = isWorkSubmission(previewFile);
+    const isReferenceFileType = isReferenceFile(previewFile);
+
     const modalContent = (
-      <div className="popup" onClick={() => setPreviewFile(null)}>
-        <X size={30} className="close-icon" onClick={() => setPreviewFile(null)} />
-        <div className="popup-content" onClick={(e) => e.stopPropagation()}>
-
-          {previewFile.type === 'image' && <img src={previewFile.src} alt={previewFile.name} />}
-          {previewFile.type === 'video' && <video src={previewFile.src} controls autoPlay />}
-          {previewFile.type === 'audio' && (
-            <div className="audio-popup">
-              <h3>{previewFile.name}</h3>
-              <audio src={previewFile.src} controls autoPlay />
-            </div>
-          )}
-          {previewFile.type === 'pdf' && (
-            <div className="pdf-popup">
-              <h3>{previewFile.name}</h3>
-              <iframe src={previewFile.src} width="100%" height="500px" title={previewFile.name} />
-            </div>
-          )}
-          {!['image', 'video', 'audio', 'pdf'].includes(previewFile.type) && (
-            <div className="fallback-popup">
-              <h3>{previewFile.name}</h3>
-              <FileIcon size={100} />
-              <p>This file type cannot be previewed</p>
-            </div>
-          )}
-
-          <div className="file-description">
-            <p>{previewFile.name || 'No description provided'}</p>
-            {previewFile.status && (
-              <div className="file-status-popup">
-                <p className={`status-${previewFile.status.toLowerCase()}`}>
-                  {previewFile.status}
-                </p>
+      <div className="enhanced-popup-overlay" onClick={() => setPreviewFile(null)}>
+        <div className="enhanced-popup-container" onClick={(e) => e.stopPropagation()}>
+          {/* Header */}
+          <div className="popup-header">
+            <div className="popup-header-left">
+              <div className="file-type-icon-large">
+                {getFileTypeIcon(previewFile.type)}
               </div>
-            )}
+              <div className="file-title-section">
+                <h2 className="file-title" title={previewFile.name}>
+                  {previewFile.name}
+                </h2>
+                <div className="file-meta-basic">
+                  <span className="file-type-badge">
+                    {previewFile.type?.toUpperCase() || 'FILE'}
+                  </span>
+                  {/* <span className="file-size">{getFileSize(previewFile)}</span> */}
+                </div>
+              </div>
+            </div>
+            <div className="popup-header-right">
+              <button 
+                className="popup-close-btn" 
+                onClick={() => setPreviewFile(null)}
+                title="Close preview"
+              >
+                <X size={24} />
+              </button>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="popup-main-content">
+            {/* Preview Section */}
+            <div className="popup-preview-section">
+              {previewFile.type === 'image' && (
+                <div className="image-preview-container">
+                  <img 
+                    src={previewFile.src} 
+                    alt={previewFile.name} 
+                    className="enhanced-image-preview"
+                    loading="lazy"
+                  />
+                </div>
+              )}
+              {previewFile.type === 'video' && (
+                <div className="video-preview-container">
+                  <video 
+                    src={previewFile.src} 
+                    controls 
+                    autoPlay 
+                    className="enhanced-video-preview"
+                  />
+                </div>
+              )}
+              {previewFile.type === 'audio' && (
+                <div className="audio-preview-container">
+                  <div className="audio-visual">
+                    <MusicIcon size={80} />
+                  </div>
+                  <audio 
+                    src={previewFile.src} 
+                    controls 
+                    autoPlay 
+                    className="enhanced-audio-preview"
+                  />
+                </div>
+              )}
+              {previewFile.type === 'pdf' && (
+                <div className="pdf-preview-container">
+                  <iframe 
+                    src={previewFile.src} 
+                    className="enhanced-pdf-preview"
+                    title={previewFile.name}
+                  />
+                </div>
+              )}
+              {!['image', 'video', 'audio', 'pdf'].includes(previewFile.type) && (
+                <div className="fallback-preview-container">
+                  <div className="fallback-icon">
+                    <FileIcon size={100} />
+                  </div>
+                  <p className="fallback-message">This file type cannot be previewed</p>
+                  <button 
+                    className="download-btn"
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = previewFile.src;
+                      link.download = previewFile.name;
+                      link.click();
+                    }}
+                  >
+                    <Download size={16} />
+                    Download File
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Information Sidebar */}
+            <div className="popup-info-sidebar">
+              {/* File Status */}
+              <div className="info-section">
+                <h3 className="info-section-title">Status</h3>
+                <div className="status-container">
+                  {previewFile.status && (
+                    <div 
+                      className="status-badge-enhanced"
+                      style={{ backgroundColor: getStatusColor(previewFile.status) }}
+                    >
+                      {getStatusIcon(previewFile.status)}
+                      <span>{previewFile.status}</span>
+                    </div>
+                  )}
+                  {latestPublication && (
+                    <div className="publication-info">
+                      <span className="publication-label">Published to:</span>
+                      <span className="publication-platform">{latestPublication.platform}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* File Type & Category */}
+              <div className="info-section">
+                <h3 className="info-section-title">File Information</h3>
+                <div className="file-info-grid">
+                  <div className="info-item">
+                    <span className="info-label">Type:</span>
+                    <span className="info-value">{previewFile.type?.toUpperCase() || 'Unknown'}</span>
+                  </div>
+                  {/* <div className="info-item">
+                    <span className="info-label">Size:</span>
+                    <span className="info-value">{getFileSize(previewFile)}</span>
+                  </div> */}
+                  {isWorkSubmissionFile && (
+                    <div className="info-item">
+                      <span className="info-label">Category:</span>
+                      <span className="info-value work-submission">🎨 Work Submission</span>
+                    </div>
+                  )}
+                  {isReferenceFileType && (
+                    <div className="info-item">
+                      <span className="info-label">Category:</span>
+                      <span className="info-value reference">📋 Reference</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Upload Information */}
+              <div className="info-section">
+                <h3 className="info-section-title">Upload Details</h3>
+                <div className="uploader-info-container">
+                  <div className="uploader-avatar-large">
+                    <span className="avatar-text-large">{uploaderInfo.avatar}</span>
+                  </div>
+                  <div className="uploader-details-large">
+                    <div className="uploader-name-large">{uploaderInfo.name}</div>
+                    <div className="uploader-designation-large">{uploaderInfo.designation}</div>
+                    <div className="upload-time-large">
+                      {formatUploadDate(getUploadDate(previewFile))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              {previewFile.description && (
+                <div className="info-section">
+                  <h3 className="info-section-title">Description</h3>
+                  <div className="description-content">
+                    <p>{previewFile.description}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="info-section">
+                <h3 className="info-section-title">Actions</h3>
+                <div className="action-buttons">
+                  <button 
+                    className="action-btn primary"
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = previewFile.src;
+                      link.download = previewFile.name;
+                      link.click();
+                    }}
+                  >
+                    <Download size={16} />
+                    Download
+                  </button>
+                  <button 
+                    className="action-btn secondary"
+                    onClick={() => {
+                      navigator.clipboard.writeText(previewFile.src);
+                      // You could add a toast notification here
+                    }}
+                  >
+                    <Share2 size={16} />
+                    Copy Link
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

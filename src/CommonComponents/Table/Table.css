@@ -45,6 +45,18 @@ th:hover {
   box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
 }
 
+<<<<<<< HEAD
+=======
+.action-column {
+  width: 60px;
+  min-width: 60px;
+  max-width: 60px;
+  text-align: center;
+  padding: 8px 4px;
+  vertical-align: middle;
+}
+
+>>>>>>> f88ac0c2bcc489808a9865f1616882a3a5750ddb
 /* Skeleton Loading Styles */
 .skeleton-row {
   animation: pulse 1.5s ease-in-out infinite;
@@ -111,6 +123,14 @@ th:hover {
 /* Action Menu Styles */
 .action-container {
   position: relative;
+<<<<<<< HEAD
+=======
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 48px; /* Ensure consistent height for proper centering */
+>>>>>>> f88ac0c2bcc489808a9865f1616882a3a5750ddb
 }
 
 .action-button {
@@ -118,6 +138,32 @@ th:hover {
   border: none;
   font-size: 20px;
   cursor: pointer;
+}
+
+.delete-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #dc2626;
+  width: 32px;
+  height: 32px;
+  margin: 0 auto; /* Additional centering for extra assurance */
+}
+
+.delete-button:hover {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  transform: scale(1.05);
+}
+
+.delete-button:active {
+  transform: scale(0.95);
 }
 
 .dropdown_menu {
@@ -208,6 +254,26 @@ tbody tr:nth-child(even) {
     padding: 10px;
   }
 
+<<<<<<< HEAD
+=======
+  .action-column {
+    width: 50px;
+    min-width: 50px;
+    max-width: 50px;
+  }
+
+  .action-button {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+  }
+
+  .delete-button {
+    width: 28px;
+    height: 28px;
+  }
+
+>>>>>>> f88ac0c2bcc489808a9865f1616882a3a5750ddb
   .dropdown_menu {
     min-width: 100px;
     right: -10px;
@@ -237,6 +303,11 @@ tbody tr:nth-child(even) {
 
   .action-button {
     font-size: 18px;
+  }
+
+  .delete-button {
+    width: 24px;
+    height: 24px;
   }
 
   .dropdown_menu {

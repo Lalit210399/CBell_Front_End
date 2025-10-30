@@ -67,6 +67,7 @@ const TaskDetailPage = () => {
   const [validationErrors, setValidationErrors] = useState({});
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [apiEventId, setApiEventId] = useState(locationEventId); // Store eventId from API response
+  const [hasWorkSubmissionFiles, setHasWorkSubmissionFiles] = useState(false); // Track work submission files
   
   // Use task status context
   const { loading: statusLoading } = useTaskStatus();
@@ -141,31 +142,20 @@ const TaskDetailPage = () => {
 
   // Enhanced permissions based on task data and user role
   const canEdit = React.useMemo(() => {
-    // Debug logging to help troubleshoot
-    console.log("Permission Check:", {
-      canCRUD: taskData.canCRUD,
-      accessLevel: taskData.accessLevel,
-      isDesigner,
-      taskStatus: taskStatus?.value,
-      taskId: taskData.id
-    });
-    
+
     // If task has canCRUD: false or accessLevel: "READ_ONLY", user cannot edit
     if (taskData.canCRUD === false || taskData.accessLevel === "READ_ONLY") {
-      console.log("Edit blocked: canCRUD or accessLevel restriction");
       return false;
     }
-    
-    // If task status is Approved, it cannot be edited
-    if (taskStatus?.value === "Approved") {
-      console.log("Edit blocked: Task is Approved");
+
+    // If task status is Approved or Published, it cannot be edited
+    if (taskStatus?.value === "Approved" || taskStatus?.value === "Published") {
       return false;
     }
-    
+
     // Otherwise, allow editing (Designers can now edit tasks)
-    console.log("Edit allowed: All conditions passed");
     return true;
-  }, [taskData.canCRUD, taskData.accessLevel, taskStatus?.value, isDesigner, taskData.id]);
+  }, [taskData.canCRUD, taskData.accessLevel, taskStatus?.value]);
 
   const canSave = React.useMemo(() => {
     // In create mode, always allow saving
@@ -189,38 +179,34 @@ const TaskDetailPage = () => {
 
   // API Functions
   const fetchUsers = useCallback(async () => {
-    if (mode !== "edit" && mode !== "create") {
-      return [];
-    }
-
+    // Always fetch via parent once; children read via props. Avoid redundant calls.
     if (!currentOrgId) {
       return [];
     }
-    
     try {
       const response = await getHierarchyUsers(currentOrgId);
-      
-      const formattedUsers = response.users.map(user => ({
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        fullName: `${user.firstName} ${user.lastName}`,
-        organizationId: user.organizationId,
-        organizationCode: user.organizationCode || "ORG001",
-        role: user.role || user.roles?.[0]?.name || ""
-      }));
-      
+      const formattedUsers = response.users.map(user => {
+        // Use the roles array that's already present in each user object
+        const userRoles = Array.isArray(user.roles) ? user.roles : [];
+        
+        return {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          fullName: `${user.firstName} ${user.lastName}`,
+          organizationId: user.organizationId,
+          organizationCode: user.organizationCode || "ORG001",
+          roles: userRoles, // Provide roles array for UserDropdown
+          role: userRoles[0]?.name || userRoles[0]?.displayName || "" // Keep backward compatibility
+        };
+      });
       return formattedUsers;
     } catch (error) {
-      addMessage({
-        text: "Failed to load users list",
-        type: "error",
-        duration: 3000
-      });
+      addMessage({ text: "Failed to load users list", type: "error", duration: 3000 });
       return [];
     }
-  }, [mode, currentOrgId, addMessage]);
+  }, [currentOrgId, addMessage]);
 
   const fetchTask = useCallback(async () => {
     if (!taskId || mode === "create") {
@@ -309,27 +295,36 @@ const TaskDetailPage = () => {
     }
   }, [selectedParticipantIds, statusOptions, taskStatus?.value]);
 
-  // Execute users API when component mounts or scope changes
-  const executeFetchUsers = useCallback(async () => {
-    if ((mode === "edit" || mode === "create") && !isFetchingUsersRef.current) {
-      
-      isFetchingUsersRef.current = true;
-      setUsersLoading(true);
-      
-      try {
-        const data = await fetchUsers();
-        setUsersData(data);
-      } catch (err) {
-        console.error("Error fetching users:", err.message);
-      } finally {
-        setUsersLoading(false);
-        isFetchingUsersRef.current = false;
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, currentOrgId, fetchUsers]);
+  // Store the fetch functions in refs to avoid dependency issues
+  const fetchUsersRef = useRef(fetchUsers);
+  const fetchTaskRef = useRef(fetchTask);
+  
+  // Update refs when functions change
+  useEffect(() => {
+    fetchUsersRef.current = fetchUsers;
+  }, [fetchUsers]);
+  
+  useEffect(() => {
+    fetchTaskRef.current = fetchTask;
+  }, [fetchTask]);
 
-  // Execute task API when taskId is available and not in create mode
+  // Execute users API when component mounts or scope changes - only once per mount
+  const executeFetchUsers = useCallback(async () => {
+    if (isFetchingUsersRef.current) return;
+    isFetchingUsersRef.current = true;
+    setUsersLoading(true);
+    try {
+      const data = await fetchUsersRef.current();
+      setUsersData(data);
+    } catch (err) {
+      console.error("Error fetching users:", err.message);
+    } finally {
+      setUsersLoading(false);
+      isFetchingUsersRef.current = false;
+    }
+  }, []); // No dependencies to prevent recreation
+
+  // Execute task API when taskId is available and not in create mode - only once per taskId
   const executeFetchTask = useCallback(async () => {
     if (taskId && mode !== "create" && !isFetchingTaskRef.current) {
       
@@ -337,7 +332,7 @@ const TaskDetailPage = () => {
       setTaskLoading(true);
       
       try {
-        const data = await fetchTask();
+        const data = await fetchTaskRef.current();
         setTaskDataFromAPI(data);
       } catch (err) {
         console.error("Error fetching task:", err.message);
@@ -346,16 +341,52 @@ const TaskDetailPage = () => {
         isFetchingTaskRef.current = false;
       }
     }
+  }, [taskId, mode]); // Only depend on taskId and mode
+
+  // Track if we've already fetched users to prevent duplicate calls
+  const hasFetchedUsersRef = useRef(false);
+  const hasFetchedTaskRef = useRef(false);
+  const lastTaskIdRef = useRef(null);
+  const lastModeRef = useRef(null);
+
+  // Only fetch users once on mount, not on every scope change
+  useEffect(() => {
+    if (!hasFetchedUsersRef.current) {
+      executeFetchUsers();
+      hasFetchedUsersRef.current = true;
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [taskId, mode, fetchTask]);
+  }, []); // Empty dependency array - only run once on mount
 
+  // Only fetch task when taskId changes or mode changes, not on every scope change
   useEffect(() => {
-    executeFetchUsers();
-  }, [executeFetchUsers, scopeChangeTrigger]);
+    const taskIdChanged = lastTaskIdRef.current !== taskId;
+    const modeChanged = lastModeRef.current !== mode;
+    
+    if ((taskIdChanged || modeChanged) && taskId && mode !== "create" && !hasFetchedTaskRef.current) {
+      executeFetchTask();
+      hasFetchedTaskRef.current = true;
+      lastTaskIdRef.current = taskId;
+      lastModeRef.current = mode;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taskId, mode]); // Only depend on taskId and mode, not the function
 
+  // Handle scope changes - reset refs and refetch only when organization actually changes
   useEffect(() => {
-    executeFetchTask();
-  }, [executeFetchTask, scopeChangeTrigger]);
+    // Reset the refs when scope changes to allow refetching
+    isFetchingUsersRef.current = false;
+    isFetchingTaskRef.current = false;
+    hasFetchedUsersRef.current = false;
+    hasFetchedTaskRef.current = false;
+    
+    // Only refetch if we have a valid organization and are not in create mode
+    if (currentOrgId && mode !== "create") {
+      executeFetchUsers();
+      executeFetchTask();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scopeChangeTrigger, currentOrgId, mode]); // Remove function dependencies
 
   // Update usersList when usersData changes
   useEffect(() => {
@@ -450,9 +481,17 @@ const TaskDetailPage = () => {
     }
   }, [taskDataFromAPI, statusOptions, user, organizationId, getDefaultColor]);
 
-  // Reset users list when organization changes
+  // Track previous organization ID to detect actual changes
+  const prevOrgIdRef = useRef(currentOrgId);
+  
+  // Reset users list when organization changes - but don't clear if we're just updating
   useEffect(() => {
-    setUsersList([]);
+    // Only clear users list if we're switching to a different organization
+    // Don't clear during task updates within the same organization
+    if (prevOrgIdRef.current !== currentOrgId) {
+      setUsersList([]);
+      prevOrgIdRef.current = currentOrgId;
+    }
   }, [currentOrgId]);
 
   // Initialize create mode when users are loaded and we're in create mode
@@ -460,7 +499,8 @@ const TaskDetailPage = () => {
     if (mode === "create" && usersData && usersData.length > 0) {
       initializeCreateMode();
     }
-  }, [mode, usersData, initializeCreateMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, usersData]); // Remove initializeCreateMode dependency
 
   useEffect(() => {
     if (Array.isArray(taskData.assignedTo)) {
@@ -566,6 +606,22 @@ const TaskDetailPage = () => {
     const currentDate = formData?.date || taskData?.date;
     if (!currentDate) {
       errors.date = "Due date is required";
+      errors.time = "Due time is required";
+    }
+
+    // Description required (strip HTML and whitespace)
+    const currentDescription = (formData?.description || taskData?.description || "").toString();
+    const descriptionText = currentDescription.replace(/<[^>]*>/g, "").trim();
+    if (!descriptionText) {
+      errors.description = "Description is required";
+    }
+
+    // Specification required (at least one non-empty checklist item)
+    const checklistArray = Array.isArray(formData?.checklist || taskData?.checklist)
+      ? (formData?.checklist || taskData?.checklist).filter(item => (item?.text || "").toString().trim())
+      : [];
+    if (checklistArray.length === 0) {
+      errors.specification = "At least one specification item is required";
     }
     // Validate status using hardcoded status options
     if (statusOptions.length > 0) {
@@ -785,7 +841,22 @@ const TaskDetailPage = () => {
 
   // Wrap setFileData in useCallback to prevent unnecessary re-renders
   const handleFilesChange = useCallback((data) => {
-    setFileData(data);
+    // If a file was deleted, we need to refresh the files from the backend
+    if (data.refreshFiles || data.deletedFileId) {
+      // Trigger a refresh of the files by updating the fileData
+      // This will cause the TaskFiles component to re-fetch files
+      setFileData(prev => ({
+        ...prev,
+        refreshTrigger: (prev.refreshTrigger || 0) + 1
+      }));
+    } else {
+      setFileData(data);
+    }
+  }, []);
+
+  // Handle work submission file changes
+  const handleWorkSubmissionFilesChange = useCallback((hasWorkFiles) => {
+    setHasWorkSubmissionFiles(hasWorkFiles);
   }, []);
 
   // Memoize selectedFiles to prevent unnecessary re-renders
@@ -872,8 +943,9 @@ const TaskDetailPage = () => {
       return;
     }
     
-    // Special validation for Under Approval status - must have files uploaded
+    // Special validation for Under Approval status - must have work submission files
     if (newStatus.value === "Under Approval") {
+<<<<<<< HEAD
       try {
         // Check if there are any documents uploaded for this task
         const documents = await checkTaskDocuments(taskId);
@@ -888,11 +960,16 @@ const TaskDetailPage = () => {
           return;
         }
       } catch (error) {
+=======
+      // Check if there are work submission files available
+      if (!hasWorkSubmissionFiles) {
+>>>>>>> f88ac0c2bcc489808a9865f1616882a3a5750ddb
         addMessage({
-          text: "Failed to verify task documents. Please try again.",
+          text: "You must upload at least one work submission file before submitting for approval.",
           type: "error",
-          duration: 3000
+          duration: 5000
         });
+        setActiveTab("Files & Uploads");
         return;
       }
     }
@@ -1041,6 +1118,7 @@ const TaskDetailPage = () => {
             selectedFiles={memoizedSelectedFiles}
             onFileSelect={handleFileSelect}
             taskStatus={taskStatus}
+            onWorkSubmissionFilesChange={handleWorkSubmissionFilesChange}
           />
         ),
         disabled: mode === "create",
@@ -1051,7 +1129,7 @@ const TaskDetailPage = () => {
       return allTabs.filter(tab => tab.label === "Details");
     }
     return allTabs;
-  }, [mode, taskData, formData, handleFormFieldUpdate, eventDate, validationErrors, taskId, apiEventId, fileData.uploadedFiles, handleFilesChange, organizationId, memoizedSelectedFiles, handleFileSelect, activeTab, taskStatus, updateChecklistOnly]);
+  }, [mode, taskData, formData, handleFormFieldUpdate, eventDate, validationErrors, taskId, apiEventId, fileData.uploadedFiles, handleFilesChange, organizationId, memoizedSelectedFiles, handleFileSelect, activeTab, taskStatus, updateChecklistOnly, handleWorkSubmissionFilesChange]);
 
   const breadcrumbItems = React.useMemo(() => {
     // Ensure we have valid data before creating breadcrumb items
@@ -1084,7 +1162,8 @@ const TaskDetailPage = () => {
             navigate("/events/eventDetailPage", {
               state: {
                 eventId: apiEventId,
-                mode: "view"
+                mode: "view",
+                organizationId: taskData.organizationId || organizationId || user?.organizationId
               }
             });
           }
@@ -1100,7 +1179,7 @@ const TaskDetailPage = () => {
     });
     
     return items;
-  }, [user?.organization?.name, user?.organizationName, eventName, apiEventId, taskTitle, mode, navigate]);
+  }, [user?.organization?.name, user?.organizationName, eventName, apiEventId, taskTitle, mode, navigate, user?.organizationId, organizationId, taskData.organizationId]);
 
   // Determine loading state
   const isLoading = useMemo(() => {
@@ -1147,6 +1226,8 @@ const TaskDetailPage = () => {
           isUpdatingStatus={isUpdatingStatus}
           user={user}
           taskId={taskId}
+          hasWorkSubmissionFiles={hasWorkSubmissionFiles}
+          onTabChange={handleTabChange}
         />
       </div>
 

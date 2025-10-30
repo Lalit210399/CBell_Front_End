@@ -30,7 +30,14 @@ const useApi = (fetchFn, dependencies = [], executeOnMount = true) => {
         type: API_ACTIONS.FETCH_FAILURE, 
         payload: errorMessage 
       });
+<<<<<<< HEAD
       throw error;
+=======
+
+      // Don't throw the error - let components handle it through the error state
+      // This prevents uncaught runtime errors
+      console.warn('API call failed:', errorMessage);
+>>>>>>> f88ac0c2bcc489808a9865f1616882a3a5750ddb
     }
   }, [fetchFn]);
 

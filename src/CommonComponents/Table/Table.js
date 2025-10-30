@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
+import { Trash2 } from "lucide-react";
 import "./Table.css";
 
 const Table = ({
@@ -18,7 +19,65 @@ const Table = ({
   loading = false,
   skeletonCount = 5, // Number of skeleton rows to show
 }) => {
-  const [menuOpenIndex, setMenuOpenIndex] = useState(null);
+  // Commented out dropdown menu functionality
+  // const [menuOpenIndex, setMenuOpenIndex] = useState(null);
+  // const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  // const [dropdownPosition, setDropdownPosition] = useState({});
+
+  // const toggleMenu = (index, event) => {
+  //   if (menuOpenIndex === index) {
+  //     setMenuOpenIndex(null);
+  //     return;
+  //   }
+
+  //   // If no event is provided (e.g., when closing menu), just close it
+  //   if (!event) {
+  //     setMenuOpenIndex(null);
+  //     return;
+  //   }
+
+  //   // Calculate dropdown position to prevent overflow
+  //   const buttonRect = event.currentTarget.getBoundingClientRect();
+  //   const tableContainer = event.currentTarget.closest('.table-container');
+  //   const tableRect = tableContainer.getBoundingClientRect();
+  //   const viewportWidth = window.innerWidth;
+  //   const viewportHeight = window.innerHeight;
+    
+  //   let position = { right: 0, top: '100%' };
+    
+  //   // Check available space on the right side
+  //   const dropdownWidth = 120; // min-width from CSS
+  //   const spaceOnRight = viewportWidth - buttonRect.right;
+  //   const spaceOnLeft = buttonRect.left;
+    
+  //   // Calculate if we're near the right edge of the table
+  //   const tableRightEdge = tableRect.right;
+  //   const isNearTableRightEdge = buttonRect.right > (tableRightEdge - 50);
+    
+  //   // If there's not enough space on the right OR we're near the table's right edge, show on the left
+  //   if ((spaceOnRight < dropdownWidth || isNearTableRightEdge) && spaceOnLeft >= dropdownWidth) {
+  //     position.right = 'auto';
+  //     position.left = 0;
+  //   }
+  //   // If there's not enough space on either side, prefer left and adjust width
+  //   else if (spaceOnRight < dropdownWidth && spaceOnLeft < dropdownWidth) {
+  //     position.right = 'auto';
+  //     position.left = 0;
+  //   }
+    
+  //   // Check if dropdown would overflow to the bottom
+  //   const spaceBelow = viewportHeight - buttonRect.bottom;
+  //   const spaceAbove = buttonRect.top;
+    
+  //   if (spaceBelow < 200 && spaceAbove > 200) {
+  //     position.top = 'auto';
+  //     position.bottom = '100%';
+  //   }
+    
+  //   setDropdownPosition({ [index]: position });
+  //   setMenuOpenIndex(index);
+  // };
+
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [dropdownPositions, setDropdownPositions] = useState({});
 
@@ -75,6 +134,7 @@ const Table = ({
     setDropdownPositions(prev => ({ ...prev, [index]: position }));
     setMenuOpenIndex(index);
   };
+ f88ac0c2bcc489808a9865f1616882a3a5750ddb
 
   const handleSort = (key) => {
     if (!sortableColumns.includes(key)) return;
@@ -87,20 +147,21 @@ const Table = ({
     onSort?.(key, direction);
   };
 
-  const menuRef = useRef(null);
+  // Commented out dropdown menu ref and click outside handler
+  // const menuRef = useRef(null);
 
-useEffect(() => {
-  const handleClickOutside = (event) => {
-    if (menuRef.current && !menuRef.current.contains(event.target)) {
-      setMenuOpenIndex(null);
-    }
-  };
+  // useEffect(() => {
+  //   const handleClickOutside = (event) => {
+  //     if (menuRef.current && !menuRef.current.contains(event.target)) {
+  //       setMenuOpenIndex(null);
+  //     }
+  //   };
 
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => {
-    document.removeEventListener("mousedown", handleClickOutside);
-  };
-}, []);
+  //   document.addEventListener("mousedown", handleClickOutside);
+  //   return () => {
+  //     document.removeEventListener("mousedown", handleClickOutside);
+  //   };
+  // }, []);
 
 
   return (
@@ -165,7 +226,21 @@ useEffect(() => {
                     </td>
                   ))}
                   {showActions && (
+
                     <td className="action-container" onClick={(e) => e.stopPropagation()}>
+
+                    <td className="action-container action-column" onClick={(e) => e.stopPropagation()}>
+                      {onDelete && (
+                        <button
+                          className="delete-button"
+                          onClick={() => onDelete(item)}
+                          title="Delete item"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                      {/* Commented out dropdown menu
+>>>>>>> f88ac0c2bcc489808a9865f1616882a3a5750ddb
                       <button
                         className="action-button"
                         onClick={() => toggleMenu(index)}
@@ -209,6 +284,7 @@ useEffect(() => {
                           )}
                         </div>
                       )}
+                      */}
                     </td>
                   )}
                 </tr>

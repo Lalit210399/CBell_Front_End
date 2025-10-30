@@ -187,7 +187,8 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
     setChecklistData(newChecklist);
     // Only update local state - no automatic API calls
     onUpdate("checklist", newChecklist);
-  }, [onUpdate]);
+    if (errors?.specification && onClearError) onClearError('specification');
+  }, [onUpdate, errors?.specification, onClearError]);
 
   // Handle checklist update API call
   const handleChecklistUpdate = React.useCallback(async () => {
@@ -210,7 +211,8 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
   const handleContentChange = React.useCallback((newContent) => {
     setContent(newContent);
     onUpdate("description", newContent);
-  }, [onUpdate]);
+    if (errors?.description && onClearError) onClearError('description');
+  }, [onUpdate, errors?.description, onClearError]);
 
   const minDate = (() => {
     const now = new Date();
@@ -271,7 +273,7 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
             {errors?.type && <div className="field-error">{errors.type}</div>}
           </div>
 
-          <div className={`input-group ${errors?.date ? 'error' : ''}`}>
+          <div className={`input-group ${(errors?.date || errors?.time) ? 'error' : ''}`}>
             <label htmlFor="task-date">Due Date</label>
             <div className="input-box">
               {mode === "view" ? (
@@ -293,6 +295,7 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
               )}
             </div>
             {errors?.date && <div className="field-error">{errors.date}</div>}
+            {!errors?.date && errors?.time && <div className="field-error">{errors.time}</div>}
           </div>
 
           <div className={`input-group ${errors?.time ? 'error' : ''}`}>
@@ -356,7 +359,12 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
             taskId={taskId}
             isUpdatingChecklist={isUpdatingChecklist}
             onUpdateChecklist={handleChecklistUpdate}
+            hasError={!!errors?.specification}
+            errorMessage={errors?.specification}
           />
+          {errors?.specification && (
+            <div className="field-error">{errors.specification}</div>
+          )}
           {eventDateProp && (
             <div className="event-date-hint">Event date: {new Date(eventDateProp).toLocaleString()}</div>
           )}
@@ -370,7 +378,12 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
           isFullWidth={true}
           mode={mode}
           canEdit={mode !== "view"}
+          hasError={!!errors?.description}
+          errorMessage={errors?.description}
         />
+        {errors?.description && (
+          <div className="field-error">{errors.description}</div>
+        )}
       </div>
     </div>
   );

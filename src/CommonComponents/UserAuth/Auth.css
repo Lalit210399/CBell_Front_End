@@ -85,13 +85,13 @@
   width:100%;
 }
 
-.name-fields .input-group {
+.auth-form .name-fields .input-group {
   flex: 1; /* This makes each input group take equal space */
   min-width: 0; /* Prevent flex items from overflowing */
 }
 
 /* Ensure inputs within name fields take full width of their container */
-.name-fields .input-group input {
+.auth-form .name-fields .input-group input {
   width: 100%;
   box-sizing: border-box; /* Include padding in width calculation */
 }
@@ -119,8 +119,8 @@
   background-color: var(--white);
 }
 
-/* Add error input border */
-.input-group.error input {
+/* Add error input border - scoped to auth components */
+.auth-form .input-group.error input {
   border-color: red;
   padding-right: 40px;
 }
@@ -204,8 +204,8 @@
   cursor: pointer;
 }
 
-/* Hide old error message span if icon is used */
-.error-message {
+/* Hide old error message span if icon is used - scoped to auth components */
+.auth-form .error-message {
   display: none;
   color: red;
   font-size: 12px;
@@ -213,24 +213,25 @@
   padding-left: 10px;
 }
 
-.input-group {
+/* Scoped to auth components only */
+.auth-form .input-group {
   position: relative;
   display: flex;
   flex-direction: column;
 }
 
-.input-group input {
+.auth-form .input-group input {
   padding: 10px 12px;
   border: 1px solid var(--grayBorder);
   border-radius: 8px;
   font-size: 14px;
 }
 
-.input-group.error input {
+.auth-form .input-group.error input {
   border: 1px solid red;
 }
 
-.signup-error-icon-wrapper {
+.auth-form .signup-error-icon-wrapper {
   position: absolute;
   right: 10px;
   top: 50%;
@@ -239,12 +240,12 @@
   cursor: pointer;
 }
 
-/* Password visibility toggle */
-.input-group.with-toggle input {
+/* Password visibility toggle - scoped to auth components */
+.auth-form .input-group.with-toggle input {
   padding-right: 44px; /* space for toggle */
 }
 
-.password-toggle {
+.auth-form .password-toggle {
   position: absolute;
   right: 10px;
   top: 50%;
@@ -261,11 +262,11 @@
 }
 
 /* When error icon is present, move toggle slightly left to avoid overlap */
-.input-group.error.with-toggle .password-toggle {
+.auth-form .input-group.error.with-toggle .password-toggle {
   right: 34px;
 }
 
-.signup-error-tooltip {
+.auth-form .signup-error-tooltip {
   position: absolute;
   top: -35px;
   right: 0;
@@ -281,7 +282,7 @@
   z-index: 2;
 }
 
-.signup-error-tooltip::after {
+.auth-form .signup-error-tooltip::after {
   content: '';
   position: absolute;
   top: 100%;
@@ -291,7 +292,7 @@
   border-color: var(--errorToolArrow) transparent transparent transparent;
 }
 
-.signup-error-icon-wrapper:hover .signup-error-tooltip {
+.auth-form .signup-error-icon-wrapper:hover .signup-error-tooltip {
   visibility: visible;
   opacity: 1;
 }

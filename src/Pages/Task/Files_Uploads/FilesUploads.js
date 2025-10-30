@@ -80,24 +80,6 @@ const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
   }, [eventId]); // Only depend on eventId, not the function
 
   // Temporarily disable cleanup to test if it's causing the issue
-  // useEffect(() => {
-  //   isMountedRef.current = true;
-  //   return () => {
-  //     isMountedRef.current = false;
-  //     console.log("Component unmounting - cleaning up blob URLs");
-  //     // Only clean up if component is actually unmounting
-  //     setTimeout(() => {
-  //       if (!isMountedRef.current) {
-  //         filesRef.current.forEach(file => {
-  //           if (file.src && file.src.startsWith('blob:')) {
-  //             console.log(`Revoking blob URL: ${file.src}`);
-  //             URL.revokeObjectURL(file.src);
-  //           }
-  //         });
-  //       }
-  //     }, 1000); // Delay cleanup to prevent race conditions
-  //   };
-  // }, []); // Empty dependency array - only run on unmount
 
   // Skeleton placeholder for file cards
   const SkeletonCards = () => (

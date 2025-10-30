@@ -181,9 +181,15 @@ const Task = ({ tasksData, eventId, eventName }) => {
         noDataText="No Tasks Scheduled at this time"
         addEventText="Click here to add a New Task"
         onRowClick={handleRowClick}
+<<<<<<< HEAD
         onDelete={permissions.canDelete ? () => alert("Delete Press") : undefined}
           onArchive={permissions.canArchive ? () => alert("Archive pressed") : undefined}
           onDuplicate={permissions.canDuplicate ? () => alert("Duplicate pressed") : undefined}
+=======
+        onDelete={permissions.canDelete ? handleDeleteTask : undefined}
+          // onArchive={permissions.canArchive ? () => alert("Archive pressed") : undefined}
+        // onDuplicate={permissions.canDuplicate ? () => alert("Duplicate pressed") : undefined}
+>>>>>>> f88ac0c2bcc489808a9865f1616882a3a5750ddb
       />
 
     </div>

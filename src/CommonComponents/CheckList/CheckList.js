@@ -4,13 +4,15 @@ import "./CheckList.css";
 const Checklist = ({ 
   initialItems = [], 
   onChecklistChange, 
-  mode = "view", 
+  mode = "view",
   canEdit = null, 
   onChecklistUpdate = null, 
   taskId = null, 
   isUpdatingChecklist = false, 
   onUpdateChecklist = null, 
-  onChecklistChanges = null 
+  onChecklistChanges = null,
+  hasError = false,
+  errorMessage = ""
 }) => {
   const createPlaceholderItem = () => ({ text: "", checked: false, isPlaceholder: true });
 
@@ -67,11 +69,6 @@ const Checklist = ({
     const originalString = originalChecklist.current;
 
     const hasChangesNow = currentString !== originalString;
-    console.log('Checklist change detection:', {
-      hasChangesNow,
-      currentString: currentString.substring(0, 100) + '...',
-      originalString: originalString.substring(0, 100) + '...'
-    });
     setHasChanges(hasChangesNow);
     
     if (onChecklistChanges) {
@@ -237,7 +234,7 @@ const Checklist = ({
     : checklist;
 
   return (
-    <div className="checklist-container">
+    <div className={`checklist-container ${hasError ? "error" : ""}`}>
       {/* Save button - only show in view mode when there are changes */}
       {mode === "view" && onUpdateChecklist && taskId && hasChanges && (
         <div className="checklist-actions-sticky">
@@ -291,6 +288,12 @@ const Checklist = ({
           </label>
         );
       })}
+      
+      {hasError && errorMessage && (
+        <div className="checklist-error-message">
+          {errorMessage}
+        </div>
+      )}
     </div>
   );
 };

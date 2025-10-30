@@ -1,6 +1,6 @@
 .detail_container {
     height: 30rem; 
-    border: 1px solid #c2a7a7;
+    /* border: 1px solid #c2a7a7; */
     display: flex;
     width: 100%;
     gap: 15px;

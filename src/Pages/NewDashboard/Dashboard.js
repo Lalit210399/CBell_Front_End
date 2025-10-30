@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../Context/UserContext";
+import { useMessages } from "../../Context/MessageContext";
 import useApi from "../../Hooks/useApi";
 import { fetchSummaryData, fetchActiveEventsCount, fetchEventsCampaign, fetchTasksData, fetchActiveEventsData, fetchAssignedEvents } from "../../Services/Dashboard";
 import Tile from "../../CommonComponents/Tiles/Tiles";
@@ -28,6 +29,7 @@ import "./Dashboard.css";
 
 const Dashboard = () => {
   const { user, selectedOrganizationId, isViewingOwnOrganization, loading: userLoading, scopeChangeTrigger } = useUser();
+  const { showError, showWarning } = useMessages();
   const navigate = useNavigate();
 
   // State for orgIdReady - now based on global selectedOrganizationId
@@ -222,10 +224,42 @@ const Dashboard = () => {
     execute: executeAssignedEvents
   } = useApi(fetchAssignedEventsCallback, [orgIdReady], false);
 
+  // Handle API errors and show user-friendly messages
+  useEffect(() => {
+    if (errorSummary) {
+      showError('Failed to load dashboard summary. Please try again.', { duration: 5000 });
+    }
+  }, [errorSummary, showError]);
+
+  useEffect(() => {
+    if (errorEventsCampaign) {
+      showError('Failed to load events campaign data. Please try again.', { duration: 5000 });
+    }
+  }, [errorEventsCampaign, showError]);
+
+  useEffect(() => {
+    if (errorTasks) {
+      showError('Failed to load tasks data. Please try again.', { duration: 5000 });
+    }
+  }, [errorTasks, showError]);
+
+  useEffect(() => {
+    if (errorActiveEvents) {
+      showError('Failed to load active events. Please try again.', { duration: 5000 });
+    }
+  }, [errorActiveEvents, showError]);
+
+  useEffect(() => {
+    if (errorAssignToMe) {
+      showError('Failed to load assigned events. Please try again.', { duration: 5000 });
+    }
+  }, [errorAssignToMe, showError]);
+
   // Execute APIs when orgIdReady changes or scope changes
   useEffect(() => {
     if (orgIdReady) {
       executeSummary();
+<<<<<<< HEAD
       executeCount();
       
       executeEventsCampaign();
@@ -233,6 +267,19 @@ const Dashboard = () => {
       executeAssignedEvents();
     }
   }, [orgIdReady, scopeChangeTrigger, executeSummary, executeCount, executeEventsCampaign, executeActiveEvents, executeAssignedEvents]);
+=======
+      executeActiveEvents();
+      executeAssignedEvents();
+    }
+  }, [orgIdReady, scopeChangeTrigger, executeSummary, executeActiveEvents, executeAssignedEvents]);
+
+  // Separate effect for events campaign to only run when month/year changes
+  useEffect(() => {
+    if (orgIdReady) {
+      executeEventsCampaign();
+    }
+  }, [orgIdReady, selectedMonth, selectedYear, executeEventsCampaign]);
+>>>>>>> f88ac0c2bcc489808a9865f1616882a3a5750ddb
 
   // Define task tiles for reuse
   const taskTiles = useMemo(() => [
@@ -581,6 +628,7 @@ const Dashboard = () => {
                 filter={filter}
                 onFilterChange={setFilter}
                 onTaskClick={handleTaskClick}
+                onEventClick={handleEventClick}
                 loading={loadingTasks}
                 error={errorTasks}
                 showDropdown={[

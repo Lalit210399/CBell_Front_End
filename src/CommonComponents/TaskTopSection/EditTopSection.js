@@ -44,7 +44,9 @@ const TopSection = ({
   onClearError,
   isUpdatingStatus = false,
   createdBy = "",
-  taskId = null
+  taskId = null,
+  hasWorkSubmissionFiles = false,
+  onTabChange // Add callback to change tabs
 }) => {
   const { user } = useUser();
 
@@ -111,33 +113,9 @@ const TopSection = ({
   }, [assignedTo]);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch(`/apis/auth/hierarchy-users/${user?.organizationId}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            "ngrok-skip-browser-warning": "1",
-          },
-        });
-
-        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-        const data = await response.json();
-
-        setFetchedUsers(data.users || []);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        setFetchedUsers([]);
-      }
-    };
-
-    if (mode === "edit" || mode === "create") {
-      fetchUsers();
-    } else {
-      setFetchedUsers(users);
-    }
-  }, [mode, users, user?.organizationId]);
+    // Rely on parent-provided users to avoid redundant API calls.
+    setFetchedUsers(users);
+  }, [users]);
 
   const handleTitleChange = (e) => {
     setEditableTitle(e.target.value);
@@ -158,35 +136,18 @@ const TopSection = ({
   };
 
   // Helper function to check if task has uploaded files
-  const checkTaskFiles = async (taskId) => {
-    if (!taskId) return false;
-    
-    try {
-      const response = await fetch(`/apis/document-details/task/${taskId}`, {
-        headers: { 'ngrok-skip-browser-warning': '1' }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to check task documents');
-      }
-      
-      const documents = await response.json();
-      return documents && documents.length > 0;
-    } catch (error) {
-      console.error('Error checking task files:', error);
-      return false;
-    }
-  };
+  // kept previously for potential reuse; currently unused to avoid extra calls
 
   // Handle status change button clicks
   const handleStatusChange = async (newStatusValue) => {
     if (onStatusChange) {
-      // Special validation for Under Approval status
-      if (newStatusValue === "Under Approval" && taskId) {
-        const hasFiles = await checkTaskFiles(taskId);
-        if (!hasFiles) {
-          // Show error message and don't proceed with status change
-          alert("You must upload at least one file before submitting for approval.");
+      // Special validation for Under Approval status - check for work submission files
+      if (newStatusValue === "Under Approval") {
+        if (!hasWorkSubmissionFiles) {
+          // Redirect to Files & Uploads tab
+          if (onTabChange) {
+            onTabChange("Files & Uploads");
+          }
           return;
         }
       }
@@ -207,6 +168,13 @@ const TopSection = ({
         };
         onStatusChange(fallbackStatus);
       }
+    }
+  };
+
+  // Handle disabled button click to redirect to Files & Uploads tab
+  const handleDisabledSubmitClick = () => {
+    if (!hasWorkSubmissionFiles && onTabChange) {
+      onTabChange("Files & Uploads");
     }
   };
 
@@ -335,8 +303,8 @@ const TopSection = ({
 
         <div className="edit-top-right-section">
           <div className="edit-top-save-button-section" style={{ display: "flex", gap: "8px" }}>
-            {/* Hide all buttons (Save, Under Review, Approved) when status is Approved */}
-            {status?.value !== "Approved" && (
+            {/* Hide all buttons (Save, Under Review, Approved) when status is Approved or Published */}
+            {status?.value !== "Approved" && status?.value !== "Published" && (
               <>
                 {(mode === "edit" || mode === "create") && (
                   <button className="edit-top-btn-save" onClick={onSaveClick}>
@@ -348,17 +316,23 @@ const TopSection = ({
                 {/* Status change buttons - only show in view mode */}
                 {mode === "view" && (
                   <div className="edit-top-status-change-buttons">
-                    {/* Submit for Approval button - show only for Designers and for all statuses except Under Approval */}
-                    {isDesigner && status?.value !== "Under Approval" && (
-                      <button
-                        className="edit-top-status-btn edit-top-under-approval-btn"
-                        onClick={() => handleStatusChange("Under Approval")}
-                        title="Submit for Approval"
-                        disabled={isUpdatingStatus}
-                      >
-                        {isUpdatingStatus ? "Updating..." : "Submit for Approval"}
-                      </button>
-                    )}
+                     {/* Submit for Approval button - show only for Designers and for all statuses except Under Approval, Approved, and Published */}
+                     {isDesigner && status?.value !== "Under Approval" && (
+                       <button
+                         className={`edit-top-status-btn edit-top-under-approval-btn ${!hasWorkSubmissionFiles ? 'disabled-clickable' : ''}`}
+                         onClick={() => {
+                           if (hasWorkSubmissionFiles) {
+                             handleStatusChange("Under Approval");
+                           } else {
+                             handleDisabledSubmitClick();
+                           }
+                         }}
+                         title={hasWorkSubmissionFiles ? "Submit for Approval" : "Click to go to Files & Uploads tab to upload work submission files"}
+                         disabled={isUpdatingStatus}
+                       >
+                         {isUpdatingStatus ? "Updating..." : "Submit for Approval"}
+                       </button>
+                     )}
 
                     {/* Approved button - show to everyone EXCEPT Designers when status is Under Approval */}
                     {!isDesigner && status?.value === "Under Approval" && (

@@ -1,4 +1,5 @@
 import { logout } from '../Services/AuthN';
+import { showGlobalMessage } from '../Utils/MessageDispatcher';
 
 // State management for token refresh
 let isRefreshing = false;
@@ -14,13 +15,11 @@ function getCookieValue(name) {
   return null;
 }
 
-// Utility function to validate token format
-function isValidToken(token) {
-  if (!token || typeof token !== 'string') return false;
-  // Basic JWT format validation (3 parts separated by dots)
-  const parts = token.split('.');
-  return parts.length === 3;
+// Utility function to delete cookie (only for non-HttpOnly cookies)
+function deleteCookieValue(name) {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;SameSite=Strict;Secure`;
 }
+
 
 // Centralized function to handle token expiration
 async function handleTokenExpired() {
@@ -38,21 +37,42 @@ async function handleTokenExpired() {
   });
   pendingRequests.clear();
   
+  // Clear all auth-related data
+  localStorage.removeItem('user');
+  localStorage.removeItem('permissions');
+  localStorage.removeItem('scope');
+  localStorage.removeItem('dashboard-selected-organization');
+  
+  // Clear non-HttpOnly cookies
+  deleteCookieValue('user');
+  deleteCookieValue('permissions');
+  
   try {
     await logout();
   } catch (logoutErr) {
     console.error('Logout after refresh token failure failed:', logoutErr);
   }
   
-  // Clear all auth-related data
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('user');
-  localStorage.removeItem('permissions');
-  localStorage.removeItem('dashboard-selected-organization');
-  
-  // Redirect to login page
+  // Use a more graceful redirect approach
   if (typeof window !== 'undefined') {
-    window.location.href = '/login';
+    // Show user-friendly message
+    showGlobalMessage(
+      'Your session has expired. Please log in again to continue.',
+      'warning',
+      5000
+    );
+    
+    // Dispatch a custom event that components can listen to
+    window.dispatchEvent(new CustomEvent('auth-expired', { 
+      detail: { reason: 'refresh-token-missing' } 
+    }));
+    
+    // Fallback to redirect if no listener handles the event
+    setTimeout(() => {
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }, 2000); // Give user time to see the message
   }
 }
 
@@ -92,18 +112,20 @@ async function performTokenRefresh() {
       return res.json();
     })
     .then((data) => {
-      if (!data.accessToken || !isValidToken(data.accessToken)) {
+      if (!data.accessToken || typeof data.accessToken !== 'string' || data.accessToken.trim() === '') {
         throw new Error('Invalid access token in refresh response');
       }
       
-      const newToken = data.accessToken;
-      localStorage.setItem('accessToken', newToken);
+      // Don't store access token in frontend - backend already sets it in LocalAccessToken cookie
+      // The backend will handle setting the access token cookie automatically
+      // We just need to validate that we received a valid token response
       
       // Reset refresh state
       isRefreshing = false;
       refreshPromise = null;
       
-      return newToken;
+      // Return the token from the response (backend will set it in cookie)
+      return data.accessToken;
     })
     .catch(async (err) => {
       isRefreshing = false;
@@ -122,12 +144,18 @@ export async function fetchWithRefresh(input, init = {}) {
     throw new Error('Refresh token expired');
   }
 
-  // Get current access token
-  let accessToken = localStorage.getItem('accessToken');
+  // Get current access token from backend-set cookie
+  let accessToken = getCookieValue('LocalAccessToken');
   
+<<<<<<< HEAD
   // Validate access token format
   if (!isValidToken(accessToken)) {
     console.warn('Invalid access token format, attempting refresh');
+=======
+  // Since access token is backend-only, we don't need to validate its format
+  // Just check if it exists and is not null/undefined
+  if (!accessToken || accessToken === 'null' || accessToken === 'undefined') {
+>>>>>>> f88ac0c2bcc489808a9865f1616882a3a5750ddb
     accessToken = null;
   }
 
@@ -153,6 +181,25 @@ export async function fetchWithRefresh(input, init = {}) {
   }
 
   // If we get 401, we need to refresh the token
+  // Only check for refresh token availability when we actually need to refresh
+  const refreshToken = getCookieValue('LocalRefreshToken');
+  
+  if (!refreshToken || refreshToken === 'null' || refreshToken === 'undefined') {
+    // No refresh token available, user needs to log in again
+    console.warn('Access token expired and no refresh token available, logging out');
+    await handleTokenExpired();
+    
+    // Don't throw error, just return a failed response
+    return new Response(
+      JSON.stringify({ error: 'Session expired. Please log in again.' }),
+      { 
+        status: 401, 
+        statusText: 'Unauthorized',
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
+
   try {
     // Wait for token refresh (this will handle concurrent requests properly)
     const newToken = await performTokenRefresh();

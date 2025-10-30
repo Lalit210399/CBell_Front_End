@@ -56,6 +56,10 @@
     color: #000000;
     cursor: not-allowed; /* Change cursor to indicate it's disabled */
   }
+
+  .dropdown.error .dropdown-toggle {
+    border-color: #d32f2f;
+  }
   
   .dropdown.disabled .dropdown-menu {
     pointer-events: none; /* Prevent interaction with menu items when disabled */

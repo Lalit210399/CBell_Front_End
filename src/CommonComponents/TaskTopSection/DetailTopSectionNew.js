@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { ArrowLeft, Save, Users } from "lucide-react";
 import CustomDropdown from "../Dropdown/CustomDropdown";
 import MultiSelectDropdown from "../Dropdown/MultiSelectDropdown";
 import UserDropdown from "../UserDropdown";
+import AvatarList from "../Avatar/index";
 import { useUser } from "../../Context/UserContext";
 import { useEventTypes } from "../../Hooks/useEventTypes";
 import { useDepartments } from "../../Hooks/useDepartments";
@@ -58,6 +59,7 @@ const DetailTopSectionNew = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [assignedIds, setAssignedIds] = useState([]);
   const [fetchedUsers, setFetchedUsers] = useState([]);
+  const hasFetchedUsersRef = useRef(false);
 
   // Use event types from props or context
   const eventTypes = useMemo(() => {
@@ -132,7 +134,7 @@ const DetailTopSectionNew = ({
     if (JSON.stringify(currentIds) !== JSON.stringify(newIds)) {
       setAssignedIds(ids);
     }
-  }, [assignedTo, assignedIds]);
+  }, [assignedTo]); // Remove assignedIds from dependencies to prevent infinite loop
 
   // Event types are now provided via props or context - no need to fetch
 
@@ -151,17 +153,20 @@ const DetailTopSectionNew = ({
 
         const data = await response.json();
         setFetchedUsers(data.users || []);
+        hasFetchedUsersRef.current = true;
       } catch (error) {
         console.error("Error fetching users:", error);
         setFetchedUsers([]);
       }
     };
 
-    if (mode === "edit" || mode === "create") {
+    if ((mode === "edit" || mode === "create") && !hasFetchedUsersRef.current) {
       fetchUsers();
-    } else {
+    } else if (users && users.length > 0) {
+      // Only set users from props if they actually contain data
       setFetchedUsers(users);
     }
+    // If hasFetchedUsersRef.current is true and users prop is empty, keep the fetched users
   }, [mode, users, user?.organizationId]);
 
   const handleTitleChange = (e) => {
@@ -187,10 +192,27 @@ const DetailTopSectionNew = ({
     
     if (assignedUser) {
       // Use the assigned user data directly
+      const userName = assignedUser.userName || assignedUser.name || "Unknown User";
+      const firstName = assignedUser.firstName || "";
+      const lastName = assignedUser.lastName || "";
+      
+      // Create proper initials from firstName and lastName if available, otherwise use userName
+      let initials = "?";
+      if (firstName && lastName) {
+        initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
+      } else if (userName && userName !== "Unknown User") {
+        const nameParts = userName.split(" ");
+        if (nameParts.length >= 2) {
+          initials = (nameParts[0].charAt(0) + nameParts[1].charAt(0)).toUpperCase();
+        } else {
+          initials = userName.charAt(0).toUpperCase();
+        }
+      }
+      
       return {
         id: assignedUser.userId || assignedUser.id,
-        name: assignedUser.userName || assignedUser.name,
-        fallback: (assignedUser.userName || assignedUser.name || "?").charAt(0).toUpperCase(),
+        name: userName,
+        fallback: initials,
         size: "20px",
         shape: "circle",
       };
@@ -304,25 +326,12 @@ const DetailTopSectionNew = ({
             <span className="label">Team:</span>
             <div className="avatar-group-new">
               {hasAssignedUsers ? (
-                <div className="team-avatars-container">
-                  {selectedParticipants.slice(0, 2).map((participant, index) => (
-                    <div 
-                      key={participant.id || index} 
-                      className="team-avatar"
-                      title={participant.name || 'Unknown User'}
-                    >
-                      {participant.name ? participant.name.charAt(0).toUpperCase() : 'U'}
-                    </div>
-                  ))}
-                  {selectedParticipants.length > 2 && (
-                    <div 
-                      className="team-avatar"
-                      title={`${selectedParticipants.slice(2).map(p => p.name).join(', ')}`}
-                    >
-                      +{selectedParticipants.length - 2}
-                    </div>
-                  )}
-                </div>
+                <AvatarList 
+                  avatars={selectedParticipants} 
+                  maxVisible={2} 
+                  showTooltip={true}
+                  tooltipPosition="top"
+                />
               ) : (
                 <div className="no-assigned-users-placeholder">
                   <Users size={14} className="placeholder-icon" />
@@ -347,7 +356,25 @@ const DetailTopSectionNew = ({
                     onUserSelectionChange={(newIds) => {
                       setAssignedIds(newIds);
                       if (onParticipantsChange) {
-                        onParticipantsChange(newIds);
+                        // Pass both IDs and user objects for better data handling
+                        const selectedUsers = newIds.map(id => {
+                          const user = fetchedUsers.find(u => u.id === id);
+                          return user ? {
+                            userId: user.id,
+                            userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown User',
+                            firstName: user.firstName,
+                            lastName: user.lastName,
+                            email: user.email,
+                            orgCode: user.organizationCode || "ORG001",
+                            assignedOn: new Date().toISOString()
+                          } : {
+                            userId: id,
+                            userName: "Unknown User",
+                            orgCode: "ORG001",
+                            assignedOn: new Date().toISOString()
+                          };
+                        });
+                        onParticipantsChange(newIds, selectedUsers);
                       }
                     }}
                     placeholder="Search by name, email, org, or role..."

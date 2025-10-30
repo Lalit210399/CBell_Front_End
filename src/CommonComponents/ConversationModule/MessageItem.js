@@ -173,7 +173,7 @@ const MessageItem = ({ message, currentUser, onReply, onReaction, isThread }) =>
             </div>
           )}
           <Reactions reactions={message.reactions || []} />
-          <div className="message-actions">
+          {/* <div className="message-actions">
             <button 
               className="action-button" 
               onClick={handleReplyClick}
@@ -204,7 +204,7 @@ const MessageItem = ({ message, currentUser, onReply, onReaction, isThread }) =>
             <button className="action-button">
               <MoreHorizontal />
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
 
