@@ -177,6 +177,7 @@ const TasksFiles = ({
         onWorkSubmissionFilesChange={onWorkSubmissionFilesChange}
         externalLoading={loading}
         loadingType="fetch"
+        taskStatus={taskStatus} // Pass task status to control upload button visibility
       />
     </div>
   );
