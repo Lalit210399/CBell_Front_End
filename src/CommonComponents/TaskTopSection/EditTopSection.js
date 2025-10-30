@@ -24,6 +24,16 @@ const getDefaultColor = (status) => {
   return colors[status] || "#6b7280";
 };
 
+const toTitleCase = (str) => {
+  if (!str) return str;
+  return str
+    .trim()
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 const getStatusClass = (status) => {
   if (!status) return "unknown";
   return status.toLowerCase().replace(/\s+/g, "-");
@@ -224,7 +234,7 @@ const TopSection = ({
           <input
             type="text"
             className={`edit-top-title-input ${errors && errors.title ? "error" : ""}`}
-            value={editableTitle}
+            value={mode === "view" ? toTitleCase(editableTitle) : editableTitle}
             onChange={handleTitleChange}
             onKeyDown={handleKeyDown}
             ref={titleRef}

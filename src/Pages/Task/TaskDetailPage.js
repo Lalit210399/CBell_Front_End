@@ -24,6 +24,17 @@ const HARDCODED_STATUS_IDS = {
   "Published": "68bee0d1522caf6ac9f65bdf"
 };
 
+// Utility function to convert text to title case
+const toTitleCase = (str) => {
+  if (!str) return str;
+  return str
+    .trim()
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 const TaskDetailPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -814,7 +825,7 @@ const TaskDetailPage = () => {
 
       const payload = {
         EventId: mode === "edit" ? currentFormData.eventId : apiEventId,
-        TaskTitle: taskTitle,
+        TaskTitle: toTitleCase(taskTitle),
         taskStatusId: statusId, // Use the validated status ID
         AssignedTo: (selectedParticipantIds || []).map((item) =>
           typeof item === "object" ? item?.id : item
@@ -1233,7 +1244,7 @@ const TaskDetailPage = () => {
   const breadcrumbItems = React.useMemo(() => {
     // Ensure we have valid data before creating breadcrumb items
     const organizationName = user?.organization?.name || user?.organizationName || "Organization";
-    const taskName = taskTitle || (mode === "create" ? "New Task" : "Task Details");
+    const taskName = taskTitle ? toTitleCase(taskTitle) : (mode === "create" ? "New Task" : "Task Details");
     
     const items = [
       { 
@@ -1252,7 +1263,7 @@ const TaskDetailPage = () => {
     // Add event name if available
     if (eventName) {
       items.push({ 
-        label: eventName, 
+        label: toTitleCase(eventName), 
         href: "#", 
         icon: FileText,
         onClick: () => {

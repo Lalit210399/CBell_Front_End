@@ -18,6 +18,17 @@ import { DepartmentProvider } from "../../Context/DepartmentContext";
 import { Building, Calendar, FileText } from "lucide-react";
 import "./Tasks.css";
 
+// Utility function to convert text to title case
+const toTitleCase = (str) => {
+  if (!str) return str;
+  return str
+    .trim()
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 const EventDetail = () => {
   const [showEdit] = useState(true);
   const [fetchedEvent, setFetchedEvent] = useState(null);
@@ -441,7 +452,7 @@ const EventDetail = () => {
      const organizationId = eventOrgId || selectedOrganizationId || user?.organizationId;
      
      const payload = {
-       eventName: titleValue,
+       eventName: toTitleCase(titleValue),
        organizationId: organizationId,
        eventTypeId: topSectionData.eventTypeId || eventTypeId || fetchedEvent?.eventTypeId,
        eventTypeName: (topSectionData.typeName || topSectionData.type || fetchedEvent?.typeName || "").trim(),
@@ -775,7 +786,7 @@ const EventDetail = () => {
     const organizationName = user?.organization?.name || user?.organizationName || "Organization";
     const eventName = mode === "create" 
       ? "New Event" 
-      : (fetchedEvent?.eventName || "Event Details");
+      : toTitleCase(fetchedEvent?.eventName || "Event Details");
     
     return [
       { 
