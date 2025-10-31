@@ -114,7 +114,7 @@ const FilesUploads = ({
       <div className={containerClass}>
         <div className="loading-content">
           <div className="loading-spinner">
-            <div className="spinner"></div>
+            {/* <div className="spinner"></div> */}
           </div>
           <p className="loading-text">{getLoadingText()}</p>
           <p className="loading-subtext">{getSubText()}</p>
