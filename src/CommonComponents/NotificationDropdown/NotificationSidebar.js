@@ -16,7 +16,7 @@ const NotificationsSidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
 
   const handleNotificationNavigation = (notification) => {
-    if (notification.type === 'event_assigned' && notification.data?.eventId) {
+    if (notification.category === 'event' && notification.data?.eventId) {
       navigate("/events/eventDetailPage", {
         state: {
           eventId: notification.data.eventId,
@@ -30,7 +30,7 @@ const NotificationsSidebar = ({ isOpen, onClose }) => {
           }
         }
       });
-    } else if ((notification.type === 'task_assigned' || notification.type === 'task_not_approved') && notification.data?.taskId) {
+    } else if ((notification.category === 'task') && notification.data?.taskId) {
       navigate('/events/eventDetailPage/tasks', {
         state: {
           taskId: notification.data.taskId,
@@ -80,12 +80,11 @@ const NotificationsSidebar = ({ isOpen, onClose }) => {
     return date.toLocaleDateString();
   };
 
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case 'event_assigned':
+  const getNotificationIcon = (category) => {
+    switch (category) {
+      case 'event':
         return '📅';
-      case 'task_assigned':
-      case 'task_not_approved':
+      case 'task':
         return '✅';
       case 'system':
         return '🔔';
@@ -145,7 +144,7 @@ const NotificationsSidebar = ({ isOpen, onClose }) => {
                 >
                   <div className="notification-main">
                     <div className="notification-icon">
-                      {getNotificationIcon(notification.type)}
+                      {getNotificationIcon(notification.category)}
                     </div>
                     <div className="notification-content">
                       <h4 className="notification-title">{notification.title}</h4>
