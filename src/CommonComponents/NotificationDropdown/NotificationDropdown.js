@@ -1,11 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { BellRing, X, Check, Trash2, ExternalLink, AlertCircle, Settings } from 'lucide-react';
+import { BellRing, X, Check, Trash2, ExternalLink, AlertCircle } from 'lucide-react';
 import { useNotification } from '../../Context/NotificationContext';
 import './NotificationDropdown.css';
 
 const NotificationDropdown = ({ onViewAllNotifications }) => {
-  const navigate = useNavigate();
   const {
     notifications,
     unreadCount,
@@ -35,62 +33,25 @@ const NotificationDropdown = ({ onViewAllNotifications }) => {
     };
   }, []);
 
-  const handleBellClick = () => {
-    setIsOpen(!isOpen);
-    if (!isOpen) {
-      refreshNotifications();
-    }
-  };
+  // const handleBellHover = () => {
+  //   setIsOpen(true);
+  //   refreshNotifications();
+  // };
 
-  // Helper function to handle notification navigation
-  const handleNotificationNavigation = (notification) => {
-    if (notification.type === 'event_assigned' && notification.data?.eventId) {
-      // Navigate to event detail page like Dashboard.js and Events.js
-      navigate("/events/eventDetailPage", {
-        state: {
-          eventId: notification.data.eventId,
-          mode: "view",
-          organizationId: notification.data.organizationId,
-          eventData: {
-            id: notification.data.eventId,
-            eventName: notification.data.eventName,
-            eventDate: notification.data.eventDate,
-            organizationId: notification.data.organizationId
-          }
-        }
-      });
-    } else if (notification.type === 'task_assigned' && notification.data?.taskId) {
-      // Navigate to task detail page
-      navigate('/events/eventDetailPage/tasks', {
-        state: {
-          taskId: notification.data.taskId,
-          mode: "view",
-          eventId: notification.data.eventId || null,
-          eventName: notification.data.eventName || null,
-          organizationId: notification.data.organizationId
-        }
-      });
-    } else if (notification.url) {
-      // For other notification types, use the provided URL
-      // Check if it's an internal route or external URL
-      if (notification.url.startsWith('/')) {
-        navigate(notification.url);
-      } else {
-        window.open(notification.url, '_blank');
-      }
-    }
+  // const handleBellLeave = () => {
+  //   setIsOpen(false);
+  // };
+
+  const handleBellClick = () => {
+    refreshNotifications();
+    onViewAllNotifications();
   };
 
   const handleNotificationClick = async (notification) => {
     if (!notification.isRead) {
       await markAsRead(notification.id);
     }
-    
-    // Close dropdown after clicking
     setIsOpen(false);
-    
-    // Navigate to the appropriate page
-    handleNotificationNavigation(notification);
   };
 
   const handleMarkAsRead = async (e, notificationId) => {
@@ -117,7 +78,7 @@ const NotificationDropdown = ({ onViewAllNotifications }) => {
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
     if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)}d ago`;
-    
+
     return date.toLocaleDateString();
   };
 
@@ -126,6 +87,7 @@ const NotificationDropdown = ({ onViewAllNotifications }) => {
       case 'event_assigned':
         return '📅';
       case 'task_assigned':
+      case 'task_not_approved':
         return '✅';
       case 'system':
         return '🔔';
@@ -135,7 +97,10 @@ const NotificationDropdown = ({ onViewAllNotifications }) => {
   };
 
   return (
-    <div className="notification-dropdown" ref={dropdownRef}>
+    <div
+      className="notification-dropdown"
+      ref={dropdownRef}
+    >
       <div className="notification-bell" onClick={handleBellClick}>
         <BellRing size={22} className="bell-icon" />
         {unreadCount > 0 && (
@@ -154,7 +119,7 @@ const NotificationDropdown = ({ onViewAllNotifications }) => {
             </div>
             <div className="notification-actions">
               {unreadCount > 0 && (
-                <button 
+                <button
                   className="mark-all-read-btn"
                   onClick={handleMarkAllAsRead}
                   title="Mark all as read"
@@ -162,13 +127,7 @@ const NotificationDropdown = ({ onViewAllNotifications }) => {
                   <Check size={16} />
                 </button>
               )}
-              {/* <button 
-                className="settings-btn"
-                title="Notification settings"
-              >
-                <Settings size={16} />
-              </button> */}
-              <button 
+              <button
                 className="close-btn"
                 onClick={() => setIsOpen(false)}
                 title="Close"
@@ -206,7 +165,7 @@ const NotificationDropdown = ({ onViewAllNotifications }) => {
               </div>
             ) : (
               <div className="notification-list">
-                {notifications.map((notification) => (
+                {notifications.slice(0, 5).map((notification) => (
                   <div
                     key={notification.id}
                     className={`notification-item ${notification.isRead ? 'read' : 'unread'}`}
@@ -231,7 +190,7 @@ const NotificationDropdown = ({ onViewAllNotifications }) => {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="notification-item-actions">
                       {!notification.isRead && (
                         <button
@@ -254,7 +213,7 @@ const NotificationDropdown = ({ onViewAllNotifications }) => {
                           className="action-btn external-btn"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleNotificationNavigation(notification);
+                            window.open(notification.url, '_blank');
                           }}
                           title="Open"
                         >
@@ -270,20 +229,19 @@ const NotificationDropdown = ({ onViewAllNotifications }) => {
 
           {notifications.length > 0 && (
             <div className="notification-footer">
-              <button 
-            className="view-all-btn"
-            onClick={() => {
-              setIsOpen(false); // Close the dropdown
-              onViewAllNotifications(); // Open the sidebar
-            }}
-          >
+              <button
+                className="view-all-btn"
+                onClick={() => {
+                  setIsOpen(false);
+                  onViewAllNotifications();
+                }}
+              >
                 View All Notifications
               </button>
             </div>
           )}
         </div>
       )}
-      
     </div>
   );
 };

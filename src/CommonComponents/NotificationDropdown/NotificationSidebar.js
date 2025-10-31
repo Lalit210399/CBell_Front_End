@@ -30,7 +30,7 @@ const NotificationsSidebar = ({ isOpen, onClose }) => {
           }
         }
       });
-    } else if (notification.type === 'task_assigned' && notification.data?.taskId) {
+    } else if ((notification.type === 'task_assigned' || notification.type === 'task_not_approved') && notification.data?.taskId) {
       navigate('/events/eventDetailPage/tasks', {
         state: {
           taskId: notification.data.taskId,
@@ -85,6 +85,7 @@ const NotificationsSidebar = ({ isOpen, onClose }) => {
       case 'event_assigned':
         return '📅';
       case 'task_assigned':
+      case 'task_not_approved':
         return '✅';
       case 'system':
         return '🔔';
