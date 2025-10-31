@@ -147,8 +147,8 @@ const NotificationsSidebar = ({ isOpen, onClose }) => {
                       {getNotificationIcon(notification.category)}
                     </div>
                     <div className="notification-content">
-                      <h4 className="notification-title">{notification.title}</h4>
-                      <p className="notification-body">{notification.body}</p>
+                      <h4 className="notification-title" title={notification.title}>{notification.title}</h4>
+                      <p className="notification-body" title={notification.body}>{notification.body}</p>
                       <div className="notification-meta">
                         <span className="notification-time">
                           {formatDate(notification.createdAt)}
@@ -179,7 +179,7 @@ const NotificationsSidebar = ({ isOpen, onClose }) => {
                     >
                       <Trash2 size={16} />
                     </button>
-                    {notification.url && (
+                    {/* {notification.url && (
                       <button
                         className="action-btn external"
                         onClick={(e) => {
@@ -190,7 +190,7 @@ const NotificationsSidebar = ({ isOpen, onClose }) => {
                       >
                         <ExternalLink size={16} />
                       </button>
-                    )}
+                    )} */}
                   </div>
                 </div>
               ))}
