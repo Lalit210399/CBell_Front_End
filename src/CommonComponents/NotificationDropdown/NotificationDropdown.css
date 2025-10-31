@@ -62,7 +62,7 @@
   top: 100%;
   right: 0;
   width: 400px;
-  max-height: 500px;
+  max-height: 400px;
   background: linear-gradient(135deg, #ffffff, #f8fffe);
   border: 2px solid #02968A;
   border-radius: 12px;
@@ -89,7 +89,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
+  padding: 12px 12px;
   border-bottom: 2px solid #C9FFD4;
   background: linear-gradient(135deg, #043E54, #02968A);
   color: white;
@@ -111,12 +111,19 @@
 
 .unread-count-badge {
   font-size: 12px;
+  left: 122px;
+  top: 8px;
+  position: absolute;
   font-weight: 600;
-  color: #C9FFD4;
-  background-color: rgba(201, 255, 212, 0.2);
-  padding: 2px 8px;
+  background: #C9FFD4;
+    color: #043E54;
+  /* color: #ffffff; */
+  /* background-color: rgba(201, 255, 212, 0.2); */
+  /* background: linear-gradient(135deg, #02968A, #043E54); */
+  padding: 2px 6px;
   border-radius: 12px;
   border: 1px solid rgba(201, 255, 212, 0.3);
+  animation: pulse 2s infinite;
 }
 
 .notification-actions {
@@ -163,7 +170,7 @@
   flex: 1;
   overflow-y: auto;
   max-height: 400px;
-  background: linear-gradient(135deg, #ffffff, #f8fffe);
+  /* background: linear-gradient(135deg, #ffffff, #f8fffe); */
 }
 
 .notification-error {
@@ -234,7 +241,7 @@
 .notification-item {
     display: flex;
     align-items: flex-start;
-    padding: 16px 24px;
+    padding: 10px 12px;
     border-bottom: 1px solid #C9FFD4;
     border-left: 4px solid #02968A;
     cursor: pointer;

@@ -687,6 +687,7 @@ const Dashboard = () => {
 
   // Handle event click
   const handleEventClick = (event, key) => {
+    console.log("Event clicked:", event, key);
     // Navigate to event detail page with event id and data
     if (event && (event.id || event.eventId)) {
       navigate("/events/eventDetailPage", {

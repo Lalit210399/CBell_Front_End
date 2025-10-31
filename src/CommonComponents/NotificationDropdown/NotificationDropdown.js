@@ -4,7 +4,7 @@ import { BellRing, X, Check, Trash2, ExternalLink, AlertCircle, Settings } from 
 import { useNotification } from '../../Context/NotificationContext';
 import './NotificationDropdown.css';
 
-const NotificationDropdown = () => {
+const NotificationDropdown = ({ onViewAllNotifications }) => {
   const navigate = useNavigate();
   const {
     notifications,
@@ -50,22 +50,25 @@ const NotificationDropdown = () => {
         state: {
           eventId: notification.data.eventId,
           mode: "view",
+          organizationId: notification.data.organizationId,
           eventData: {
             id: notification.data.eventId,
             eventName: notification.data.eventName,
-            eventDate: notification.data.eventDate
+            eventDate: notification.data.eventDate,
+            organizationId: notification.data.organizationId
           }
         }
       });
     } else if (notification.type === 'task_assigned' && notification.data?.taskId) {
       // Navigate to task detail page
-      navigate('/events/eventDetailPage/tasks', { 
-        state: { 
-          taskId: notification.data.taskId, 
-          mode: "view", 
+      navigate('/events/eventDetailPage/tasks', {
+        state: {
+          taskId: notification.data.taskId,
+          mode: "view",
           eventId: notification.data.eventId || null,
-          eventName: notification.data.eventName || null
-        } 
+          eventName: notification.data.eventName || null,
+          organizationId: notification.data.organizationId
+        }
       });
     } else if (notification.url) {
       // For other notification types, use the provided URL
@@ -146,7 +149,7 @@ const NotificationDropdown = () => {
             <div className="notification-title-section">
               <h3>Notifications</h3>
               {unreadCount > 0 && (
-                <span className="unread-count-badge">{unreadCount} unread</span>
+                <span className="unread-count-badge">{unreadCount}</span>
               )}
             </div>
             <div className="notification-actions">
@@ -268,18 +271,19 @@ const NotificationDropdown = () => {
           {notifications.length > 0 && (
             <div className="notification-footer">
               <button 
-                className="view-all-btn"
-                onClick={() => {
-                  // Navigate to full notifications page if you have one
-                  console.log('Navigate to notifications page');
-                }}
-              >
+            className="view-all-btn"
+            onClick={() => {
+              setIsOpen(false); // Close the dropdown
+              onViewAllNotifications(); // Open the sidebar
+            }}
+          >
                 View All Notifications
               </button>
             </div>
           )}
         </div>
       )}
+      
     </div>
   );
 };

@@ -5,9 +5,11 @@ import { useUser } from "../../Context/UserContext";
 import { logout } from "../../Services/AuthN";
 import CustomDropdown from "../Dropdown/CustomDropdown";
 import NotificationDropdown from "../NotificationDropdown/NotificationDropdown";
+import NotificationSideBar from "../NotificationDropdown/NotificationSidebar";
 import "./Navbar.css";
 
 function Navbar() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { 
@@ -133,7 +135,11 @@ function Navbar() {
         </div>
         
         {/* Notification Bell */}
-        <NotificationDropdown />
+        <NotificationDropdown onViewAllNotifications={() => setIsSidebarOpen(true)}/>
+        <NotificationSideBar 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+      />
         
         <div className="user-info" ref={dropdownRef}>
           
