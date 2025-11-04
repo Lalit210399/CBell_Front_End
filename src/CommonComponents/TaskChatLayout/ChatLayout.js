@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import ConversationModule from "../ConversationModule/ConversationModule";
 import { useUser } from "../../Context/UserContext";
 import "./ChatLayout.css";
@@ -6,21 +6,6 @@ import "./ChatLayout.css";
 const WhatsAppLayout = ({ tasks, eventId }) => {
   const { user } = useUser();
   const [selectedTask, setSelectedTask] = useState(null);
-  const [loadingTasks, setLoadingTasks] = useState(false);
-
-  const getInitials = useCallback((title) => {
-    if (!title) return "??";
-    const nameParts = title.trim().split(/\s+/);
-    if (nameParts.length >= 2) {
-      return (
-        nameParts[0][0] + nameParts[nameParts.length - 1][0]
-      ).toUpperCase();
-    } else if (nameParts.length === 1) {
-      const name = nameParts[0];
-      return (name[0] + (name[1] || name[0])).toUpperCase();
-    }
-    return "??";
-  }, []);
 
   const getCurrentUser = useCallback(() => {
     const first = user?.firstName?.[0] || "";
@@ -34,7 +19,6 @@ const WhatsAppLayout = ({ tasks, eventId }) => {
     };
   }, [user]);
 
-  const getLastMessagePreview = useCallback(() => "No messages yet", []);
   const getUnreadCount = useCallback(() => 0, []);
 
   // Improved formatting function for due dates
@@ -82,11 +66,10 @@ const WhatsAppLayout = ({ tasks, eventId }) => {
       <div className="whatsapp-sidebar">
         <div className="sidebar-header">
           <h3>Task Conversations</h3>
+          <p className="sidebar-subtitle">{tasks?.length || 0} {tasks?.length === 1 ? 'task' : 'tasks'}</p>
         </div>
         <div className="tasks-list">
-          {loadingTasks ? (
-            <div className="loading-tasks">Loading tasks...</div>
-          ) : tasks && tasks.length > 0 ? (
+          {tasks && tasks.length > 0 ? (
             tasks.map((task) => (
               <div
                 key={task.id}
@@ -98,27 +81,31 @@ const WhatsAppLayout = ({ tasks, eventId }) => {
                 <div className="task-info">
                   <div className="task-title-row">
                     <div className="task-title">{task.taskTitle}</div>
-                    <div className="task-time">
-                      {formatDueDate(task.dueDate)}
-                    </div>
+                    {getUnreadCount(task.id) > 0 && (
+                      <div className="task-badge">{getUnreadCount(task.id)}</div>
+                    )}
                   </div>
                   <div className="task-event-row">
                     <span className="event-name">{task.eventName}</span>
                   </div>
                   <div className="task-details">
                     <span
-                      className={`status-tag status-${task.taskStatusName.toLowerCase()}`}
+                      className={`status-tag status_${task.taskStatusName.toLowerCase()}`}
                     >
                       {task.taskStatusName}
                     </span>
-                    <span className="assigned-users">
-                      {task.assignedToNames?.join(", ")}
-                    </span>
+                    {/* <span className="task-time">
+                      {formatDueDate(task.dueDate)}
+                    </span> */}
                   </div>
+                  {task.assignedToNames && task.assignedToNames.length > 0 && (
+                    <div className="assigned-users-row">
+                      <span className="assigned-users">
+                        👥 {task.assignedToNames.join(", ")}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                {getUnreadCount(task.id) > 0 && (
-                  <div className="task-badge">{getUnreadCount(task.id)}</div>
-                )}
               </div>
             ))
           ) : (
@@ -131,19 +118,58 @@ const WhatsAppLayout = ({ tasks, eventId }) => {
       <div className="whatsapp-chat-area">
         {selectedTask ? (
           <div className="chat-container">
-            <ConversationModule
-              currentUser={getCurrentUser()}
-              taskId={selectedTask.id}
-              eventId={eventId}
-              isActive={true}
-              users={selectedTask.assignedToNames || []}
-            />
+            <div className="chat-header">
+              <div className="chat-header-content">
+                <div className="chat-header-left">
+                  <div className="chat-header-info">
+                    <div className="chat-header-row-1">
+                      <h3 className="chat-header-title">{selectedTask.taskTitle}</h3>
+                      <span className="chat-header-event">{selectedTask.eventName}</span>
+                    </div>
+                    <div className="chat-header-row-2">
+                      <div className="chat-header-row-2-left">
+                        <span
+                          className={`chat-header-status status-${selectedTask.taskStatusName.toLowerCase()}`}
+                        >
+                          {selectedTask.taskStatusName}
+                        </span>
+                        {selectedTask.assignedToNames && selectedTask.assignedToNames.length > 0 && (
+                          <>
+                            <span className="chat-header-divider">•</span>
+                            <span className="chat-header-assigned">
+                              <span className="assigned-label">Assigned to:</span>
+                              <span className="assigned-names">
+                                {selectedTask.assignedToNames.join(", ")}
+                              </span>
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      {/* {selectedTask.dueDate && (
+                        <span className="chat-header-due">
+                          {formatDueDate(selectedTask.dueDate)}
+                        </span>
+                      )} */}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="chat-content">
+              <ConversationModule
+                currentUser={getCurrentUser()}
+                taskId={selectedTask.id}
+                eventId={eventId}
+                isActive={true}
+                users={selectedTask.assignedToNames || []}
+              />
+            </div>
           </div>
         ) : (
           <div className="empty-chat-state">
             <div className="empty-chat-icon">💬</div>
-            <h3>WhatsApp-style Chat</h3>
-            <p>Select a task from the list to start chatting</p>
+            <h3>Select a Task to Chat</h3>
+            <p>Choose a task from the list to start a conversation with your team</p>
           </div>
         )}
       </div>
