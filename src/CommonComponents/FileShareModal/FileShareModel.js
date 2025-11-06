@@ -12,6 +12,18 @@ const isFileTypeSupported = (fileType, platform) => {
   
   const lowerFileType = fileType.toLowerCase();
   
+  // Check if file is audio or document
+  const isAudioOrDoc = lowerFileType.startsWith('audio/') || 
+                      lowerFileType.startsWith('application/pdf') ||
+                      lowerFileType.startsWith('application/msword') ||
+                      lowerFileType.startsWith('application/vnd.openxmlformats-officedocument') ||
+                      lowerFileType.startsWith('text/');
+
+  // If it's audio or document, only allow email sharing
+  if (isAudioOrDoc) {
+    return platform.toLowerCase() === 'email';
+  }
+  
   switch (platform.toLowerCase()) {
     case 'youtube':
       // YouTube only supports video files
@@ -20,8 +32,8 @@ const isFileTypeSupported = (fileType, platform) => {
       // Instagram supports image and video files
       return lowerFileType.startsWith('image/') || lowerFileType.startsWith('video/');
     case 'facebook':
-      // Facebook supports all file types
-      return true;
+      // Facebook supports image and video files
+      return lowerFileType.startsWith('image/') || lowerFileType.startsWith('video/');
     case 'email':
       // Email supports all file types
       return true;

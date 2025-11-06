@@ -1,72 +1,94 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import Accordion from '../../../CommonComponents/Accordian/Accordian';
-import FilesandUploads from '../../../CommonComponents/FileandUpload/FilesAndUploads';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
-import { useUser } from '../../../Context/UserContext';
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import Accordion from "../../../CommonComponents/Accordian/Accordian";
+import FilesandUploads from "../../../CommonComponents/FileandUpload/FilesAndUploads";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
+import { useUser } from "../../../Context/UserContext";
+import { fetchWithRefresh } from "../../../Context/RefereshToken";
 import "../Tasks.css";
 
-const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
+const FilesUploads = ({ eventId, organizationId }) => {
   const { user } = useUser();
-  const [fetchedEventFiles, setFetchedEventFiles] = useState([]);
+  const [eventFiles, setEventFiles] = useState([]);
+  const [taskFiles, setTaskFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const isFetchingRef = useRef(false);
-  const filesRef = useRef([]);
-  const isMountedRef = useRef(true);
 
   const getFileTypeFromMime = (mime) => {
-    if (!mime) return 'file';
-    if (mime.startsWith('image')) return 'image';
-    if (mime.startsWith('video')) return 'video';
-    if (mime.startsWith('audio')) return 'audio';
-    if (mime === 'application/pdf') return 'pdf';
-    return 'file';
+    if (!mime) return "file";
+    if (mime.startsWith("image")) return "image";
+    if (mime.startsWith("video")) return "video";
+    if (mime.startsWith("audio")) return "audio";
+    if (mime === "application/pdf") return "pdf";
+    return "file";
   };
 
-  const fetchEventDocuments = useCallback(async () => {
+  const fetchDocuments = useCallback(async () => {
     if (!eventId || isFetchingRef.current) return;
-    
-    
+
     isFetchingRef.current = true;
     setLoading(true);
+
     try {
-      const res = await fetch(`/apis/document-details/event/${eventId}`, {
-        headers: { 'ngrok-skip-browser-warning': '1' }
-      });
-      const data = await res.json();
+      // Fetch event and task files in parallel
+      const [eventRes, taskRes] = await Promise.all([
+        fetchWithRefresh(`/apis/document-details/event/${eventId}?filter=event`, {
+          headers: { "ngrok-skip-browser-warning": "1" },
+        }),
+        fetchWithRefresh(`/apis/document-details/event/${eventId}?filter=task`, {
+          headers: { "ngrok-skip-browser-warning": "1" },
+        }),
+      ]);
 
-      const filesWithPreview = await Promise.all(
-        data.map(async (doc) => {
-          const type = getFileTypeFromMime(doc.contentType);
-          let src = '';
+      const [eventData, taskData] = await Promise.all([
+        eventRes.json(),
+        taskRes.json(),
+      ]);
 
-          if (['image', 'video', 'audio', 'pdf'].includes(type)) {
-            const response = await fetch(`/apis/document/view/${doc.documentId}`, {
-              headers: { 'ngrok-skip-browser-warning': '1' }
-            });
-            const blob = await response.blob();
-            src = URL.createObjectURL(blob);
-          } else {
-            src = `/apis/document/view/${doc.documentId}`;
-          }
+      const processFiles = async (data) =>
+        Promise.all(
+          data.map(async (doc) => {
+            const type = getFileTypeFromMime(doc.contentType);
+            let src = "";
 
-          return {
-            name: doc.filename,
-            type,
-            documentId: doc.documentId,
-            description: doc.description,
-            src,
-            status: doc.status || 'Pending',
-            publishedTo: doc.publishedTo || [],
-            uploadDate: doc.uploadDate,
-            userInfo: doc.userInfo
-          };
-        })
-      );
+            if (type === "image") {
+              const response = await fetchWithRefresh(
+                `/apis/document/view/${doc.documentId}`,
+                {
+                  headers: { "ngrok-skip-browser-warning": "1" },
+                }
+              );
+              const blob = await response.blob();
+              src = URL.createObjectURL(blob);
+            } else {
+              src = `/apis/document/view/${doc.documentId}`;
+            }
 
-      setFetchedEventFiles(filesWithPreview);
-      filesRef.current = filesWithPreview;
-    } catch (error) {
+            return {
+              name: doc.filename,
+              type,
+              documentId: doc.documentId,
+              description: doc.description,
+              src,
+              status: doc.status || "Pending",
+              publishedTo: doc.publishedTo || [],
+              uploadDate: doc.uploadDate,
+              size: doc.fileSize || doc.size,
+              userInfo: doc.userInfo,
+              isApproved: doc.status === "Approved",
+            };
+          })
+        );
+
+      const [processedEventFiles, processedTaskFiles] = await Promise.all([
+        processFiles(eventData),
+        processFiles(taskData),
+      ]);
+
+      setEventFiles(processedEventFiles);
+      setTaskFiles(processedTaskFiles);
+    } catch (err) {
+      console.error("Error fetching event/task files:", err);
     } finally {
       setLoading(false);
       isFetchingRef.current = false;
@@ -74,19 +96,14 @@ const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
   }, [eventId]);
 
   useEffect(() => {
-    if (eventId) {
-      fetchEventDocuments();
-    }
-  }, [eventId]); // Only depend on eventId, not the function
+    if (eventId) fetchDocuments();
+  }, [eventId, fetchDocuments]);
 
-  // Temporarily disable cleanup to test if it's causing the issue
-
-  // Skeleton placeholder for file cards
   const SkeletonCards = () => (
     <div className="files-grid">
       {[1, 2, 3].map((_, i) => (
         <div key={i} className="file-card">
-          <Skeleton height={20} width={120} style={{ marginBottom: '8px' }} />
+          <Skeleton height={20} width={120} style={{ marginBottom: "8px" }} />
           <Skeleton height={100} width="100%" />
         </div>
       ))}
@@ -94,18 +111,47 @@ const FilesUploads = ({ filesFromTasks, eventId, organizationId }) => {
   );
 
   return (
-    <div className='Publish_Section'>
-      <Accordion 
-        title="Events File" 
+    <div className="Publish_Section">
+      <Accordion
+        title="Event Files"
         content={
-          loading
-            ? <SkeletonCards />
-            : <FilesandUploads files={fetchedEventFiles}  enableSelectionCheckbox={false}  eventId={eventId} organizationId={organizationId} userId={user?.userId} />
-        } 
+          loading ? (
+            <SkeletonCards />
+          ) : (
+            <FilesandUploads
+              files={eventFiles}
+              eventId={eventId}
+              organizationId={organizationId}
+              userId={user?.userId}
+              enableSelectionCheckbox={false}
+              externalLoading={loading}
+              loadingType="fetch"
+              mode="view"
+              readOnly={true}
+            />
+          )
+        }
       />
-      <Accordion 
-        title="Tasks File" 
-        content={<FilesandUploads files={filesFromTasks}  enableSelectionCheckbox={false}  eventId={eventId} organizationId={organizationId} userId={user?.userId} />} 
+
+      <Accordion
+        title="Task Files"
+        content={
+          loading ? (
+            <SkeletonCards />
+          ) : (
+            <FilesandUploads
+              files={taskFiles}
+              eventId={eventId}
+              organizationId={organizationId}
+              userId={user?.userId}
+              enableSelectionCheckbox={false}
+              externalLoading={loading}
+              loadingType="fetch"
+              mode="view"
+              readOnly={true}
+            />
+          )
+        }
       />
     </div>
   );
