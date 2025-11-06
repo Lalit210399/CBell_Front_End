@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import ChatLayout from '../../CommonComponents/TaskChatLayout/ChatLayout';
 import { useUser } from '../../Context/UserContext';
+import "./NewChatLayout.css";
 
 const NewPage = () => {
   const { user } = useUser();
-  const [tasks, setTasks] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUserTasks = async () => {
+    const fetchEvents = async () => {
       try {
         setLoading(true);
         const response = await fetch(
-          'apis/dashboard/tasks?orgid=681460dcb8327b2e3417d8b1&filter=all',
+          `apis/event/hierarchy/681460dcb8327b2e3417d8b1?userId=${user?.userId}`,
           {
             headers: {
               'Content-Type': 'application/json',
@@ -22,23 +23,26 @@ const NewPage = () => {
         );
         if (response.ok) {
           const data = await response.json();
-          setTasks(data.tasks || []); // Use .tasks from API response
+          setEvents(data.data || []); // Use .data from API response
         } else {
-          console.error('Failed to fetch tasks');
+          console.error('Failed to fetch events');
         }
       } catch (error) {
-        console.error('Error fetching tasks:', error);
+        console.error('Error fetching events:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchUserTasks();
-  }, []);
+
+    if (user?.userId) {
+      fetchEvents();
+    }
+  }, [user?.userId]);
 
   if (loading) {
     return (
       <div className="page-loading">
-        <div>Loading tasks...</div>
+        <div>Loading events...</div>
       </div>
     );
   }
@@ -46,12 +50,12 @@ const NewPage = () => {
   return (
     <div className="new-page-container">
       <div className="page-header">
-        {/* <h1>Task Conversations</h1> */}
+        {/* <h1>Task Conversations</h1> */} 
         {/* <p>Chat with your team about specific tasks</p> */}
       </div>
       <ChatLayout
-        tasks={tasks}
-        eventId="your-event-id" // Pass the relevant event ID
+        events={events}
+        organizationId="681460dcb8327b2e3417d8b1" // Pass organization ID for task API calls
       />
     </div>
   );
