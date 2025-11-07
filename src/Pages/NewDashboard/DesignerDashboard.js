@@ -522,32 +522,31 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
 
   // Handle tile click
   const handleTileClick = useCallback((tile) => {
-    setCurrentTitle(tile.title);
+  // If user clicks the same tile again — do nothing
+  if (tile.title === currentTitle) return;
 
-    if (tile.title === "Tasks Assigned to Me") {
-      setActiveComponent("recent");
+  setCurrentTitle(tile.title);
+
+  if (tile.title === "Tasks Assigned to Me") {
+    setActiveComponent("recent");
+    setFilter("All");
+    resetMyTasks(); // only reset when switching
+  } else {
+    setActiveComponent("recent");
+
+    if (tile.title === "Total Tasks") {
       setFilter("All");
-      // Clear any stale data; effect will handle the fetch
-      resetMyTasks();
     } else {
-      setActiveComponent("recent");
-
-      // Set filter based on tile title - default to "All" for Total Tasks
-      if (tile.title === "Total Tasks") {
-        setFilter("All");
-      } else {
-        // Map tile titles to filter values that match the actual task status names
-        const filterMap = {
-          "Tasks Under Approval": "Under Approval",  // Match actual task status name
-          "Approved Tasks": "Approved",
-        };
-        setFilter(filterMap[tile.title] || tile.title);
-      }
-
-      // Clear stale tasks list; effect will run a single fetch
-      resetTasks();
+      const filterMap = {
+        "Tasks Under Approval": "Under Approval",
+        "Approved Tasks": "Approved",
+      };
+      setFilter(filterMap[tile.title] || tile.title);
     }
-  }, [resetMyTasks, resetTasks]);
+
+    resetTasks(); // only reset when switching
+  }
+}, [currentTitle, resetMyTasks, resetTasks]);
 
   // Single effect to handle all task fetching based on current title
   useEffect(() => {
