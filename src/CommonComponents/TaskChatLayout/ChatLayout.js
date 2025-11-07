@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import ConversationModule from "../ConversationModule/ConversationModule";
 import { useUser } from "../../Context/UserContext";
-import { FolderOpen, Folder, Users, Loader2 } from 'lucide-react';
+import { Calendar, CalendarCheck, ListChecks, Users, Loader2 } from 'lucide-react';
 import "./ChatLayout.css";
 
 const WhatsAppLayout = ({ events, organizationId }) => {
@@ -125,7 +125,7 @@ const WhatsAppLayout = ({ events, organizationId }) => {
                 >
                   <div className="event-header-title">
                     <span className="event-icon">
-                      {expandedEventId === event.id ? <FolderOpen /> : <Folder />}
+                      {expandedEventId === event.id ? <CalendarCheck /> : <Calendar />}
                     </span>
                     <span className="event-name-text">{event.eventName}</span>
                   </div>
@@ -159,7 +159,10 @@ const WhatsAppLayout = ({ events, organizationId }) => {
                           <div className="task-info">
                             <div className="task-title-row">
                               <div className="task-title-status">
-                                <div className="task-title">{task.taskTitle}</div>
+                                <div className="task-title">
+                                  <ListChecks size={16} className="task-icon" />
+                                  {task.taskTitle}
+                                </div>
                                 <span
                                   className={`status-tag status_${task.taskStatusName.toLowerCase()}`}
                                 >

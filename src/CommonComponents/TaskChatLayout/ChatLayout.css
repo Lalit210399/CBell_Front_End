@@ -487,6 +487,15 @@
 
 .event-icon {
   font-size: 16px;
+  display: flex;
+  align-items: center;
+  color: #043E54;
+}
+
+.task-icon {
+  margin-right: 8px;
+  color: #043E54;
+  flex-shrink: 0;
 }
 
 .task-count-badge {

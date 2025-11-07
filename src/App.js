@@ -17,6 +17,7 @@ import Instagram from "./InstagramPost";
 import ProtectedRoute, { RequirePermission } from "./Context/ProtectedRoute";
 import { useUser } from "./Context/UserContext";
 import { NotificationProvider } from "./Context/NotificationContext";
+import { SignalRProvider } from "./Context/SignalRContext";
 import ErrorBoundary from "./CommonComponents/ErrorBoundary"; 
 
 // Component to render appropriate dashboard based on user role
@@ -48,8 +49,16 @@ function App() {
           element={
             <ProtectedRoute>
               <NotificationProvider>
-                <MainLayout>
-                  <Routes>
+                <SignalRProvider>
+                  {/* Debug output for authentication state */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <div style={{ display: 'none' }}>
+                      {console.log('Auth Debug - User:', localStorage.getItem('user'))}
+                      {console.log('Auth Debug - Token:', !!localStorage.getItem('token'))}
+                    </div>
+                  )}
+                  <MainLayout>
+                    <Routes>
                     <Route path="/auth" element={<AuthN />} />
                     <Route
                       path="/dashboard"
@@ -90,13 +99,12 @@ function App() {
                     <Route path="/events/eventDetailPage/tasks" element={<TasksDetail />} />
                     <Route path="/instagram" element={<Instagram />} />
                   </Routes>
-                </MainLayout>
+                  </MainLayout>
+                </SignalRProvider>
               </NotificationProvider>
             </ProtectedRoute>
           }
-        />
-
-        </Routes>
+        />        </Routes>
       </Router>
     </ErrorBoundary>
   );

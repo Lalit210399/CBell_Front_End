@@ -117,7 +117,8 @@ export const UserProvider = ({ children }) => {
       isViewingOwnOrganization,
       loading,
       scopeChangeTrigger,
-      resetUserState
+      resetUserState,
+      isAuthenticated: !!user && !!localStorage.getItem('token')
     }}>
       {children}
     </UserContext.Provider>

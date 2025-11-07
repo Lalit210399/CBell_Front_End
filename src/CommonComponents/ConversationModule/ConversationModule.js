@@ -3,6 +3,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import MessageList from './MessageList';
 import NewMessageBox from './NewMessageBox';
+import { useUser } from '../../Context/UserContext';
+import { useSignalR } from '../../Context/SignalRContext';
 import './Style.css';
 
 const ConversationModule = ({ currentUser, users, taskId, eventId, isActive }) => {
@@ -11,6 +13,8 @@ const ConversationModule = ({ currentUser, users, taskId, eventId, isActive }) =
   const [error, setError] = useState(null);
   const [isNewConversation, setIsNewConversation] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const { isConnected, joinTaskChat, sendMessage, registerHandlers } = useSignalR();
+  const { user } = useUser();
 
   const getInitialsFromUserName = (userName) => {
     if (!userName) return "??";
@@ -50,24 +54,25 @@ const ConversationModule = ({ currentUser, users, taskId, eventId, isActive }) =
       setError(null);
 
       const { fetchWithRefresh } = await import('../../Context/RefereshToken');
-      const response = await fetchWithRefresh(`/apis/chat-thread/get-task-chat/${taskId}`, {
+      const response = await fetchWithRefresh(`/api/chat/task/${taskId}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "1",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem('token')}`
         },
       });
 
       const data = await handleResponse(response);
 
-      if (!data) {
+      if (!data?.success) {
         setMessages([]);
         return;
       }
 
       // Transform API response to our message structure
-      const transformedMessages = data.threadDetails.map(thread => ({
-        threadId: thread.conversationId,
+      const transformedMessages = data.data.threads.map(thread => ({
+        threadId: thread.id,
         user: {
           id: thread.userId,
           name: thread.userName || thread.userId,
@@ -77,7 +82,7 @@ const ConversationModule = ({ currentUser, users, taskId, eventId, isActive }) =
         createdOn: thread.createdOn,
         replies: [],
         reactions: [],
-        documentIds: Array.isArray(thread.documentId) ? thread.documentId : (thread.documentId ? [thread.documentId] : [])
+        documentIds: thread.documentIds || []
       }));
 
       setMessages(prev => {
@@ -89,21 +94,63 @@ const ConversationModule = ({ currentUser, users, taskId, eventId, isActive }) =
       });
       setIsNewConversation(false);
       setLastUpdated(new Date().toISOString());
+
+      // Join the SignalR chat room for this task
+      if (isConnected) {
+        await joinTaskChat(taskId);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [taskId, isActive]);
+  }, [taskId, isActive, isConnected, joinTaskChat]);
 
   useEffect(() => {
+    // Initial fetch of messages
     fetchMessages();
-    
-    // Set up polling for new messages
-    const pollInterval = setInterval(fetchMessages, 5000) // Poll every 10 seconds
-    
-    return () => clearInterval(pollInterval);
-  }, [fetchMessages]);
+
+    // Set up SignalR handlers
+    const handleNewMessage = (message) => {
+      setMessages(prev => [...prev, {
+        threadId: message.threadId,
+        user: {
+          id: message.userId,
+          name: message.userName,
+          avatar: getInitialsFromUserName(message.userName)
+        },
+        conversationText: message.conversationText,
+        createdOn: message.createdOn,
+        replies: [],
+        reactions: [],
+        documentIds: message.documentIds || []
+      }]);
+    };
+
+    const handleUserJoined = (user) => {
+      console.log(`${user.userName} joined the chat`);
+      // You could update a list of active users here if needed
+    };
+
+    const handleUserLeft = (user) => {
+      console.log(`${user.userName} left the chat`);
+      // You could update a list of active users here if needed
+    };
+
+    // Register handlers
+    registerHandlers({
+      onMessage: handleNewMessage,
+      onUserJoined: handleUserJoined,
+      onUserLeft: handleUserLeft
+    });
+
+    // Cleanup
+    return () => {
+      if (isConnected) {
+        joinTaskChat(null); // Leave the current task chat
+      }
+    };
+  }, [fetchMessages, isConnected, joinTaskChat, registerHandlers]);
 
   const handleSendMessage = useCallback(async (content, documentIds = []) => {
     if (!content.trim() && (!documentIds || documentIds.length === 0)) return;
