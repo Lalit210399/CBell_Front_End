@@ -14,13 +14,27 @@ const FilesUploads = ({ eventId, organizationId }) => {
   const [loading, setLoading] = useState(true);
   const isFetchingRef = useRef(false);
 
-  const getFileTypeFromMime = (mime) => {
-    if (!mime) return "file";
-    if (mime.startsWith("image")) return "image";
-    if (mime.startsWith("video")) return "video";
-    if (mime.startsWith("audio")) return "audio";
-    if (mime === "application/pdf") return "pdf";
-    return "file";
+  const getFileTypeFromMime = (mime, filename = '') => {
+    // First try to determine type from mime
+    if (mime && mime !== 'application/octet-stream') {
+      if (mime.startsWith("image")) return "image";
+      if (mime.startsWith("video")) return "video";
+      if (mime.startsWith("audio")) return "audio";
+      if (mime === "application/pdf") return "pdf";
+    }
+    
+    // If mime is not conclusive, check file extension
+    const extension = filename.toLowerCase().split('.').pop();
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
+    const videoExtensions = ['mp4', 'avi', 'mov', 'wmv'];
+    const audioExtensions = ['mp3', 'wav', 'ogg'];
+    
+    if (imageExtensions.includes(extension)) return 'image';
+    if (videoExtensions.includes(extension)) return 'video';
+    if (audioExtensions.includes(extension)) return 'audio';
+    if (extension === 'pdf') return 'pdf';
+    
+    return 'file';
   };
 
   const fetchDocuments = useCallback(async () => {
@@ -48,7 +62,7 @@ const FilesUploads = ({ eventId, organizationId }) => {
       const processFiles = async (data) =>
         Promise.all(
           data.map(async (doc) => {
-            const type = getFileTypeFromMime(doc.contentType);
+            const type = getFileTypeFromMime(doc.contentType, doc.filename);
             let src = "";
 
             if (type === "image") {
