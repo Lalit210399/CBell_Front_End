@@ -4,23 +4,23 @@ class SignalRService {
   constructor() {
     this.connection = null;
     this.messageHandlers = {
-      onMessageReceived: null,
-      onUserJoined: null,
-      onUserLeft: null,
-      onUserTyping: null,
-      onOnlineUsers: null,
-      onError: null,
+      onMessageReceived: [],
+      onUserJoined: [],
+      onUserLeft: [],
+      onUserTyping: [],
+      onOnlineUsers: [],
+      onError: [],
     };
   }
 
   async startConnection() {
     if (this.connection) {
-      console.log("SignalR: Cleaning up existing connection before starting new one");
+      console.info('[SignalR] Cleaning up existing connection before starting new one');
       await this.stopConnection();
     }
 
     try {
-      console.log("SignalR: Starting new connection...");
+  console.info('[SignalR] Starting new connection...');
 
       /** ---------------------------
        * Option 1: Through Gateway (Recommended)
@@ -28,10 +28,7 @@ class SignalRService {
       this.connection = new signalR.HubConnectionBuilder()
         .withUrl(`/apis/chatHub`, {
           withCredentials: true, // ensure cookies are sent
-          // ❌ Removed skipNegotiation
-          // skipNegotiation: true,
-          // ❌ Removed hard WebSocket lock — let SignalR negotiate fallback
-          transport: signalR.HttpTransportType.WebSockets,
+          // Let SignalR negotiate the best transport (WebSockets preferred)
         })
         .withAutomaticReconnect({
           nextRetryDelayInMilliseconds: (retryContext) => {
@@ -44,18 +41,19 @@ class SignalRService {
         .configureLogging(signalR.LogLevel.Information)
         .build();
 
-      // Connection event handlers
+      // Connection lifecycle handlers
       this.connection.onreconnecting((error) => {
-        console.warn("SignalR Connection lost. Attempting to reconnect...", error);
+        console.warn('[SignalR] Connection lost. Attempting to reconnect...', error);
       });
 
       this.connection.onreconnected((connectionId) => {
-        console.log("SignalR Connection reestablished. Connection ID:", connectionId);
+        console.info('[SignalR] Connection reestablished. Connection ID:', connectionId);
       });
 
       this.connection.onclose((error) => {
-        console.error("SignalR Connection closed", error);
+        console.error('[SignalR] Connection closed', error);
         if (error) {
+          // attempt restart after a short delay
           setTimeout(() => this.startConnection(), 5000);
         }
       });
@@ -70,12 +68,12 @@ class SignalRService {
       );
 
       await Promise.race([connectionPromise, timeoutPromise]);
-      console.log("✅ SignalR: Successfully connected!");
-      console.log("SignalR: Connection ID:", this.connection.connectionId);
+  console.info('✅ [SignalR] Successfully connected!');
+  console.info('[SignalR] Connection ID:', this.connection.connectionId);
 
       return true;
     } catch (err) {
-      console.error("❌ SignalR Connection Error:", err);
+  console.error('❌ [SignalR] Connection Error:', err);
 
       // Handle token refresh for 401 errors
       if (err.statusCode === 401 || err.message?.includes("401")) {
@@ -98,12 +96,12 @@ class SignalRService {
        * --------------------------- */
       // const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
       try {
-        console.warn("SignalR: Gateway connection failed, trying direct backend...");
+        console.warn('[SignalR] Gateway connection failed, trying direct backend...');
 
         this.connection = new signalR.HubConnectionBuilder()
           .withUrl(`/apis/chatHub`, {
             withCredentials: true,
-            transport: signalR.HttpTransportType.WebSockets,
+            // allow negotiation/fallback transports
           })
           .withAutomaticReconnect({
             nextRetryDelayInMilliseconds: () => 5000,
@@ -113,10 +111,10 @@ class SignalRService {
 
         this.setupChatHandlers();
         await this.connection.start();
-        console.log("✅ SignalR: Connected directly to backend!");
+        console.info('✅ [SignalR] Connected directly to backend!');
         return true;
       } catch (fallbackError) {
-        console.error("SignalR: Direct backend connection also failed:", fallbackError);
+        console.error('[SignalR] Direct backend connection also failed:', fallbackError);
       }
 
       return false;
@@ -127,64 +125,83 @@ class SignalRService {
     if (!this.connection) return;
 
     this.connection.on("MessageReceived", (message) => {
-      console.log("📨 Message Received:", message);
-      this.messageHandlers.onMessageReceived?.(message);
+      console.debug("[SignalR] 📨 Message Received:", message);
+      (this.messageHandlers.onMessageReceived || []).forEach(h => {
+        try { h(message); } catch (e) { console.error('[SignalR] handler error onMessageReceived', e); }
+      });
     });
 
     this.connection.on("UserJoinedTask", (data) => {
-      console.log("👤 User Joined Task:", data);
-      this.messageHandlers.onUserJoined?.(data);
+      console.info("[SignalR] 👤 User Joined Task:", data);
+      (this.messageHandlers.onUserJoined || []).forEach(h => { try { h(data); } catch (e) { console.error('[SignalR] handler error onUserJoined', e); } });
     });
 
     this.connection.on("UserLeftTask", (data) => {
-      console.log("👋 User Left Task:", data);
-      this.messageHandlers.onUserLeft?.(data);
+      console.info("[SignalR] 👋 User Left Task:", data);
+      (this.messageHandlers.onUserLeft || []).forEach(h => { try { h(data); } catch (e) { console.error('[SignalR] handler error onUserLeft', e); } });
     });
 
     this.connection.on("UserTyping", (typingInfo) => {
-      console.log("⌨️ User Typing:", typingInfo);
-      this.messageHandlers.onUserTyping?.(typingInfo);
+      console.debug("[SignalR] ⌨️ User Typing:", typingInfo);
+      (this.messageHandlers.onUserTyping || []).forEach(h => { try { h(typingInfo); } catch (e) { console.error('[SignalR] handler error onUserTyping', e); } });
     });
 
     this.connection.on("OnlineUsers", (data) => {
-      console.log("👥 Online Users:", data);
-      this.messageHandlers.onOnlineUsers?.(data);
+      console.debug("[SignalR] 👥 Online Users:", data);
+      (this.messageHandlers.onOnlineUsers || []).forEach(h => { try { h(data); } catch (e) { console.error('[SignalR] handler error onOnlineUsers', e); } });
     });
 
     this.connection.on("Error", (error) => {
-      console.error("❌ SignalR Error:", error);
-      this.messageHandlers.onError?.(error);
+      console.error("❌ [SignalR] Error:", error);
+      (this.messageHandlers.onError || []).forEach(h => { try { h(error); } catch (e) { console.error('[SignalR] handler error onError', e); } });
     });
   }
 
   async stopConnection() {
     if (!this.connection) {
-      console.log("SignalR: No active connection to stop");
+      console.debug('[SignalR] No active connection to stop');
       return;
     }
     try {
-      console.log("Stopping SignalR connection...");
+      console.info('[SignalR] Stopping SignalR connection...');
       await this.connection.stop();
-      console.log("SignalR Connection successfully stopped");
+      console.info('[SignalR] SignalR Connection successfully stopped');
       this.connection = null;
     } catch (err) {
-      console.warn("Error while stopping SignalR connection:", err);
+      console.warn('[SignalR] Error while stopping SignalR connection:', err);
       this.connection = null;
     }
   }
 
   registerMessageHandlers(handlers) {
-    this.messageHandlers = { ...this.messageHandlers, ...handlers };
+    // handlers can contain one or more of the supported handler keys.
+    // We store multiple handlers per event and return an unsubscribe function.
+    const added = [];
+    Object.keys(handlers || {}).forEach((key) => {
+      if (!this.messageHandlers[key]) this.messageHandlers[key] = [];
+      const fn = handlers[key];
+      if (typeof fn === 'function') {
+        this.messageHandlers[key].push(fn);
+        added.push({ key, fn });
+      }
+    });
+
+    // Return an unsubscribe function for the caller to remove these handlers
+    return () => {
+      added.forEach(({ key, fn }) => {
+        this.messageHandlers[key] = (this.messageHandlers[key] || []).filter(h => h !== fn);
+      });
+    };
   }
 
   async joinTaskChat(taskId, organizationId, eventId) {
     if (!this.connection) return false;
     try {
       await this.connection.invoke("JoinTaskChat", taskId, organizationId, eventId);
-      console.log(`Joined task chat: ${taskId}`);
+      console.info(`[SignalR] Joined task chat: ${taskId}`);
       return true;
     } catch (err) {
-      console.error(`Error joining task chat ${taskId}:`, err);
+      console.error(`[SignalR] Error joining task chat ${taskId}:`, err);
       throw err;
     }
   }
@@ -193,10 +210,10 @@ class SignalRService {
     if (!this.connection) throw new Error("No SignalR connection");
     try {
       await this.connection.invoke("SendMessage", taskId, message, documentIds);
-      console.log("Message sent successfully");
+      console.debug('[SignalR] Message sent successfully');
       return true;
     } catch (err) {
-      console.error("Error sending message:", err);
+      console.error('[SignalR] Error sending message:', err);
       throw err;
     }
   }
@@ -206,7 +223,7 @@ class SignalRService {
     try {
       await this.connection.invoke("GetOnlineUsers", taskId);
     } catch (err) {
-      console.error("Error getting online users:", err);
+      console.error('[SignalR] Error getting online users:', err);
     }
   }
 
@@ -214,9 +231,9 @@ class SignalRService {
     if (!this.connection) return;
     try {
       await this.connection.invoke("LeaveTaskChat", taskId);
-      console.log(`Left task chat: ${taskId}`);
+      console.info(`[SignalR] Left task chat: ${taskId}`);
     } catch (err) {
-      console.error(`Error leaving task chat ${taskId}:`, err);
+      console.error(`[SignalR] Error leaving task chat ${taskId}:`, err);
       throw err;
     }
   }
@@ -226,7 +243,7 @@ class SignalRService {
     try {
       await this.connection.invoke("StartTyping", taskId);
     } catch (err) {
-      console.error("Error starting typing:", err);
+      console.error('[SignalR] Error starting typing:', err);
     }
   }
 
@@ -235,7 +252,7 @@ class SignalRService {
     try {
       await this.connection.invoke("StopTyping", taskId);
     } catch (err) {
-      console.error("Error stopping typing:", err);
+      console.error('[SignalR] Error stopping typing:', err);
     }
   }
 

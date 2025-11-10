@@ -35,16 +35,16 @@ export const SignalRProvider = ({ children }) => {
         if (isNowConnected) {
           setConnectionError(null);
         }
-        console.log('[SignalRContext] Forced sync: isConnected =', isNowConnected, 'actual state:', state);
+        console.debug('[SignalRContext] Forced sync: isConnected =', isNowConnected, 'actual state:', state);
       }
     }
   }, []);
 
   // Initialize SignalR connection
   const initializeConnection = useCallback(async () => {
-    console.log('SignalR: Starting connection...');
+    console.info('[SignalRContext] Starting connection...');
     if (!user) {
-      console.log('SignalR: Waiting for user context...');
+      console.debug('[SignalRContext] Waiting for user context...');
       return;
     }
     try {
@@ -81,33 +81,26 @@ export const SignalRProvider = ({ children }) => {
 
         // --- Add listeners for connection state changes ---
         if (signalRService.connection) {
-          // Remove previous listeners if any
-          signalRService.connection.off('onreconnected');
-          signalRService.connection.off('onclose');
-          signalRService.connection.off('onreconnecting');
-
-          // onreconnected
+          // attach lifecycle handlers
           signalRService.connection.onreconnected(() => {
             setIsConnected(true);
             setConnectionError(null);
           });
-          // onclose
           signalRService.connection.onclose((error) => {
             setIsConnected(false);
             setConnectionError(error ? (error.message || 'Connection closed') : 'Connection closed');
           });
-          // onreconnecting
           signalRService.connection.onreconnecting(() => {
             setIsConnected(false);
             setConnectionError('Reconnecting...');
           });
         }
       }
-      console.log('SignalR: Connection attempt result:', connected);
+      console.info('[SignalRContext] Connection attempt result:', connected);
       setIsConnected(connected);
       setConnectionError(connected ? null : 'Connection failed');
     } catch (error) {
-      console.error('SignalR: Connection attempt failed:', error);
+      console.error('[SignalRContext] Connection attempt failed:', error);
       setIsConnected(false);
       setConnectionError(error.message);
     }
@@ -115,12 +108,12 @@ export const SignalRProvider = ({ children }) => {
 
   // Clean up connection on unmount
   useEffect(() => {
-    console.log('SignalR: Provider mounted');
-    
+    console.info('[SignalRContext] Provider mounted');
+
     return () => {
-      console.log('SignalR: Provider unmounting, cleaning up connection');
+      console.info('[SignalRContext] Provider unmounting, cleaning up connection');
       signalRService.stopConnection().catch(() => {
-        console.log('SignalR: Cleanup completed');
+        console.info('[SignalRContext] Cleanup completed');
       });
       setIsConnected(false);
     };
@@ -129,10 +122,10 @@ export const SignalRProvider = ({ children }) => {
   // Connect when user is available
   useEffect(() => {
     if (user && !isConnected) {
-      console.log('SignalR: User detected, initiating connection...');
+      console.info('[SignalRContext] User detected, initiating connection...');
       initializeConnection();
     } else if (!user && isConnected) {
-      console.log('SignalR: User logged out, disconnecting...');
+      console.info('[SignalRContext] User logged out, disconnecting...');
       signalRService.stopConnection();
       setIsConnected(false);
       setOnlineUsers([]);
@@ -153,7 +146,7 @@ export const SignalRProvider = ({ children }) => {
   // Enhanced join task chat
   const joinTaskChat = useCallback(async (taskId, organizationId, eventId) => {
     if (!isConnected || !taskId) {
-      console.error('Cannot join task chat: Not connected or missing taskId');
+      console.error('[SignalRContext] Cannot join task chat: Not connected or missing taskId');
       return false;
     }
 
@@ -162,7 +155,7 @@ export const SignalRProvider = ({ children }) => {
       try {
         await signalRService.leaveTaskChat(currentTaskId);
       } catch (error) {
-        console.error('Error leaving previous task chat:', error);
+        console.error('[SignalRContext] Error leaving previous task chat:', error);
       }
     }
 
@@ -175,7 +168,7 @@ export const SignalRProvider = ({ children }) => {
       }
       return success;
     } catch (error) {
-      console.error('Error joining task chat:', error);
+      console.error('[SignalRContext] Error joining task chat:', error);
       setConnectionError(error.message);
       return false;
     }
@@ -184,12 +177,12 @@ export const SignalRProvider = ({ children }) => {
   // Enhanced send message
   const sendMessage = useCallback(async (taskId, message, documentIds = []) => {
     if (!isConnected) {
-      console.error('Cannot send message: Not connected to SignalR');
+      console.error('[SignalRContext] Cannot send message: Not connected to SignalR');
       return false;
     }
 
     if (!message || message.trim() === '') {
-      console.error('Cannot send empty message');
+      console.error('[SignalRContext] Cannot send empty message');
       return false;
     }
 
@@ -197,7 +190,7 @@ export const SignalRProvider = ({ children }) => {
       const success = await signalRService.sendMessage(taskId, message.trim(), documentIds);
       return success;
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('[SignalRContext] Error sending message:', error);
       setConnectionError(error.message);
       return false;
     }
@@ -217,7 +210,7 @@ export const SignalRProvider = ({ children }) => {
   // Leave task chat method
   const leaveTaskChat = useCallback(async (taskId) => {
     if (!isConnected) {
-      console.error('Cannot leave task chat: Not connected to SignalR');
+      console.error('[SignalRContext] Cannot leave task chat: Not connected to SignalR');
       return false;
     }
 
@@ -228,19 +221,17 @@ export const SignalRProvider = ({ children }) => {
       }
       return true;
     } catch (error) {
-      console.error('Error leaving task chat:', error);
+      console.error('[SignalRContext] Error leaving task chat:', error);
       return false;
     }
   }, [isConnected, currentTaskId]);
 
   // Enhanced register handlers
   const registerHandlers = useCallback((handlers) => {
-    if (!isConnected) {
-      console.warn('Cannot register handlers: No SignalR connection');
-      return;
-    }
-    signalRService.registerMessageHandlers(handlers);
-  }, [isConnected]);
+    // Always register handlers locally; signalRService will use them when a connection exists
+    // registerMessageHandlers now returns an unsubscribe function. Return it so callers can cleanup.
+    return signalRService.registerMessageHandlers(handlers);
+  }, []);
 
   // Get online users
   const getOnlineUsers = useCallback(async (taskId) => {

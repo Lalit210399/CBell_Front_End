@@ -30,6 +30,14 @@ const ConversationModule = ({
     startTyping,
     stopTyping,
   } = useSignalR();
+
+  // Debug: Log connection state changes
+  useEffect(() => {
+    console.debug('[ConversationModule] isConnected:', isConnected);
+    if (window.signalRDebug === undefined) window.signalRDebug = {};
+    window.signalRDebug.isConnected = isConnected;
+    window.signalRDebug.connectionError = connectionError;
+  }, [isConnected, connectionError]);
   const { user } = useUser();
 
   const typingTimeoutRef = useRef(null);
@@ -93,7 +101,6 @@ const ConversationModule = ({
       );
 
       const data = await response.json();
-
       if (!data || !data.threadDetails) {
         setMessages([]);
         setIsNewConversation(true);
@@ -126,7 +133,7 @@ const ConversationModule = ({
         await joinTaskChat(taskId, organizationId, eventId);
       }
     } catch (err) {
-      console.error("Error fetching messages:", err);
+      console.error("[ConversationModule] Error fetching messages:", err);
       setError(err.message);
       setIsNewConversation(true);
     } finally {
@@ -137,7 +144,7 @@ const ConversationModule = ({
   // SignalR Message Handlers
   const handleMessageReceived = useCallback(
     (message) => {
-      console.log("Message received via SignalR:", message);
+      console.debug("[ConversationModule] Message received via SignalR:", message);
 
       if (message.taskId === taskId) {
         setMessages((prev) => {
@@ -172,7 +179,7 @@ const ConversationModule = ({
   const handleUserJoined = useCallback(
     (data) => {
       if (data.taskId === taskId) {
-        console.log(`User joined: ${data.userName}`);
+        console.info(` [ConversationModule] User joined: ${data.userName}`);
         // You could show a notification here
       }
     },
@@ -182,7 +189,7 @@ const ConversationModule = ({
   const handleUserLeft = useCallback(
     (data) => {
       if (data.taskId === taskId) {
-        console.log(`User left: ${data.userName}`);
+        console.info(` [ConversationModule] User left: ${data.userName}`);
         // You could show a notification here
       }
     },
@@ -191,25 +198,25 @@ const ConversationModule = ({
 
   const handleUserTyping = useCallback((typingInfo) => {
     // Typing state is managed by the SignalR context
-    console.log("Typing update:", typingInfo);
+    console.debug('[ConversationModule] Typing update:', typingInfo);
   }, []);
 
   const handleOnlineUsers = useCallback((data) => {
-    console.log("Online users updated:", data);
+    console.debug('[ConversationModule] Online users updated:', data);
   }, []);
 
   // Setup SignalR handlers and join chat
   useEffect(() => {
     if (!isActive || !taskId) return;
 
-    // Register SignalR handlers
-    registerHandlers({
+    // Register SignalR handlers and capture unsubscribe
+    const unregister = registerHandlers({
       onMessageReceived: handleMessageReceived,
       onUserJoined: handleUserJoined,
       onUserLeft: handleUserLeft,
       onUserTyping: handleUserTyping,
       onOnlineUsers: handleOnlineUsers,
-    });
+    }) || (() => {});
 
     // Fetch messages and join chat
     fetchMessages();
@@ -220,6 +227,8 @@ const ConversationModule = ({
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
+      // Unregister handlers we added
+      try { unregister(); } catch (e) { /* ignore */ }
     };
   }, [
     isActive,
@@ -302,7 +311,7 @@ const ConversationModule = ({
           handleTypingStop();
         }
       } catch (err) {
-        console.error("Failed to send message:", err);
+        console.error("[ConversationModule] Failed to send message:", err);
         // You could show an error message to the user here
       }
     },
@@ -378,10 +387,8 @@ const ConversationModule = ({
           onSend={handleSendMessage}
           onTypingStart={() => handleTypingStart()}
           onTypingStop={() => handleTypingStop()}
-          disabled={!isConnected}
-          placeholder={
-            isConnected ? "Type a message..." : "Connecting to chat..."
-          }
+          disabled={false} // Always enabled for testing
+          placeholder={"Type a message... (test mode)"}
           currentUser={currentUser}
         />
       </div>

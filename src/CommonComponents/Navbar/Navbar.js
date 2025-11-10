@@ -70,12 +70,13 @@ function Navbar() {
     };
   }, []);
 
-  // Check permissions for each tab
   const hasDashboardPermission =
     userPermissions?.permissions?.Dashboard?.["Dashboard Management"]?.includes("Read") ?? false;
   const hasEventsPermission =
     userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
   const hasSchedulePermission =
+    userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
+  const hasChatPermission =
     userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
 
   // Prepare scope options
@@ -113,6 +114,11 @@ function Navbar() {
         {hasSchedulePermission && (
           <Link to="/schedule" className={location.pathname === "/schedule" ? "active" : ""}>
             Schedule
+          </Link>
+        )}
+        {hasChatPermission && (
+          <Link to="/NewChatLayout" className={location.pathname === "/NewChatLayout" ? "active" : ""} style={{width:87, textAlign:'center'}}>
+            Chat
           </Link>
         )}
       </div>
