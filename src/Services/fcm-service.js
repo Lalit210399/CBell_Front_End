@@ -1,5 +1,5 @@
-import { getToken, onMessage } from 'firebase/messaging';
-import { messaging, vapidKey } from './firebase-config';
+import { getToken, onMessage } from "firebase/messaging";
+import { messaging, vapidKey } from "./firebase-config";
 
 class FCMService {
   constructor() {
@@ -9,10 +9,10 @@ class FCMService {
 
   // Generate or retrieve device ID
   getOrCreateDeviceId() {
-    let deviceId = localStorage.getItem('deviceId');
+    let deviceId = localStorage.getItem("deviceId");
     if (!deviceId) {
       deviceId = `web_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-      localStorage.setItem('deviceId', deviceId);
+      localStorage.setItem("deviceId", deviceId);
     }
     return deviceId;
   }
@@ -20,28 +20,30 @@ class FCMService {
   // Request notification permission
   async requestPermission() {
     try {
-      if (!('Notification' in window)) {
-        throw new Error('This browser does not support notifications');
+      if (!("Notification" in window)) {
+        throw new Error("This browser does not support notifications");
       }
 
       // Check current permission status
-      if (Notification.permission === 'granted') {
+      if (Notification.permission === "granted") {
         return true;
       }
 
-      if (Notification.permission === 'denied') {
-        throw new Error('Notification permission denied. Please enable notifications in your browser settings.');
+      if (Notification.permission === "denied") {
+        throw new Error(
+          "Notification permission denied. Please enable notifications in your browser settings."
+        );
       }
 
       // Only request permission if it's 'default'
-      if (Notification.permission === 'default') {
+      if (Notification.permission === "default") {
         const permission = await Notification.requestPermission();
-        return permission === 'granted';
+        return permission === "granted";
       }
 
       return false;
     } catch (error) {
-      console.error('Permission request failed:', error);
+      console.error("Permission request failed:", error);
       return false;
     }
   }
@@ -49,12 +51,21 @@ class FCMService {
   // Get FCM token from Firebase
   async getFCMToken() {
     try {
-      const token = await getToken(messaging, {
-        vapidKey: vapidKey
-      });
+      const token = await getToken(messaging, { vapidKey });
+      if (!token)
+        throw new Error(
+          "No FCM token returned. Check your VAPID key and Firebase setup."
+        );
+      console.log("✅ FCM Token retrieved:", token);
       return token;
     } catch (error) {
-      console.error('Error getting FCM token:', error);
+      if (error.code === "messaging/permission-blocked") {
+        console.warn("🚫 Notifications are blocked. Ask user to enable them.");
+      } else if (error.code === "messaging/unsupported-browser") {
+        console.warn("⚠️ This browser does not support push notifications.");
+      } else {
+        console.error("🔥 Error getting FCM token:", error);
+      }
       return null;
     }
   }
@@ -65,44 +76,43 @@ class FCMService {
       // 1. Request permission
       const hasPermission = await this.requestPermission();
       if (!hasPermission) {
-        throw new Error('Notification permission denied');
+        throw new Error("Notification permission denied");
       }
 
       // 2. Get FCM token
       const fcmToken = await this.getFCMToken();
       if (!fcmToken) {
-        throw new Error('Failed to get FCM token');
+        throw new Error("Failed to get FCM token");
       }
 
       // 3. Register with backend
-      const response = await fetch('/apis/fcm/register-token', {
-        method: 'POST',
-        credentials: 'include', // Important for cookie authentication
+      const response = await fetch("/apis/fcm/register-token", {
+        method: "POST",
+        credentials: "include", // Important for cookie authentication
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           token: fcmToken,
-          platform: 'web',
-          deviceId: this.deviceId
-        })
+          platform: "web",
+          deviceId: this.deviceId,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to register FCM token');
+        throw new Error("Failed to register FCM token");
       }
 
       const result = await response.json();
-      console.log('FCM token registered:', result);
-      
+      console.log("FCM token registered:", result);
+
       // Set up message listener for foreground notifications
       this.setupMessageListener();
-      
+
       this.isInitialized = true;
       return result;
-
     } catch (error) {
-      console.error('FCM registration failed:', error);
+      console.error("FCM registration failed:", error);
       throw error;
     }
   }
@@ -110,15 +120,15 @@ class FCMService {
   // Set up listener for foreground messages
   setupMessageListener() {
     onMessage(messaging, (payload) => {
-      console.log('Message received in foreground:', payload);
-      
+      console.log("Message received in foreground:", payload);
+
       // Show notification in foreground
       if (payload.notification) {
         const notification = new Notification(payload.notification.title, {
           body: payload.notification.body,
-          icon: '/favicon.ico',
-          badge: '/favicon.ico',
-          data: payload.data
+          icon: "/favicon.ico",
+          badge: "/favicon.ico",
+          data: payload.data,
         });
 
         // Handle notification click
@@ -134,30 +144,35 @@ class FCMService {
   }
 
   // Get user notifications
-  async getNotifications(page = 1, pageSize = 20, category = null, unreadOnly = false) {
+  async getNotifications(
+    page = 1,
+    pageSize = 20,
+    category = null,
+    unreadOnly = false
+  ) {
     try {
       const params = new URLSearchParams({
         page: page.toString(),
         pageSize: pageSize.toString(),
         ...(category && { category }),
-        ...(unreadOnly && { unreadOnly: 'true' })
+        ...(unreadOnly && { unreadOnly: "true" }),
       });
 
       const response = await fetch(`/apis/notifications/user?${params}`, {
-        credentials: 'include',
+        credentials: "include",
         headers: {
-                "Content-Type": "application/json",
-                "ngrok-skip-browser-warning": "1",
-              },
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1",
+        },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch notifications');
+        throw new Error("Failed to fetch notifications");
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error("Error fetching notifications:", error);
       throw error;
     }
   }
@@ -165,23 +180,23 @@ class FCMService {
   // Mark notification as read
   async markAsRead(notificationId) {
     try {
-      const response = await fetch('/apis/notifications/mark-read', {
-        method: 'POST',
-        credentials: 'include',
+      const response = await fetch("/apis/notifications/mark-read", {
+        method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           "ngrok-skip-browser-warning": "1",
         },
-        body: JSON.stringify({ notificationId })
+        body: JSON.stringify({ notificationId }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to mark notification as read');
+        throw new Error("Failed to mark notification as read");
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      console.error("Error marking notification as read:", error);
       throw error;
     }
   }
@@ -189,9 +204,9 @@ class FCMService {
   // Mark all notifications as read
   async markAllAsRead() {
     try {
-      const response = await fetch('/apis/notifications/mark-all-read', {
-        method: 'POST',
-        credentials: 'include',
+      const response = await fetch("/apis/notifications/mark-all-read", {
+        method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           "ngrok-skip-browser-warning": "1",
@@ -199,12 +214,12 @@ class FCMService {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to mark all notifications as read');
+        throw new Error("Failed to mark all notifications as read");
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
+      console.error("Error marking all notifications as read:", error);
       throw error;
     }
   }
@@ -213,8 +228,8 @@ class FCMService {
   async deleteNotification(notificationId) {
     try {
       const response = await fetch(`/apis/notifications/${notificationId}`, {
-        method: 'DELETE',
-        credentials: 'include',
+        method: "DELETE",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           "ngrok-skip-browser-warning": "1",
@@ -222,12 +237,12 @@ class FCMService {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete notification');
+        throw new Error("Failed to delete notification");
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      console.error("Error deleting notification:", error);
       throw error;
     }
   }
@@ -235,8 +250,8 @@ class FCMService {
   // Get unread count
   async getUnreadCount() {
     try {
-      const response = await fetch('/apis/notifications/unread-count', {
-        credentials: 'include',
+      const response = await fetch("/apis/notifications/unread-count", {
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           "ngrok-skip-browser-warning": "1",
@@ -244,13 +259,13 @@ class FCMService {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get unread count');
+        throw new Error("Failed to get unread count");
       }
 
       const result = await response.json();
       return result.unreadCount;
     } catch (error) {
-      console.error('Error getting unread count:', error);
+      console.error("Error getting unread count:", error);
       return 0;
     }
   }
@@ -262,4 +277,3 @@ class FCMService {
 }
 
 export const fcmService = new FCMService();
-

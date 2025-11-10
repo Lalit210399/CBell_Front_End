@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import signalRService from '../Services/signalR-service';
 import { useUser } from './UserContext';
 
@@ -13,6 +13,7 @@ export const useSignalR = () => {
 };
 
 export const SignalRProvider = ({ children }) => {
+  // --- All state declarations at the top ---
   const [isConnected, setIsConnected] = useState(false);
   const [currentTaskId, setCurrentTaskId] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -20,18 +21,34 @@ export const SignalRProvider = ({ children }) => {
   const [connectionError, setConnectionError] = useState(null);
   const { user } = useUser();
 
+  // Use a ref to avoid closure issues with isConnected
+  const isConnectedRef = useRef(isConnected);
+  useEffect(() => { isConnectedRef.current = isConnected; }, [isConnected]);
+
+  // Helper to sync isConnected state with actual SignalR connection state
+  const syncConnectionState = useCallback(() => {
+    if (signalRService.connection) {
+      const state = signalRService.connection.state;
+      const isNowConnected = state === 1 || state === 'Connected' || signalRService.isConnected();
+      if (isNowConnected !== isConnectedRef.current) {
+        setIsConnected(isNowConnected);
+        if (isNowConnected) {
+          setConnectionError(null);
+        }
+        console.log('[SignalRContext] Forced sync: isConnected =', isNowConnected, 'actual state:', state);
+      }
+    }
+  }, []);
+
   // Initialize SignalR connection
   const initializeConnection = useCallback(async () => {
     console.log('SignalR: Starting connection...');
-    
     if (!user) {
       console.log('SignalR: Waiting for user context...');
       return;
     }
-
     try {
       const connected = await signalRService.startConnection();
-      
       if (connected) {
         // Register default message handlers
         signalRService.registerMessageHandlers({
@@ -42,13 +59,11 @@ export const SignalRProvider = ({ children }) => {
           },
           onUserTyping: (typingInfo) => {
             const { TaskId, UserId, IsTyping } = typingInfo;
-            
             setTypingUsers(prev => {
               const newTypingUsers = { ...prev };
               if (!newTypingUsers[TaskId]) {
                 newTypingUsers[TaskId] = [];
               }
-              
               if (IsTyping) {
                 if (!newTypingUsers[TaskId].includes(UserId)) {
                   newTypingUsers[TaskId] = [...newTypingUsers[TaskId], UserId];
@@ -56,7 +71,6 @@ export const SignalRProvider = ({ children }) => {
               } else {
                 newTypingUsers[TaskId] = newTypingUsers[TaskId].filter(id => id !== UserId);
               }
-              
               return newTypingUsers;
             });
           },
@@ -64,8 +78,31 @@ export const SignalRProvider = ({ children }) => {
             setConnectionError(error);
           }
         });
+
+        // --- Add listeners for connection state changes ---
+        if (signalRService.connection) {
+          // Remove previous listeners if any
+          signalRService.connection.off('onreconnected');
+          signalRService.connection.off('onclose');
+          signalRService.connection.off('onreconnecting');
+
+          // onreconnected
+          signalRService.connection.onreconnected(() => {
+            setIsConnected(true);
+            setConnectionError(null);
+          });
+          // onclose
+          signalRService.connection.onclose((error) => {
+            setIsConnected(false);
+            setConnectionError(error ? (error.message || 'Connection closed') : 'Connection closed');
+          });
+          // onreconnecting
+          signalRService.connection.onreconnecting(() => {
+            setIsConnected(false);
+            setConnectionError('Reconnecting...');
+          });
+        }
       }
-      
       console.log('SignalR: Connection attempt result:', connected);
       setIsConnected(connected);
       setConnectionError(connected ? null : 'Connection failed');
@@ -101,7 +138,17 @@ export const SignalRProvider = ({ children }) => {
       setOnlineUsers([]);
       setTypingUsers({});
     }
-  }, [user, isConnected, initializeConnection]);
+    // Always try to sync state with actual connection
+    syncConnectionState();
+  }, [user, isConnected, initializeConnection, syncConnectionState]);
+
+  // Also poll the connection state every 2 seconds as a fallback
+  useEffect(() => {
+    const interval = setInterval(() => {
+      syncConnectionState();
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [syncConnectionState]);
 
   // Enhanced join task chat
   const joinTaskChat = useCallback(async (taskId, organizationId, eventId) => {
