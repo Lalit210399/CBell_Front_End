@@ -3,8 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import MessageList from "./MessageList";
 import NewMessageBox from "./NewMessageBox";
-import { useUser } from "../../Context/UserContext";
-import { useSignalR } from "../../Context/SignalRContext";
+// removed useUser import (SignalR removed, no user context needed here)
 import "./Style.css";
 
 const ConversationModule = ({
@@ -18,18 +17,48 @@ const ConversationModule = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isNewConversation, setIsNewConversation] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState(null);
-  const {
-    isConnected,
-    connectionError,
-    joinTaskChat,
-    sendMessage,
-    registerHandlers,
-    onlineUsers,
-    typingUsers,
-    startTyping,
-    stopTyping,
-  } = useSignalR();
+  
+  // SignalR has been removed. Provide local fallbacks for the API-only behavior.
+  const isConnected = false;
+  const connectionError = null;
+  const onlineUsers = [];
+  const typingUsers = {};
+  const registerHandlers = useCallback(() => (() => {}), []); // no-op unsubscribe
+  const startTyping = useCallback(() => {}, []);
+  const stopTyping = useCallback(() => {}, []);
+
+  // Fallback sendMessage implementation that posts to the server API
+  const sendMessage = useCallback(async (taskId, message, documentIds = []) => {
+    try {
+      const payload = {
+        OrganizationId: currentUser?.organizationId || null,
+        EventId: eventId,
+        TaskId: taskId,
+        UserId: currentUser.id,
+        ConversationText: message,
+        DocumentId: documentIds || [],
+      };
+
+      const response = await fetch('/apis/chat-thread/add-thread', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || 'Failed to send message');
+      }
+
+      return true;
+    } catch (err) {
+      console.error('[ConversationModule] sendMessage fallback error:', err);
+      return false;
+    }
+  }, [currentUser, eventId]);
 
   // Debug: Log connection state changes
   useEffect(() => {
@@ -38,7 +67,6 @@ const ConversationModule = ({
     window.signalRDebug.isConnected = isConnected;
     window.signalRDebug.connectionError = connectionError;
   }, [isConnected, connectionError]);
-  const { user } = useUser();
 
   const typingTimeoutRef = useRef(null);
   const lastTypingTimeRef = useRef(0);
@@ -65,18 +93,7 @@ const ConversationModule = ({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleResponse = async (response) => {
-    if (response.status === 404) {
-      setIsNewConversation(true);
-      return null;
-    }
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to fetch messages");
-    }
-    return data;
-  };
+  
 
   const fetchMessages = useCallback(async () => {
     if (!isActive || !taskId) return;
@@ -124,14 +141,9 @@ const ConversationModule = ({
 
       setMessages(transformedMessages);
       setIsNewConversation(false);
-      setLastUpdated(new Date().toISOString());
+  // setLastUpdated(new Date().toISOString());
 
-      // Join the SignalR chat room for this task
-      if (isConnected && taskId) {
-        const organizationId =
-          currentUser?.organizationId || user?.organizationId;
-        await joinTaskChat(taskId, organizationId, eventId);
-      }
+      // No SignalR: purely API-driven chat; nothing to join
     } catch (err) {
       console.error("[ConversationModule] Error fetching messages:", err);
       setError(err.message);
@@ -139,8 +151,7 @@ const ConversationModule = ({
     } finally {
       setLoading(false);
     }
-  }, [taskId, eventId, isActive, isConnected, joinTaskChat, currentUser, user]);
-
+  }, [taskId, isActive]);
   // SignalR Message Handlers
   const handleMessageReceived = useCallback(
     (message) => {
