@@ -53,8 +53,8 @@ function App() {
                   {/* Debug output for authentication state */}
                   {process.env.NODE_ENV === 'development' && (
                     <div style={{ display: 'none' }}>
-                      {console.log('Auth Debug - User:', localStorage.getItem('user'))}
-                      {console.log('Auth Debug - Token:', !!localStorage.getItem('token'))}
+                      {/* {console.log('Auth Debug - User:', localStorage.getItem('user'))}
+                      {console.log('Auth Debug - Token:', !!localStorage.getItem('token'))} */}
                     </div>
                   )}
                   <MainLayout>

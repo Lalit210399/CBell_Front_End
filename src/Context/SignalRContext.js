@@ -15,6 +15,9 @@ export const useSignalR = () => {
 export const SignalRProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [currentTaskId, setCurrentTaskId] = useState(null);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [typingUsers, setTypingUsers] = useState({});
+  const [connectionError, setConnectionError] = useState(null);
   const { user } = useUser();
 
   // Initialize SignalR connection
@@ -26,39 +29,50 @@ export const SignalRProvider = ({ children }) => {
       return;
     }
 
-    // const token = localStorage.getItem('token');
-    // if (!token) {
-    //   console.log('SignalR: No authentication token found');
-    //   return;
-    // }
-
     try {
-      console.log('SignalR: Attempting connection with token...');
       const connected = await signalRService.startConnection();
       
-      if (!connected) {
-        console.log('SignalR: Connection failed, checking authentication...');
-        // Check if token is still valid
-        const { fetchWithRefresh } = await import('../Context/RefereshToken');
-        try {
-          await fetchWithRefresh('/apis/auth/validate', {
-            method: 'GET',
-            headers: {
-            //   'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
-          console.log('SignalR: Token is valid but connection failed');
-        } catch (authError) {
-          console.log('SignalR: Authentication validation failed:', authError);
-        }
+      if (connected) {
+        // Register default message handlers
+        signalRService.registerMessageHandlers({
+          onOnlineUsers: (data) => {
+            if (data && data.Users) {
+              setOnlineUsers(data.Users);
+            }
+          },
+          onUserTyping: (typingInfo) => {
+            const { TaskId, UserId, IsTyping } = typingInfo;
+            
+            setTypingUsers(prev => {
+              const newTypingUsers = { ...prev };
+              if (!newTypingUsers[TaskId]) {
+                newTypingUsers[TaskId] = [];
+              }
+              
+              if (IsTyping) {
+                if (!newTypingUsers[TaskId].includes(UserId)) {
+                  newTypingUsers[TaskId] = [...newTypingUsers[TaskId], UserId];
+                }
+              } else {
+                newTypingUsers[TaskId] = newTypingUsers[TaskId].filter(id => id !== UserId);
+              }
+              
+              return newTypingUsers;
+            });
+          },
+          onError: (error) => {
+            setConnectionError(error);
+          }
+        });
       }
       
       console.log('SignalR: Connection attempt result:', connected);
       setIsConnected(connected);
+      setConnectionError(connected ? null : 'Connection failed');
     } catch (error) {
       console.error('SignalR: Connection attempt failed:', error);
       setIsConnected(false);
+      setConnectionError(error.message);
     }
   }, [user]);
 
@@ -66,17 +80,14 @@ export const SignalRProvider = ({ children }) => {
   useEffect(() => {
     console.log('SignalR: Provider mounted');
     
-    // Return cleanup function
     return () => {
       console.log('SignalR: Provider unmounting, cleaning up connection');
-      // Always try to stop the connection on unmount
       signalRService.stopConnection().catch(() => {
-        // Ignore any errors during cleanup
         console.log('SignalR: Cleanup completed');
       });
       setIsConnected(false);
     };
-  }, []); // Remove isConnected dependency to avoid cleanup issues
+  }, []);
 
   // Connect when user is available
   useEffect(() => {
@@ -87,57 +98,139 @@ export const SignalRProvider = ({ children }) => {
       console.log('SignalR: User logged out, disconnecting...');
       signalRService.stopConnection();
       setIsConnected(false);
+      setOnlineUsers([]);
+      setTypingUsers({});
     }
   }, [user, isConnected, initializeConnection]);
 
-  // Log connection status changes
-  useEffect(() => {
-    console.log('SignalR Connection Status:', isConnected ? 'Connected' : 'Disconnected');
-  }, [isConnected]);
-
-  // Join/Leave task chat room
-  const joinTaskChat = useCallback(async (taskId) => {
-    if (!isConnected || !taskId) return;
+  // Enhanced join task chat
+  const joinTaskChat = useCallback(async (taskId, organizationId, eventId) => {
+    if (!isConnected || !taskId) {
+      console.error('Cannot join task chat: Not connected or missing taskId');
+      return false;
+    }
 
     // Leave current task chat if any
     if (currentTaskId && currentTaskId !== taskId) {
-      await signalRService.leaveTaskChat(currentTaskId);
+      try {
+        await signalRService.leaveTaskChat(currentTaskId);
+      } catch (error) {
+        console.error('Error leaving previous task chat:', error);
+      }
     }
 
-    // Join new task chat
-    await signalRService.joinTaskChat(taskId);
-    setCurrentTaskId(taskId);
+    try {
+      const success = await signalRService.joinTaskChat(taskId, organizationId, eventId);
+      if (success) {
+        setCurrentTaskId(taskId);
+        // Get online users for the task
+        await signalRService.getOnlineUsers(taskId);
+      }
+      return success;
+    } catch (error) {
+      console.error('Error joining task chat:', error);
+      setConnectionError(error.message);
+      return false;
+    }
   }, [isConnected, currentTaskId]);
 
-  // Send a message
-  const sendMessage = useCallback(async (message) => {
-    if (!isConnected) return;
-    await signalRService.sendMessage(message);
+  // Enhanced send message
+  const sendMessage = useCallback(async (taskId, message, documentIds = []) => {
+    if (!isConnected) {
+      console.error('Cannot send message: Not connected to SignalR');
+      return false;
+    }
+
+    if (!message || message.trim() === '') {
+      console.error('Cannot send empty message');
+      return false;
+    }
+
+    try {
+      const success = await signalRService.sendMessage(taskId, message.trim(), documentIds);
+      return success;
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setConnectionError(error.message);
+      return false;
+    }
   }, [isConnected]);
 
-  // Register message handlers
-  const registerHandlers = useCallback(({ onMessage, onUserJoined, onUserLeft }) => {
+  // Typing indicators
+  const startTyping = useCallback((taskId) => {
     if (!isConnected) return;
-
-    signalRService.removeHandlers();
-    
-    if (onMessage) {
-      signalRService.onReceiveMessage(onMessage);
-    }
-    if (onUserJoined) {
-      signalRService.onUserJoined(onUserJoined);
-    }
-    if (onUserLeft) {
-      signalRService.onUserLeft(onUserLeft);
-    }
+    signalRService.startTyping(taskId);
   }, [isConnected]);
+
+  const stopTyping = useCallback((taskId) => {
+    if (!isConnected) return;
+    signalRService.stopTyping(taskId);
+  }, [isConnected]);
+
+  // Leave task chat method
+  const leaveTaskChat = useCallback(async (taskId) => {
+    if (!isConnected) {
+      console.error('Cannot leave task chat: Not connected to SignalR');
+      return false;
+    }
+
+    try {
+      await signalRService.leaveTaskChat(taskId);
+      if (currentTaskId === taskId) {
+        setCurrentTaskId(null);
+      }
+      return true;
+    } catch (error) {
+      console.error('Error leaving task chat:', error);
+      return false;
+    }
+  }, [isConnected, currentTaskId]);
+
+  // Enhanced register handlers
+  const registerHandlers = useCallback((handlers) => {
+    if (!isConnected) {
+      console.warn('Cannot register handlers: No SignalR connection');
+      return;
+    }
+    signalRService.registerMessageHandlers(handlers);
+  }, [isConnected]);
+
+  // Get online users
+  const getOnlineUsers = useCallback(async (taskId) => {
+    if (!isConnected) {
+      console.error('Cannot get online users: Not connected to SignalR');
+      return [];
+    }
+    try {
+      await signalRService.getOnlineUsers(taskId);
+      return onlineUsers;
+    } catch (error) {
+      console.error('Error getting online users:', error);
+      return [];
+    }
+  }, [isConnected, onlineUsers]);
 
   const value = {
+    // Connection state
     isConnected,
+    connectionError,
+    currentTaskId,
+    
+    // Data
+    onlineUsers,
+    typingUsers,
+    
+    // Methods
     joinTaskChat,
     sendMessage,
+    startTyping,
+    stopTyping,
+    leaveTaskChat, // Fixed: Now defined as a function
     registerHandlers,
-    currentTaskId
+    getOnlineUsers,
+    
+    // Utility
+    reconnect: initializeConnection
   };
 
   return (
