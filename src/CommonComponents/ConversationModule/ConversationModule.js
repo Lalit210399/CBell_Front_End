@@ -44,7 +44,7 @@ const ConversationModule = ({
   const lastTypingTimeRef = useRef(0);
   const messagesEndRef = useRef(null);
 
-  const getInitialsFromUserName = (userName) => {
+  const getInitialsFromUserName = useCallback((userName) => {
     if (!userName) return "??";
 
     const nameParts = userName.trim().split(/\s+/);
@@ -58,7 +58,7 @@ const ConversationModule = ({
     }
 
     return "??";
-  };
+  }, []);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -139,7 +139,7 @@ const ConversationModule = ({
     } finally {
       setLoading(false);
     }
-  }, [taskId, eventId, isActive, isConnected, joinTaskChat, currentUser, user]);
+  }, [taskId, eventId, isActive, isConnected, joinTaskChat, currentUser, user, getInitialsFromUserName]);
 
   // SignalR Message Handlers
   const handleMessageReceived = useCallback(
@@ -148,32 +148,59 @@ const ConversationModule = ({
 
       if (message.taskId === taskId) {
         setMessages((prev) => {
-          // Check if message already exists to avoid duplicates
-          const exists = prev.some(
-            (m) => m.threadId === message.conversationId
-          );
+          // Check if message already exists by server id to avoid duplicates
+          const exists = prev.some((m) => m.threadId === message.conversationId);
           if (exists) return prev;
 
-          return [
-            ...prev,
-            {
-              threadId: message.conversationId,
-              user: {
-                id: message.userId,
-                name: message.userName,
-                avatar: getInitialsFromUserName(message.userName),
-              },
-              conversationText: message.message,
-              createdOn: message.sentAt,
-              replies: [],
-              reactions: [],
-              documentIds: message.documentIds || [],
+          // Try to find an optimistic message we previously inserted so we can replace it
+          const normalizedIncomingText = (message.message || "").trim();
+          const serverTime = message.sentAt ? new Date(message.sentAt).getTime() : null;
+
+          const optimisticIndex = prev.findIndex((m) => {
+            if (!m.isOptimistic) return false;
+            // Same user
+            if (String(m.user?.id) !== String(message.userId)) return false;
+            // Same text
+            if ((m.conversationText || "").trim() !== normalizedIncomingText) return false;
+            // If both have timestamps, ensure they are within 30s
+            if (m.createdOn && serverTime) {
+              const localTime = new Date(m.createdOn).getTime();
+              if (Math.abs(localTime - serverTime) > 30000) return false;
+            }
+            return true;
+          });
+
+          const newMessage = {
+            threadId: message.conversationId,
+            user: {
+              id: message.userId,
+              name: message.userName,
+              avatar: getInitialsFromUserName(message.userName),
             },
-          ];
+            conversationText: message.message,
+            createdOn: message.sentAt,
+            replies: [],
+            reactions: [],
+            documentIds: message.documentIds || [],
+          };
+
+          if (optimisticIndex !== -1) {
+            // Replace the optimistic message with the authoritative server message
+            const copy = [...prev];
+            copy[optimisticIndex] = {
+              ...copy[optimisticIndex],
+              ...newMessage,
+              isOptimistic: false,
+            };
+            return copy;
+          }
+
+          // No optimistic match - append normally
+          return [...prev, newMessage];
         });
       }
     },
-    [taskId]
+    [taskId, getInitialsFromUserName]
   );
 
   const handleUserJoined = useCallback(
@@ -286,7 +313,9 @@ const ConversationModule = ({
         const success = await sendMessage(taskId, content, documentIds);
 
         if (success) {
-          // Optimistically add message to UI
+          // Optimistically add message to UI, but avoid adding if a server message
+          // for the same text/user already exists (race where server broadcast
+          // arrives before sendMessage resolves).
           const optimisticMessage = {
             threadId: uuidv4(), // Temporary ID until we get real one
             user: {
@@ -304,8 +333,32 @@ const ConversationModule = ({
             isOptimistic: true, // Mark as optimistic
           };
 
-          setMessages((prev) => [...prev, optimisticMessage]);
-          setIsNewConversation(false);
+          const normalizedContent = (content || "").trim();
+          const now = Date.now();
+
+          setMessages((prev) => {
+            // If there's already a message from this user with same text
+            // and a timestamp within 60s, assume server already added it.
+            const exists = prev.some((m) => {
+              try {
+                if (String(m.user?.id) !== String(currentUser.id)) return false;
+                if ((m.conversationText || "").trim() !== normalizedContent) return false;
+                if (!m.createdOn) return true; // conservatively assume match
+                const mTime = new Date(m.createdOn).getTime();
+                return Math.abs(now - mTime) <= 60000; // 60s window
+              } catch (e) {
+                return false;
+              }
+            });
+
+            if (exists) {
+              // Don't add optimistic duplicate
+              return prev;
+            }
+
+            setIsNewConversation(false);
+            return [...prev, optimisticMessage];
+          });
 
           // Stop typing when message is sent
           handleTypingStop();
@@ -315,11 +368,21 @@ const ConversationModule = ({
         // You could show an error message to the user here
       }
     },
-    [taskId, sendMessage, currentUser, handleTypingStop]
+    [taskId, sendMessage, currentUser, handleTypingStop, getInitialsFromUserName]
   );
 
   // Get typing users for current task
   const currentTypingUsers = typingUsers[taskId] || [];
+
+  // Normalize online users for internal use (ids + names)
+  const normalizedOnlineUsers = (onlineUsers || []).map((u) => {
+    const id = u?.UserId || u?.userId || u?.id || u?.User?.UserId || u?.User?.userId || null;
+    const name = u?.UserName || u?.userName || u?.name || u?.User?.UserName || u?.User?.name || u?.user?.name || 'Unknown';
+    return { id, name, initials: getInitialsFromUserName(name) };
+  }).filter(u => u.id || u.name);
+
+  const onlineUserIds = normalizedOnlineUsers.map(u => String(u.id));
+  const onlineUserNames = normalizedOnlineUsers.map(u => String(u.name));
 
   if (!isActive) return null;
 
@@ -332,16 +395,22 @@ const ConversationModule = ({
         </div>
       )}
 
-      {/* Online Users */}
+      {/* Typing indicator bar (online avatars moved to avatar components) */}
       <div className="online-users-bar">
-        <span>{onlineUsers.length} users online</span>
-        {currentTypingUsers.length > 0 && (
-          <span className="typing-indicator">
-            {currentTypingUsers.length === 1
-              ? "1 user is typing..."
-              : `${currentTypingUsers.length} users are typing...`}
-          </span>
-        )}
+        <div className="online-stats">
+          {currentTypingUsers.length > 0 && (
+            <div className="typing-indicator">
+              <span className="typing-names">
+                {currentTypingUsers.length === 1
+                  ? `${currentTypingUsers[0]} is typing...`
+                  : `${currentTypingUsers.slice(0,3).join(', ')}${currentTypingUsers.length > 3 ? ',...' : ''} are typing...`}
+              </span>
+              <span className="typing-dots" aria-hidden="true">
+                <b>.</b><b>.</b><b>.</b>
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="messages-container">
@@ -371,7 +440,7 @@ const ConversationModule = ({
           </div>
         ) : (
           <>
-            <MessageList messages={messages} currentUser={currentUser} />
+            <MessageList messages={messages} currentUser={currentUser} onlineUserIds={onlineUserIds} onlineUserNames={onlineUserNames} />
             {loading && (
               <div className="loading-new-messages">
                 Loading new messages...
@@ -382,7 +451,7 @@ const ConversationModule = ({
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="sticky-input">
+      {/* <div className="sticky-input"> */}
         <NewMessageBox
           onSend={handleSendMessage}
           onTypingStart={() => handleTypingStart()}
@@ -391,7 +460,7 @@ const ConversationModule = ({
           placeholder={"Type a message... (test mode)"}
           currentUser={currentUser}
         />
-      </div>
+      {/* </div> */}
     </div>
   );
 };

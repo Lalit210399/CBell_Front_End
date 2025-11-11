@@ -5,9 +5,9 @@ import { Paperclip, Send } from "lucide-react";
 import MessageStrip from "../MessageStrip/MessageStrip";
 import { useUser } from "../../Context/UserContext";
 
-const FilePreviewBox = ({ file, uploading, onRemove }) => {
+const FilePreviewBox = ({ file, uploading, onRemove, inline = false }) => {
   if (!file) return null;
-  const type = file.type;
+  const type = file.type || '';
   let preview = null;
   let icon = "📎";
 
@@ -16,37 +16,16 @@ const FilePreviewBox = ({ file, uploading, onRemove }) => {
       <img
         src={URL.createObjectURL(file)}
         alt={file.name}
-        style={{
-          maxWidth: 80,
-          maxHeight: 60,
-          borderRadius: 4,
-          border: "1px solid #eee",
-          objectFit: "contain",
-          marginRight: 8,
-        }}
+        className="file-thumb-img"
       />
     );
   } else if (type.startsWith("video/")) {
     preview = (
-      <video
-        src={URL.createObjectURL(file)}
-        style={{
-          maxWidth: 80,
-          maxHeight: 60,
-          borderRadius: 4,
-          border: "1px solid #eee",
-          marginRight: 8,
-        }}
-        controls
-      />
+      <video src={URL.createObjectURL(file)} className="file-thumb-img" controls />
     );
   } else if (type.startsWith("audio/")) {
     preview = (
-      <audio
-        src={URL.createObjectURL(file)}
-        style={{ width: 80, marginRight: 8 }}
-        controls
-      />
+      <div className="file-thumb-placeholder">🎵</div>
     );
   } else if (type === "application/pdf") {
     icon = "📄";
@@ -70,48 +49,63 @@ const FilePreviewBox = ({ file, uploading, onRemove }) => {
     icon = "📈";
   }
 
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        background: "#fafafa",
-        border: "1px solid #eee",
-        borderRadius: 6,
-        padding: "4px 8px",
-        marginTop: 8,
-        maxWidth: 220,
-      }}
-    >
-      {preview || <span style={{ fontSize: 20 }}>{icon}</span>}
-      <span
+  if (!inline) {
+    return (
+      <div
         style={{
-          fontSize: 13,
-          maxWidth: 90,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          background: "#fafafa",
+          border: "1px solid #eee",
+          borderRadius: 6,
+          padding: "4px 8px",
+          marginTop: 8,
+          maxWidth: 220,
         }}
       >
-        {file.name}
-      </span>
-      {uploading ? (
-        <span style={{ color: "#aaa", fontSize: 12 }}>Uploading...</span>
-      ) : (
-        <button
-          onClick={onRemove}
+        {preview || <span style={{ fontSize: 20 }}>{icon}</span>}
+        <span
           style={{
-            color: "red",
-            border: "none",
-            background: "none",
-            cursor: "pointer",
             fontSize: 13,
+            maxWidth: 90,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
           }}
         >
-          Remove
-        </button>
-      )}
+          {file.name}
+        </span>
+        {uploading ? (
+          <span style={{ color: "#aaa", fontSize: 12 }}>Uploading...</span>
+        ) : (
+          <button
+            onClick={onRemove}
+            style={{
+              color: "red",
+              border: "none",
+              background: "none",
+              cursor: "pointer",
+              fontSize: 13,
+            }}
+          >
+            Remove
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // Inline WhatsApp-like preview
+  return (
+    <div className="file-preview-inline">
+      <div className="file-preview-left">{preview || <div className="file-thumb-placeholder">{icon}</div>}</div>
+      <div className="file-preview-middle">
+        <div className="file-name" title={file.name}>{file.name}</div>
+        <div className="file-meta">{Math.round((file.size || 0) / 1024)} KB</div>
+        {uploading && <div className="file-upload-progress"><div className="file-upload-bar" style={{ width: '60%' }} /></div>}
+      </div>
+      <button className="file-remove-btn" onClick={onRemove} aria-label="Remove attachment">✕</button>
     </div>
   );
 };
@@ -146,7 +140,7 @@ const NewMessageBox = ({
 
   const handleTypingStart = useCallback(() => {
     if (disabled) return;
-    
+
     const now = Date.now();
     // Throttle typing events (send every 2 seconds)
     if (now - lastTypingTimeRef.current > 2000) {
@@ -261,8 +255,15 @@ const NewMessageBox = ({
 
   const handlePaperclipClick = (e) => {
     e.preventDefault();
-    if (disabled) return;
+    if (disabled || uploading) return;
 
+    // Open native file picker by forwarding click to the hidden input
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+      return;
+    }
+
+    // Fallback - if file input is not available, show dev message
     setShowDevMsg(true);
     setTimeout(() => setShowDevMsg(false), 2000);
   };
@@ -313,51 +314,53 @@ const NewMessageBox = ({
 
 >>>>>>> b01bdee195b73a86d2556974a72021e40c199efd
       <div className="message-input-wrapper">
-        <textarea
-          ref={textareaRef}
-          value={message}
-          onChange={handleMessageChange}
-          onKeyDown={handleKeyDown}
-          placeholder={disabled ? "Connecting to chat..." : placeholder}
-          rows="1"
-          disabled={disabled}
-          className={disabled ? "disabled-textarea" : ""}
-        />
+        <div className="wrapper">
+          <textarea
+            ref={textareaRef}
+            value={message}
+            onChange={handleMessageChange}
+            onKeyDown={handleKeyDown}
+            placeholder={disabled ? "Connecting to chat..." : placeholder}
+            rows="1"
+            disabled={disabled}
+            className={disabled ? "disabled-textarea" : ""}
+          />
+          <div className="editor-actions">
+            <input
+              type="file"
+              style={{ display: "none" }}
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              disabled={disabled || uploading}
+            />
+            <button
+              className="action-button"
+              onClick={handlePaperclipClick}
+              disabled={disabled || uploading}
+              type="button"
+            >
+              <Paperclip />
+            </button>
+
+            <button
+              className={`send-button ${isSendDisabled ? "disabled" : ""}`}
+              onClick={handleSend}
+              disabled={isSendDisabled}
+              type="button"
+            >
+              <Send />
+            </button>
+          </div>
+        </div>
 
         {selectedFile && (
           <FilePreviewBox
             file={selectedFile}
             uploading={uploading}
             onRemove={handleRemoveFile}
+            inline
           />
         )}
-
-        <div className="editor-actions">
-          <input
-            type="file"
-            style={{ display: "none" }}
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            disabled={disabled || uploading}
-          />
-          <button
-            className="action-button"
-            onClick={handlePaperclipClick}
-            disabled={disabled || uploading}
-            type="button"
-          >
-            <Paperclip />
-          </button>
-
-          <button
-            className={`send-button ${isSendDisabled ? "disabled" : ""}`}
-            onClick={handleSend}
-            disabled={isSendDisabled}
-            type="button"
-          >
-            <Send />
-          </button>
-        </div>
       </div>
     </div>
   );
