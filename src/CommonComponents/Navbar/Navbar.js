@@ -118,7 +118,7 @@ function Navbar() {
           </Link>
         )}
         {hasChatPermission && (
-          <Link to="/NewChatLayout" className={location.pathname === "/NewChatLayout" ? "active" : ""} style={{width:87, textAlign:'center'}}>
+          <Link to="/chat" className={location.pathname === "/chat" ? "active" : ""} style={{width:87, textAlign:'center'}}>
             Chat
           </Link>
         )}

@@ -62,8 +62,8 @@ function Sidebar() {
         {hasChatPermission && (
           <li>
             <Link
-              to="/NewChatLayout"
-              className={`menu-item ${location.pathname === "/NewChatLayout" ? "active" : ""}`}
+              to="/chat"
+              className={`menu-item ${location.pathname === "/chat" ? "active" : ""}`}
             >
               <div className="tooltip" data-tooltip="Chat">
                 <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-square"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="m8 12 2-2 2 2m-2-2v3"/></svg>
