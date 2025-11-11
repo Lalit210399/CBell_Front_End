@@ -32,7 +32,8 @@ const FilesUploads = ({
   showFileRequirementWarning = false, // ← NEW PROP for showing file requirement warning
   onWorkSubmissionFilesChange, // ← NEW PROP for work submission file tracking
   externalLoading = false, // ← NEW PROP for external loading state
-  loadingType = "upload" // ← NEW PROP for loading type
+  loadingType = "upload", // ← NEW PROP for loading type
+  taskStatus = null // ← NEW PROP for task status
 }) => {
   const { user } = useUser();
   
@@ -50,6 +51,18 @@ const FilesUploads = ({
       role.displayName?.toLowerCase().includes('creative')
     );
   }, [user?.roles]);
+
+  // Helper function to check if uploads are allowed based on task status
+  const canUploadFiles = useCallback(() => {
+    // If no task status provided, allow uploads (for backward compatibility)
+    if (!taskStatus) return true;
+    
+    // Only allow uploads when task status is "New" or "Active"
+    const statusValue = taskStatus?.value || taskStatus?.label || '';
+    const isNewOrActive = statusValue === "New" || statusValue === "Active";
+    
+    return isNewOrActive;
+  }, [taskStatus]);
   
  
   
@@ -101,7 +114,7 @@ const FilesUploads = ({
       <div className={containerClass}>
         <div className="loading-content">
           <div className="loading-spinner">
-            <div className="spinner"></div>
+            {/* <div className="spinner"></div> */}
           </div>
           <p className="loading-text">{getLoadingText()}</p>
           <p className="loading-subtext">{getSubText()}</p>
@@ -807,7 +820,7 @@ const FilesUploads = ({
               <span className="warning-text">⚠️ Files required for approval submission</span>
             </div>
           )}
-          {[...files, ...uploadedFiles].length > 0 && !hasApprovedOrPublishedFile && (
+          {[...files, ...uploadedFiles].length > 0 && !hasApprovedOrPublishedFile && canUploadFiles() && (
             <label className="upload-button">
               {isUploading ? <Loader2 className="animate-spin" size={20} /> : 'Upload'}
               <input
@@ -845,7 +858,7 @@ const FilesUploads = ({
                     <span>Audio Files</span>
                   </div>
                 </div>
-                {!hasApprovedOrPublishedFile && (
+                {!hasApprovedOrPublishedFile && canUploadFiles() && (
                   <div className="empty-upload-section">
                     <label className="empty-upload-button">
                       {isUploading ? <Loader2 className="animate-spin" size={20} /> : 'Upload Files'}

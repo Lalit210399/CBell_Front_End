@@ -177,10 +177,13 @@ const Table = ({
                   className={sortableColumns.includes(column.key) ? "sortable" : ""}
                 >
                   {column.label}{" "}
-                  {sortableColumns.includes(column.key) &&
-                    sortConfig.key === column.key && (
-                      <span>{sortConfig.direction === "asc" ? "▲" : "▼"}</span>
-                    )}
+                  {sortableColumns.includes(column.key) && (
+                    <span className={sortConfig.key === column.key ? "sort-active" : "sort-inactive"}>
+                      {sortConfig.key === column.key 
+                        ? (sortConfig.direction === "asc" ? "↑" : "↓")
+                        : "⇅"}
+                    </span>
+                  )}
                 </th>
               ))}
               {showActions && <th className="sticky-header">Action</th>}

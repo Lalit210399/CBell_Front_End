@@ -1,3 +1,4 @@
+//Navbar.js
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Building2, LogOut, Shield, ChevronDown } from "lucide-react";
@@ -69,12 +70,13 @@ function Navbar() {
     };
   }, []);
 
-  // Check permissions for each tab
   const hasDashboardPermission =
     userPermissions?.permissions?.Dashboard?.["Dashboard Management"]?.includes("Read") ?? false;
   const hasEventsPermission =
     userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
   const hasSchedulePermission =
+    userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
+  const hasChatPermission =
     userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
 
   // Prepare scope options
@@ -112,6 +114,11 @@ function Navbar() {
         {hasSchedulePermission && (
           <Link to="/schedule" className={location.pathname === "/schedule" ? "active" : ""}>
             Schedule
+          </Link>
+        )}
+        {hasChatPermission && (
+          <Link to="/chat" className={location.pathname === "/chat" ? "active" : ""} style={{width:87, textAlign:'center'}}>
+            Chat
           </Link>
         )}
       </div>

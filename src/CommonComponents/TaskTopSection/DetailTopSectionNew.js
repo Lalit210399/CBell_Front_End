@@ -20,6 +20,16 @@ function formatDateTimeLocal(date) {
   return { date: `${year}-${month}-${day}`, time: `${hours}:${minutes}` };
 }
 
+function toTitleCase(str) {
+  if (!str) return str;
+  return str
+    .trim()
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 const DetailTopSectionNew = ({
   mode,
   onBackClick,
@@ -134,6 +144,7 @@ const DetailTopSectionNew = ({
     if (JSON.stringify(currentIds) !== JSON.stringify(newIds)) {
       setAssignedIds(ids);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assignedTo]); // Remove assignedIds from dependencies to prevent infinite loop
 
   // Event types are now provided via props or context - no need to fetch
@@ -249,7 +260,7 @@ const DetailTopSectionNew = ({
     
     
     const payload = {
-      title: editableTitle,
+      title: toTitleCase(editableTitle),
       date: combinedDateTime,
       time: editableTime || "", // Include time separately for validation, empty string if not set
       type: selectedEventType,
@@ -294,7 +305,7 @@ const DetailTopSectionNew = ({
         </button>
         {mode === "view" ? (
           <div className="event-title-display">
-            {editableTitle || "Untitled Event"}
+            {toTitleCase(editableTitle) || "Untitled Event"}
           </div>
         ) : (
           <input

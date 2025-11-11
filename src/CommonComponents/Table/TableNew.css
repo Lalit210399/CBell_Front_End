@@ -80,6 +80,31 @@
   box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
 }
 
+/* Sort indicator styles */
+.tn-sort-active {
+  opacity: 1;
+  color: #3b82f6;
+  font-size: 12px;
+  margin-left: 4px;
+  transition: all 0.2s ease-in-out;
+}
+
+.tn-sort-inactive {
+  opacity: 0.3;
+  color: #6b7280;
+  font-size: 12px;
+  margin-left: 4px;
+  transition: all 0.2s ease-in-out;
+}
+
+.tn-sortable:hover .tn-sort-inactive {
+  opacity: 0.6;
+}
+
+.tn-clickable_header:hover .tn-sort-inactive {
+  opacity: 0.6;
+}
+
 /* Skeleton Loading Styles */
 .tn-skeleton_row {
   animation: pulse 1.5s ease-in-out infinite;

@@ -381,9 +381,9 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
           hasError={!!errors?.description}
           errorMessage={errors?.description}
         />
-        {errors?.description && (
+        {/* {errors?.description && (
           <div className="field-error">{errors.description}</div>
-        )}
+        )} */}
       </div>
     </div>
   );
