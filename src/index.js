@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
+import { SignalRProvider } from './Context/SignalRContext';
 import { UserProvider } from './Context/UserContext';
 import { ThemeProvider } from './Context/ThemeContext';
 import { MessageProvider } from './Context/MessageContext';
@@ -90,7 +91,9 @@ root.render(
           <EventTypesProvider>
             <DepartmentProvider>
               <TaskStatusProvider>
-                <App />
+                <SignalRProvider>
+                  <App />
+                </SignalRProvider>
               </TaskStatusProvider>
             </DepartmentProvider>
           </EventTypesProvider>
