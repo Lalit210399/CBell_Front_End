@@ -230,6 +230,8 @@
   font-weight: bold;
   flex-shrink: 0;
   box-shadow: var(--shadow);
+  position: relative;
+  overflow: visible;
 }
 
 .avatar.small {
