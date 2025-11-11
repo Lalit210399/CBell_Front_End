@@ -52,11 +52,59 @@ export const SignalRProvider = ({ children }) => {
       if (connected) {
         // Register default message handlers
         signalRService.registerMessageHandlers({
+          // When server sends full online users list
           onOnlineUsers: (data) => {
             if (data && data.Users) {
               setOnlineUsers(data.Users);
             }
           },
+
+          // When a single user joins the task/chat
+          onUserJoined: (data) => {
+            try {
+              // If server sends complete Users array in this payload
+              if (data && data.Users) {
+                setOnlineUsers(data.Users);
+                return;
+              }
+
+              // Normalize user object from possible shapes
+              const userObj = data?.User || {
+                UserId: data?.userId || data?.UserId,
+                UserName: data?.userName || data?.UserName || data?.userName || data?.user?.name,
+              };
+
+              if (!userObj || !userObj.UserId) return;
+
+              setOnlineUsers(prev => {
+                // avoid duplicates
+                const exists = (prev || []).some(u => (u.UserId || u.userId) === (userObj.UserId || userObj.userId));
+                if (exists) return prev;
+                return [...(prev || []), userObj];
+              });
+            } catch (e) {
+              console.error('[SignalRContext] Error handling onUserJoined payload', e, data);
+            }
+          },
+
+          // When a single user leaves the task/chat
+          onUserLeft: (data) => {
+            try {
+              // If server sends complete Users array in this payload
+              if (data && data.Users) {
+                setOnlineUsers(data.Users);
+                return;
+              }
+
+              const userId = data?.userId || data?.UserId || data?.User?.UserId || data?.User?.userId;
+              if (!userId) return;
+
+              setOnlineUsers(prev => (prev || []).filter(u => (u.UserId || u.userId) !== userId));
+            } catch (e) {
+              console.error('[SignalRContext] Error handling onUserLeft payload', e, data);
+            }
+          },
+
           onUserTyping: (typingInfo) => {
             const { TaskId, UserId, IsTyping } = typingInfo;
             setTypingUsers(prev => {

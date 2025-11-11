@@ -121,7 +121,7 @@ const DocumentPreview = ({ docId, idx, total }) => {
   );
 };
 
-const MessageItem = ({ message, currentUser, onReply, onReaction, isThread }) => {
+const MessageItem = ({ message, currentUser, onReply, onReaction, isThread, onlineUserIds = [], onlineUserNames = [] }) => {
   const [showReplyBox, setShowReplyBox] = useState(false);
   const [showDevMsg, setShowDevMsg] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
@@ -141,6 +141,22 @@ const MessageItem = ({ message, currentUser, onReply, onReaction, isThread }) =>
     setTimeout(() => setShowDevMsg(false), 2000);
   };
 
+  // determine online status: check by id first, fallback to name
+  const userId = message.user?.id ? String(message.user.id) : null;
+  const userName = message.user?.name ? String(message.user.name) : null;
+  const isOnline = (userId && onlineUserIds.includes(userId)) || (userName && onlineUserNames.includes(userName));
+
+  // Clean document IDs: flatten nested arrays and remove falsy/empty IDs
+  const cleanedDocumentIds = Array.isArray(message.documentIds)
+    ? message.documentIds.flat(Infinity).filter((id) => {
+        // remove null/undefined/empty arrays/empty strings
+        if (id === null || id === undefined) return false;
+        if (Array.isArray(id)) return id.length > 0;
+        if (typeof id === 'string' && id.trim() === '') return false;
+        return true;
+      }).map(id => String(id))
+    : [];
+
   return (
     <div className={`message-item ${isThread ? 'thread-starter' : ''}`} style={{ position: 'relative' }}>
       {showDevMsg && (
@@ -155,7 +171,7 @@ const MessageItem = ({ message, currentUser, onReply, onReaction, isThread }) =>
         </div>
       )}
       <div className="message-content">
-        <Avatar user={message.user} />
+        <Avatar user={message.user} isOnline={isOnline} />
         <div className="message-body">
           <div className="message-header">
             <span className="username">{message.user.name}</span>
@@ -165,10 +181,10 @@ const MessageItem = ({ message, currentUser, onReply, onReaction, isThread }) =>
           </div>
           <div className="message-text">{message.conversationText}</div>
           {/* Render document links and previews if present */}
-          {message.documentIds && message.documentIds.length > 0 && (
+          {cleanedDocumentIds && cleanedDocumentIds.length > 0 && (
             <div style={{ margin: '8px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {message.documentIds.map((docId, idx) => (
-                <DocumentPreview key={docId} docId={docId} idx={idx} total={message.documentIds.length} />
+              {cleanedDocumentIds.map((docId, idx) => (
+                <DocumentPreview key={docId + '-' + idx} docId={docId} idx={idx} total={cleanedDocumentIds.length} />
               ))}
             </div>
           )}

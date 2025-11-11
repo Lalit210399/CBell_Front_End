@@ -321,6 +321,16 @@ const ConversationModule = ({
   // Get typing users for current task
   const currentTypingUsers = typingUsers[taskId] || [];
 
+  // Normalize online users for internal use (ids + names)
+  const normalizedOnlineUsers = (onlineUsers || []).map((u) => {
+    const id = u?.UserId || u?.userId || u?.id || u?.User?.UserId || u?.User?.userId || null;
+    const name = u?.UserName || u?.userName || u?.name || u?.User?.UserName || u?.User?.name || u?.user?.name || 'Unknown';
+    return { id, name, initials: getInitialsFromUserName(name) };
+  }).filter(u => u.id || u.name);
+
+  const onlineUserIds = normalizedOnlineUsers.map(u => String(u.id));
+  const onlineUserNames = normalizedOnlineUsers.map(u => String(u.name));
+
   if (!isActive) return null;
 
   return (
@@ -332,16 +342,22 @@ const ConversationModule = ({
         </div>
       )}
 
-      {/* Online Users */}
+      {/* Typing indicator bar (online avatars moved to avatar components) */}
       <div className="online-users-bar">
-        <span>{onlineUsers.length} users online</span>
-        {currentTypingUsers.length > 0 && (
-          <span className="typing-indicator">
-            {currentTypingUsers.length === 1
-              ? "1 user is typing..."
-              : `${currentTypingUsers.length} users are typing...`}
-          </span>
-        )}
+        <div className="online-stats">
+          {currentTypingUsers.length > 0 && (
+            <div className="typing-indicator">
+              <span className="typing-names">
+                {currentTypingUsers.length === 1
+                  ? `${currentTypingUsers[0]} is typing...`
+                  : `${currentTypingUsers.slice(0,3).join(', ')}${currentTypingUsers.length > 3 ? ',...' : ''} are typing...`}
+              </span>
+              <span className="typing-dots" aria-hidden="true">
+                <b>.</b><b>.</b><b>.</b>
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="messages-container">
@@ -371,7 +387,7 @@ const ConversationModule = ({
           </div>
         ) : (
           <>
-            <MessageList messages={messages} currentUser={currentUser} />
+            <MessageList messages={messages} currentUser={currentUser} onlineUserIds={onlineUserIds} onlineUserNames={onlineUserNames} />
             {loading && (
               <div className="loading-new-messages">
                 Loading new messages...
@@ -382,7 +398,7 @@ const ConversationModule = ({
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="sticky-input">
+      {/* <div className="sticky-input"> */}
         <NewMessageBox
           onSend={handleSendMessage}
           onTypingStart={() => handleTypingStart()}
@@ -391,7 +407,7 @@ const ConversationModule = ({
           placeholder={"Type a message... (test mode)"}
           currentUser={currentUser}
         />
-      </div>
+      {/* </div> */}
     </div>
   );
 };

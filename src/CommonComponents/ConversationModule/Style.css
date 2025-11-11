@@ -119,12 +119,75 @@
   white-space: pre-wrap;
   line-height: 1.4;
 }
-
-.message-actions {
+.online-users-bar {
   display: flex;
-  gap: 8px;
-  margin-top: 8px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
 }
+
+.online-users-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.online-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.85em;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.online-avatar.more {
+  background: #e9eef8;
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+.online-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9em;
+  color: var(--text-light);
+}
+
+.online-count {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.typing-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-lighter);
+  font-size: 0.85em;
+}
+
+.typing-dots b {
+  display: inline-block;
+  margin-right: 2px;
+  opacity: 0.2;
+  animation: blink 1s infinite;
+}
+.typing-dots b:nth-child(2) { animation-delay: .15s }
+.typing-dots b:nth-child(3) { animation-delay: .3s }
+
+@keyframes blink {
+  0% { opacity: 0.15; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-2px); }
+  100% { opacity: 0.15; transform: translateY(0); }
+}
+
 
 .action-button {
   background: none;
@@ -175,6 +238,26 @@
   font-size: 0.7em;
 }
 
+/* Online status dot shown on avatars */
+.avatar-online-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #22c55e; /* green */
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.avatar-online-dot.small {
+  width: 8px;
+  height: 8px;
+  right: 0;
+  bottom: 0;
+  border-width: 1px;
+}
+
 .sticky-message-box {
   display: flex;
   gap: 12px;
@@ -189,8 +272,13 @@
 .message-input-wrapper {
   flex: 1;
   position: relative;
+  /* display: flex; */
+  /* flex-direction: column; */
+}
+
+.message-input-wrapper .wrapper {
   display: flex;
-  flex-direction: column;
+  /* flex-direction: column; */
 }
 
 .sticky-message-box textarea {
@@ -369,6 +457,91 @@
 .file-preview-box button:hover {
   background: rgba(211, 47, 47, 0.1);
   border-radius: 50%;
+}
+
+/* Inline WhatsApp-like file preview inside the composer */
+.file-preview-inline {
+  width: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  margin-bottom: 8px;
+}
+
+.file-preview-left {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f4f6fb;
+}
+
+.file-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.file-thumb-placeholder {
+  font-size: 22px;
+}
+
+.file-preview-middle {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.file-name {
+  font-weight: 600;
+  color: var(--text-color);
+  font-size: 0.95em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+
+.file-meta {
+  font-size: 0.8em;
+  color: var(--text-lighter);
+}
+
+.file-remove-btn {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.file-remove-btn:hover { color: #d32f2f }
+
+.file-upload-progress {
+  width: 100%;
+  height: 6px;
+  background: rgba(0,0,0,0.05);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.file-upload-bar {
+  height: 100%;
+  background: linear-gradient(90deg,var(--primary-color),var(--secondary-color));
+  width: 0%;
+  transition: width 0.2s ease;
 }
 
 /* Responsive adjustments */

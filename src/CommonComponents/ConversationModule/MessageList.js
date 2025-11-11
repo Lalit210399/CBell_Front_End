@@ -2,8 +2,9 @@
 import React, { useEffect, useRef, memo, useCallback } from 'react';
 import MessageItem from './MessageItem';
 
-const MessageList = ({ messages, currentUser, onReply, onReaction }) => {
+const MessageList = ({ messages, currentUser, onReply, onReaction, onlineUserIds = [], onlineUserNames = [] }) => {
   const messagesEndRef = useRef(null);
+  console.log("onlineUserIds in MessageList:", onlineUserIds);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -23,6 +24,8 @@ const MessageList = ({ messages, currentUser, onReply, onReaction }) => {
           onReply={onReply}
           onReaction={onReaction}
           isThread={true}
+          onlineUserIds={onlineUserIds}
+          onlineUserNames={onlineUserNames}
         />
       ))}
       <div ref={messagesEndRef} />
