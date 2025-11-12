@@ -457,7 +457,7 @@ const ConversationModule = ({
           onTypingStart={() => handleTypingStart()}
           onTypingStop={() => handleTypingStop()}
           disabled={false} // Always enabled for testing
-          placeholder={"Type a message... (test mode)"}
+          placeholder={"Type a message..."}
           currentUser={currentUser}
         />
       {/* </div> */}
