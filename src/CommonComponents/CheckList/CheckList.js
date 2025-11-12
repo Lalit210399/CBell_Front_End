@@ -289,11 +289,11 @@ const Checklist = ({
         );
       })}
       
-      {hasError && errorMessage && (
+      {/* {hasError && errorMessage && (
         <div className="checklist-error-message">
           {errorMessage}
         </div>
-      )}
+      )} */}
     </div>
   );
 };
