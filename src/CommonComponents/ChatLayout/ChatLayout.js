@@ -180,7 +180,7 @@ const ChatLayout = ({ events, organizationId }) => {
                               <div className="assigned-users-row">
                                 <span className="assigned-users">
                                   <Users size={12}/> 
-                                  {task.assignedTo.map(user => user.name).join(", ")}
+                                  {task.assignedTo.map(user => user.name).join(" | ")}
                                 </span>
                               </div>
                             )}
@@ -224,9 +224,9 @@ const ChatLayout = ({ events, organizationId }) => {
                       <div className="chat-header-row-2-left">
                         {selectedTask.assignedToNames?.length > 0 && (
                           <span className="chat-header-assigned">
-                            <span className="assigned-label">Assigned to:</span>
+                            <span className="assigned-label"><Users size={14}/></span>
                             <span className="assigned-names">
-                              {selectedTask.assignedToNames.join(", ")}
+                              {selectedTask.assignedToNames.join(" | ")}
                             </span>
                           </span>
                         )}
