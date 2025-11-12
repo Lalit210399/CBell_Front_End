@@ -47,6 +47,10 @@ const TaskDetailPage = () => {
   const { taskId, mode: initialMode = "view", eventId: locationEventId, organizationId, eventDate: navEventDate, eventName } = location.state || {};
   const eventDate = React.useMemo(() => navEventDate ? new Date(navEventDate) : null, [navEventDate]);
 
+  // Keep a local event name state so breadcrumbs can show the event name
+  // even when navigation state doesn't include it (eg. from notifications).
+  const [navEventName, setNavEventName] = useState(eventName || null);
+
   
   const [taskTitle, setTaskTitle] = useState("");
   const [taskStatus, setTaskStatus] = useState({
@@ -287,6 +291,50 @@ const TaskDetailPage = () => {
       throw err;
     }
   }, [taskId, mode, organizationId, user?.organizationId, addMessage]);
+
+  // Fetch a minimal event payload to get the event name when it's not
+  // available via navigation state (useful for notification redirects).
+  const fetchEventName = useCallback(async (evtId) => {
+    if (!evtId) return null;
+    try {
+      const orgId = organizationId || user?.organizationId;
+      if (!orgId) return null;
+
+      const headers = {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "ngrok-skip-browser-warning": "1",
+      };
+
+      if (orgId !== user?.organizationId) {
+        headers["X-Context-Organization"] = orgId;
+      }
+
+      const res = await fetchWithRefresh(`/apis/event/get_event/${evtId}?organizationId=${orgId}&userId=${user?.userId}`, {
+        method: "GET",
+        headers,
+      });
+      if (!res.ok) return null;
+      const payload = await res.json();
+      const data = payload?.data || payload;
+      return data?.eventName || data?.name || null;
+    } catch (err) {
+      return null;
+    }
+  }, [organizationId, user?.organizationId, user?.userId]);
+
+  // If we don't have an event name from navigation, try fetching it using
+  // the event ID (either passed via location state or from task API).
+  useEffect(() => {
+    const evtId = locationEventId || apiEventId;
+    if (!navEventName && evtId) {
+      let mounted = true;
+      fetchEventName(evtId).then((name) => {
+        if (mounted && name) setNavEventName(name);
+      }).catch(() => {});
+      return () => { mounted = false; };
+    }
+  }, [navEventName, locationEventId, apiEventId, fetchEventName]);
 
   // State Management
   const [usersData, setUsersData] = useState(null);
@@ -1245,6 +1293,7 @@ const TaskDetailPage = () => {
     // Ensure we have valid data before creating breadcrumb items
     const organizationName = user?.organization?.name || user?.organizationName || "Organization";
     const taskName = taskTitle ? toTitleCase(taskTitle) : (mode === "create" ? "New Task" : "Task Details");
+    const effectiveEventName = navEventName || eventName;
     
     const items = [
       { 
@@ -1260,10 +1309,10 @@ const TaskDetailPage = () => {
       }
     ];
     
-    // Add event name if available
-    if (eventName) {
+    // Add event name if available (either from navigation state, local fetched name or API)
+    if (effectiveEventName) {
       items.push({ 
-        label: toTitleCase(eventName), 
+        label: toTitleCase(effectiveEventName), 
         href: "#", 
         icon: FileText,
         onClick: () => {
@@ -1289,7 +1338,7 @@ const TaskDetailPage = () => {
     });
     
     return items;
-  }, [user?.organization?.name, user?.organizationName, eventName, apiEventId, taskTitle, mode, navigate, user?.organizationId, organizationId, taskData.organizationId]);
+  }, [user?.organization?.name, user?.organizationName, eventName, navEventName, apiEventId, taskTitle, mode, navigate, user?.organizationId, organizationId, taskData.organizationId]);
 
   // Determine loading state
   const isLoading = useMemo(() => {
