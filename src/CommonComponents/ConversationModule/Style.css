@@ -73,28 +73,31 @@
     border-radius: 3px;
   }
 
+  /* message-item acts as a row container now; bubble handles background */
   .message-item {
-    margin-bottom: 16px;
-    padding: 12px;
-    border-radius: var(--border-radius);
-    background-color: var(--message-bg);
-    box-shadow: var(--shadow);
-    border: 1px solid var(--border-color);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .message-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-bottom: 12px;
+    padding: 0;
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: none;
+    border: none;
+    transition: none;
   }
 
   .message-content {
     display: flex;
     gap: 12px;
+    align-items: center;
+    width: 100%;
   }
 
   .message-body {
-    flex: 1;
+    flex: 1 1 auto; /* allow body to take available space so bubble can align */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    max-width: 72%; /* contain bubble width and avoid full-row cards */
+    width: 100%;
   }
 
   .message-header {
@@ -584,6 +587,108 @@
   width: 0%;
   transition: width 0.2s ease;
 }
+
+  /* WhatsApp-like message bubble styles */
+  :root {
+    --whatsapp-green: #DCF8C6;
+    --bubble-other-bg: #ffffff;
+    --bubble-text-color: #111827;
+  }
+
+  /* Differentiate own vs other messages */
+  /* Alignments for own vs other messages */
+  .message-item.own .message-content {
+    flex-direction: row-reverse;
+    /* justify-content: flex-end; push bubble+avatar to the right */
+    align-items: flex-end;
+  }
+
+  .message-item.other .message-content {
+    flex-direction: row;
+    justify-content: flex-start; /* keep on left */
+    align-items: flex-start;
+  }
+
+  /* Ensure bubble sits to the correct side inside the constrained body */
+  .message-item.own .message-body {
+    align-items: flex-end;
+    max-width: 72%;
+  }
+
+  .message-item.other .message-body {
+    align-items: flex-start;
+    max-width: 72%;
+  }
+
+  .message-item.own .message-bubble {
+    margin-left: auto; /* push bubble to the right within its container */
+  }
+
+  .message-item.other .message-bubble {
+    margin-right: auto; /* keep bubble to left */
+  }
+
+  /* Avatar spacing tweaks */
+  .message-item.own .avatar {
+    margin-left: 12px;
+    margin-right: 0;
+  }
+
+  .message-item.other .avatar {
+    margin-right: 12px;
+    margin-left: 0;
+  }
+
+  .message-bubble {
+    display: flex;
+    flex-direction: column;
+    max-width: 72%;
+    padding: 10px 12px;
+    border-radius: 18px;
+    word-break: break-word;
+    box-shadow: none;
+    border: 1px solid rgba(0,0,0,0.04);
+  }
+
+  .message-bubble .message-header {
+    display: flex;
+    justify-content: flex-start;
+    gap: 8px;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+
+  .message-item.own .message-bubble {
+    background: var(--whatsapp-green);
+    color: var(--bubble-text-color);
+    border-radius: 18px 18px 4px 18px; /* slight tail look */
+    text-align: left;
+  }
+
+  .message-item.other .message-bubble {
+    background: var(--bubble-other-bg);
+    color: var(--text-color);
+    border-radius: 18px 18px 18px 4px;
+    text-align: left;
+  }
+
+  .message-bubble .timestamp {
+    font-size: 0.75em;
+    color: var(--text-lighter);
+    margin-left: 8px;
+    align-self: flex-end;
+  }
+
+  /* Small adjustments for avatar spacing when row-reverse */
+  .message-item.own .avatar {
+    margin-left: 8px;
+    margin-right: 0;
+  }
+
+  .message-item.other .avatar {
+    margin-right: 8px;
+    margin-left: 0;
+  }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {

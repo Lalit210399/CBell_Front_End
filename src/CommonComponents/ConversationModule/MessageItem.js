@@ -1,10 +1,8 @@
 // src/components/MessageItem.jsx
-import React, { useState, useEffect } from 'react';
-import { Reply, MoreHorizontal, Smile, SmilePlus } from 'lucide-react';
+import React, { useState } from 'react';
 import Avatar from './Avatar';
 import ReplyBox from './ReplyBox';
 import Reactions from './Reactions';
-import MessageStrip from '../MessageStrip/MessageStrip';
 
 const DocumentPreview = ({ docId, idx, total }) => {
   const url = `/apis/document/view/${docId}`;
@@ -25,7 +23,7 @@ const DocumentPreview = ({ docId, idx, total }) => {
         setLoading(false);
       });
     return () => { isMounted = false; };
-  }, [docId]);
+  }, [url]);
   // File type icons
   let fileIcon = '📎';
   let preview = null;
@@ -123,28 +121,18 @@ const DocumentPreview = ({ docId, idx, total }) => {
 
 const MessageItem = ({ message, currentUser, onReply, onReaction, isThread, onlineUserIds = [], onlineUserNames = [] }) => {
   const [showReplyBox, setShowReplyBox] = useState(false);
-  const [showDevMsg, setShowDevMsg] = useState(false);
-  const [showReactions, setShowReactions] = useState(false);
-
   const handleReply = (content) => {
     onReply(message.threadId, content);
     setShowReplyBox(false);
-  };
-
-  const handleReaction = (reaction) => {
-    onReaction(message.threadId, null, reaction);
-    setShowReactions(false);
-  };
-
-  const handleReplyClick = () => {
-    setShowDevMsg(true);
-    setTimeout(() => setShowDevMsg(false), 2000);
   };
 
   // determine online status: check by id first, fallback to name
   const userId = message.user?.id ? String(message.user.id) : null;
   const userName = message.user?.name ? String(message.user.name) : null;
   const isOnline = (userId && onlineUserIds.includes(userId)) || (userName && onlineUserNames.includes(userName));
+
+  // is this message sent by the current user? used to align bubble to right
+  const isOwnMessage = currentUser && message.user && (String(currentUser.id) === String(message.user.id));
 
   // Clean document IDs: flatten nested arrays and remove falsy/empty IDs
   const cleanedDocumentIds = Array.isArray(message.documentIds)
@@ -158,29 +146,20 @@ const MessageItem = ({ message, currentUser, onReply, onReaction, isThread, onli
     : [];
 
   return (
-    <div className={`message-item ${isThread ? 'thread-starter' : ''}`} style={{ position: 'relative' }}>
-      {showDevMsg && (
-        <div style={{ position: 'absolute', top: -40, left: 0, right: 0, zIndex: 10 }}>
-          <MessageStrip
-            text="This feature is under development."
-            type="Information"
-            showIcon={true}
-            showCloseButton={false}
-            duration={2000}
-          />
-        </div>
-      )}
+    <div className={`message-item ${isThread ? 'thread-starter' : ''} ${isOwnMessage ? 'own' : 'other'}`} style={{ position: 'relative' }}>
+      
       <div className="message-content">
         <Avatar user={message.user} isOnline={isOnline} />
         <div className="message-body">
-          <div className="message-header">
-            <span className="username">{message.user.name}</span>
-            <span className="timestamp">
-              {new Date(message.createdOn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          </div>
-          <div className="message-text">{message.conversationText}</div>
-          {/* Render document links and previews if present */}
+          <div className={`message-bubble ${isOwnMessage ? 'bubble-own' : 'bubble-other'}`}>
+            <div className="message-header">
+              <span className="username">{message.user.name}</span>
+              <span className="timestamp">
+                {new Date(message.createdOn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+            <div className="message-text">{message.conversationText}</div>
+            {/* Render document links and previews if present */}
           {cleanedDocumentIds && cleanedDocumentIds.length > 0 && (
             <div style={{ margin: '8px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
               {cleanedDocumentIds.map((docId, idx) => (
@@ -189,6 +168,7 @@ const MessageItem = ({ message, currentUser, onReply, onReaction, isThread, onli
             </div>
           )}
           <Reactions reactions={message.reactions || []} />
+          </div>
           {/* <div className="message-actions">
             <button 
               className="action-button" 
