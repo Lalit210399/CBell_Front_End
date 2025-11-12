@@ -20,7 +20,7 @@ const messaging = firebase.messaging();
 
 // Handle background messages
 messaging.onBackgroundMessage((payload) => {
-  console.log('Received background message:', payload);
+  //console.log('Received background message:', payload);
 
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
@@ -47,7 +47,7 @@ messaging.onBackgroundMessage((payload) => {
 
 // Handle notification click
 self.addEventListener('notificationclick', (event) => {
-  console.log('Notification clicked:', event);
+  //console.log('Notification clicked:', event);
 
   event.notification.close();
 
@@ -102,6 +102,6 @@ self.addEventListener('notificationclick', (event) => {
 
 // Handle notification close
 self.addEventListener('notificationclose', (event) => {
-  console.log('Notification closed:', event);
+  //console.log('Notification closed:', event);
 });
 

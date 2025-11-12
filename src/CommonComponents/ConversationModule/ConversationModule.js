@@ -33,7 +33,7 @@ const ConversationModule = ({
 
   // Debug: Log connection state changes
   useEffect(() => {
-    console.debug('[ConversationModule] isConnected:', isConnected);
+    //console.debug('[ConversationModule] isConnected:', isConnected);
     if (window.signalRDebug === undefined) window.signalRDebug = {};
     window.signalRDebug.isConnected = isConnected;
     window.signalRDebug.connectionError = connectionError;
@@ -133,7 +133,7 @@ const ConversationModule = ({
         await joinTaskChat(taskId, organizationId, eventId);
       }
     } catch (err) {
-      console.error("[ConversationModule] Error fetching messages:", err);
+      //console.error("[ConversationModule] Error fetching messages:", err);
       setError(err.message);
       setIsNewConversation(true);
     } finally {
@@ -144,7 +144,7 @@ const ConversationModule = ({
   // SignalR Message Handlers
   const handleMessageReceived = useCallback(
     (message) => {
-      console.debug("[ConversationModule] Message received via SignalR:", message);
+      //console.debug("[ConversationModule] Message received via SignalR:", message);
 
       if (message.taskId === taskId) {
         setMessages((prev) => {
@@ -206,7 +206,7 @@ const ConversationModule = ({
   const handleUserJoined = useCallback(
     (data) => {
       if (data.taskId === taskId) {
-        console.info(` [ConversationModule] User joined: ${data.userName}`);
+        //console.info(` [ConversationModule] User joined: ${data.userName}`);
         // You could show a notification here
       }
     },
@@ -216,7 +216,7 @@ const ConversationModule = ({
   const handleUserLeft = useCallback(
     (data) => {
       if (data.taskId === taskId) {
-        console.info(` [ConversationModule] User left: ${data.userName}`);
+        //console.info(` [ConversationModule] User left: ${data.userName}`);
         // You could show a notification here
       }
     },
@@ -225,11 +225,11 @@ const ConversationModule = ({
 
   const handleUserTyping = useCallback((typingInfo) => {
     // Typing state is managed by the SignalR context
-    console.debug('[ConversationModule] Typing update:', typingInfo);
+    //console.debug('[ConversationModule] Typing update:', typingInfo);
   }, []);
 
   const handleOnlineUsers = useCallback((data) => {
-    console.debug('[ConversationModule] Online users updated:', data);
+    //console.debug('[ConversationModule] Online users updated:', data);
   }, []);
 
   // Setup SignalR handlers and join chat
@@ -364,7 +364,7 @@ const ConversationModule = ({
           handleTypingStop();
         }
       } catch (err) {
-        console.error("[ConversationModule] Failed to send message:", err);
+          //console.error("[ConversationModule] Failed to send message:", err);
         // You could show an error message to the user here
       }
     },

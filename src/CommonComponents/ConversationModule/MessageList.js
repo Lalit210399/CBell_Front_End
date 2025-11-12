@@ -4,7 +4,7 @@ import MessageItem from './MessageItem';
 
 const MessageList = ({ messages, currentUser, onReply, onReaction, onlineUserIds = [], onlineUserNames = [] }) => {
   const messagesEndRef = useRef(null);
-  console.log("onlineUserIds in MessageList:", onlineUserIds);
+  //console.log("onlineUserIds in MessageList:", onlineUserIds);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
