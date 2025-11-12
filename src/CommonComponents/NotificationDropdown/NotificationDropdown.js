@@ -573,7 +573,7 @@ export default NotificationDropdown;
 //                 className="view-all-btn"
 //                 onClick={() => {
 //                   // Navigate to full notifications page if you have one
-//                   console.log('Navigate to notifications page');
+//                   //console.log('Navigate to notifications page');
 //                 }}
 //               >
 //                 View All Notifications

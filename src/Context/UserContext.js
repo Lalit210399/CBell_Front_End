@@ -43,7 +43,7 @@ export const UserProvider = ({ children }) => {
   // Listen for auth expiration events
   useEffect(() => {
     const handleAuthExpired = (event) => {
-      console.log('Auth expired event received:', event.detail);
+      //console.log('Auth expired event received:', event.detail);
       resetUserState();
     };
 

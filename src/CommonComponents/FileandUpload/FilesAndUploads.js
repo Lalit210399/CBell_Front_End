@@ -272,7 +272,7 @@ const FilesUploads = ({
     // Debug logging
 
     // for (let [key, value] of formData.entries()) {
-    //   console.log(key, value);
+    //   //console.log(key, value);
     // }
 
     const response = await fetch('/apis/document/upload_document', {

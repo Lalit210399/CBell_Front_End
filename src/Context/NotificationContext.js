@@ -24,7 +24,7 @@ export const NotificationProvider = ({ children }) => {
       setError(null);
       await fcmService.registerToken();
       setIsFCMInitialized(true);
-      console.log('FCM initialized successfully');
+      //console.log('FCM initialized successfully');
     } catch (error) {
       console.error('FCM initialization failed:', error);
       setError(error.message);
@@ -129,7 +129,7 @@ export const NotificationProvider = ({ children }) => {
         // Import navigate function dynamically to avoid circular dependency
         import('react-router-dom').then(({ useNavigate }) => {
           // This will be handled by the component that uses this context
-          console.log('Service worker notification click:', { notificationType, eventId, taskId, url });
+          //console.log('Service worker notification click:', { notificationType, eventId, taskId, url });
         });
       }
     };

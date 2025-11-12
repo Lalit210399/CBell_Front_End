@@ -93,7 +93,7 @@ class FCMService {
       }
 
       const result = await response.json();
-      console.log('FCM token registered:', result);
+      //console.log('FCM token registered:', result);
       
       // Set up message listener for foreground notifications
       this.setupMessageListener();
@@ -110,7 +110,7 @@ class FCMService {
   // Set up listener for foreground messages
   setupMessageListener() {
     onMessage(messaging, (payload) => {
-      console.log('Message received in foreground:', payload);
+      //console.log('Message received in foreground:', payload);
       
       // Show notification in foreground
       if (payload.notification) {
