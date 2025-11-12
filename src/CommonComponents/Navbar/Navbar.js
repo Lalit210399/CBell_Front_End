@@ -1,4 +1,3 @@
-//Navbar.js
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Building2, LogOut, Shield, ChevronDown } from "lucide-react";
@@ -6,9 +5,11 @@ import { useUser } from "../../Context/UserContext";
 import { logout } from "../../Services/AuthN";
 import CustomDropdown from "../Dropdown/CustomDropdown";
 import NotificationDropdown from "../NotificationDropdown/NotificationDropdown";
+import NotificationSideBar from "../NotificationDropdown/NotificationSidebar";
 import "./Navbar.css";
 
 function Navbar() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { 
@@ -71,13 +72,12 @@ function Navbar() {
     };
   }, []);
 
+  // Check permissions for each tab
   const hasDashboardPermission =
     userPermissions?.permissions?.Dashboard?.["Dashboard Management"]?.includes("Read") ?? false;
   const hasEventsPermission =
     userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
   const hasSchedulePermission =
-    userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
-  const hasChatPermission =
     userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
 
   // Prepare scope options
@@ -117,11 +117,6 @@ function Navbar() {
             Schedule
           </Link>
         )}
-        {hasChatPermission && (
-          <Link to="/chat" className={location.pathname === "/chat" ? "active" : ""} style={{width:87, textAlign:'center'}}>
-            Chat
-          </Link>
-        )}
       </div>
       <div className="nav-right">
         {/* Scope Selection */}
@@ -140,7 +135,11 @@ function Navbar() {
         </div>
         
         {/* Notification Bell */}
-        <NotificationDropdown />
+        <NotificationDropdown onViewAllNotifications={() => setIsSidebarOpen(true)}/>
+        <NotificationSideBar 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+      />
         
         <div className="user-info" ref={dropdownRef}>
           

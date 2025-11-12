@@ -98,7 +98,7 @@ const NotificationsSidebar = ({ isOpen, onClose }) => {
   return (
     <div className="notifications-sidebar-overlay" onClick={onClose}>
       <div className="notifications-sidebar" onClick={(e) => e.stopPropagation()}>
-        <div className="sidebar-header">
+        <div className="notification-sidebar-header">
           <div className="sidebar-title">
             <Bell size={24} />
             <h2>All Notifications</h2>
