@@ -11,7 +11,7 @@ const isFileTypeSupported = (fileType, platform) => {
   if (!fileType) return true; // If no file type info, allow all platforms
   
   const lowerFileType = fileType.toLowerCase();
-  console.log('Checking file type support:', lowerFileType, 'for platform:', platform);
+  //console.log('Checking file type support:', lowerFileType, 'for platform:', platform);
   
   // Check if file is audio or document
   const isAudioOrDoc = lowerFileType.startsWith('audio/') || 

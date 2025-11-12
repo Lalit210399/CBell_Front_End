@@ -7,6 +7,7 @@ module.exports = function (app) {
     createProxyMiddleware({
       target: 'https://cbell.ai/apis',
       changeOrigin: true,
+      ws: true, 
       pathRewrite: { '^/apis': '' },
     })
   );
@@ -26,11 +27,11 @@ module.exports = function (app) {
 //         res.status(500).json({ error: 'Proxy Error', message: err.message });
 //       },
 //       onProxyReq: (proxyReq, req, res) => {
-//         console.log('Proxying request to:', proxyReq.path);
+//         //console.log('Proxying request to:', proxyReq.path);
 //       },
 //       onProxyRes: (proxyRes, req, res) => {
-//         console.log('Proxy response status:', proxyRes.statusCode);
-//         console.log('Proxy response headers:', proxyRes.headers);
+//         //console.log('Proxy response status:', proxyRes.statusCode);
+//         //console.log('Proxy response headers:', proxyRes.headers);
 //       }
 //     })
 //   );

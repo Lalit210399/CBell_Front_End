@@ -17,6 +17,7 @@ import ProtectedRoute, { RequirePermission } from "./Context/ProtectedRoute";
 import { useUser } from "./Context/UserContext";
 import { NotificationProvider } from "./Context/NotificationContext";
 import ErrorBoundary from "./CommonComponents/ErrorBoundary"; 
+import ChatLayout from "./Pages/Chat/NewChatLayout";
 
 // Component to render appropriate dashboard based on user role
 const DashboardRouter = () => {
@@ -71,6 +72,14 @@ function App() {
                       element={
                         <RequirePermission resource="Events" managementKey="Event Management" action="Read">
                           <Schedule />
+                        </RequirePermission>
+                      }
+                    />
+                    <Route
+                      path="/chat"
+                      element={
+                        <RequirePermission resource="Events" managementKey="Event Management" action="Read">
+                          <ChatLayout />
                         </RequirePermission>
                       }
                     />

@@ -79,6 +79,8 @@ function Navbar() {
     userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
   const hasSchedulePermission =
     userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
+  const hasChatPermission =
+    userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
 
   // Prepare scope options
   const scopeOptions = scope?.accessibleOrganizations?.map((org) => ({
@@ -115,6 +117,11 @@ function Navbar() {
         {hasSchedulePermission && (
           <Link to="/schedule" className={location.pathname === "/schedule" ? "active" : ""}>
             Schedule
+          </Link>
+        )}
+        {hasChatPermission && (
+          <Link to="/chat" className={location.pathname === "/chat" ? "active" : ""} style={{width:87, textAlign:'center'}}>
+            Chat
           </Link>
         )}
       </div>
