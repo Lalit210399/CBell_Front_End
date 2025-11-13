@@ -2,24 +2,46 @@
 import React, { useState, useEffect } from 'react';
 import ChatLayout from '../../CommonComponents/ChatLayout/ChatLayout';
 import { useUser } from '../../Context/UserContext';
+import { fetchWithRefresh } from '../../Context/RefereshToken';
 import "./NewChatLayout.css";
 
 const NewChatLayout = () => {
-  const { user } = useUser();
+  const { user, selectedOrganizationId, isViewingOwnOrganization, scopeChangeTrigger } = useUser();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchEvents = async () => {
+      // Use global selectedOrganizationId instead of hardcoded org ID
+      const organizationId = selectedOrganizationId || user?.organizationId;
+
+      if (!organizationId) {
+        console.error("No organization selected");
+        setLoading(false);
+        return;
+      }
+
+      // Determine if we need to include X-Context-Organization header
+      const isViewingOwnOrg = organizationId === user?.organizationId;
+      
+      // Prepare headers
+      const headers = {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "1",
+      };
+
+      // Only add X-Context-Organization header when viewing a different organization
+      if (!isViewingOwnOrg) {
+        headers["X-Context-Organization"] = organizationId;
+      }
+
       try {
         setLoading(true);
-        const response = await fetch(
-          `apis/event/hierarchy/681460dcb8327b2e3417d8b1?userId=${user?.userId}`,
+        const response = await fetchWithRefresh(
+          `/apis/event/hierarchy/${organizationId}?userId=${user?.userId}`,
           {
-            headers: {
-              'Content-Type': 'application/json',
-              'ngrok-skip-browser-warning': '1',
-            },
+            method: "GET",
+            headers,
           }
         );
         if (response.ok) {
@@ -35,10 +57,10 @@ const NewChatLayout = () => {
       }
     };
 
-    if (user?.userId) {
+    if (user?.userId && selectedOrganizationId) {
       fetchEvents();
     }
-  }, [user?.userId]);
+  }, [user?.userId, user?.organizationId, selectedOrganizationId, scopeChangeTrigger]);
 
   if (loading) {
     return (
@@ -48,6 +70,9 @@ const NewChatLayout = () => {
     );
   }
 
+  // Use the selected organization ID
+  const organizationId = selectedOrganizationId || user?.organizationId;
+
   return (
     <div className="new-page-container">
       <div className="page-header">
@@ -56,7 +81,7 @@ const NewChatLayout = () => {
       </div>
       <ChatLayout
         events={events}
-        organizationId="681460dcb8327b2e3417d8b1" // Pass organization ID for task API calls
+        organizationId={organizationId} // Pass dynamic organization ID for task API calls
       />
     </div>
   );

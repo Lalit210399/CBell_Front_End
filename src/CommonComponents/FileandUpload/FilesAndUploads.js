@@ -814,7 +814,7 @@ const FilesUploads = ({
 
       <div className="files-container">
         <div className="files-header">
-          <h3>Files</h3>
+          {/* <h3>Files</h3> */}
           {showFileRequirementWarning && [...files, ...uploadedFiles].length === 0 && (
             <div className="file-requirement-warning">
               <span className="warning-text">⚠️ Files required for approval submission</span>
