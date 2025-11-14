@@ -38,7 +38,7 @@ const NewChatLayout = () => {
       try {
         setLoading(true);
         const response = await fetchWithRefresh(
-          `/apis/event/hierarchy/${organizationId}?userId=${user?.userId}`,
+          `/apis/event/hierarchy-extended/${organizationId}?userId=${user?.userId}&filter=normal`,
           {
             method: "GET",
             headers,

@@ -1,8 +1,10 @@
 //chatLayout
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import ConversationModule from "../ConversationModule/ConversationModule";
+import TaskFilesPanel from "./TaskFilesPanel";
 import { useUser } from "../../Context/UserContext";
-import { Calendar, CalendarCheck, ListChecks, Users, Loader2 } from 'lucide-react';
+import { Calendar, CalendarCheck, ListChecks, Users, Search, FolderOpen } from 'lucide-react';
+import { fetchWithRefresh } from "../../Context/RefereshToken";
 import "./ChatLayout.css";
 
 const ChatLayout = ({ events, organizationId }) => {
@@ -11,18 +13,36 @@ const ChatLayout = ({ events, organizationId }) => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [eventsWithTasks, setEventsWithTasks] = useState({});
   const [loadingTasks, setLoadingTasks] = useState({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isFilePanelOpen, setIsFilePanelOpen] = useState(false);
+  const [taskFiles, setTaskFiles] = useState([]);
+  const [loadingFiles, setLoadingFiles] = useState(false);
+
+  // --- Debounce search query ---
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // --- Fetch tasks for a specific event ---
-  const fetchEventTasks = async (eventId) => {
+  const fetchEventTasks = async (eventId, eventOrgId) => {
     if (eventsWithTasks[eventId]) {
       return;
     }
 
     setLoadingTasks(prev => ({ ...prev, [eventId]: true }));
 
+    // Use event's organization ID if available, otherwise fall back to the global organizationId
+    const orgIdToUse = eventOrgId || organizationId;
+
     try {
       const response = await fetch(
-        `apis/task/by-event/${eventId}?organizationId=${organizationId}`,
+        `/apis/task/by-event/${eventId}?organizationId=${orgIdToUse}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -35,45 +55,126 @@ const ChatLayout = ({ events, organizationId }) => {
         const tasks = await response.json();
         setEventsWithTasks(prev => ({
           ...prev,
-          [eventId]: {
-            ...events.find(event => event.id === eventId),
-            tasks: tasks || []
-          }
+          [eventId]: tasks || []
         }));
       } else {
         console.error('Failed to fetch tasks for event:', eventId);
         setEventsWithTasks(prev => ({
           ...prev,
-          [eventId]: {
-            ...events.find(event => event.id === eventId),
-            tasks: []
-          }
+          [eventId]: []
         }));
       }
     } catch (error) {
       console.error('Error fetching tasks for event:', eventId, error);
       setEventsWithTasks(prev => ({
         ...prev,
-        [eventId]: {
-          ...events.find(event => event.id === eventId),
-          tasks: []
-        }
+        [eventId]: []
       }));
     } finally {
       setLoadingTasks(prev => ({ ...prev, [eventId]: false }));
     }
   };
 
-  // --- Toggle event expand and fetch tasks if needed ---
-  const handleEventClick = async (eventId) => {
+  // --- Toggle event expand ---
+  const handleEventClick = async (eventId, event) => {
     if (expandedEventId === eventId) {
       setExpandedEventId(null);
     } else {
       if (!eventsWithTasks[eventId]) {
-        await fetchEventTasks(eventId);
+        // Pass the event's organization ID to the fetch function
+        const eventOrgId = event.organizationId || event.orgId;
+        await fetchEventTasks(eventId, eventOrgId);
       }
       setExpandedEventId(eventId);
     }
+  };
+
+  // --- Fetch task files ---
+  const fetchTaskFiles = useCallback(async (taskId, eventId) => {
+    setLoadingFiles(true);
+    try {
+      const response = await fetchWithRefresh(
+        `/apis/document-details/task/${taskId}`,
+        {
+          headers: { 'ngrok-skip-browser-warning': '1' },
+        }
+      );
+
+      if (response.ok) {
+        const allTaskFiles = await response.json();
+        
+        // Filter to show only work submission files (uploaded by designers/creatives)
+        const workSubmissionFiles = allTaskFiles.filter(doc => {
+          if (doc.userInfo && doc.userInfo.roles) {
+            return doc.userInfo.roles.some(role => 
+              role.name?.toLowerCase().includes('designer') || 
+              role.displayName?.toLowerCase().includes('designer') ||
+              role.name?.toLowerCase().includes('creative') ||
+              role.displayName?.toLowerCase().includes('creative')
+            );
+          }
+          return false;
+        });
+
+        const getFileTypeFromMime = (mime, filename = '') => {
+          if (mime && mime !== 'application/octet-stream') {
+            if (mime.startsWith('image')) return 'image';
+            if (mime.startsWith('video')) return 'video';
+            if (mime.startsWith('audio')) return 'audio';
+            if (mime === 'application/pdf') return 'pdf';
+          }
+          const extension = filename.toLowerCase().split('.').pop();
+          const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
+          const videoExtensions = ['mp4', 'avi', 'mov', 'wmv'];
+          const audioExtensions = ['mp3', 'wav', 'ogg'];
+          if (imageExtensions.includes(extension)) return 'image';
+          if (videoExtensions.includes(extension)) return 'video';
+          if (audioExtensions.includes(extension)) return 'audio';
+          if (extension === 'pdf') return 'pdf';
+          return 'file';
+        };
+
+        const processedFiles = workSubmissionFiles.map((doc) => {
+          const type = getFileTypeFromMime(doc.contentType, doc.filename);
+          const src = `/apis/document/view/${doc.documentId}`;
+
+          return {
+            name: doc.filename,
+            type,
+            documentId: doc.documentId,
+            description: doc.description,
+            src,
+            status: doc.status || 'Pending',
+            uploadDate: doc.uploadDate,
+            size: doc.fileSize || doc.size,
+            userInfo: doc.userInfo,
+            contentType: doc.contentType,
+          };
+        });
+
+        setTaskFiles(processedFiles);
+      } else {
+        console.error('Failed to fetch task files');
+        setTaskFiles([]);
+      }
+    } catch (error) {
+      console.error('Error fetching task files:', error);
+      setTaskFiles([]);
+    } finally {
+      setLoadingFiles(false);
+    }
+  }, []);
+
+  // --- Fetch files when task is selected ---
+  useEffect(() => {
+    if (selectedTask?.id && selectedTask?.eventId) {
+      fetchTaskFiles(selectedTask.id, selectedTask.eventId);
+    }
+  }, [selectedTask?.id, selectedTask?.eventId, fetchTaskFiles]);
+
+  // --- Toggle file panel ---
+  const toggleFilePanel = () => {
+    setIsFilePanelOpen(!isFilePanelOpen);
   };
 
   // --- Current user helper ---
@@ -89,16 +190,34 @@ const ChatLayout = ({ events, organizationId }) => {
     };
   }, [user]);
 
-  const getUnreadCount = useCallback(() => 0, []);
+  // --- Filter events based on search query (events only, not tasks) ---
+  const filteredEvents = useMemo(() => {
+    if (!debouncedSearchQuery.trim()) {
+      return events;
+    }
+
+    const query = debouncedSearchQuery.toLowerCase();
+    return events.filter(event => {
+      // Only check if event name matches
+      return event.eventName.toLowerCase().includes(query);
+    });
+  }, [events, debouncedSearchQuery]);
+
+  // --- Show all tasks within an event (no filtering by search) ---
+  const filterTasksForEvent = useCallback((eventId) => {
+    return eventsWithTasks[eventId] || [];
+  }, [eventsWithTasks]);
 
   // --- Format task data for ConversationModule ---
-  const formatTaskForConversation = (task) => {
+  const formatTaskForConversation = (task, event) => {
     return {
       ...task,
+      id: task.id,
+      eventId: task.eventId || event.id,
       taskTitle: task.taskTitle,
       taskStatusName: task.taskStatusName,
       assignedToNames: task.assignedTo?.map(user => user.name) || [],
-      eventName: eventsWithTasks[task.eventId]?.eventName || ''
+      eventName: event.eventName || ''
     };
   };
 
@@ -107,22 +226,58 @@ const ChatLayout = ({ events, organizationId }) => {
       {/* ---------- LEFT SIDEBAR ---------- */}
       <div className="whatsapp-sidebar">
         <div className="sidebar-header">
-          <h3>Event & Task Conversations</h3>
-          <p className="sidebar-subtitle">
-            {events.length} event{events.length === 1 ? "" : "s"}
-          </p>
+          <div className="header-top-row">
+            <div className="header-text">
+              <h3>Event & Task Conversations</h3>
+              <p className="sidebar-subtitle">
+                {events.length} event{events.length === 1 ? "" : "s"}
+              </p>
+            </div>
+            <button 
+              className={`search-toggle-btn ${isSearchOpen ? 'active' : ''}`}
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              aria-label="Toggle search"
+            >
+              <Search size={18} />
+            </button>
+          </div>
+          {isSearchOpen && (
+            <div className="search-bar-container">
+              <div className="search-bar">
+                <input
+                  type="text"
+                  placeholder="Search events..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="search-input"
+                  autoFocus
+                />
+                {searchQuery && (
+                  <button 
+                    className="search-clear-btn"
+                    onClick={() => setSearchQuery("")}
+                    aria-label="Clear search"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="tasks-list">
-          {events.length > 0 ? (
-            events.map((event) => (
+          {filteredEvents.length > 0 ? (
+            filteredEvents.map((event) => {
+              const filteredTasksInEvent = filterTasksForEvent(event.id);
+              return (
               <div key={event.id} className="event-section">
                 {/* --- Event Header --- */}
                 <div
                   className={`event-header ${
                     expandedEventId === event.id ? "expanded" : ""
                   }`}
-                  onClick={() => handleEventClick(event.id)}
+                  onClick={() => handleEventClick(event.id, event)}
                 >
                   <div className="event-header-title">
                     <span className="event-icon">
@@ -132,11 +287,7 @@ const ChatLayout = ({ events, organizationId }) => {
                   </div>
                   {/* Task count badge - commented out for now */}
                   {/* <span className="task-count-badge">
-                    {loadingTasks[event.id] ? (
-                      <Loader2 size={14} className="spinner-icon" />
-                    ) : (
-                      `${eventsWithTasks[event.id]?.tasks?.length || 0} Tasks`
-                    )}
+                    {event.tasks?.length || 0} Tasks
                   </span> */}
                 </div>
 
@@ -145,17 +296,17 @@ const ChatLayout = ({ events, organizationId }) => {
                   <div className="event-task-list">
                     {loadingTasks[event.id] ? (
                       <div className="tasks-loading">
-                        <Loader2 size={20} className="spinner-icon" />
+                        <div className="loading-spinner"></div>
                         <p>Loading tasks...</p>
                       </div>
-                    ) : eventsWithTasks[event.id]?.tasks?.length > 0 ? (
-                      eventsWithTasks[event.id].tasks.map((task) => (
+                    ) : filteredTasksInEvent.length > 0 ? (
+                      filteredTasksInEvent.map((task) => (
                         <div
                           key={task.id}
                           className={`task-item ${
                             selectedTask?.id === task.id ? "active" : ""
                           }`}
-                          onClick={() => setSelectedTask(formatTaskForConversation(task))}
+                          onClick={() => setSelectedTask(formatTaskForConversation(task, event))}
                         >
                           <div className="task-info">
                             <div className="task-title-row">
@@ -187,6 +338,10 @@ const ChatLayout = ({ events, organizationId }) => {
                           </div>
                         </div>
                       ))
+                    ) : debouncedSearchQuery ? (
+                      <div className="empty-tasks-in-event">
+                        <p>No tasks available for this event</p>
+                      </div>
                     ) : (
                       <div className="empty-tasks-in-event">
                         <p>No tasks available for this event</p>
@@ -195,7 +350,12 @@ const ChatLayout = ({ events, organizationId }) => {
                   </div>
                 )}
               </div>
-            ))
+              );
+            })
+          ) : debouncedSearchQuery ? (
+            <div className="empty-tasks">
+              <p>No events match your search</p>
+            </div>
           ) : (
             <div className="empty-tasks">
               <p>No events available</p>
@@ -234,17 +394,38 @@ const ChatLayout = ({ events, organizationId }) => {
                     </div>
                   </div>
                 </div>
+                <div className="chat-header-actions">
+                  <button 
+                    className={`files-toggle-btn ${isFilePanelOpen ? 'active' : ''}`}
+                    onClick={toggleFilePanel}
+                    title="Toggle work files"
+                  >
+                    <FolderOpen size={20} />
+                    {taskFiles.length > 0 && (
+                      <span className="files-count-badge">{taskFiles.length}</span>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
             <div className="chat-content">
-              <ConversationModule
-                currentUser={getCurrentUser()}
-                taskId={selectedTask.id}
-                eventId={selectedTask.eventId}
-                isActive={true}
-                users={selectedTask.assignedToNames || []}
-              />
+              <div className="chat-content-main">
+                <ConversationModule
+                  currentUser={getCurrentUser()}
+                  taskId={selectedTask.id}
+                  eventId={selectedTask.eventId}
+                  isActive={true}
+                  users={selectedTask.assignedToNames || []}
+                />
+              </div>
+              {isFilePanelOpen && (
+                <TaskFilesPanel 
+                  files={taskFiles}
+                  loading={loadingFiles}
+                  onClose={() => setIsFilePanelOpen(false)}
+                />
+              )}
             </div>
           </div>
         ) : (

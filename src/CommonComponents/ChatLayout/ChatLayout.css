@@ -33,6 +33,17 @@
   justify-content: center;
 }
 
+.header-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.header-text {
+  flex: 1;
+}
+
 .sidebar-header h3 {
   margin: 0 0 4px 0;
   color: #ffffff;
@@ -46,6 +57,100 @@
   font-size: 12px;
   font-weight: 400;
 }
+
+.search-bar-container {
+  margin-top: 12px;
+  width: 100%;
+}
+
+.search-toggle-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #ffffff;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.search-toggle-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.search-toggle-btn.active {
+  background-color: rgba(255, 255, 255, 0.4);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: scale(0.95);
+}
+
+.search-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition: background-color 0.2s;
+  animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.search-bar:focus-within {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 14px;
+  outline: none;
+  padding: 0;
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.search-clear-btn {
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.search-clear-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
 
 .tasks-list {
   flex: 1;
@@ -245,6 +350,58 @@
   min-width: 0;
 }
 
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
+  flex-shrink: 0;
+}
+
+.files-toggle-btn {
+  position: relative;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.files-toggle-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.files-toggle-btn.active {
+  background-color: rgba(255, 255, 255, 0.4);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.files-count-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background-color: #ff3b30;
+  color: white;
+  border-radius: 10px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 0 5px;
+  border: 2px solid var(--primary-color);
+}
+
 .chat-header-info {
   flex: 1;
   min-width: 0;
@@ -365,9 +522,17 @@
 .chat-content {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   overflow: hidden;
   min-height: 0;
+}
+
+.chat-content-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .empty-chat-state {
@@ -407,10 +572,22 @@
 
 .empty-tasks {
   padding: 40px 20px;
+  text-align: center;
+  color: #667781;
+  font-size: 14px;
 }
 
+.empty-tasks-in-event {
+  padding: 16px;
+  text-align: center;
+  color: #667781;
+  font-size: 13px;
+  font-style: italic;
+}
+
+
 /* Ensure ConversationModule takes full height */
-.chat-content > div {
+.chat-content-main > div {
   height: 100%;
 }
 
