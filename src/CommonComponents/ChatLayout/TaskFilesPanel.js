@@ -105,52 +105,111 @@ const TaskFilesPanel = ({ files, loading, onClose }) => {
             </div>
           ) : files && files.length > 0 ? (
             <div className="files-list">
-              {files.map((file, index) => (
-                <div key={file.documentId || index} className="file-item">
-                  <div className="file-item-icon">
-                    {getFileIcon(file.type)}
-                  </div>
-                  <div className="file-item-details">
-                    <div className="file-item-name" title={file.name}>
-                      {file.name}
+              {/* Work Submission Files */}
+              {files.filter(f => f.category === 'Work Submission').length > 0 && (
+                <>
+                  <div className="files-category-header">Work Submission Files</div>
+                  {files.filter(f => f.category === 'Work Submission').map((file, index) => (
+                    <div key={file.documentId || index} className="file-item">
+                      <div className="file-item-icon">
+                        {getFileIcon(file.type)}
+                      </div>
+                      <div className="file-item-details">
+                        <div className="file-item-name" title={file.name}>
+                          {file.name}
+                        </div>
+                        <div className="file-item-meta">
+                          {file.uploadDate && (
+                            <span className="file-date">{formatDate(file.uploadDate)}</span>
+                          )}
+                          {file.userInfo?.fullName && (
+                            <>
+                              {file.uploadDate && <span className="file-meta-divider">•</span>}
+                              <span className="file-uploader">{file.userInfo.fullName}</span>
+                            </>
+                          )}
+                        </div>
+                        {file.status && (
+                          <span className={`file-status status-${file.status.toLowerCase()}`}>
+                            {file.status}
+                          </span>
+                        )}
+                      </div>
+                      <div className="file-item-actions">
+                        {(file.type === 'image' || file.type === 'pdf' || file.type === 'video' || file.type === 'audio') && (
+                          <button 
+                            className="file-action-btn" 
+                            onClick={() => handlePreview(file)}
+                            title="Preview"
+                          >
+                            <Eye size={16} />
+                          </button>
+                        )}
+                        <button 
+                          className="file-action-btn" 
+                          onClick={() => handleDownload(file)}
+                          title="Download"
+                        >
+                          <Download size={16} />
+                        </button>
+                      </div>
                     </div>
-                    <div className="file-item-meta">
-                      {file.uploadDate && (
-                        <span className="file-date">{formatDate(file.uploadDate)}</span>
-                      )}
-                      {file.userInfo?.name && (
-                        <>
-                          {file.uploadDate && <span className="file-meta-divider">•</span>}
-                          <span className="file-uploader">{file.userInfo.name}</span>
-                        </>
-                      )}
+                  ))}
+                </>
+              )}
+
+              {/* Reference Files */}
+              {files.filter(f => f.category === 'Reference').length > 0 && (
+                <>
+                  <div className="files-category-header">Reference Files</div>
+                  {files.filter(f => f.category === 'Reference').map((file, index) => (
+                    <div key={file.documentId || index} className="file-item">
+                      <div className="file-item-icon">
+                        {getFileIcon(file.type)}
+                      </div>
+                      <div className="file-item-details">
+                        <div className="file-item-name" title={file.name}>
+                          {file.name}
+                        </div>
+                        <div className="file-item-meta">
+                          {file.uploadDate && (
+                            <span className="file-date">{formatDate(file.uploadDate)}</span>
+                          )}
+                          {file.userInfo?.fullName && (
+                            <>
+                              {file.uploadDate && <span className="file-meta-divider">•</span>}
+                              <span className="file-uploader">{file.userInfo.fullName}</span>
+                            </>
+                          )}
+                        </div>
+                        {file.status && (
+                          <span className={`file-status status-${file.status.toLowerCase()}`}>
+                            {file.status}
+                          </span>
+                        )}
+                      </div>
+                      <div className="file-item-actions">
+                        {(file.type === 'image' || file.type === 'pdf' || file.type === 'video' || file.type === 'audio') && (
+                          <button 
+                            className="file-action-btn" 
+                            onClick={() => handlePreview(file)}
+                            title="Preview"
+                          >
+                            <Eye size={16} />
+                          </button>
+                        )}
+                        <button 
+                          className="file-action-btn" 
+                          onClick={() => handleDownload(file)}
+                          title="Download"
+                        >
+                          <Download size={16} />
+                        </button>
+                      </div>
                     </div>
-                    {file.status && (
-                      <span className={`file-status status-${file.status.toLowerCase()}`}>
-                        {file.status}
-                      </span>
-                    )}
-                  </div>
-                  <div className="file-item-actions">
-                    {(file.type === 'image' || file.type === 'pdf' || file.type === 'video' || file.type === 'audio') && (
-                      <button 
-                        className="file-action-btn" 
-                        onClick={() => handlePreview(file)}
-                        title="Preview"
-                      >
-                        <Eye size={16} />
-                      </button>
-                    )}
-                    <button 
-                      className="file-action-btn" 
-                      onClick={() => handleDownload(file)}
-                      title="Download"
-                    >
-                      <Download size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                  ))}
+                </>
+              )}
             </div>
           ) : (
             <div className="files-empty-state">

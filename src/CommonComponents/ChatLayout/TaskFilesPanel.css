@@ -79,6 +79,20 @@
   gap: 8px;
 }
 
+.files-category-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: #667781;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 4px 4px;
+  margin-top: 8px;
+}
+
+.files-category-header:first-child {
+  margin-top: 0;
+}
+
 .file-item {
   display: flex;
   align-items: flex-start;

@@ -102,19 +102,6 @@ const ChatLayout = ({ events, organizationId }) => {
 
       if (response.ok) {
         const allTaskFiles = await response.json();
-        
-        // Filter to show only work submission files (uploaded by designers/creatives)
-        const workSubmissionFiles = allTaskFiles.filter(doc => {
-          if (doc.userInfo && doc.userInfo.roles) {
-            return doc.userInfo.roles.some(role => 
-              role.name?.toLowerCase().includes('designer') || 
-              role.displayName?.toLowerCase().includes('designer') ||
-              role.name?.toLowerCase().includes('creative') ||
-              role.displayName?.toLowerCase().includes('creative')
-            );
-          }
-          return false;
-        });
 
         const getFileTypeFromMime = (mime, filename = '') => {
           if (mime && mime !== 'application/octet-stream') {
@@ -134,9 +121,22 @@ const ChatLayout = ({ events, organizationId }) => {
           return 'file';
         };
 
-        const processedFiles = workSubmissionFiles.map((doc) => {
+        const isDesignerOrCreative = (userInfo) => {
+          if (userInfo && userInfo.roles) {
+            return userInfo.roles.some(role => 
+              role.name?.toLowerCase().includes('designer') || 
+              role.displayName?.toLowerCase().includes('designer') ||
+              role.name?.toLowerCase().includes('creative') ||
+              role.displayName?.toLowerCase().includes('creative')
+            );
+          }
+          return false;
+        };
+
+        const processedFiles = allTaskFiles.map((doc) => {
           const type = getFileTypeFromMime(doc.contentType, doc.filename);
           const src = `/apis/document/view/${doc.documentId}`;
+          const category = isDesignerOrCreative(doc.userInfo) ? 'Work Submission' : 'Reference';
 
           return {
             name: doc.filename,
@@ -149,6 +149,7 @@ const ChatLayout = ({ events, organizationId }) => {
             size: doc.fileSize || doc.size,
             userInfo: doc.userInfo,
             contentType: doc.contentType,
+            category,
           };
         });
 

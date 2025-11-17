@@ -668,7 +668,7 @@
   .message-item.other .message-bubble {
     background: var(--bubble-other-bg);
     color: var(--text-color);
-    border-radius: 18px 18px 18px 4px;
+    border-radius: 4px 18px 18px 18px;
     text-align: left;
   }
 
