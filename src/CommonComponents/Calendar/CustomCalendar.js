@@ -13,6 +13,11 @@ const localizer = momentLocalizer(moment);
 
 const CustomToolbar = ({ label, onNavigate, view, onView }) => (
   <div className="calendar-header-wrapper">
+    <div className="calendar-custom-toolbar">
+      <button onClick={() => onNavigate("PREV")}><ChevronLeft size={18} /></button>
+      <span className="calendar-title">{label}</span>
+      <button onClick={() => onNavigate("NEXT")}><ChevronRight size={18} /></button>
+    </div>
     <div className="calendar-view-selector">
       <button 
         className={view === "month" ? "view-btn active" : "view-btn"}
@@ -32,35 +37,6 @@ const CustomToolbar = ({ label, onNavigate, view, onView }) => (
       >
         Day
       </button>
-      <button 
-        className={view === "agenda" ? "view-btn active" : "view-btn"}
-        onClick={() => onView("agenda")}
-      >
-        Agenda
-      </button>
-    </div>
-    <div className="calendar-custom-toolbar">
-      <button onClick={() => onNavigate("PREV")}><ChevronLeft /></button>
-      <span className="calendar-title">{label}</span>
-      <button onClick={() => onNavigate("NEXT")}><ChevronRight /></button>
-    </div>
-    <div className="calendar-legend">
-      <div className="legend-item">
-        <span className="legend-color" style={{ backgroundColor: "#4CAF50" }}></span>
-        Future Events
-      </div>
-      <div className="legend-item">
-        <span className="legend-color" style={{ backgroundColor: "#2196F3" }}></span>
-        Upcoming
-      </div>
-      <div className="legend-item">
-        <span className="legend-color" style={{ backgroundColor: "#FF5722" }}></span>
-        Critical
-      </div>
-      <div className="legend-item">
-        <span className="legend-color" style={{ backgroundColor: "#9E9E9E" }}></span>
-        Completed
-      </div>
     </div>
   </div>
 );
@@ -127,26 +103,35 @@ const CustomCalendar = ({ events = [], loading = true, error = null, isViewingOw
   const CalendarSkeleton = () => {
     return (
       <div className="calendar-skeleton">
-        <div className="skeleton-toolbar">
-          <div className="skeleton-button"></div>
-          <div className="skeleton-title"></div>
-          <div className="skeleton-button"></div>
-        </div>
-        <div className="skeleton-header">
-          {[...Array(7)].map((_, i) => (
-            <div key={i} className="skeleton-header-cell"></div>
+        <div className="skeleton-sidebar">
+          <div className="skeleton-title" style={{ width: '60px', height: '60px', marginBottom: '10px' }}></div>
+          <div className="skeleton-title" style={{ width: '120px', marginBottom: '20px' }}></div>
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="skeleton-button" style={{ width: '100%', height: '40px', marginBottom: '8px' }}></div>
           ))}
         </div>
-        {[...Array(6)].map((_, rowIndex) => (
-          <div key={rowIndex} className="skeleton-week">
-            {[...Array(7)].map((_, cellIndex) => (
-              <div key={cellIndex} className="skeleton-day">
-                <div className="skeleton-event"></div>
-                <div className="skeleton-event"></div>
-              </div>
+        <div className="skeleton-main">
+          <div className="skeleton-toolbar">
+            <div className="skeleton-button"></div>
+            <div className="skeleton-title"></div>
+            <div className="skeleton-button"></div>
+          </div>
+          <div className="skeleton-header">
+            {[...Array(7)].map((_, i) => (
+              <div key={i} className="skeleton-header-cell"></div>
             ))}
           </div>
-        ))}
+          {[...Array(6)].map((_, rowIndex) => (
+            <div key={rowIndex} className="skeleton-week">
+              {[...Array(7)].map((_, cellIndex) => (
+                <div key={cellIndex} className="skeleton-day">
+                  <div className="skeleton-event"></div>
+                  <div className="skeleton-event"></div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     );
   };
@@ -250,6 +235,38 @@ const CustomCalendar = ({ events = [], loading = true, error = null, isViewingOw
     }
   };
 
+  // Get filtered events based on current view
+  const getFilteredEvents = () => {
+    switch (currentView) {
+      case "month":
+        // Show events for the current month being viewed
+        return events
+          .filter(event => moment(event.start).isSame(currentDate, 'month'))
+          .sort((a, b) => moment(a.start).diff(moment(b.start)))
+          .slice(0, 6);
+      
+      case "week":
+        // Show events for the current week being viewed
+        const startOfWeek = moment(currentDate).startOf('week');
+        const endOfWeek = moment(currentDate).endOf('week');
+        return events
+          .filter(event => moment(event.start).isBetween(startOfWeek, endOfWeek, null, '[]'))
+          .sort((a, b) => moment(a.start).diff(moment(b.start)))
+          .slice(0, 6);
+      
+      case "day":
+        // Show events for the current day being viewed
+        return events
+          .filter(event => moment(event.start).isSame(currentDate, 'day'))
+          .sort((a, b) => moment(a.start).diff(moment(b.start)));
+      
+      default:
+        return events.slice(0, 6);
+    }
+  };
+
+  const filteredEvents = getFilteredEvents();
+
   // Modal Component
   const EventsModal = () => {
     if (!showModal || !selectedDayEvents) return null;
@@ -305,35 +322,98 @@ const CustomCalendar = ({ events = [], loading = true, error = null, isViewingOw
 
   return (
     <div className="calendar-container">
-      <Calendar
-        localizer={localizer}
-        events={events}
-        startAccessor="start"
-        endAccessor="end"
-        selectable
-        date={currentDate}
-        view={currentView}
-        onView={(view) => setCurrentView(view)}
-        onNavigate={(date) => setCurrentDate(date)}
-        onSelectSlot={handleSelectSlot}
-        onSelectEvent={navigateToEvent}
-        onShowMore={(events, date) => handleShowMore(events, date)}
-        eventPropGetter={eventStyleGetter}
-        components={{
-          toolbar: CustomToolbar,
-          dateCellWrapper: CustomDateCellWrapper,
-          event: CustomEvent,
-          timeSlotWrapper: ({ children }) => children,
-        }}
-        views={["month", "week", "day", "agenda"]}
-        popup={false}
-        style={{ height: "100%", flex: 1 }}
-        step={30}
-        timeslots={2}
-        defaultDate={new Date()}
-      />
+      {/* Sidebar */}
+      <div className="calendar-sidebar">
+        <div className="sidebar-date-display">
+          <div className="sidebar-day">{moment(currentDate).format("DD")}</div>
+          <div className="sidebar-month-year">{moment(currentDate).format("MMMM YYYY")}</div>
+        </div>
+        
+        <div className="sidebar-events-section">
+          <h3 className="sidebar-section-title">
+            {currentView === "month" && `Events in ${moment(currentDate).format("MMMM YYYY")}`}
+            {currentView === "week" && `Events This Week`}
+            {currentView === "day" && `Events on ${moment(currentDate).format("MMM DD, YYYY")}`}
+          </h3>
+          
+          {/* Event Legend */}
+          <div className="sidebar-legend">
+            <div className="sidebar-legend-item">
+              <span className="sidebar-legend-dot" style={{ backgroundColor: "#4CAF50" }}></span>
+              <span className="sidebar-legend-label">Future</span>
+            </div>
+            <div className="sidebar-legend-item">
+              <span className="sidebar-legend-dot" style={{ backgroundColor: "#2196F3" }}></span>
+              <span className="sidebar-legend-label">Upcoming</span>
+            </div>
+            <div className="sidebar-legend-item">
+              <span className="sidebar-legend-dot" style={{ backgroundColor: "#FF5722" }}></span>
+              <span className="sidebar-legend-label">Critical</span>
+            </div>
+            <div className="sidebar-legend-item">
+              <span className="sidebar-legend-dot" style={{ backgroundColor: "#9E9E9E" }}></span>
+              <span className="sidebar-legend-label">Completed</span>
+            </div>
+          </div>
 
-      <EventsModal />
+          <div className="sidebar-events-list">
+            {filteredEvents.length === 0 ? (
+              <div className="sidebar-no-events">
+                {currentView === "month" && "No events this month"}
+                {currentView === "week" && "No events this week"}
+                {currentView === "day" && "No events today"}
+              </div>
+            ) : (
+              filteredEvents.map((event, index) => (
+                <div
+                  key={index}
+                  className="sidebar-event-item"
+                  onClick={() => navigateToEvent(event)}
+                  style={{ borderLeftColor: getCategoryColor(event.category) }}
+                >
+                  <div className="sidebar-event-title">{event.title}</div>
+                  <div className="sidebar-event-date">
+                    {moment(event.start).format("MMM DD, YYYY")}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Calendar Area */}
+      <div className="calendar-main">
+        <Calendar
+          localizer={localizer}
+          events={events}
+          startAccessor="start"
+          endAccessor="end"
+          selectable
+          date={currentDate}
+          view={currentView}
+          onView={(view) => setCurrentView(view)}
+          onNavigate={(date) => setCurrentDate(date)}
+          onSelectSlot={handleSelectSlot}
+          onSelectEvent={navigateToEvent}
+          onShowMore={(events, date) => handleShowMore(events, date)}
+          eventPropGetter={eventStyleGetter}
+          components={{
+            toolbar: CustomToolbar,
+            dateCellWrapper: CustomDateCellWrapper,
+            event: CustomEvent,
+            timeSlotWrapper: ({ children }) => children,
+          }}
+          views={["month", "week", "day"]}
+          popup={false}
+          style={{ height: "100%", flex: 1 }}
+          step={30}
+          timeslots={2}
+          defaultDate={new Date()}
+        />
+
+        <EventsModal />
+      </div>
     </div>
   );
 };
