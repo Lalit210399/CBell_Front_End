@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, Calendar, Clock } from "lucide-react";
+import { LayoutGrid, Calendar, Clock, FolderOpen } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
 import "./Sidebar.css";
 
@@ -12,6 +12,7 @@ function Sidebar() {
   const hasEventsPermission = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
   const hasSchedulePermission = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
   const hasChatPermission = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
+  const hasFilesPermission = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
 
   return (
     <div className="sidebar">
@@ -67,6 +68,18 @@ function Sidebar() {
             >
               <div className="tooltip" data-tooltip="Chat">
                 <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-square"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="m8 12 2-2 2 2m-2-2v3"/></svg>
+              </div>
+            </Link>
+          </li>
+        )}
+        {hasFilesPermission && (
+          <li>
+            <Link
+              to="/files"
+              className={`menu-item ${location.pathname === "/files" ? "active" : ""}`}
+            >
+              <div className="tooltip" data-tooltip="Files">
+                <FolderOpen size={20} />
               </div>
             </Link>
           </li>
