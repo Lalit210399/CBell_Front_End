@@ -18,7 +18,8 @@ import { useUser } from "./Context/UserContext";
 import { NotificationProvider } from "./Context/NotificationContext";
 import ErrorBoundary from "./CommonComponents/ErrorBoundary"; 
 import ChatLayout from "./Pages/Chat/NewChatLayout";
-import FileManagerPage from "./Pages/FileManagerPage";
+import FileManagerPage from "./Pages/FileManager/FileManager";
+import { FileManagerProvider } from "./Context/FileManagerContext";
 
 // Component to render appropriate dashboard based on user role
 const DashboardRouter = () => {
@@ -88,7 +89,9 @@ function App() {
                       path="/files"
                       element={
                         <RequirePermission resource="Events" managementKey="Event Management" action="Read">
-                          <FileManagerPage />
+                          <FileManagerProvider>
+                            <FileManagerPage />
+                          </FileManagerProvider>
                         </RequirePermission>
                       }
                     />

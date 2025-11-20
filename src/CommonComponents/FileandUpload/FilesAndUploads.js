@@ -13,6 +13,7 @@ import {
   Check,
   Download,
   Share2,
+  Eye,
 } from 'lucide-react';
 import { useUser } from '../../Context/UserContext';
 import './FilesandUploads.css';
@@ -667,6 +668,11 @@ const FilesUploads = ({
           
           {/* File preview section */}
           <div className="file-preview-section" onClick={() => setPreviewFile(file)}>
+            {/* Hover overlay with preview icon */}
+            <div className="preview-hover-overlay">
+              <Eye size={32} className="preview-eye-icon" />
+              <span className="preview-text">Click to Preview</span>
+            </div>
             <div className="file-icon">
               {file.type === 'image' && <img src={file.src} alt={file.name} className="image-preview" />}
               {file.type === 'video' && <video src={file.src} className="video-preview" controls />}
