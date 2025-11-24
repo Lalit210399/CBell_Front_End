@@ -6,34 +6,52 @@ import { fetchWithRefresh } from '../../Context/RefereshToken';
 import "./NewChatLayout.css";
 
 const NewChatLayout = () => {
-  const { user, selectedOrganizationId, isViewingOwnOrganization, scopeChangeTrigger } = useUser();
+  // Use only the authenticated user's own organization for Chat
+  const { user } = useUser();
+  // Previous scope-related values (kept commented for reference):
+  // const { user, selectedOrganizationId, isViewingOwnOrganization, scopeChangeTrigger } = useUser();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchEvents = async () => {
-      // Use global selectedOrganizationId instead of hardcoded org ID
-      const organizationId = selectedOrganizationId || user?.organizationId;
+      // Always use the user's own organization for chat data
+      const organizationId = user?.organizationId;
+
+      // Previous scope logic (commented out):
+      // // Use global selectedOrganizationId instead of hardcoded org ID
+      // const organizationId = selectedOrganizationId || user?.organizationId;
+      //
+      // if (!organizationId) {
+      //   console.error("No organization selected");
+      //   setLoading(false);
+      //   return;
+      // }
+      //
+      // // Determine if we need to include X-Context-Organization header
+      // const isViewingOwnOrg = organizationId === user?.organizationId;
+      // 
+      // // Prepare headers
+      // const headers = {
+      //   "Content-Type": "application/json",
+      //   "ngrok-skip-browser-warning": "1",
+      // };
+      //
+      // // Only add X-Context-Organization header when viewing a different organization
+      // if (!isViewingOwnOrg) {
+      //   headers["X-Context-Organization"] = organizationId;
+      // }
 
       if (!organizationId) {
         console.error("No organization selected");
         setLoading(false);
         return;
       }
-
-      // Determine if we need to include X-Context-Organization header
-      const isViewingOwnOrg = organizationId === user?.organizationId;
-      
       // Prepare headers
       const headers = {
         "Content-Type": "application/json",
         "ngrok-skip-browser-warning": "1",
       };
-
-      // Only add X-Context-Organization header when viewing a different organization
-      if (!isViewingOwnOrg) {
-        headers["X-Context-Organization"] = organizationId;
-      }
 
       try {
         setLoading(true);
@@ -57,10 +75,10 @@ const NewChatLayout = () => {
       }
     };
 
-    if (user?.userId && selectedOrganizationId) {
+    if (user?.userId && user?.organizationId) {
       fetchEvents();
     }
-  }, [user?.userId, user?.organizationId, selectedOrganizationId, scopeChangeTrigger]);
+  }, [user?.userId, user?.organizationId /*, selectedOrganizationId, scopeChangeTrigger */]);
 
   if (loading) {
     return (
@@ -70,8 +88,10 @@ const NewChatLayout = () => {
     );
   }
 
-  // Use the selected organization ID
-  const organizationId = selectedOrganizationId || user?.organizationId;
+  // Chat always uses the authenticated user's organization
+  const organizationId = user?.organizationId;
+  // Previous usage (commented out):
+  // const organizationId = selectedOrganizationId || user?.organizationId;
 
   return (
     <div className="new-page-container">

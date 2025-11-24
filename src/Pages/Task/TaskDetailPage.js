@@ -1123,6 +1123,31 @@ const TaskDetailPage = () => {
     
     // Special validation for Approved status - must have files selected
     if (newStatus.value === "Approved") {
+      // Ensure specification checklist items (non-empty) are all checked before approving
+      try {
+        const checklistSource = Array.isArray(formData?.checklist) ? formData.checklist
+          : Array.isArray(taskData?.checklist) ? taskData.checklist
+          : [];
+
+        const specItems = checklistSource.filter(item => (item?.text || "").toString().trim());
+
+        const hasUnchecked = specItems.length > 0 && specItems.some(item => !item.checked);
+
+        if (hasUnchecked) {
+          addMessage({
+            text: "All specification items must be marked completed before approving the task.",
+            type: "error",
+            duration: 4000
+          });
+          setActiveTab("Details");
+          return;
+        }
+      } catch (e) {
+        addMessage({ text: "Unable to verify specifications before approval.", type: "error", duration: 3000 });
+        return;
+      }
+
+      // Existing file-selection validation (keep previous behavior)
       if (selectedFiles.length === 0) {
         addMessage({
           text: "You must select at least one file from 'Files & Uploads' section to approve the task.",
