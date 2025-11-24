@@ -3,15 +3,8 @@ import { ArrowLeft, Save, Users } from "lucide-react";
 import AvatarList from "../Avatar/index";
 import UserDropdown from "../UserDropdown";
 import { useUser } from "../../Context/UserContext";
+import { useTaskStatus } from "../../Hooks/useTaskStatus";
 import "./EditTopSection.css";
-
-const HARDCODED_STATUS_IDS = {
-  "New": "68baab0b9a31a52d62646ca1",
-  "Active": "68bee09b522caf6ac9f65bdc",
-  "Under Approval": "68bee0b1522caf6ac9f65bdd",
-  "Approved": "68bee0c2522caf6ac9f65bde",
-  "Published": "68bee0d1522caf6ac9f65bdf"
-};
 
 const getDefaultColor = (status) => {
   const colors = {
@@ -59,6 +52,7 @@ const TopSection = ({
   onTabChange // Add callback to change tabs
 }) => {
   const { user } = useUser();
+  const { taskStatuses } = useTaskStatus();
 
   // Check if user is a Designer based on the roles array
   const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
@@ -70,14 +64,15 @@ const TopSection = ({
   const titleRef = useRef(null);
   const isTitleManuallyEdited = useRef(false);
 
-  // Status options for dropdown
-  const statusOptions = [
-    { id: "68baab0b9a31a52d62646ca1", label: "New", value: "New", color: "#6b7280" },
-    { id: "68bee09b522caf6ac9f65bdc", label: "Active", value: "Active", color: "#10b981" },
-    { id: "68bee0b1522caf6ac9f65bdd", label: "Under Approval", value: "Under Approval", color: "#f59e0b" },
-    { id: "68bee0c2522caf6ac9f65bde", label: "Approved", value: "Approved", color: "#059669" },
-    { id: "68bee0d1522caf6ac9f65bdf", label: "Published", value: "Published", color: "#8b5cf6" }
-  ];
+  // Get status options from context
+  const statusOptions = useMemo(() => {
+    return taskStatuses.map(status => ({
+      id: status.id,
+      label: status.statusName || status.name,
+      value: status.statusName || status.name,
+      color: status.color || getDefaultColor(status.statusName || status.name)
+    }));
+  }, [taskStatuses]);
 
   // Get creator user info - use passed createdBy prop or fallback to current user for new tasks
   const creatorUser = useMemo(() => {
@@ -162,16 +157,16 @@ const TopSection = ({
         }
       }
 
-      // Find the status option with the correct ID
+      // Find the status option from context
       const newStatus = statusOptions.find(option => option.value === newStatusValue);
 
       if (newStatus) {
-        // Use the status option with the correct hardcoded ID
+        // Use the status option from context
         onStatusChange(newStatus);
       } else {
-        // Create a fallback status object with hardcoded ID
+        // Create a fallback status object
         const fallbackStatus = {
-          id: HARDCODED_STATUS_IDS[newStatusValue] || "",
+          id: "",
           label: newStatusValue,
           value: newStatusValue,
           color: getDefaultColor(newStatusValue)

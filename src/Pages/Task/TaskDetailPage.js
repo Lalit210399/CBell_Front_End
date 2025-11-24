@@ -15,14 +15,7 @@ import { getHierarchyUsers } from "../../Services/AuthN";
 import { Building, Calendar, Pencil, FileText } from "lucide-react";
 import "./Tasks.css";
 
-// Hardcoded status IDs from backend data - moved outside component to prevent re-creation
-const HARDCODED_STATUS_IDS = {
-  "New": "68baab0b9a31a52d62646ca1",
-  "Active": "68bee09b522caf6ac9f65bdc", 
-  "Under Approval": "68bee0b1522caf6ac9f65bdd",
-  "Approved": "68bee0c2522caf6ac9f65bde",
-  "Published": "68bee0d1522caf6ac9f65bdf"
-};
+
 
 // Utility function to convert text to title case
 const toTitleCase = (str) => {
@@ -85,7 +78,7 @@ const TaskDetailPage = () => {
   const [hasWorkSubmissionFiles, setHasWorkSubmissionFiles] = useState(false); // Track work submission files
   
   // Use task status context
-  const { loading: statusLoading } = useTaskStatus();
+  const { taskStatuses, loading: statusLoading } = useTaskStatus();
 
   const getDefaultColor = useCallback((statusValue) => {
     const colorMap = {
@@ -98,41 +91,15 @@ const TaskDetailPage = () => {
     return colorMap[statusValue] || "gray";
   }, []);
   
-  // Use hardcoded status options instead of API data
+  // Use task statuses from context instead of hardcoded values
   const statusOptions = React.useMemo(() => {
-    return [
-      {
-        id: HARDCODED_STATUS_IDS["New"],
-        label: "New",
-        value: "New",
-        color: "gray"
-      },
-      {
-        id: HARDCODED_STATUS_IDS["Active"],
-        label: "Active", 
-        value: "Active",
-        color: "blue"
-      },
-      {
-        id: HARDCODED_STATUS_IDS["Under Approval"],
-        label: "Under Approval",
-        value: "Under Approval", 
-        color: "orange"
-      },
-      {
-        id: HARDCODED_STATUS_IDS["Approved"],
-        label: "Approved",
-        value: "Approved",
-        color: "green"
-      },
-      {
-        id: HARDCODED_STATUS_IDS["Published"],
-        label: "Published",
-        value: "Published",
-        color: "purple"
-      }
-    ];
-  }, []);
+    return taskStatuses.map(status => ({
+      id: status.id,
+      label: status.statusName || status.name,
+      value: status.statusName || status.name,
+      color: status.color || getDefaultColor(status.statusName || status.name)
+    }));
+  }, [taskStatuses, getDefaultColor]);
 
   const [taskData, setTaskData] = useState({
     id: "",
@@ -371,32 +338,52 @@ const TaskDetailPage = () => {
   // Initialize status when statusOptions are loaded and we're in create mode
   useEffect(() => {
     if (mode === "create" && statusOptions.length > 0) {
-      // Find the "New" status specifically
-      const newStatus = statusOptions.find(status => status.value === "New");
-      if (newStatus) {
-        setTaskStatus(newStatus);
+      // Only set status if it's not already set or doesn't have an ID
+      if (!taskStatus?.id || taskStatus.id === "") {
+        const newStatus = statusOptions.find(status => status.value === "New");
+        if (newStatus) {
+          setTaskStatus(newStatus);
+          // Also update taskData with the status ID
+          setTaskData(prev => ({
+            ...prev,
+            taskStatusId: newStatus.id,
+            taskStatus: newStatus.value
+          }));
+        }
       }
     }
-  }, [statusOptions, mode]);
+  }, [statusOptions, mode, taskStatus?.id]);
 
   // Auto-update status based on user assignments (only for New status)
   useEffect(() => {
-    if (statusOptions.length > 0) {
+    if (statusOptions.length > 0 && mode === "create") {
       if (selectedParticipantIds.length > 0) {
         // Users are assigned - set to Active (only if currently New)
         const activeStatus = statusOptions.find(status => status.value === "Active");
         if (activeStatus && taskStatus?.value === "New") {
           setTaskStatus(activeStatus);
+          // Also update taskData
+          setTaskData(prev => ({
+            ...prev,
+            taskStatusId: activeStatus.id,
+            taskStatus: activeStatus.value
+          }));
         }
       } else if (selectedParticipantIds.length === 0 && taskStatus?.value === "Active") {
         // No users assigned and currently Active - set back to New
         const newStatus = statusOptions.find(status => status.value === "New");
         if (newStatus) {
           setTaskStatus(newStatus);
+          // Also update taskData
+          setTaskData(prev => ({
+            ...prev,
+            taskStatusId: newStatus.id,
+            taskStatus: newStatus.value
+          }));
         }
       }
     }
-  }, [selectedParticipantIds, statusOptions, taskStatus?.value]);
+  }, [selectedParticipantIds, statusOptions, taskStatus?.value, mode]);
 
   // Store the fetch functions in refs to avoid dependency issues
   const fetchUsersRef = useRef(fetchUsers);
@@ -522,16 +509,25 @@ const TaskDetailPage = () => {
         );
       }
       
+      // If still not found but we have the status ID from API, try to find by ID
+      if (!matchedStatus && data.taskStatusId) {
+        matchedStatus = currentStatusOptions.find(
+          opt => opt.id === data.taskStatusId
+        );
+      }
       
-      // If still not found, create a fallback status with hardcoded ID
+      
+      // If still not found, create a fallback status but preserve the API's taskStatusId
       if (!matchedStatus) {
-        const hardcodedId = HARDCODED_STATUS_IDS[apiStatusName] || "";
         matchedStatus = {
-          id: hardcodedId,
+          id: data.taskStatusId || "",
           label: apiStatusName,
           value: apiStatusName,
           color: getDefaultColor(apiStatusName)
         };
+      } else if (!matchedStatus.id && data.taskStatusId) {
+        // If matched but no ID, use the API's taskStatusId
+        matchedStatus = { ...matchedStatus, id: data.taskStatusId };
       }
       
       setTaskStatus(matchedStatus);
@@ -726,17 +722,6 @@ const TaskDetailPage = () => {
     if (checklistArray.length === 0) {
       errors.specification = "At least one specification item is required";
     }
-    // Validate status using hardcoded status options
-    if (statusOptions.length > 0) {
-      if (!taskStatus?.id || taskStatus.id === "" || taskStatus.id === null) {
-        errors.status = "Please select a valid task status";
-      }
-    } else if (mode === "create") {
-      // For create mode, ensure we have a valid status
-      if (!taskStatus?.id || taskStatus.id === "" || taskStatus.id === null) {
-        errors.status = "Task status is not properly initialized";
-      }
-    }
     
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -864,11 +849,45 @@ const TaskDetailPage = () => {
         return;
       }
       
-      // Ensure we have a valid status ID using hardcoded mapping
+      // Ensure we have a valid status ID from statusOptions
       let statusId = taskStatus?.id;
+      
+      // If no status ID, try multiple strategies to find it
       if (!statusId || statusId === "" || statusId === null) {
-        // Use hardcoded status ID mapping
-        statusId = HARDCODED_STATUS_IDS[taskStatus?.value] || null;
+        // First try to find in statusOptions by value/label
+        const statusOption = statusOptions.find(opt => 
+          opt.value === taskStatus?.value || 
+          opt.label === taskStatus?.label ||
+          opt.value === taskStatus?.label ||
+          opt.label === taskStatus?.value
+        );
+        statusId = statusOption?.id;
+      }
+      
+      // If still no status ID, try to get it from taskData
+      if (!statusId || statusId === "" || statusId === null) {
+        statusId = taskData.taskStatusId;
+      }
+      
+      // For create mode, try to get "New" status as final fallback
+      if ((!statusId || statusId === "" || statusId === null) && mode === "create") {
+        const newStatus = statusOptions.find(opt => opt.value === "New" || opt.label === "New");
+        statusId = newStatus?.id;
+      }
+      
+      // Final validation - if still no status ID, show helpful error
+      if (!statusId || statusId === "" || statusId === null) {
+        console.error("Status validation failed:", {
+          taskStatus,
+          statusOptions,
+          taskDataStatusId: taskData.taskStatusId
+        });
+        addMessage({
+          text: "Task status is not available. Please wait a moment and try again.",
+          type: "error",
+          duration: 3000
+        });
+        return;
       }
 
       const payload = {
@@ -1172,11 +1191,28 @@ const TaskDetailPage = () => {
     if (taskId) {
       setIsUpdatingStatus(true);
       try {
-        // Ensure we have a valid status ID for the new status using hardcoded mapping
+        // Ensure we have a valid status ID from statusOptions
         let statusId = newStatus.id;
         if (!statusId || statusId === "" || statusId === null) {
-          // Use hardcoded status ID mapping
-          statusId = HARDCODED_STATUS_IDS[newStatus.value] || null;
+          // Try to find the status in statusOptions with multiple matching strategies
+          const statusOption = statusOptions.find(opt => 
+            opt.value === newStatus.value || 
+            opt.label === newStatus.label ||
+            opt.value === newStatus.label ||
+            opt.label === newStatus.value
+          );
+          statusId = statusOption?.id || null;
+        }
+        
+        // Final validation - ensure we have a status ID
+        if (!statusId || statusId === "" || statusId === null) {
+          addMessage({
+            text: "Task status is not properly initialized. Please refresh the page and try again.",
+            type: "error",
+            duration: 3000
+          });
+          setIsUpdatingStatus(false);
+          return;
         }
 
         // If approving task, first approve the selected files
