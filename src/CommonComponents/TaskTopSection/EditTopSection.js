@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { ArrowLeft, Save, Users } from "lucide-react";
+import { ArrowLeft, Save, Users, AlertCircle } from "lucide-react";
 import AvatarList from "../Avatar/index";
 import UserDropdown from "../UserDropdown";
 import { useUser } from "../../Context/UserContext";
 import { useTaskStatus } from "../../Hooks/useTaskStatus";
 import "./EditTopSection.css";
+import "./RevertModal.css";
 
 const getDefaultColor = (status) => {
   const colors = {
@@ -175,6 +176,39 @@ const TopSection = ({
       }
     }
   };
+
+  // Revert reason modal state & handlers
+  const [isRevertModalOpen, setIsRevertModalOpen] = useState(false);
+  const [revertReason, setRevertReason] = useState("");
+  const maxReasonLength = 500;
+
+  const openRevertModal = () => {
+    setRevertReason("");
+    setIsRevertModalOpen(true);
+  };
+
+  const closeRevertModal = () => {
+    setIsRevertModalOpen(false);
+    setRevertReason("");
+  };
+
+  const confirmRevert = () => {
+    // Find the status option object for Active
+    const newStatus = statusOptions.find(option => option.value === "Active") || {
+      id: "",
+      label: "Active",
+      value: "Active",
+      color: getDefaultColor("Active")
+    };
+
+    if (onStatusChange) {
+      onStatusChange(newStatus, revertReason && revertReason.trim() ? revertReason.trim() : undefined);
+    }
+    closeRevertModal();
+  };
+
+  const remainingChars = maxReasonLength - revertReason.length;
+  const charCountClass = remainingChars < 50 ? (remainingChars < 0 ? 'error' : 'warning') : '';
 
   // Handle disabled button click to redirect to Files & Uploads tab
   const handleDisabledSubmitClick = () => {
@@ -352,7 +386,7 @@ const TopSection = ({
                         </button>
                         <button
                           className="edit-top-status-btn edit-top-revert-btn"
-                          onClick={() => handleStatusChange("Active")}
+                          onClick={() => openRevertModal()}
                           title="Revert to Active Status"
                           disabled={isUpdatingStatus}
                         >
@@ -367,6 +401,48 @@ const TopSection = ({
           </div>
         </div>
       </div>
+      {isRevertModalOpen && (
+        <div className="revert-modal-overlay" onClick={closeRevertModal}>
+          <div className="revert-modal-container" onClick={(e) => e.stopPropagation()}>
+            <div className="revert-modal-header">
+              <h3 className="revert-modal-title">
+                <AlertCircle className="revert-modal-icon" />
+                Revert to Active
+              </h3>
+            </div>
+            <div className="revert-modal-body">
+              <p className="revert-modal-description">
+                Please provide a reason for reverting this task to Active status. This message will be posted to the task chat.
+              </p>
+              <div className="revert-modal-textarea-wrapper">
+                <textarea
+                  value={revertReason}
+                  onChange={(e) => setRevertReason(e.target.value)}
+                  placeholder="Enter reason (optional)"
+                  className="revert-modal-textarea"
+                  maxLength={maxReasonLength}
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="revert-modal-footer">
+              <div className={`revert-modal-char-count ${charCountClass}`}>
+                {remainingChars} characters remaining
+              </div>
+              <button onClick={closeRevertModal} className="revert-modal-btn revert-modal-btn-cancel">
+                Cancel
+              </button>
+              <button 
+                onClick={confirmRevert} 
+                className="revert-modal-btn revert-modal-btn-confirm"
+                disabled={remainingChars < 0}
+              >
+                Confirm Revert
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

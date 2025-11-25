@@ -11,6 +11,7 @@ import PageSkeleton from "../../CommonComponents/SkeletonLoading/PageSkeleton";
 import { useUser } from "../../Context/UserContext";
 import { useMessages } from "../../Context/MessageContext";
 import { useTaskStatus } from "../../Hooks/useTaskStatus";
+import { useSignalR } from "../../Context/SignalRContext";
 import { getHierarchyUsers } from "../../Services/AuthN";
 import { Building, Calendar, Pencil, FileText } from "lucide-react";
 import "./Tasks.css";
@@ -78,7 +79,7 @@ const TaskDetailPage = () => {
   const [hasWorkSubmissionFiles, setHasWorkSubmissionFiles] = useState(false); // Track work submission files
   
   // Use task status context
-  const { taskStatuses, loading: statusLoading } = useTaskStatus();
+  const { taskStatuses, loading: statusLoading, fetchTaskStatuses } = useTaskStatus();
 
   const getDefaultColor = useCallback((statusValue) => {
     const colorMap = {
@@ -158,6 +159,17 @@ const TaskDetailPage = () => {
   const currentOrgId = useMemo(() => {
     return user?.organizationId || organizationId;
   }, [user?.organizationId, organizationId]);
+
+  // Ensure task statuses are loaded when this page mounts or organization/user changes.
+  // If statuses are empty, request them from context once (context handles caching and refresh logic).
+  useEffect(() => {
+    const needLoad = !Array.isArray(taskStatuses) || taskStatuses.length === 0;
+    const orgId = currentOrgId || user?.organizationId;
+    if (needLoad && orgId) {
+      // don't force refresh; let context decide whether refresh is needed
+      fetchTaskStatuses().catch(err => console.error("Failed to load task statuses:", err));
+    }
+  }, [taskStatuses, currentOrgId, user?.organizationId, fetchTaskStatuses]);
 
   // API Functions
   const fetchUsers = useCallback(async () => {
@@ -1109,8 +1121,11 @@ const TaskDetailPage = () => {
     }
   }, [user.userId, taskData, addMessage]);
 
+  // SignalR for sending chat messages when needed (e.g., revert reason)
+  const { sendMessage: sendChatMessage } = useSignalR();
+
   // Handle status change from buttons
-  const handleStatusChange = async (newStatus) => {
+  const handleStatusChange = async (newStatus, revertReason) => {
     // Prevent multiple clicks while updating
     if (isUpdatingStatus) {
       return;
@@ -1187,6 +1202,7 @@ const TaskDetailPage = () => {
     // Update local state immediately for UI feedback
     setTaskStatus(newStatus);
     
+    
     // Only make API call if we have a taskId (not in create mode)
     if (taskId) {
       setIsUpdatingStatus(true);
@@ -1204,10 +1220,32 @@ const TaskDetailPage = () => {
           statusId = statusOption?.id || null;
         }
         
+        // If we don't have a statusId, try a short local wait for statusOptions to populate
+        if (!statusId || statusId === "" || statusId === null) {
+          const maxAttempts = 6;
+          let attempt = 0;
+          while (attempt < maxAttempts && (!statusOptions || statusOptions.length === 0)) {
+            // wait 200ms
+            // eslint-disable-next-line no-await-in-loop
+            await new Promise(res => setTimeout(res, 200));
+            attempt += 1;
+          }
+
+          if (statusOptions && statusOptions.length > 0) {
+            const statusOption = statusOptions.find(opt => 
+              opt.value === newStatus.value || 
+              opt.label === newStatus.label ||
+              opt.value === newStatus.label ||
+              opt.label === newStatus.value
+            );
+            statusId = statusOption?.id || null;
+          }
+        }
+
         // Final validation - ensure we have a status ID
         if (!statusId || statusId === "" || statusId === null) {
           addMessage({
-            text: "Task status is not properly initialized. Please refresh the page and try again.",
+            text: "Task status is not available yet. Please wait a moment and try again.",
             type: "error",
             duration: 3000
           });
@@ -1264,6 +1302,21 @@ const TaskDetailPage = () => {
           type: "success",
           duration: 4000
         });
+
+        // After status update succeeds, send revert reason to chat if provided
+        if (newStatus.value === "Active" && revertReason && (taskId || taskData.id)) {
+          try {
+            const messageText = `Task reverted to Active. Reason: ${revertReason}`;
+            if (typeof sendChatMessage === 'function') {
+              // Fire-and-forget; log errors but don't block UI
+              sendChatMessage(taskId || taskData.id, messageText, []).catch((err) => {
+                console.error('Failed to send revert reason message to chat:', err);
+              });
+            }
+          } catch (err) {
+            console.error('Error sending revert message:', err);
+          }
+        }
 
       } catch (error) {
         

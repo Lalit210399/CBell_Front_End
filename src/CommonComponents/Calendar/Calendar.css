@@ -768,7 +768,7 @@
   align-items: center;
   padding: 20px 24px;
   border-bottom: 2px solid #f0f0f0;
-  background: linear-gradient(135deg, #043E54 0%, #02968A 100%);
+  background: #043E54;
   color: white;
   border-radius: 8px 8px 0 0;
 }
@@ -875,4 +875,96 @@
 
 .calendar-modal-body::-webkit-scrollbar-thumb:hover {
   background: #3a6ac8;
+}
+
+/* Confirmation Modal Styles */
+.calendar-confirm-modal {
+  max-width: 500px;
+}
+
+.confirm-modal-content {
+  padding: 10px 0;
+}
+
+.confirm-message {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 20px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.confirm-date-info {
+  background: #f9f9f9;
+  border-radius: 8px;
+  padding: 20px;
+  border: 2px solid #e0e0e0;
+}
+
+.confirm-date-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.confirm-date-row:last-child {
+  border-bottom: none;
+}
+
+.confirm-label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.confirm-value {
+  font-size: 16px;
+  color: #043E54;
+  font-weight: 600;
+}
+
+.calendar-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 2px solid #f0f0f0;
+  background: #fafafa;
+  border-radius: 0 0 8px 8px;
+}
+
+.modal-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
+}
+
+.modal-btn-cancel {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.modal-btn-cancel:hover {
+  background: #d0d0d0;
+}
+
+.modal-btn-confirm {
+  background: #043E54;
+  color: white;
+}
+
+.modal-btn-confirm:hover {
+  background: #033345;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(4, 62, 84, 0.3);
 }

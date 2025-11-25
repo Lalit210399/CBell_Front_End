@@ -375,11 +375,11 @@ const ChatLayout = ({ events, organizationId }) => {
                   <div className="chat-header-info">
                     <div className="chat-header-row-1">
                       <h3 className="chat-header-title">{selectedTask.taskTitle}</h3>
-                      <span
+                      {/* <span
                         className={`chat-header-status status-${selectedTask.taskStatusName.toLowerCase()}`}
                       >
                         {selectedTask.taskStatusName}
-                      </span>
+                      </span> */}
                     </div>
                     <div className="chat-header-row-2">
                       <div className="chat-header-row-2-left">

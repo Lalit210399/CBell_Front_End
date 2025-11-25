@@ -47,6 +47,8 @@ const CustomCalendar = ({ events = [], loading = true, error = null, isViewingOw
   const [selectedDayEvents, setSelectedDayEvents] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [currentView, setCurrentView] = useState("month");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedSlotDate, setSelectedSlotDate] = useState(null);
   const { addMessage } = useMessages();
   const { permissions: userPermissions } = useUser();
 
@@ -56,7 +58,7 @@ const CustomCalendar = ({ events = [], loading = true, error = null, isViewingOw
     canCreate: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Create") ?? false,
   };
 
-  const handleSelectSlot = ({ start }) => {
+  const handleSelectSlot = ({ start, end }) => {
     // Check if user has permission to create events
     if (!permissions.canCreate) {
       addMessage({
@@ -91,13 +93,26 @@ const CustomCalendar = ({ events = [], loading = true, error = null, isViewingOw
       return;
     }
 
+    // Show confirmation modal with time information
+    setSelectedSlotDate(start);
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmCreateEvent = () => {
     navigate("/events/eventDetailPage", {
       state: {
         mode: "create",
-        selectedDate: start,
+        selectedDate: selectedSlotDate,
         fromCalendar: true,
       },
     });
+    setShowConfirmModal(false);
+    setSelectedSlotDate(null);
+  };
+
+  const handleCancelCreateEvent = () => {
+    setShowConfirmModal(false);
+    setSelectedSlotDate(null);
   };
 
   const CalendarSkeleton = () => {
@@ -317,6 +332,60 @@ const CustomCalendar = ({ events = [], loading = true, error = null, isViewingOw
     );
   };
 
+  // Confirmation Modal Component
+  const ConfirmCreateEventModal = () => {
+    if (!showConfirmModal || !selectedSlotDate) return null;
+
+    const isTimeView = currentView === 'week' || currentView === 'day';
+
+    return (
+      <div className="calendar-modal-overlay" onClick={handleCancelCreateEvent}>
+        <div className="calendar-modal calendar-confirm-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="calendar-modal-header">
+            <h3>
+              <CalendarIcon size={20} />
+              Create New Event
+            </h3>
+            <button className="modal-close-btn" onClick={handleCancelCreateEvent}>
+              <X size={20} />
+            </button>
+          </div>
+          <div className="calendar-modal-body">
+            <div className="confirm-modal-content">
+              <p className="confirm-message">
+                Do you want to create a new event for:
+              </p>
+              <div className="confirm-date-info">
+                <div className="confirm-date-row">
+                  <span className="confirm-label">Date:</span>
+                  <span className="confirm-value">{moment(selectedSlotDate).format("MMMM DD, YYYY")}</span>
+                </div>
+                <div className="confirm-date-row">
+                  <span className="confirm-label">Day:</span>
+                  <span className="confirm-value">{moment(selectedSlotDate).format("dddd")}</span>
+                </div>
+                {isTimeView && (
+                  <div className="confirm-date-row">
+                    <span className="confirm-label">Time:</span>
+                    <span className="confirm-value">{moment(selectedSlotDate).format("h:mm A")}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="calendar-modal-footer">
+            <button className="modal-btn modal-btn-cancel" onClick={handleCancelCreateEvent}>
+              Cancel
+            </button>
+            <button className="modal-btn modal-btn-confirm" onClick={handleConfirmCreateEvent}>
+              Create Event
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) return <CalendarSkeleton />;
   if (error) return <div className="calendar-container">Error: {error}</div>;
 
@@ -413,6 +482,7 @@ const CustomCalendar = ({ events = [], loading = true, error = null, isViewingOw
         />
 
         <EventsModal />
+        <ConfirmCreateEventModal />
       </div>
     </div>
   );
