@@ -1,0 +1,293 @@
+/* Profile Settings */
+.profile-settings {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 20px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.ps-header {
+  margin-bottom: 32px;
+}
+
+.ps-title {
+  margin: 0 0 8px 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.ps-subtitle {
+  margin: 0;
+  font-size: 15px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* Content */
+.ps-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Profile Card */
+.ps-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 32px;
+  background: linear-gradient(135deg, #043e54 0%, #02968a 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.ps-avatar-section {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.ps-avatar-large {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #043e54 0%, #02968a 100%);
+  border: 3px solid rgba(255, 255, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: 700;
+  color: #ffffff !important;
+  text-transform: uppercase;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  line-height: 1;
+}
+
+.ps-status-indicator {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 3px solid #043e54;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.ps-profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ps-profile-name {
+  margin: 0 0 6px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #ffffff !important;
+  letter-spacing: -0.02em;
+}
+
+.ps-profile-email {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 400;
+}
+
+.ps-profile-badges {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ps-profile-role,
+.ps-profile-org {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #ffffff !important;
+}
+
+/* Card */
+.ps-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ps-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.ps-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1.5px solid #e2e8f0;
+}
+
+.ps-card-icon {
+  color: #043e54;
+  flex-shrink: 0;
+}
+
+.ps-card-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.ps-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Info Items */
+.ps-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ps-info-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ps-info-value {
+  font-size: 15px;
+  font-weight: 500;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+/* Info Grid */
+.ps-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .profile-settings {
+    padding: 24px 20px;
+  }
+
+  .ps-title {
+    font-size: 24px;
+  }
+
+  .ps-profile-card {
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    padding: 20px 24px;
+    gap: 20px;
+  }
+
+  .ps-avatar-large {
+    width: 80px;
+    height: 80px;
+    font-size: 30px;
+    line-height: 1;
+  }
+
+  .ps-profile-name {
+    font-size: 20px;
+  }
+
+  .ps-profile-email {
+    font-size: 14px;
+  }
+
+  .ps-info-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .ps-card {
+    padding: 20px;
+  }
+
+  .ps-card-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+  }
+
+  .ps-card-title {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-settings {
+    padding: 20px 16px;
+  }
+
+  .ps-avatar-large {
+    width: 72px;
+    height: 72px;
+    font-size: 26px;
+    line-height: 1;
+  }
+
+  .ps-status-indicator {
+    width: 16px;
+    height: 16px;
+    border-width: 2px;
+  }
+
+  .ps-profile-name {
+    font-size: 20px;
+  }
+
+  .ps-card {
+    padding: 16px;
+  }
+
+  .ps-info-item {
+    gap: 3px;
+  }
+
+  .ps-info-label {
+    font-size: 12px;
+  }
+
+  .ps-info-value {
+    font-size: 14px;
+  }
+}

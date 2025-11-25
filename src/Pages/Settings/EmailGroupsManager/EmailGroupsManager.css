@@ -1,0 +1,277 @@
+/* Email Groups Manager */
+.email-groups-manager {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 20px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.egm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  gap: 24px;
+}
+
+.egm-header-content {
+  flex: 1;
+}
+
+.egm-title {
+  margin: 0 0 8px 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.egm-subtitle {
+  margin: 0;
+  font-size: 15px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.egm-create-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #043e54 0%, #02968a 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(4, 62, 84, 0.3);
+}
+
+.egm-create-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(4, 62, 84, 0.4);
+}
+
+.egm-create-btn:active {
+  transform: translateY(0);
+}
+
+/* Search Bar */
+.egm-search-bar {
+  position: relative;
+  margin-bottom: 32px;
+}
+
+.egm-search-input {
+  width: 100%;
+  padding: 14px 16px 14px 44px;
+  font-size: 15px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1e293b;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+}
+
+.egm-search-input:hover {
+  border-color: #cbd5e1;
+}
+
+.egm-search-input:focus {
+  border-color: #043e54;
+  box-shadow: 0 0 0 4px rgba(4, 62, 84, 0.1);
+}
+
+.egm-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.search-clear-btn:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* Groups Grid */
+.egm-groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+/* Group Card */
+.egm-group-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+}
+
+.egm-group-card:hover {
+  border-color: #043e54;
+  box-shadow: 0 4px 12px rgba(4, 62, 84, 0.15);
+  transform: translateY(-2px);
+}
+
+.group-card-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #043e54 0%, #02968a 100%);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.group-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.group-card-title {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-card-count {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.group-card-arrow {
+  color: #cbd5e1;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.egm-group-card:hover .group-card-arrow {
+  color: #043e54;
+  transform: translateX(4px);
+}
+
+/* Empty State */
+.egm-empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.empty-icon {
+  color: #cbd5e1;
+  margin-bottom: 16px;
+}
+
+.egm-empty-state h3 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.egm-empty-state p {
+  margin: 0;
+  font-size: 15px;
+  color: #64748b;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .email-groups-manager {
+    padding: 24px 20px;
+  }
+
+  .egm-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .egm-create-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .egm-title {
+    font-size: 24px;
+  }
+
+  .egm-groups-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .egm-group-card {
+    padding: 16px;
+  }
+
+  .group-card-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .group-card-title {
+    font-size: 15px;
+  }
+
+  .group-card-count {
+    font-size: 13px;
+  }
+}

@@ -144,10 +144,22 @@
   cursor: pointer;
   padding: 0.25rem;
   border-radius: 50%;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .email-form-icon:hover {
   background: #e0e0e0;
+}
+
+.email-form-groups-btn {
+  color: #043e54;
+  padding: 0.4rem;
+}
+.email-form-groups-btn:hover {
+  background: #e0f2f1;
+  color: #02968a;
 }
 
 .alert {

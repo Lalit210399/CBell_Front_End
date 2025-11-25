@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, Calendar, Clock } from "lucide-react";
+import { LayoutGrid, Calendar, Clock, Settings } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
 import "./Sidebar.css";
 
@@ -16,7 +16,7 @@ function Sidebar() {
   return (
     <div className="sidebar">
       <div className="logo">CB</div>
-      <ul className="menu">
+      <ul className="menu menu-top">
         {hasDashboardPermission && (
           <li>
             <Link
@@ -71,6 +71,18 @@ function Sidebar() {
             </Link>
           </li>
         )}
+      </ul>
+      <ul className="menu menu-bottom">
+        <li>
+          <Link
+            to="/settings"
+            className={`menu-item ${location.pathname === "/settings" ? "active" : ""}`}
+          >
+            <div className="tooltip" data-tooltip="Settings">
+              <Settings size={20} />
+            </div>
+          </Link>
+        </li>
       </ul>
     </div>
   );

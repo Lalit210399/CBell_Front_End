@@ -16,8 +16,10 @@ import Instagram from "./InstagramPost";
 import ProtectedRoute, { RequirePermission } from "./Context/ProtectedRoute";
 import { useUser } from "./Context/UserContext";
 import { NotificationProvider } from "./Context/NotificationContext";
+import { EmailGroupsProvider } from "./Context/EmailGroupsContext";
 import ErrorBoundary from "./CommonComponents/ErrorBoundary"; 
 import ChatLayout from "./Pages/Chat/NewChatLayout";
+import Settings from "./Pages/Settings/Settings";
 
 // Component to render appropriate dashboard based on user role
 const DashboardRouter = () => {
@@ -48,7 +50,8 @@ function App() {
           element={
             <ProtectedRoute>
               <NotificationProvider>
-                <MainLayout>
+                <EmailGroupsProvider>
+                  <MainLayout>
                   <Routes>
                     <Route path="/auth" element={<AuthN />} />
                     <Route
@@ -83,6 +86,10 @@ function App() {
                         </RequirePermission>
                       }
                     />
+                    <Route
+                      path="/settings"
+                      element={<Settings />}
+                    />
                     {/* <Route path="/events/stepForm" element={<StepForm />} /> */}
                     {/* <Route path="/dashboard/stepForm" element={<StepForm />} /> */}
                     {/* <Route path="/schedule/stepForm" element={<StepForm />} /> */}
@@ -91,8 +98,9 @@ function App() {
                     <Route path="/instagram" element={<Instagram />} />
                   </Routes>
                 </MainLayout>
-              </NotificationProvider>
-            </ProtectedRoute>
+              </EmailGroupsProvider>
+            </NotificationProvider>
+          </ProtectedRoute>
           }
         />
 
