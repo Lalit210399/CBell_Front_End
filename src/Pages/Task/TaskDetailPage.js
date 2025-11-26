@@ -1309,7 +1309,8 @@ const TaskDetailPage = () => {
             const messageText = `Task reverted to Active. Reason: ${revertReason}`;
             if (typeof sendChatMessage === 'function') {
               // Fire-and-forget; log errors but don't block UI
-              sendChatMessage(taskId || taskData.id, messageText, []).catch((err) => {
+              // Send with messageType 2 for system notification
+              sendChatMessage(taskId || taskData.id, messageText, [], 2).catch((err) => {
                 console.error('Failed to send revert reason message to chat:', err);
               });
             }

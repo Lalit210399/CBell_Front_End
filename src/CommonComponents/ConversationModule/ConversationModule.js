@@ -117,6 +117,7 @@ const ConversationModule = ({
         },
         conversationText: thread.conversationText,
         createdOn: thread.createdOn,
+        messageType: thread.messageType || 1, // Default to normal chat if not provided
         replies: [],
         reactions: [],
         documentIds: thread.documentId ? [thread.documentId] : [],
@@ -179,6 +180,7 @@ const ConversationModule = ({
             },
             conversationText: message.message,
             createdOn: message.sentAt,
+            messageType: message.messageType || 1, // Default to normal chat if not provided
             replies: [],
             reactions: [],
             documentIds: message.documentIds || [],
@@ -300,7 +302,7 @@ const ConversationModule = ({
   }, [isConnected, taskId, stopTyping]);
 
   const handleSendMessage = useCallback(
-    async (content, documentIds = []) => {
+    async (content, documentIds = [], messageType = 1) => {
       if (
         (!content || content.trim() === "") &&
         (!documentIds || documentIds.length === 0)
@@ -310,7 +312,7 @@ const ConversationModule = ({
 
       try {
         // Use SignalR to send real-time message
-        const success = await sendMessage(taskId, content, documentIds);
+        const success = await sendMessage(taskId, content, documentIds, messageType);
 
         if (success) {
           // Optimistically add message to UI, but avoid adding if a server message
@@ -327,6 +329,7 @@ const ConversationModule = ({
             },
             conversationText: content,
             createdOn: new Date().toISOString(),
+            messageType: messageType, // Include messageType in optimistic message
             replies: [],
             reactions: [],
             documentIds: documentIds || [],

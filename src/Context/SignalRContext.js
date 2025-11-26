@@ -227,7 +227,7 @@ const initializeConnection = useCallback(async () => {
   }, [isConnected, currentTaskId]);
 
   // Enhanced send message
-  const sendMessage = useCallback(async (taskId, message, documentIds = []) => {
+  const sendMessage = useCallback(async (taskId, message, documentIds = [], messageType = 1) => {
     if (!isConnected) {
       //console.error('[SignalRContext] Cannot send message: Not connected to SignalR');
       return false;
@@ -239,7 +239,7 @@ const initializeConnection = useCallback(async () => {
     }
 
     try {
-      const success = await signalRService.sendMessage(taskId, message.trim(), documentIds);
+      const success = await signalRService.sendMessage(taskId, message.trim(), documentIds, messageType);
       return success;
     } catch (error) {
       //console.error('[SignalRContext] Error sending message:', error);

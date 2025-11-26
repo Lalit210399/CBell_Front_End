@@ -199,10 +199,10 @@ async startConnection() {
     }
   }
 
-  async sendMessage(taskId, message, documentIds = []) {
+  async sendMessage(taskId, message, documentIds = [], messageType = 1) {
     if (!this.connection) throw new Error("No SignalR connection");
     try {
-      await this.connection.invoke("SendMessage", taskId, message, documentIds);
+      await this.connection.invoke("SendMessage", taskId, message, documentIds, messageType);
       //console.debug("[SignalR] Message sent successfully");
       return true;
     } catch (err) {
