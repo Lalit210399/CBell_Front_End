@@ -50,7 +50,8 @@ const TopSection = ({
   createdBy = "",
   taskId = null,
   hasWorkSubmissionFiles = false,
-  onTabChange // Add callback to change tabs
+  onTabChange, // Add callback to change tabs
+  eventDate = null // Add event date prop
 }) => {
   const { user } = useUser();
   const { taskStatuses } = useTaskStatus();
@@ -339,6 +340,28 @@ const TopSection = ({
             </div>
           </div>
         </div>
+
+        {eventDate && (
+          <div className="edit-top-event-date-wrapper">
+            <div className="edit-top-event-date-section">
+              <span className="edit-top-event-date-label">Event Date:</span>
+              <span className="edit-top-event-date-text">
+                {new Date(eventDate).toLocaleDateString('en-US', { 
+                  month: 'short', 
+                  day: 'numeric',
+                  year: 'numeric'
+                })}
+              </span>
+              <span className="edit-top-event-date-time">
+                {new Date(eventDate).toLocaleTimeString('en-US', { 
+                  hour: '2-digit', 
+                  minute: '2-digit',
+                  hour12: true
+                })}
+              </span>
+            </div>
+          </div>
+        )}
 
         <div className="edit-top-right-section">
           <div className="edit-top-save-button-section" style={{ display: "flex", gap: "8px" }}>

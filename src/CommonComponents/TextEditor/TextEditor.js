@@ -43,14 +43,63 @@ const TextEditor = ({ initialContent = "", onContentChange, isFullWidth, mode = 
             // Links, images, video
             ["link", "image", "video"],
 
+            // Tables
+            ["table"],
+
             // Remove formatting
             ["clean"]
-          ]
+          ],
+          table: true
         }
       });
 
 
       quillInstance.current.root.innerHTML = initialContent;
+
+      // Handle paste events to clean up table formatting
+      quillInstance.current.root.addEventListener('paste', (e) => {
+        e.preventDefault();
+        
+        const text = e.clipboardData?.getData('text/html') || e.clipboardData?.getData('text/plain') || '';
+        
+        if (text) {
+          // Create a temporary div to parse the pasted content
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = text;
+          
+          // Check if pasted content contains tables
+          const hasTables = tempDiv.querySelector('table');
+          
+          if (hasTables) {
+            // Clean up table HTML: remove styling attributes that cause width issues
+            const tables = tempDiv.querySelectorAll('table');
+            tables.forEach(table => {
+              // Remove inline styles that might restrict width
+              table.removeAttribute('style');
+              table.removeAttribute('width');
+              
+              // Clean up all cells
+              const cells = table.querySelectorAll('td, th');
+              cells.forEach(cell => {
+                // Remove restrictive styles but keep cell content
+                cell.removeAttribute('style');
+                cell.removeAttribute('width');
+                cell.removeAttribute('height');
+              });
+            });
+          }
+          
+          // Insert the cleaned HTML
+          const selection = quillInstance.current.getSelection();
+          if (selection) {
+            quillInstance.current.clipboard.dangerouslyPasteHTML(
+              selection.index,
+              tempDiv.innerHTML,
+              'user'
+            );
+          }
+        }
+      });
 
       quillInstance.current.on('text-change', () => {
         const html = quillInstance.current.root.innerHTML;

@@ -1502,6 +1502,7 @@ const TaskDetailPage = () => {
           taskId={taskId}
           hasWorkSubmissionFiles={hasWorkSubmissionFiles}
           onTabChange={handleTabChange}
+          eventDate={eventDate}
         />
       </div>
 
