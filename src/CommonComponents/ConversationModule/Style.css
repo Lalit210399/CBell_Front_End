@@ -96,7 +96,7 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    max-width: 72%; /* contain bubble width and avoid full-row cards */
+    /* max-width: 72%; contain bubble width and avoid full-row cards */
     width: 100%;
   }
 
@@ -612,7 +612,7 @@
   /* Ensure bubble sits to the correct side inside the constrained body */
   .message-item.own .message-body {
     align-items: flex-end;
-    max-width: 72%;
+    /* max-width: 72%; */
   }
 
   .message-item.other .message-body {
@@ -715,7 +715,7 @@
 }
 
 .message-item.system-message .message-body {
-  max-width: 85%;
+  /* max-width: 85%; */
 }
 
 .message-item.system-message .message-bubble {
