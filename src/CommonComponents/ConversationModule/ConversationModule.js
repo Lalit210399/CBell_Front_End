@@ -311,8 +311,13 @@ const ConversationModule = ({
       }
 
       try {
+        // Get required parameters for SignalR
+        const organizationId = currentUser?.organizationId || user?.organizationId;
+        const userId = currentUser?.id || user?.id;
+        const userName = `${currentUser?.firstName || user?.firstName || ''} ${currentUser?.lastName || user?.lastName || ''}`.trim() || currentUser?.userName || user?.userName;
+        
         // Use SignalR to send real-time message
-        const success = await sendMessage(taskId, content, documentIds, messageType);
+        const success = await sendMessage(taskId, content, documentIds, messageType, organizationId, eventId, userId, userName);
 
         if (success) {
           // Optimistically add message to UI, but avoid adding if a server message

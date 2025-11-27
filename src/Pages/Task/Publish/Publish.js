@@ -64,6 +64,9 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
   const [description, setDescription] = useState('');
   const [fileDetail, setFileDetail] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showPostLinkModal, setShowPostLinkModal] = useState(false);
+  const [postLinkData, setPostLinkData] = useState(null);
+  const [selectedPlatformIndex, setSelectedPlatformIndex] = useState(0);
   const { user: contextUser } = useUser();
   const { addMessage } = useMessages();
   const user = userProp || contextUser;
@@ -79,6 +82,104 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
       link.click();
       document.body.removeChild(link);
     });
+  };
+
+  const fetchPublishedLinks = async (docId, taskId) => {
+    try {
+      const response = await fetch(`/apis/socialmedia/post-links/task/${taskId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': '1',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch published links');
+      }
+
+      const data = await response.json();
+      
+      // Group links by platform to avoid duplicates
+      const platformMap = new Map();
+      
+      data.forEach(item => {
+        if (item.links && Array.isArray(item.links)) {
+          item.links.forEach(link => {
+            const platform = link.platform;
+            if (!platformMap.has(platform)) {
+              platformMap.set(platform, link);
+            }
+          });
+        }
+      });
+      
+      // Convert map to array
+      return Array.from(platformMap.values());
+    } catch (err) {
+      console.error('Error fetching published links:', err);
+      return [];
+    }
+  };
+
+  const handleViewPublishedLinks = async (docId, taskId) => {
+    const links = await fetchPublishedLinks(docId, taskId);
+    if (links.length > 0) {
+      setPostLinkData({ links, viewMode: true });
+      setSelectedPlatformIndex(0);
+      setShowPostLinkModal(true);
+    } else {
+      addMessage({
+        text: "No published links found for this document",
+        type: "info",
+        duration: 2000,
+      });
+    }
+  };
+
+  const saveSocialMediaPostLink = async (docId, platform, postData) => {
+    const organizationId = user?.organizationId;
+    const taskId = fileDetail?.fullTask?.id || fileDetail?.id;
+    
+    // Construct the payload
+    const payload = {
+      organizationId,
+      eventId,
+      taskId,
+      documentId: docId,
+      links: [
+        {
+          platform: platform.charAt(0).toUpperCase() + platform.slice(1),
+          url: postData.postUrl || '',
+          postId: postData.postId || '',
+          postedAt: new Date().toISOString()
+        }
+      ]
+    };
+
+    try {
+      const response = await fetch('/apis/socialmedia/post-links', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': '1',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to save social media post link');
+      }
+
+      const result = await response.json();
+      console.log('Social media post link saved successfully:', result);
+      return result;
+    } catch (err) {
+      console.error('Error saving social media post link:', err);
+      // Don't throw error to avoid disrupting the publish flow
+      // Just log it for debugging
+    }
   };
 
   const handlePlatformPublish = async (docId, platform, publishData = {}) => {
@@ -184,6 +285,25 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
 
         
         throw new Error(errorMessage);
+      }
+
+      // Get the response data
+      const responseData = await response.json();
+      
+      // Save the social media post link to database
+      if (responseData.success && responseData.postUrl) {
+        await saveSocialMediaPostLink(docId, platform, {
+          postId: responseData.postId,
+          postUrl: responseData.postUrl
+        });
+        
+        // Show the post link in a modal
+        setPostLinkData({
+          platform: platform.charAt(0).toUpperCase() + platform.slice(1),
+          postUrl: responseData.postUrl,
+          postId: responseData.postId
+        });
+        setShowPostLinkModal(true);
       }
 
       await handlePublishRecord(docId, platform);
@@ -332,44 +452,82 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
       )) || "-";
     }
     if (key === 'files') {
-      return item.files?.map((file, idx) => (
-        <div key={idx} className="file-entry">
-          <span className="file-badge">
-            <a
-              href={file.url.replace('/apis/task/download_document/', '/apis/document/view/')}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {file.name}
-            </a>
-          </span>
-          <span className="platform-icons">
-            {file.publishedTo?.map((p, i) => {
-              // Check if the platform supports this file type
-              const fileType = file.document?.contentType || file.document?.type || file.type;
-              const isSupported = isFileTypeSupported(fileType, p.platform);
-              return isSupported ? (
-                <span key={i} className="platform-icon">
-                  {getPlatformIcon(p.platform)}
-                </span>
-              ) : null;
-            }).filter(Boolean)}
-          </span>
-        </div>
-      )) || "No File";
+      return item.files?.map((file, idx) => {
+        const docId = file.document?.documentId || file.document?.fileId;
+        const taskId = file.fullTask?.id;
+        return (
+          <div key={idx} className="file-entry">
+            <span className="file-badge">
+              <a
+                href={file.url.replace('/apis/task/download_document/', '/apis/document/view/')}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {file.name}
+              </a>
+            </span>
+            <span className="platform-icons">
+              {file.publishedTo?.map((p, i) => {
+                // Check if the platform supports this file type
+                const fileType = file.document?.contentType || file.document?.type || file.type;
+                const isSupported = isFileTypeSupported(fileType, p.platform);
+                return isSupported ? (
+                  <span 
+                    key={i} 
+                    className="platform-icon clickable" 
+                    onClick={() => handleViewPublishedLinks(docId, taskId)}
+                    title={`View ${p.platform} post`}
+                  >
+                    {getPlatformIcon(p.platform)}
+                  </span>
+                ) : null;
+              }).filter(Boolean)}
+            </span>
+          </div>
+        );
+      }) || "No File";
     }
     
     if (key === 'status') {
       const status = item[key] || "Unknown";
       const statusClass = status.toLowerCase().replace(/\s+/g, '-');
+      const isPublished = status.toLowerCase().includes('published');
+      const firstFile = item.files?.[0];
+      const docId = firstFile?.document?.documentId || firstFile?.document?.fileId;
+      const taskId = firstFile?.fullTask?.id;
+      
       return (
-        <span className={`status-badge status-${statusClass}`}>
+        <span 
+          className={`status-badge status-${statusClass} ${isPublished && docId ? 'clickable-status' : ''}`}
+          onClick={() => isPublished && docId && handleViewPublishedLinks(docId, taskId)}
+          title={isPublished && docId ? "Click to view published links" : ""}
+        >
           {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
         </span>
       );
     }
     
     return item[key] || "-";
+  };
+
+  const handleCopyLink = () => {
+    if (postLinkData?.postUrl) {
+      navigator.clipboard.writeText(postLinkData.postUrl)
+        .then(() => {
+          addMessage({
+            text: "Link copied to clipboard!",
+            type: "success",
+            duration: 2000,
+          });
+        })
+        .catch(() => {
+          addMessage({
+            text: "Failed to copy link",
+            type: "error",
+            duration: 2000,
+          });
+        });
+    }
   };
 
   return (
@@ -395,6 +553,143 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
           onPlatformPublish={handlePlatformPublish}
           documents={fileDetail && fileDetail.document ? [fileDetail.document] : []}
         />
+      )}
+
+      {showPostLinkModal && postLinkData && (
+        <div className="post-link-modal-overlay" onClick={() => setShowPostLinkModal(false)}>
+          <div className="post-link-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="post-link-header">
+              <h3>{postLinkData.viewMode ? 'Published Links' : 'Post Published Successfully!'}</h3>
+              <button className="close-btn" onClick={() => setShowPostLinkModal(false)}>×</button>
+            </div>
+            <div className="post-link-body">
+              {postLinkData.viewMode ? (
+                // View mode: Show all published links
+                <>
+                  <div className="platform-icons-header">
+                    {postLinkData.links?.map((link, idx) => {
+                      const platformName = link.platform?.toLowerCase();
+                      return (
+                        <button
+                          key={idx}
+                          className={`platform-icon-btn ${selectedPlatformIndex === idx ? 'active' : ''}`}
+                          onClick={() => setSelectedPlatformIndex(idx)}
+                          title={`View ${link.platform} post`}
+                        >
+                          {platformName === 'facebook' && <FaFacebook size={24} color="#4267B2" />}
+                          {platformName === 'instagram' && <FaInstagram size={24} color="#E1306C" />}
+                          {platformName === 'youtube' && <FaYoutube size={24} color="#FF0000" />}
+                          {platformName === 'mail' && <FaEnvelope size={24} color="#0072C6" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {postLinkData.links?.[selectedPlatformIndex] && (
+                    <div className="post-link-info">
+                      <div className="platform-badge">
+                        {postLinkData.links[selectedPlatformIndex].platform?.toLowerCase() === 'facebook' && <FaFacebook size={20} color="#4267B2" />}
+                        {postLinkData.links[selectedPlatformIndex].platform?.toLowerCase() === 'instagram' && <FaInstagram size={20} color="#E1306C" />}
+                        {postLinkData.links[selectedPlatformIndex].platform?.toLowerCase() === 'youtube' && <FaYoutube size={20} color="#FF0000" />}
+                        {postLinkData.links[selectedPlatformIndex].platform?.toLowerCase() === 'mail' && <FaEnvelope size={20} color="#0072C6" />}
+                        <span>{postLinkData.links[selectedPlatformIndex].platform}</span>
+                      </div>
+                      <div className="post-link-details">
+                        <label>Post URL:</label>
+                        <div className="link-container">
+                          <input 
+                            type="text" 
+                            value={postLinkData.links[selectedPlatformIndex].url} 
+                            readOnly 
+                            className="link-input"
+                          />
+                          <button className="copy-btn" onClick={() => {
+                            navigator.clipboard.writeText(postLinkData.links[selectedPlatformIndex].url)
+                              .then(() => {
+                                addMessage({
+                                  text: "Link copied to clipboard!",
+                                  type: "success",
+                                  duration: 2000,
+                                });
+                              })
+                              .catch(() => {
+                                addMessage({
+                                  text: "Failed to copy link",
+                                  type: "error",
+                                  duration: 2000,
+                                });
+                              });
+                          }} title="Copy link">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+                      <div className="post-link-actions">
+                        <a 
+                          href={postLinkData.links[selectedPlatformIndex].url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="view-post-btn"
+                        >
+                          View Post
+                        </a>
+                        <button className="done-btn" onClick={() => setShowPostLinkModal(false)}>
+                          Done
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                // Single publish mode
+                <>
+                  <div className="post-link-info">
+                    <div className="platform-badge">
+                      {postLinkData.platform === 'Facebook' && <FaFacebook size={20} color="#4267B2" />}
+                      {postLinkData.platform === 'Instagram' && <FaInstagram size={20} color="#E1306C" />}
+                      {postLinkData.platform === 'Youtube' && <FaYoutube size={20} color="#FF0000" />}
+                      <span>{postLinkData.platform}</span>
+                    </div>
+                    <div className="post-link-details">
+                      <label>Post URL:</label>
+                      <div className="link-container">
+                        <input 
+                          type="text" 
+                          value={postLinkData.postUrl} 
+                          readOnly 
+                          className="link-input"
+                        />
+                        <button className="copy-btn" onClick={handleCopyLink} title="Copy link">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                          </svg>
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="post-link-actions">
+                    <a 
+                      href={postLinkData.postUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="view-post-btn"
+                    >
+                      View Post
+                    </a>
+                    <button className="done-btn" onClick={() => setShowPostLinkModal(false)}>
+                      Done
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
