@@ -23,7 +23,7 @@
   gap: 10px;
 }
 
-.recent-tasks-header span {
+.recent-tasks-header .header_title {
   font-size: 20px;
   font-weight: 600;
 }

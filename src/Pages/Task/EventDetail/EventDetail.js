@@ -96,14 +96,15 @@ const EventDetail = ({
         const transformedGuests = transformToOldFormat(guests).filter(g => g.name && g.name.trim());
         const transformedOrganizers = transformToOldFormat(organizers).filter(o => o.name && o.name.trim());
         
-        // Validate description content
-        const description = editorRef.current;
-        if (!hasValidDescription(description)) {
-          console.warn('EventDetail: Description is empty or contains only HTML tags');
-        }
-        
+        // Normalize description: trim whitespace and handle empty content
+        const rawDescription = editorRef.current || "";
+        const trimmedDescription = rawDescription.trim();
+        // If description is empty or only contains HTML tags with no text, set to empty string
+        const textContent = trimmedDescription.replace(/<[^>]*>/g, '').trim();
+        const normalizedDescription = textContent ? trimmedDescription : "";
+
         return {
-          description: description,
+          description: normalizedDescription,
           location: location,
           guests: transformedGuests,
           organizers: transformedOrganizers,

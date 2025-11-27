@@ -1,10 +1,9 @@
 // src/components/MessageItem.jsx
-import React, { useState, useEffect } from 'react';
-import { Reply, MoreHorizontal, Smile, SmilePlus } from 'lucide-react';
+import React, { useState } from 'react';
 import Avatar from './Avatar';
 import ReplyBox from './ReplyBox';
 import Reactions from './Reactions';
-import MessageStrip from '../MessageStrip/MessageStrip';
+import { getMessageTypeConfig, isSystemMessage } from './messageTypeConfig';
 
 const DocumentPreview = ({ docId, idx, total }) => {
   const url = `/apis/document/view/${docId}`;
@@ -25,7 +24,7 @@ const DocumentPreview = ({ docId, idx, total }) => {
         setLoading(false);
       });
     return () => { isMounted = false; };
-  }, [docId]);
+  }, [url]);
   // File type icons
   let fileIcon = '📎';
   let preview = null;
@@ -121,58 +120,78 @@ const DocumentPreview = ({ docId, idx, total }) => {
   );
 };
 
-const MessageItem = ({ message, currentUser, onReply, onReaction, isThread }) => {
+const MessageItem = ({ message, currentUser, onReply, onReaction, isThread, onlineUserIds = [], onlineUserNames = [] }) => {
   const [showReplyBox, setShowReplyBox] = useState(false);
-  const [showDevMsg, setShowDevMsg] = useState(false);
-  const [showReactions, setShowReactions] = useState(false);
-
   const handleReply = (content) => {
     onReply(message.threadId, content);
     setShowReplyBox(false);
   };
 
-  const handleReaction = (reaction) => {
-    onReaction(message.threadId, null, reaction);
-    setShowReactions(false);
-  };
+  // Get message type configuration
+  const messageTypeConfig = getMessageTypeConfig(message.messageType);
+  const isSystemMsg = isSystemMessage(message.messageType);
 
-  const handleReplyClick = () => {
-    setShowDevMsg(true);
-    setTimeout(() => setShowDevMsg(false), 2000);
-  };
+  // determine online status: check by id first, fallback to name
+  const userId = message.user?.id ? String(message.user.id) : null;
+  const userName = message.user?.name ? String(message.user.name) : null;
+  const isOnline = (userId && onlineUserIds.includes(userId)) || (userName && onlineUserNames.includes(userName));
+
+  // is this message sent by the current user? used to align bubble to right
+  const isOwnMessage = currentUser && message.user && (String(currentUser.id) === String(message.user.id));
+
+  // Clean document IDs: flatten nested arrays and remove falsy/empty IDs
+  const cleanedDocumentIds = Array.isArray(message.documentIds)
+    ? message.documentIds.flat(Infinity).filter((id) => {
+        // remove null/undefined/empty arrays/empty strings
+        if (id === null || id === undefined) return false;
+        if (Array.isArray(id)) return id.length > 0;
+        if (typeof id === 'string' && id.trim() === '') return false;
+        return true;
+      }).map(id => String(id))
+    : [];
 
   return (
-    <div className={`message-item ${isThread ? 'thread-starter' : ''}`} style={{ position: 'relative' }}>
-      {showDevMsg && (
-        <div style={{ position: 'absolute', top: -40, left: 0, right: 0, zIndex: 10 }}>
-          <MessageStrip
-            text="This feature is under development."
-            type="Information"
-            showIcon={true}
-            showCloseButton={false}
-            duration={2000}
-          />
-        </div>
-      )}
+    <div className={`message-item ${isThread ? 'thread-starter' : ''} ${isOwnMessage ? 'own' : 'other'} ${isSystemMsg ? 'system-message' : ''}`} style={{ position: 'relative' }}>
+      
       <div className="message-content">
-        <Avatar user={message.user} />
+        <Avatar user={message.user} isOnline={isOnline} />
         <div className="message-body">
-          <div className="message-header">
-            <span className="username">{message.user.name}</span>
-            <span className="timestamp">
-              {new Date(message.createdOn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          </div>
-          <div className="message-text">{message.conversationText}</div>
-          {/* Render document links and previews if present */}
-          {message.documentIds && message.documentIds.length > 0 && (
+          <div 
+            className={`message-bubble ${isOwnMessage ? 'bubble-own' : 'bubble-other'} ${messageTypeConfig.className}`}
+            style={{
+              ...(messageTypeConfig.backgroundColor && { backgroundColor: messageTypeConfig.backgroundColor }),
+              ...(messageTypeConfig.borderColor && { borderColor: messageTypeConfig.borderColor }),
+            }}
+          >
+            <div className="message-header">
+              {messageTypeConfig.showIcon && messageTypeConfig.icon && (
+                <span className="message-type-icon" aria-label={messageTypeConfig.label}>
+                  {messageTypeConfig.icon}
+                </span>
+              )}
+              <span className="username">{message.user.name}</span>
+              <span className="timestamp">
+                {new Date(message.createdOn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+            <div 
+              className="message-text"
+              style={{
+                ...(messageTypeConfig.textColor && { color: messageTypeConfig.textColor }),
+              }}
+            >
+              {message.conversationText}
+            </div>
+            {/* Render document links and previews if present */}
+          {cleanedDocumentIds && cleanedDocumentIds.length > 0 && (
             <div style={{ margin: '8px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {message.documentIds.map((docId, idx) => (
-                <DocumentPreview key={docId} docId={docId} idx={idx} total={message.documentIds.length} />
+              {cleanedDocumentIds.map((docId, idx) => (
+                <DocumentPreview key={docId + '-' + idx} docId={docId} idx={idx} total={cleanedDocumentIds.length} />
               ))}
             </div>
           )}
           <Reactions reactions={message.reactions || []} />
+          </div>
           {/* <div className="message-actions">
             <button 
               className="action-button" 

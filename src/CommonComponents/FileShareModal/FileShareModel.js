@@ -11,6 +11,19 @@ const isFileTypeSupported = (fileType, platform) => {
   if (!fileType) return true; // If no file type info, allow all platforms
   
   const lowerFileType = fileType.toLowerCase();
+  //console.log('Checking file type support:', lowerFileType, 'for platform:', platform);
+  
+  // Check if file is audio or document
+  const isAudioOrDoc = lowerFileType.startsWith('audio/') || 
+                      lowerFileType.startsWith('application/pdf') ||
+                      lowerFileType.startsWith('application/msword') ||
+                      lowerFileType.startsWith('application/vnd.openxmlformats-officedocument') ||
+                      lowerFileType.startsWith('text/');
+
+  // If it's audio or document, only allow email sharing
+  if (isAudioOrDoc) {
+    return platform.toLowerCase() === 'email';
+  }
   
   switch (platform.toLowerCase()) {
     case 'youtube':
@@ -20,8 +33,8 @@ const isFileTypeSupported = (fileType, platform) => {
       // Instagram supports image and video files
       return lowerFileType.startsWith('image/') || lowerFileType.startsWith('video/');
     case 'facebook':
-      // Facebook supports all file types
-      return true;
+      // Facebook supports image and video files
+      return lowerFileType.startsWith('image/') || lowerFileType.startsWith('video/');
     case 'email':
       // Email supports all file types
       return true;
@@ -37,6 +50,9 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
   const [showYouTubeUploader, setShowYouTubeUploader] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [platform, setPlatform] = useState(null);
+
+  // Get file type for easier access
+  const fileType = fileDetail?.document?.contentType || fileDetail?.document?.type || fileDetail?.type;
 
   // Handle click outside to close modal
   useEffect(() => {
@@ -85,8 +101,6 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
   };
 
   const handleSocialMediaClick = (platform) => {
-    // Don't show warning immediately - let the user proceed first
-    // The warning will be shown by the actual publishing process if needed
     handleShare(platform);
   };
 
@@ -135,18 +149,27 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
               {fileName && <span className="file_name">{fileName}</span>}
             </div>
             <div className="social-icons">
+              {/* Email - Always shown since it supports all file types */}
               <button onClick={() => handleShare('email')} className="icon-button" title="Email">
                 <FaEnvelope className="icon" />
               </button>
-              <button onClick={() => handleSocialMediaClick('facebook')} className="icon-button" title="Facebook">
-                <FaFacebook className="icon" />
-              </button>
-              {isFileTypeSupported(fileDetail?.document?.contentType || fileDetail?.document?.type || fileDetail?.type, 'instagram') && (
+              
+              {/* Facebook - Only show for supported file types */}
+              {isFileTypeSupported(fileType, 'facebook') && (
+                <button onClick={() => handleSocialMediaClick('facebook')} className="icon-button" title="Facebook">
+                  <FaFacebook className="icon" />
+                </button>
+              )}
+              
+              {/* Instagram - Only show for supported file types */}
+              {isFileTypeSupported(fileType, 'instagram') && (
                 <button onClick={() => handleSocialMediaClick('instagram')} className="icon-button" title="Instagram">
                   <FaInstagram className="icon" />
                 </button>
               )}
-              {isFileTypeSupported(fileDetail?.document?.contentType || fileDetail?.document?.type || fileDetail?.type, 'youtube') && (
+              
+              {/* YouTube - Only show for supported file types */}
+              {isFileTypeSupported(fileType, 'youtube') && (
                 <button onClick={() => handleSocialMediaClick('youtube')} className="icon-button" title="YouTube">
                   <FaYoutube className="icon" />
                 </button>

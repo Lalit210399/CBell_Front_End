@@ -54,8 +54,11 @@ const TextEditor = ({ initialContent = "", onContentChange, isFullWidth, mode = 
 
       quillInstance.current.on('text-change', () => {
         const html = quillInstance.current.root.innerHTML;
-        setContent(html);
-        onContentChange?.(html);
+        // Normalize empty content: if only HTML tags and no text, set to empty string
+        const textContent = html.replace(/<[^>]*>/g, '').trim();
+        const normalizedHtml = textContent ? html : '';
+        setContent(normalizedHtml);
+        onContentChange?.(normalizedHtml);
       });
     }
 

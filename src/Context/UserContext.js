@@ -40,6 +40,20 @@ export const UserProvider = ({ children }) => {
     }
   }, [user?.organizationId, scope?.accessibleOrganizations, selectedOrganizationId]);
 
+  // Listen for auth expiration events
+  useEffect(() => {
+    const handleAuthExpired = (event) => {
+      //console.log('Auth expired event received:', event.detail);
+      resetUserState();
+    };
+
+    window.addEventListener('auth-expired', handleAuthExpired);
+    
+    return () => {
+      window.removeEventListener('auth-expired', handleAuthExpired);
+    };
+  }, []);
+
   // Helper function to check if user is viewing their own organization
   const isViewingOwnOrganization = () => {
     return selectedOrganizationId === user?.organizationId;
@@ -49,7 +63,7 @@ export const UserProvider = ({ children }) => {
     // Check if scope change is allowed on current page
     if (currentLocation) {
       // Only allow scope changes on the exact main pages, not sub-paths
-      const allowedPages = ['/dashboard','/designer-dashboard', '/events', '/schedule'];
+      const allowedPages = ['/dashboard','/designer-dashboard', '/events', '/schedule', '/chat'];
       const isAllowedPage = allowedPages.includes(currentLocation.pathname);
       
       // If not on an allowed page, change scope and redirect to dashboard

@@ -68,12 +68,38 @@ th.sortable:hover {
   z-index: 11;
 }
 
+/* Sort indicator styles */
+.sort-active {
+  opacity: 1;
+  color: #3b82f6;
+  font-size: 12px;
+  margin-left: 4px;
+  transition: all 0.2s ease-in-out;
+}
+
+.sort-inactive {
+  opacity: 0.3;
+  color: #6b7280;
+  font-size: 12px;
+  margin-left: 4px;
+  transition: all 0.2s ease-in-out;
+}
+
+.sortable:hover .sort-inactive {
+  opacity: 0.6;
+}
+
+th:hover .sort-inactive {
+  opacity: 0.6;
+}
+
 .action-column {
   width: 60px;
   min-width: 60px;
   max-width: 60px;
   text-align: center;
   padding: 8px 4px;
+  vertical-align: middle;
 }
 
 /* Skeleton Loading Styles */
@@ -146,6 +172,7 @@ th.sortable:hover {
   display: flex;
   justify-content: center;
   align-items: center;
+  min-height: 48px; /* Ensure consistent height for proper centering */
 }
 
 .action-button {
@@ -165,6 +192,32 @@ th.sortable:hover {
 
 .action-button:hover {
   background-color: #f0f0f0;
+}
+
+.delete-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #dc2626;
+  width: 32px;
+  height: 32px;
+  margin: 0 auto; /* Additional centering for extra assurance */
+}
+
+.delete-button:hover {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  transform: scale(1.05);
+}
+
+.delete-button:active {
+  transform: scale(0.95);
 }
 
 .dropdown_menu {
@@ -399,6 +452,11 @@ th.sortable:hover::after {
     font-size: 16px;
   }
 
+  .delete-button {
+    width: 28px;
+    height: 28px;
+  }
+
   .dropdown_menu {
     min-width: 100px;
     right: 0;
@@ -436,6 +494,11 @@ th.sortable:hover::after {
     width: 24px;
     height: 24px;
     font-size: 14px;
+  }
+
+  .delete-button {
+    width: 24px;
+    height: 24px;
   }
 
   .dropdown_menu {

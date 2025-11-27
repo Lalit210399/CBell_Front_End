@@ -58,22 +58,27 @@
 }
 
 /* Updated Files Container and Grid Styles */
-.files-container {
-  /* padding: 10px; */
-  /* background-color: var(--background-color); */
-  border-radius: var(--border-radius);
-  /* margin: 10px 0; */
-  /* box-shadow: var(--shadow); */
+.links-container a {
+  text-decoration: none;
+  color: var(--primary-color);
+  background-color: rgba(var(--primary-color-rgb), 0.1);
+  padding: 6px 12px;
+  border-radius: 20px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 13px;
+  white-space: nowrap;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
 }
 
-.files-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 16px;
-  margin-top: 10px;
+.links-container a:hover {
+  background-color: rgba(var(--primary-color-rgb), 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* File Card */
 .file-card {
   display: flex;
   flex-direction: column;
@@ -96,7 +101,7 @@
 
 .file-card.selected {
   border: 2px solid var(--primary-color);
-  background-color: rgba(74, 111, 165, 0.05);
+  background-color: rgba(var(--primary-color-rgb), 0.05);
 }
 
 .file-name {
@@ -1126,7 +1131,7 @@
 
 .edit-mode .file-card.selected {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.3);
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.3);
 }
 
 .file-status-indicator {

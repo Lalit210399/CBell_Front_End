@@ -108,7 +108,7 @@ const EventAssignToMe = ({ events, onEventClick, title = "Events Assigned to Me"
         columns={columns}
         data={loading ? skeletonRows : filteredEvents}
         renderCell={loading ? () => <div className="skeleton-row-cell" /> : renderCell}
-        sortableColumns={["eventName", "collegeName", "eventDate"]}
+        sortableColumns={["eventName", "collegeName", "eventDate", "createdBy"]}
         showActions={false}
         onRowClick={loading ? undefined : (event) => onEventClick?.(event)}
         className="fixed-height"

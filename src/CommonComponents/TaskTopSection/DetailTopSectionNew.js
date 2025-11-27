@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { ArrowLeft, Save, Users } from "lucide-react";
 import CustomDropdown from "../Dropdown/CustomDropdown";
 import MultiSelectDropdown from "../Dropdown/MultiSelectDropdown";
@@ -18,6 +18,16 @@ function formatDateTimeLocal(date) {
   const hours = String(d.getHours()).padStart(2, "0");
   const minutes = String(d.getMinutes()).padStart(2, "0");
   return { date: `${year}-${month}-${day}`, time: `${hours}:${minutes}` };
+}
+
+function toTitleCase(str) {
+  if (!str) return str;
+  return str
+    .trim()
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }
 
 const DetailTopSectionNew = ({
@@ -59,6 +69,7 @@ const DetailTopSectionNew = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [assignedIds, setAssignedIds] = useState([]);
   const [fetchedUsers, setFetchedUsers] = useState([]);
+  const hasFetchedUsersRef = useRef(false);
 
   // Use event types from props or context
   const eventTypes = useMemo(() => {
@@ -133,7 +144,8 @@ const DetailTopSectionNew = ({
     if (JSON.stringify(currentIds) !== JSON.stringify(newIds)) {
       setAssignedIds(ids);
     }
-  }, [assignedTo, assignedIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignedTo]); // Remove assignedIds from dependencies to prevent infinite loop
 
   // Event types are now provided via props or context - no need to fetch
 
@@ -152,17 +164,20 @@ const DetailTopSectionNew = ({
 
         const data = await response.json();
         setFetchedUsers(data.users || []);
+        hasFetchedUsersRef.current = true;
       } catch (error) {
         console.error("Error fetching users:", error);
         setFetchedUsers([]);
       }
     };
 
-    if (mode === "edit" || mode === "create") {
+    if ((mode === "edit" || mode === "create") && !hasFetchedUsersRef.current) {
       fetchUsers();
-    } else {
+    } else if (users && users.length > 0) {
+      // Only set users from props if they actually contain data
       setFetchedUsers(users);
     }
+    // If hasFetchedUsersRef.current is true and users prop is empty, keep the fetched users
   }, [mode, users, user?.organizationId]);
 
   const handleTitleChange = (e) => {
@@ -188,10 +203,27 @@ const DetailTopSectionNew = ({
     
     if (assignedUser) {
       // Use the assigned user data directly
+      const userName = assignedUser.userName || assignedUser.name || "Unknown User";
+      const firstName = assignedUser.firstName || "";
+      const lastName = assignedUser.lastName || "";
+      
+      // Create proper initials from firstName and lastName if available, otherwise use userName
+      let initials = "?";
+      if (firstName && lastName) {
+        initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
+      } else if (userName && userName !== "Unknown User") {
+        const nameParts = userName.split(" ");
+        if (nameParts.length >= 2) {
+          initials = (nameParts[0].charAt(0) + nameParts[1].charAt(0)).toUpperCase();
+        } else {
+          initials = userName.charAt(0).toUpperCase();
+        }
+      }
+      
       return {
         id: assignedUser.userId || assignedUser.id,
-        name: assignedUser.userName || assignedUser.name,
-        fallback: (assignedUser.userName || assignedUser.name || "?").charAt(0).toUpperCase(),
+        name: userName,
+        fallback: initials,
         size: "20px",
         shape: "circle",
       };
@@ -228,7 +260,7 @@ const DetailTopSectionNew = ({
     
     
     const payload = {
-      title: editableTitle,
+      title: toTitleCase(editableTitle),
       date: combinedDateTime,
       time: editableTime || "", // Include time separately for validation, empty string if not set
       type: selectedEventType,
@@ -273,7 +305,7 @@ const DetailTopSectionNew = ({
         </button>
         {mode === "view" ? (
           <div className="event-title-display">
-            {editableTitle || "Untitled Event"}
+            {toTitleCase(editableTitle) || "Untitled Event"}
           </div>
         ) : (
           <input
@@ -335,7 +367,25 @@ const DetailTopSectionNew = ({
                     onUserSelectionChange={(newIds) => {
                       setAssignedIds(newIds);
                       if (onParticipantsChange) {
-                        onParticipantsChange(newIds);
+                        // Pass both IDs and user objects for better data handling
+                        const selectedUsers = newIds.map(id => {
+                          const user = fetchedUsers.find(u => u.id === id);
+                          return user ? {
+                            userId: user.id,
+                            userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown User',
+                            firstName: user.firstName,
+                            lastName: user.lastName,
+                            email: user.email,
+                            orgCode: user.organizationCode || "ORG001",
+                            assignedOn: new Date().toISOString()
+                          } : {
+                            userId: id,
+                            userName: "Unknown User",
+                            orgCode: "ORG001",
+                            assignedOn: new Date().toISOString()
+                          };
+                        });
+                        onParticipantsChange(newIds, selectedUsers);
                       }
                     }}
                     placeholder="Search by name, email, org, or role..."

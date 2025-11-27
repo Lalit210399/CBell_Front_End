@@ -117,12 +117,12 @@
 }
 
 .designer_events_campaign {
-  flex: 3; /* 30% width */
+  flex: 3;
   min-width: 300px;
   background-color: white;
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   gap: 16px;

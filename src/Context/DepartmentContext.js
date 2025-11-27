@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { fetchWithRefresh } from "./RefereshToken";
 import { useUser } from "./UserContext";
 
@@ -12,7 +12,7 @@ export const useDepartments = () => {
   return context;
 };
 
-export const DepartmentProvider = ({ children, eventOrganizationId = null }) => {
+export const DepartmentProvider = ({ children, eventOrganizationId = null, shouldFetch = true }) => {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -117,21 +117,32 @@ export const DepartmentProvider = ({ children, eventOrganizationId = null }) => 
     }
   }, [selectedOrganizationId, user?.organizationId, user?.userId]);
 
-  // Fetch departments when organization changes or on mount
+  const fetchedOnceRef = useRef(false);
+
+  // Fetch departments when organization changes or on mount, but only when allowed
   useEffect(() => {
-    const organizationId = selectedOrganizationId || user?.organizationId;
-    
+    if (!shouldFetch) {
+      // Skip fetching when not in create/edit; keep any existing cached data
+      return;
+    }
+    if (fetchedOnceRef.current) {
+      // Ensure we only call the API once per provider mount when shouldFetch is true
+      return;
+    }
+    const organizationId = eventOrganizationId || selectedOrganizationId || user?.organizationId;
+
     if (organizationId) {
       // Check if organization supports departments before fetching
       const currentOrg = user?.scope?.accessibleOrganizations?.find(org => org.id === organizationId);
       const orgCode = currentOrg?.data?.organizationCode?.toLowerCase();
-      
+
       // Business logic: Only colleges have departments, institutes don't
-      const supportsDepartments = orgCode?.includes('college') || orgCode?.includes('university') || 
+      const supportsDepartments = orgCode?.includes('college') || orgCode?.includes('university') ||
                                  (!orgCode?.includes('institute') && !orgCode?.includes('school'));
-      
+
       if (supportsDepartments) {
         fetchDepartments();
+        fetchedOnceRef.current = true;
       } else {
         // Organization doesn't support departments - clear state
         setDepartments([]);
@@ -144,7 +155,7 @@ export const DepartmentProvider = ({ children, eventOrganizationId = null }) => 
       setLastFetched(null);
       setError(null);
     }
-  }, [selectedOrganizationId, user?.organizationId, user?.scope, eventOrganizationId]);
+  }, [shouldFetch, eventOrganizationId, selectedOrganizationId, user?.organizationId, user?.scope]);
 
   // Clear cache when organization changes
   useEffect(() => {

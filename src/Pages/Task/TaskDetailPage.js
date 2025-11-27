@@ -11,17 +11,22 @@ import PageSkeleton from "../../CommonComponents/SkeletonLoading/PageSkeleton";
 import { useUser } from "../../Context/UserContext";
 import { useMessages } from "../../Context/MessageContext";
 import { useTaskStatus } from "../../Hooks/useTaskStatus";
+import { useSignalR } from "../../Context/SignalRContext";
 import { getHierarchyUsers } from "../../Services/AuthN";
 import { Building, Calendar, Pencil, FileText } from "lucide-react";
 import "./Tasks.css";
 
-// Hardcoded status IDs from backend data - moved outside component to prevent re-creation
-const HARDCODED_STATUS_IDS = {
-  "New": "68baab0b9a31a52d62646ca1",
-  "Active": "68bee09b522caf6ac9f65bdc", 
-  "Under Approval": "68bee0b1522caf6ac9f65bdd",
-  "Approved": "68bee0c2522caf6ac9f65bde",
-  "Published": "68bee0d1522caf6ac9f65bdf"
+
+
+// Utility function to convert text to title case
+const toTitleCase = (str) => {
+  if (!str) return str;
+  return str
+    .trim()
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 };
 
 const TaskDetailPage = () => {
@@ -35,6 +40,10 @@ const TaskDetailPage = () => {
   
   const { taskId, mode: initialMode = "view", eventId: locationEventId, organizationId, eventDate: navEventDate, eventName } = location.state || {};
   const eventDate = React.useMemo(() => navEventDate ? new Date(navEventDate) : null, [navEventDate]);
+
+  // Keep a local event name state so breadcrumbs can show the event name
+  // even when navigation state doesn't include it (eg. from notifications).
+  const [navEventName, setNavEventName] = useState(eventName || null);
 
   
   const [taskTitle, setTaskTitle] = useState("");
@@ -70,7 +79,7 @@ const TaskDetailPage = () => {
   const [hasWorkSubmissionFiles, setHasWorkSubmissionFiles] = useState(false); // Track work submission files
   
   // Use task status context
-  const { loading: statusLoading } = useTaskStatus();
+  const { taskStatuses, loading: statusLoading, fetchTaskStatuses } = useTaskStatus();
 
   const getDefaultColor = useCallback((statusValue) => {
     const colorMap = {
@@ -83,41 +92,15 @@ const TaskDetailPage = () => {
     return colorMap[statusValue] || "gray";
   }, []);
   
-  // Use hardcoded status options instead of API data
+  // Use task statuses from context instead of hardcoded values
   const statusOptions = React.useMemo(() => {
-    return [
-      {
-        id: HARDCODED_STATUS_IDS["New"],
-        label: "New",
-        value: "New",
-        color: "gray"
-      },
-      {
-        id: HARDCODED_STATUS_IDS["Active"],
-        label: "Active", 
-        value: "Active",
-        color: "blue"
-      },
-      {
-        id: HARDCODED_STATUS_IDS["Under Approval"],
-        label: "Under Approval",
-        value: "Under Approval", 
-        color: "orange"
-      },
-      {
-        id: HARDCODED_STATUS_IDS["Approved"],
-        label: "Approved",
-        value: "Approved",
-        color: "green"
-      },
-      {
-        id: HARDCODED_STATUS_IDS["Published"],
-        label: "Published",
-        value: "Published",
-        color: "purple"
-      }
-    ];
-  }, []);
+    return taskStatuses.map(status => ({
+      id: status.id,
+      label: status.statusName || status.name,
+      value: status.statusName || status.name,
+      color: status.color || getDefaultColor(status.statusName || status.name)
+    }));
+  }, [taskStatuses, getDefaultColor]);
 
   const [taskData, setTaskData] = useState({
     id: "",
@@ -142,17 +125,17 @@ const TaskDetailPage = () => {
 
   // Enhanced permissions based on task data and user role
   const canEdit = React.useMemo(() => {
-    
+
     // If task has canCRUD: false or accessLevel: "READ_ONLY", user cannot edit
     if (taskData.canCRUD === false || taskData.accessLevel === "READ_ONLY") {
       return false;
     }
-    
-    // If task status is Approved, it cannot be edited
-    if (taskStatus?.value === "Approved") {
+
+    // If task status is Approved or Published, it cannot be edited
+    if (taskStatus?.value === "Approved" || taskStatus?.value === "Published") {
       return false;
     }
-    
+
     // Otherwise, allow editing (Designers can now edit tasks)
     return true;
   }, [taskData.canCRUD, taskData.accessLevel, taskStatus?.value]);
@@ -177,40 +160,47 @@ const TaskDetailPage = () => {
     return user?.organizationId || organizationId;
   }, [user?.organizationId, organizationId]);
 
+  // Ensure task statuses are loaded when this page mounts or organization/user changes.
+  // If statuses are empty, request them from context once (context handles caching and refresh logic).
+  useEffect(() => {
+    const needLoad = !Array.isArray(taskStatuses) || taskStatuses.length === 0;
+    const orgId = currentOrgId || user?.organizationId;
+    if (needLoad && orgId) {
+      // don't force refresh; let context decide whether refresh is needed
+      fetchTaskStatuses().catch(err => console.error("Failed to load task statuses:", err));
+    }
+  }, [taskStatuses, currentOrgId, user?.organizationId, fetchTaskStatuses]);
+
   // API Functions
   const fetchUsers = useCallback(async () => {
-    if (mode !== "edit" && mode !== "create") {
-      return [];
-    }
-
+    // Always fetch via parent once; children read via props. Avoid redundant calls.
     if (!currentOrgId) {
       return [];
     }
-    
     try {
       const response = await getHierarchyUsers(currentOrgId);
-      
-      const formattedUsers = response.users.map(user => ({
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        fullName: `${user.firstName} ${user.lastName}`,
-        organizationId: user.organizationId,
-        organizationCode: user.organizationCode || "ORG001",
-        role: user.role || user.roles?.[0]?.name || ""
-      }));
-      
+      const formattedUsers = response.users.map(user => {
+        // Use the roles array that's already present in each user object
+        const userRoles = Array.isArray(user.roles) ? user.roles : [];
+        
+        return {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          fullName: `${user.firstName} ${user.lastName}`,
+          organizationId: user.organizationId,
+          organizationCode: user.organizationCode || "ORG001",
+          roles: userRoles, // Provide roles array for UserDropdown
+          role: userRoles[0]?.name || userRoles[0]?.displayName || "" // Keep backward compatibility
+        };
+      });
       return formattedUsers;
     } catch (error) {
-      addMessage({
-        text: "Failed to load users list",
-        type: "error",
-        duration: 3000
-      });
+      addMessage({ text: "Failed to load users list", type: "error", duration: 3000 });
       return [];
     }
-  }, [mode, currentOrgId, addMessage]);
+  }, [currentOrgId, addMessage]);
 
   const fetchTask = useCallback(async () => {
     if (!taskId || mode === "create") {
@@ -281,6 +271,50 @@ const TaskDetailPage = () => {
     }
   }, [taskId, mode, organizationId, user?.organizationId, addMessage]);
 
+  // Fetch a minimal event payload to get the event name when it's not
+  // available via navigation state (useful for notification redirects).
+  const fetchEventName = useCallback(async (evtId) => {
+    if (!evtId) return null;
+    try {
+      const orgId = organizationId || user?.organizationId;
+      if (!orgId) return null;
+
+      const headers = {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "ngrok-skip-browser-warning": "1",
+      };
+
+      if (orgId !== user?.organizationId) {
+        headers["X-Context-Organization"] = orgId;
+      }
+
+      const res = await fetchWithRefresh(`/apis/event/get_event/${evtId}?organizationId=${orgId}&userId=${user?.userId}`, {
+        method: "GET",
+        headers,
+      });
+      if (!res.ok) return null;
+      const payload = await res.json();
+      const data = payload?.data || payload;
+      return data?.eventName || data?.name || null;
+    } catch (err) {
+      return null;
+    }
+  }, [organizationId, user?.organizationId, user?.userId]);
+
+  // If we don't have an event name from navigation, try fetching it using
+  // the event ID (either passed via location state or from task API).
+  useEffect(() => {
+    const evtId = locationEventId || apiEventId;
+    if (!navEventName && evtId) {
+      let mounted = true;
+      fetchEventName(evtId).then((name) => {
+        if (mounted && name) setNavEventName(name);
+      }).catch(() => {});
+      return () => { mounted = false; };
+    }
+  }, [navEventName, locationEventId, apiEventId, fetchEventName]);
+
   // State Management
   const [usersData, setUsersData] = useState(null);
   const [taskDataFromAPI, setTaskDataFromAPI] = useState(null);
@@ -316,54 +350,83 @@ const TaskDetailPage = () => {
   // Initialize status when statusOptions are loaded and we're in create mode
   useEffect(() => {
     if (mode === "create" && statusOptions.length > 0) {
-      // Find the "New" status specifically
-      const newStatus = statusOptions.find(status => status.value === "New");
-      if (newStatus) {
-        setTaskStatus(newStatus);
+      // Only set status if it's not already set or doesn't have an ID
+      if (!taskStatus?.id || taskStatus.id === "") {
+        const newStatus = statusOptions.find(status => status.value === "New");
+        if (newStatus) {
+          setTaskStatus(newStatus);
+          // Also update taskData with the status ID
+          setTaskData(prev => ({
+            ...prev,
+            taskStatusId: newStatus.id,
+            taskStatus: newStatus.value
+          }));
+        }
       }
     }
-  }, [statusOptions, mode]);
+  }, [statusOptions, mode, taskStatus?.id]);
 
   // Auto-update status based on user assignments (only for New status)
   useEffect(() => {
-    if (statusOptions.length > 0) {
+    if (statusOptions.length > 0 && mode === "create") {
       if (selectedParticipantIds.length > 0) {
         // Users are assigned - set to Active (only if currently New)
         const activeStatus = statusOptions.find(status => status.value === "Active");
         if (activeStatus && taskStatus?.value === "New") {
           setTaskStatus(activeStatus);
+          // Also update taskData
+          setTaskData(prev => ({
+            ...prev,
+            taskStatusId: activeStatus.id,
+            taskStatus: activeStatus.value
+          }));
         }
       } else if (selectedParticipantIds.length === 0 && taskStatus?.value === "Active") {
         // No users assigned and currently Active - set back to New
         const newStatus = statusOptions.find(status => status.value === "New");
         if (newStatus) {
           setTaskStatus(newStatus);
+          // Also update taskData
+          setTaskData(prev => ({
+            ...prev,
+            taskStatusId: newStatus.id,
+            taskStatus: newStatus.value
+          }));
         }
       }
     }
-  }, [selectedParticipantIds, statusOptions, taskStatus?.value]);
+  }, [selectedParticipantIds, statusOptions, taskStatus?.value, mode]);
 
-  // Execute users API when component mounts or scope changes
+  // Store the fetch functions in refs to avoid dependency issues
+  const fetchUsersRef = useRef(fetchUsers);
+  const fetchTaskRef = useRef(fetchTask);
+  
+  // Update refs when functions change
+  useEffect(() => {
+    fetchUsersRef.current = fetchUsers;
+  }, [fetchUsers]);
+  
+  useEffect(() => {
+    fetchTaskRef.current = fetchTask;
+  }, [fetchTask]);
+
+  // Execute users API when component mounts or scope changes - only once per mount
   const executeFetchUsers = useCallback(async () => {
-    if ((mode === "edit" || mode === "create") && !isFetchingUsersRef.current) {
-      
-      isFetchingUsersRef.current = true;
-      setUsersLoading(true);
-      
-      try {
-        const data = await fetchUsers();
-        setUsersData(data);
-      } catch (err) {
-        console.error("Error fetching users:", err.message);
-      } finally {
-        setUsersLoading(false);
-        isFetchingUsersRef.current = false;
-      }
+    if (isFetchingUsersRef.current) return;
+    isFetchingUsersRef.current = true;
+    setUsersLoading(true);
+    try {
+      const data = await fetchUsersRef.current();
+      setUsersData(data);
+    } catch (err) {
+      console.error("Error fetching users:", err.message);
+    } finally {
+      setUsersLoading(false);
+      isFetchingUsersRef.current = false;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, currentOrgId, fetchUsers]);
+  }, []); // No dependencies to prevent recreation
 
-  // Execute task API when taskId is available and not in create mode
+  // Execute task API when taskId is available and not in create mode - only once per taskId
   const executeFetchTask = useCallback(async () => {
     if (taskId && mode !== "create" && !isFetchingTaskRef.current) {
       
@@ -371,7 +434,7 @@ const TaskDetailPage = () => {
       setTaskLoading(true);
       
       try {
-        const data = await fetchTask();
+        const data = await fetchTaskRef.current();
         setTaskDataFromAPI(data);
       } catch (err) {
         console.error("Error fetching task:", err.message);
@@ -380,16 +443,52 @@ const TaskDetailPage = () => {
         isFetchingTaskRef.current = false;
       }
     }
+  }, [taskId, mode]); // Only depend on taskId and mode
+
+  // Track if we've already fetched users to prevent duplicate calls
+  const hasFetchedUsersRef = useRef(false);
+  const hasFetchedTaskRef = useRef(false);
+  const lastTaskIdRef = useRef(null);
+  const lastModeRef = useRef(null);
+
+  // Only fetch users once on mount, not on every scope change
+  useEffect(() => {
+    if (!hasFetchedUsersRef.current) {
+      executeFetchUsers();
+      hasFetchedUsersRef.current = true;
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [taskId, mode, fetchTask]);
+  }, []); // Empty dependency array - only run once on mount
 
+  // Only fetch task when taskId changes or mode changes, not on every scope change
   useEffect(() => {
-    executeFetchUsers();
-  }, [executeFetchUsers, scopeChangeTrigger]);
+    const taskIdChanged = lastTaskIdRef.current !== taskId;
+    const modeChanged = lastModeRef.current !== mode;
+    
+    if ((taskIdChanged || modeChanged) && taskId && mode !== "create" && !hasFetchedTaskRef.current) {
+      executeFetchTask();
+      hasFetchedTaskRef.current = true;
+      lastTaskIdRef.current = taskId;
+      lastModeRef.current = mode;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taskId, mode]); // Only depend on taskId and mode, not the function
 
+  // Handle scope changes - reset refs and refetch only when organization actually changes
   useEffect(() => {
-    executeFetchTask();
-  }, [executeFetchTask, scopeChangeTrigger]);
+    // Reset the refs when scope changes to allow refetching
+    isFetchingUsersRef.current = false;
+    isFetchingTaskRef.current = false;
+    hasFetchedUsersRef.current = false;
+    hasFetchedTaskRef.current = false;
+    
+    // Only refetch if we have a valid organization and are not in create mode
+    if (currentOrgId && mode !== "create") {
+      executeFetchUsers();
+      executeFetchTask();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scopeChangeTrigger, currentOrgId, mode]); // Remove function dependencies
 
   // Update usersList when usersData changes
   useEffect(() => {
@@ -422,16 +521,25 @@ const TaskDetailPage = () => {
         );
       }
       
+      // If still not found but we have the status ID from API, try to find by ID
+      if (!matchedStatus && data.taskStatusId) {
+        matchedStatus = currentStatusOptions.find(
+          opt => opt.id === data.taskStatusId
+        );
+      }
       
-      // If still not found, create a fallback status with hardcoded ID
+      
+      // If still not found, create a fallback status but preserve the API's taskStatusId
       if (!matchedStatus) {
-        const hardcodedId = HARDCODED_STATUS_IDS[apiStatusName] || "";
         matchedStatus = {
-          id: hardcodedId,
+          id: data.taskStatusId || "",
           label: apiStatusName,
           value: apiStatusName,
           color: getDefaultColor(apiStatusName)
         };
+      } else if (!matchedStatus.id && data.taskStatusId) {
+        // If matched but no ID, use the API's taskStatusId
+        matchedStatus = { ...matchedStatus, id: data.taskStatusId };
       }
       
       setTaskStatus(matchedStatus);
@@ -484,9 +592,17 @@ const TaskDetailPage = () => {
     }
   }, [taskDataFromAPI, statusOptions, user, organizationId, getDefaultColor]);
 
-  // Reset users list when organization changes
+  // Track previous organization ID to detect actual changes
+  const prevOrgIdRef = useRef(currentOrgId);
+  
+  // Reset users list when organization changes - but don't clear if we're just updating
   useEffect(() => {
-    setUsersList([]);
+    // Only clear users list if we're switching to a different organization
+    // Don't clear during task updates within the same organization
+    if (prevOrgIdRef.current !== currentOrgId) {
+      setUsersList([]);
+      prevOrgIdRef.current = currentOrgId;
+    }
   }, [currentOrgId]);
 
   // Initialize create mode when users are loaded and we're in create mode
@@ -494,7 +610,8 @@ const TaskDetailPage = () => {
     if (mode === "create" && usersData && usersData.length > 0) {
       initializeCreateMode();
     }
-  }, [mode, usersData, initializeCreateMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, usersData]); // Remove initializeCreateMode dependency
 
   useEffect(() => {
     if (Array.isArray(taskData.assignedTo)) {
@@ -600,17 +717,22 @@ const TaskDetailPage = () => {
     const currentDate = formData?.date || taskData?.date;
     if (!currentDate) {
       errors.date = "Due date is required";
+      errors.time = "Due time is required";
     }
-    // Validate status using hardcoded status options
-    if (statusOptions.length > 0) {
-      if (!taskStatus?.id || taskStatus.id === "" || taskStatus.id === null) {
-        errors.status = "Please select a valid task status";
-      }
-    } else if (mode === "create") {
-      // For create mode, ensure we have a valid status
-      if (!taskStatus?.id || taskStatus.id === "" || taskStatus.id === null) {
-        errors.status = "Task status is not properly initialized";
-      }
+
+    // Description required (strip HTML and whitespace)
+    const currentDescription = (formData?.description || taskData?.description || "").toString();
+    const descriptionText = currentDescription.replace(/<[^>]*>/g, "").trim();
+    if (!descriptionText) {
+      errors.description = "Description is required";
+    }
+
+    // Specification required (at least one non-empty checklist item)
+    const checklistArray = Array.isArray(formData?.checklist || taskData?.checklist)
+      ? (formData?.checklist || taskData?.checklist).filter(item => (item?.text || "").toString().trim())
+      : [];
+    if (checklistArray.length === 0) {
+      errors.specification = "At least one specification item is required";
     }
     
     if (Object.keys(errors).length > 0) {
@@ -739,16 +861,50 @@ const TaskDetailPage = () => {
         return;
       }
       
-      // Ensure we have a valid status ID using hardcoded mapping
+      // Ensure we have a valid status ID from statusOptions
       let statusId = taskStatus?.id;
+      
+      // If no status ID, try multiple strategies to find it
       if (!statusId || statusId === "" || statusId === null) {
-        // Use hardcoded status ID mapping
-        statusId = HARDCODED_STATUS_IDS[taskStatus?.value] || null;
+        // First try to find in statusOptions by value/label
+        const statusOption = statusOptions.find(opt => 
+          opt.value === taskStatus?.value || 
+          opt.label === taskStatus?.label ||
+          opt.value === taskStatus?.label ||
+          opt.label === taskStatus?.value
+        );
+        statusId = statusOption?.id;
+      }
+      
+      // If still no status ID, try to get it from taskData
+      if (!statusId || statusId === "" || statusId === null) {
+        statusId = taskData.taskStatusId;
+      }
+      
+      // For create mode, try to get "New" status as final fallback
+      if ((!statusId || statusId === "" || statusId === null) && mode === "create") {
+        const newStatus = statusOptions.find(opt => opt.value === "New" || opt.label === "New");
+        statusId = newStatus?.id;
+      }
+      
+      // Final validation - if still no status ID, show helpful error
+      if (!statusId || statusId === "" || statusId === null) {
+        console.error("Status validation failed:", {
+          taskStatus,
+          statusOptions,
+          taskDataStatusId: taskData.taskStatusId
+        });
+        addMessage({
+          text: "Task status is not available. Please wait a moment and try again.",
+          type: "error",
+          duration: 3000
+        });
+        return;
       }
 
       const payload = {
         EventId: mode === "edit" ? currentFormData.eventId : apiEventId,
-        TaskTitle: taskTitle,
+        TaskTitle: toTitleCase(taskTitle),
         taskStatusId: statusId, // Use the validated status ID
         AssignedTo: (selectedParticipantIds || []).map((item) =>
           typeof item === "object" ? item?.id : item
@@ -965,8 +1121,11 @@ const TaskDetailPage = () => {
     }
   }, [user.userId, taskData, addMessage]);
 
+  // SignalR for sending chat messages when needed (e.g., revert reason)
+  const { sendMessage: sendChatMessage } = useSignalR();
+
   // Handle status change from buttons
-  const handleStatusChange = async (newStatus) => {
+  const handleStatusChange = async (newStatus, revertReason) => {
     // Prevent multiple clicks while updating
     if (isUpdatingStatus) {
       return;
@@ -998,6 +1157,31 @@ const TaskDetailPage = () => {
     
     // Special validation for Approved status - must have files selected
     if (newStatus.value === "Approved") {
+      // Ensure specification checklist items (non-empty) are all checked before approving
+      try {
+        const checklistSource = Array.isArray(formData?.checklist) ? formData.checklist
+          : Array.isArray(taskData?.checklist) ? taskData.checklist
+          : [];
+
+        const specItems = checklistSource.filter(item => (item?.text || "").toString().trim());
+
+        const hasUnchecked = specItems.length > 0 && specItems.some(item => !item.checked);
+
+        if (hasUnchecked) {
+          addMessage({
+            text: "All specification items must be marked completed before approving the task.",
+            type: "error",
+            duration: 4000
+          });
+          setActiveTab("Details");
+          return;
+        }
+      } catch (e) {
+        addMessage({ text: "Unable to verify specifications before approval.", type: "error", duration: 3000 });
+        return;
+      }
+
+      // Existing file-selection validation (keep previous behavior)
       if (selectedFiles.length === 0) {
         addMessage({
           text: "You must select at least one file from 'Files & Uploads' section to approve the task.",
@@ -1018,15 +1202,55 @@ const TaskDetailPage = () => {
     // Update local state immediately for UI feedback
     setTaskStatus(newStatus);
     
+    
     // Only make API call if we have a taskId (not in create mode)
     if (taskId) {
       setIsUpdatingStatus(true);
       try {
-        // Ensure we have a valid status ID for the new status using hardcoded mapping
+        // Ensure we have a valid status ID from statusOptions
         let statusId = newStatus.id;
         if (!statusId || statusId === "" || statusId === null) {
-          // Use hardcoded status ID mapping
-          statusId = HARDCODED_STATUS_IDS[newStatus.value] || null;
+          // Try to find the status in statusOptions with multiple matching strategies
+          const statusOption = statusOptions.find(opt => 
+            opt.value === newStatus.value || 
+            opt.label === newStatus.label ||
+            opt.value === newStatus.label ||
+            opt.label === newStatus.value
+          );
+          statusId = statusOption?.id || null;
+        }
+        
+        // If we don't have a statusId, try a short local wait for statusOptions to populate
+        if (!statusId || statusId === "" || statusId === null) {
+          const maxAttempts = 6;
+          let attempt = 0;
+          while (attempt < maxAttempts && (!statusOptions || statusOptions.length === 0)) {
+            // wait 200ms
+            // eslint-disable-next-line no-await-in-loop
+            await new Promise(res => setTimeout(res, 200));
+            attempt += 1;
+          }
+
+          if (statusOptions && statusOptions.length > 0) {
+            const statusOption = statusOptions.find(opt => 
+              opt.value === newStatus.value || 
+              opt.label === newStatus.label ||
+              opt.value === newStatus.label ||
+              opt.label === newStatus.value
+            );
+            statusId = statusOption?.id || null;
+          }
+        }
+
+        // Final validation - ensure we have a status ID
+        if (!statusId || statusId === "" || statusId === null) {
+          addMessage({
+            text: "Task status is not available yet. Please wait a moment and try again.",
+            type: "error",
+            duration: 3000
+          });
+          setIsUpdatingStatus(false);
+          return;
         }
 
         // If approving task, first approve the selected files
@@ -1078,6 +1302,22 @@ const TaskDetailPage = () => {
           type: "success",
           duration: 4000
         });
+
+        // After status update succeeds, send revert reason to chat if provided
+        if (newStatus.value === "Active" && revertReason && (taskId || taskData.id)) {
+          try {
+            const messageText = `Task reverted to Active. Reason: ${revertReason}`;
+            if (typeof sendChatMessage === 'function') {
+              // Fire-and-forget; log errors but don't block UI
+              // Send with messageType 2 for system notification
+              sendChatMessage(taskId || taskData.id, messageText, [], 2).catch((err) => {
+                console.error('Failed to send revert reason message to chat:', err);
+              });
+            }
+          } catch (err) {
+            console.error('Error sending revert message:', err);
+          }
+        }
 
       } catch (error) {
         
@@ -1168,7 +1408,8 @@ const TaskDetailPage = () => {
   const breadcrumbItems = React.useMemo(() => {
     // Ensure we have valid data before creating breadcrumb items
     const organizationName = user?.organization?.name || user?.organizationName || "Organization";
-    const taskName = taskTitle || (mode === "create" ? "New Task" : "Task Details");
+    const taskName = taskTitle ? toTitleCase(taskTitle) : (mode === "create" ? "New Task" : "Task Details");
+    const effectiveEventName = navEventName || eventName;
     
     const items = [
       { 
@@ -1184,10 +1425,10 @@ const TaskDetailPage = () => {
       }
     ];
     
-    // Add event name if available
-    if (eventName) {
+    // Add event name if available (either from navigation state, local fetched name or API)
+    if (effectiveEventName) {
       items.push({ 
-        label: eventName, 
+        label: toTitleCase(effectiveEventName), 
         href: "#", 
         icon: FileText,
         onClick: () => {
@@ -1196,7 +1437,8 @@ const TaskDetailPage = () => {
             navigate("/events/eventDetailPage", {
               state: {
                 eventId: apiEventId,
-                mode: "view"
+                mode: "view",
+                organizationId: taskData.organizationId || organizationId || user?.organizationId
               }
             });
           }
@@ -1212,7 +1454,7 @@ const TaskDetailPage = () => {
     });
     
     return items;
-  }, [user?.organization?.name, user?.organizationName, eventName, apiEventId, taskTitle, mode, navigate]);
+  }, [user?.organization?.name, user?.organizationName, eventName, navEventName, apiEventId, taskTitle, mode, navigate, user?.organizationId, organizationId, taskData.organizationId]);
 
   // Determine loading state
   const isLoading = useMemo(() => {

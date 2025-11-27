@@ -12,16 +12,14 @@
   display: flex;
   gap: 24px;
   flex-direction: row;
-  
-  
 }
 
 /* Left Section - Events List (now handled by ScheduleEventsList widget) */
 
 /* Right Section - Calendar */
 .calendar-section {
-  flex: 1; /* Takes remaining space */
-  min-width: 0; /* Allow shrinking */
+  flex: 1;
+  min-width: 0;
 }
 
 .calendar-section .calendar-container {

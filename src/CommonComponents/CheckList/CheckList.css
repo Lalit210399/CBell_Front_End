@@ -8,6 +8,18 @@
     max-height: none;
     overflow: visible;
   }
+
+  /* Error state styles */
+  .checklist-container.error {
+    border-color: #d32f2f;
+  }
+
+  .checklist-error-message {
+    color: #d32f2f;
+    font-size: 12px;
+    margin-top: 8px;
+    font-weight: 500;
+  }
   
   .checklist-item {
     display: flex;

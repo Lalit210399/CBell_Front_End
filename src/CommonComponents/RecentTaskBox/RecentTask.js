@@ -9,13 +9,13 @@ import "./RecentTask.css";
 
 const RecentTasks = ({ tasks, onTaskClick, onEventClick, title = "Tasks", filter, onFilterChange, showDropdown = true, loading = false, disableClientFiltering = false, hideAssignedToColumn = false, showOrganizationColumn = false, showAssignedByColumn = false }) => {
   const { getActiveTaskStatuses } = useTaskStatus();
-  
+
   // Generate filter options from task status context
   const filterOptions = useMemo(() => {
     const activeStatuses = getActiveTaskStatuses();
-    
+
     // Debug logging to understand what's happening
-    
+
     // Fallback filter options if context doesn't provide data
     const fallbackOptions = [
       { label: "All" },
@@ -26,7 +26,7 @@ const RecentTasks = ({ tasks, onTaskClick, onEventClick, title = "Tasks", filter
       { label: "Published", value: "Published" },
       // { label: "Cancelled", value: "Cancelled" }
     ];
-    
+
     // If we have active statuses from context, use them; otherwise use fallback
     if (activeStatuses && activeStatuses.length > 0) {
       const contextOptions = [
@@ -38,16 +38,19 @@ const RecentTasks = ({ tasks, onTaskClick, onEventClick, title = "Tasks", filter
       ];
       return contextOptions;
     }
-    
+
     return fallbackOptions;
   }, [getActiveTaskStatuses]);
 
   // 🔹 filter tasks (only if client-side filtering is enabled)
-  const filteredTasks = disableClientFiltering 
-    ? tasks 
-    : (filter === "All"
-        ? tasks
-        : tasks.filter((task) => task.status === filter));
+  // Sorting is now handled by the Table component
+  const filteredTasks = useMemo(() => {
+    return disableClientFiltering
+      ? tasks
+      : (filter === "All"
+          ? tasks
+          : tasks.filter((task) => task.status === filter));
+  }, [tasks, filter, disableClientFiltering]);
 
   const renderCell = (key, item) => {
     const handleClick = (e) => {
@@ -142,7 +145,7 @@ const RecentTasks = ({ tasks, onTaskClick, onEventClick, title = "Tasks", filter
       <div className="recent-tasks-header">
         <div className="header_left">
           <ListTodo />
-          <span>{title}</span>
+          <span className="header_title">{title}</span>
         </div>
         {showDropdown && (
           <CustomDropdown
@@ -166,7 +169,7 @@ const RecentTasks = ({ tasks, onTaskClick, onEventClick, title = "Tasks", filter
         ]}
         data={loading ? skeletonRows : filteredTasks}
         renderCell={loading ? () => <div className="skeleton-row-cell" /> : renderCell}
-        sortableColumns={["taskName", "eventName", ...(showOrganizationColumn ? ["organizationName"] : []), "dueDate"]}
+        sortableColumns={["status", "taskName", "eventName", ...(showOrganizationColumn ? ["organizationName"] : []), "dueDate"]}
         showActions={false}
         onRowClick={loading ? undefined : (task) => {
           // Row click - navigate to task detail page

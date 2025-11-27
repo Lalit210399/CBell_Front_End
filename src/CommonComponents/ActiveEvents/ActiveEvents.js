@@ -104,7 +104,7 @@ const ActiveEvents = ({ events, onEventClick, title = "Active Events", loading =
         columns={columns}
         data={loading ? skeletonRows : filteredEvents}
         renderCell={loading ? () => <div className="skeleton-row-cell" /> : renderCell}
-        sortableColumns={["eventName", "displayDate"]}
+        sortableColumns={["eventName", "displayDate", "createdBy"]}
         showActions={false}
         onRowClick={loading ? undefined : (event) => onEventClick?.(event)}
         className="fixed-height"

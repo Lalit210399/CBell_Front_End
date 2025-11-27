@@ -40,8 +40,9 @@ const useApi = (fetchFn, dependencies = [], executeOnMount = true) => {
         payload: errorMessage
       });
 
-      // Also throw the error
-      throw error;
+      // Don't throw the error - let components handle it through the error state
+      // This prevents uncaught runtime errors
+      console.warn('API call failed:', errorMessage);
     }
   }, [fetchFn]);
 

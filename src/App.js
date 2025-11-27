@@ -16,7 +16,10 @@ import TasksList from "./Pages/Tasks/TasksList";
 import AssignedEventsList from "./Pages/Events/AssignedEventsList";
 import Instagram from "./InstagramPost";
 import ProtectedRoute, { RequirePermission } from "./Context/ProtectedRoute";
-import { useUser } from "./Context/UserContext"; 
+import { useUser } from "./Context/UserContext";
+import { NotificationProvider } from "./Context/NotificationContext";
+import ErrorBoundary from "./CommonComponents/ErrorBoundary"; 
+import ChatLayout from "./Pages/Chat/NewChatLayout";
 
 // Component to render appropriate dashboard based on user role
 const DashboardRouter = () => {
@@ -32,8 +35,9 @@ const DashboardRouter = () => {
 
 function App() {
   return (
-    <Router>
-      <Routes>
+    <ErrorBoundary>
+      <Router>
+        <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
@@ -45,49 +49,60 @@ function App() {
           path="/*"
           element={
             <ProtectedRoute>
-              <MainLayout>
-                <Routes>
-                  <Route path="/auth" element={<AuthN />} />
-                  <Route
-                    path="/dashboard"
-                    element={
-                      <RequirePermission resource="Dashboard" managementKey="Dashboard Management" action="Read">
-                        <DashboardRouter />
-                      </RequirePermission>
-                    }
-                  />
-                  <Route
-                    path="/events"
-                    element={
-                      <RequirePermission resource="Events" managementKey="Event Management" action="Read">
-                        <Event />
-                      </RequirePermission>
-                    }
-                  />
-                  <Route
-                    path="/schedule"
-                    element={
-                      <RequirePermission resource="Events" managementKey="Event Management" action="Read">
-                        <Schedule />
-                      </RequirePermission>
-                    }
-                  />
-                  {/* <Route path="/events/stepForm" element={<StepForm />} /> */}
-                  {/* <Route path="/dashboard/stepForm" element={<StepForm />} /> */}
-                  {/* <Route path="/schedule/stepForm" element={<StepForm />} /> */}
-                  <Route path="/events/eventDetailPage" element={<EventDetailPage />} />
-                  <Route path="/events/eventDetailPage/tasks" element={<TasksDetail />} />
-                  <Route path="/events/assigned-events" element={<AssignedEventsList />} />
-                  <Route path="/tasks/list" element={<TasksList />} />
-                  <Route path="/instagram" element={<Instagram />} />
-                </Routes>
-              </MainLayout>
+              <NotificationProvider>
+                <MainLayout>
+                  <Routes>
+                    <Route path="/auth" element={<AuthN />} />
+                    <Route
+                      path="/dashboard"
+                      element={
+                        <RequirePermission resource="Dashboard" managementKey="Dashboard Management" action="Read">
+                          <DashboardRouter />
+                        </RequirePermission>
+                      }
+                    />
+                    <Route
+                      path="/events"
+                      element={
+                        <RequirePermission resource="Events" managementKey="Event Management" action="Read">
+                          <Event />
+                        </RequirePermission>
+                      }
+                    />
+                    <Route
+                      path="/schedule"
+                      element={
+                        <RequirePermission resource="Events" managementKey="Event Management" action="Read">
+                          <Schedule />
+                        </RequirePermission>
+                      }
+                    />
+                    <Route
+                      path="/chat"
+                      element={
+                        <RequirePermission resource="Events" managementKey="Event Management" action="Read">
+                          <ChatLayout />
+                        </RequirePermission>
+                      }
+                    />
+                    {/* <Route path="/events/stepForm" element={<StepForm />} /> */}
+                    {/* <Route path="/dashboard/stepForm" element={<StepForm />} /> */}
+                    {/* <Route path="/schedule/stepForm" element={<StepForm />} /> */}
+                    <Route path="/events/eventDetailPage" element={<EventDetailPage />} />
+                    <Route path="/events/eventDetailPage/tasks" element={<TasksDetail />} />
+                    <Route path="/events/assigned-events" element={<AssignedEventsList />} />
+                    <Route path="/tasks/list" element={<TasksList />} />
+                    <Route path="/instagram" element={<Instagram />} />
+                  </Routes>
+                </MainLayout>
+              </NotificationProvider>
             </ProtectedRoute>
           }
         />
 
-      </Routes>
-    </Router>
+        </Routes>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

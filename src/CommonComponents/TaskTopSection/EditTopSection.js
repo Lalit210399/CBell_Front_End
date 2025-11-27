@@ -1,17 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { ArrowLeft, Save, Users } from "lucide-react";
+import { ArrowLeft, Save, Users, AlertCircle } from "lucide-react";
 import AvatarList from "../Avatar/index";
 import UserDropdown from "../UserDropdown";
 import { useUser } from "../../Context/UserContext";
+import { useTaskStatus } from "../../Hooks/useTaskStatus";
 import "./EditTopSection.css";
-
-const HARDCODED_STATUS_IDS = {
-  "New": "68baab0b9a31a52d62646ca1",
-  "Active": "68bee09b522caf6ac9f65bdc",
-  "Under Approval": "68bee0b1522caf6ac9f65bdd",
-  "Approved": "68bee0c2522caf6ac9f65bde",
-  "Published": "68bee0d1522caf6ac9f65bdf"
-};
+import "./RevertModal.css";
 
 const getDefaultColor = (status) => {
   const colors = {
@@ -22,6 +16,16 @@ const getDefaultColor = (status) => {
     "Published": "#8b5cf6"
   };
   return colors[status] || "#6b7280";
+};
+
+const toTitleCase = (str) => {
+  if (!str) return str;
+  return str
+    .trim()
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 };
 
 const getStatusClass = (status) => {
@@ -49,6 +53,7 @@ const TopSection = ({
   onTabChange // Add callback to change tabs
 }) => {
   const { user } = useUser();
+  const { taskStatuses } = useTaskStatus();
 
   // Check if user is a Designer based on the roles array
   const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
@@ -60,14 +65,15 @@ const TopSection = ({
   const titleRef = useRef(null);
   const isTitleManuallyEdited = useRef(false);
 
-  // Status options for dropdown
-  const statusOptions = [
-    { id: "68baab0b9a31a52d62646ca1", label: "New", value: "New", color: "#6b7280" },
-    { id: "68bee09b522caf6ac9f65bdc", label: "Active", value: "Active", color: "#10b981" },
-    { id: "68bee0b1522caf6ac9f65bdd", label: "Under Approval", value: "Under Approval", color: "#f59e0b" },
-    { id: "68bee0c2522caf6ac9f65bde", label: "Approved", value: "Approved", color: "#059669" },
-    { id: "68bee0d1522caf6ac9f65bdf", label: "Published", value: "Published", color: "#8b5cf6" }
-  ];
+  // Get status options from context
+  const statusOptions = useMemo(() => {
+    return taskStatuses.map(status => ({
+      id: status.id,
+      label: status.statusName || status.name,
+      value: status.statusName || status.name,
+      color: status.color || getDefaultColor(status.statusName || status.name)
+    }));
+  }, [taskStatuses]);
 
   // Get creator user info - use passed createdBy prop or fallback to current user for new tasks
   const creatorUser = useMemo(() => {
@@ -113,33 +119,9 @@ const TopSection = ({
   }, [assignedTo]);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch(`/apis/auth/hierarchy-users/${user?.organizationId}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            "ngrok-skip-browser-warning": "1",
-          },
-        });
-
-        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-
-        const data = await response.json();
-
-        setFetchedUsers(data.users || []);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        setFetchedUsers([]);
-      }
-    };
-
-    if (mode === "edit" || mode === "create") {
-      fetchUsers();
-    } else {
-      setFetchedUsers(users);
-    }
-  }, [mode, users, user?.organizationId]);
+    // Rely on parent-provided users to avoid redundant API calls.
+    setFetchedUsers(users);
+  }, [users]);
 
   const handleTitleChange = (e) => {
     setEditableTitle(e.target.value);
@@ -160,25 +142,7 @@ const TopSection = ({
   };
 
   // Helper function to check if task has uploaded files
-  const checkTaskFiles = async (taskId) => {
-    if (!taskId) return false;
-    
-    try {
-      const response = await fetch(`/apis/document-details/task/${taskId}`, {
-        headers: { 'ngrok-skip-browser-warning': '1' }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to check task documents');
-      }
-      
-      const documents = await response.json();
-      return documents && documents.length > 0;
-    } catch (error) {
-      console.error('Error checking task files:', error);
-      return false;
-    }
-  };
+  // kept previously for potential reuse; currently unused to avoid extra calls
 
   // Handle status change button clicks
   const handleStatusChange = async (newStatusValue) => {
@@ -194,16 +158,16 @@ const TopSection = ({
         }
       }
 
-      // Find the status option with the correct ID
+      // Find the status option from context
       const newStatus = statusOptions.find(option => option.value === newStatusValue);
 
       if (newStatus) {
-        // Use the status option with the correct hardcoded ID
+        // Use the status option from context
         onStatusChange(newStatus);
       } else {
-        // Create a fallback status object with hardcoded ID
+        // Create a fallback status object
         const fallbackStatus = {
-          id: HARDCODED_STATUS_IDS[newStatusValue] || "",
+          id: "",
           label: newStatusValue,
           value: newStatusValue,
           color: getDefaultColor(newStatusValue)
@@ -212,6 +176,39 @@ const TopSection = ({
       }
     }
   };
+
+  // Revert reason modal state & handlers
+  const [isRevertModalOpen, setIsRevertModalOpen] = useState(false);
+  const [revertReason, setRevertReason] = useState("");
+  const maxReasonLength = 500;
+
+  const openRevertModal = () => {
+    setRevertReason("");
+    setIsRevertModalOpen(true);
+  };
+
+  const closeRevertModal = () => {
+    setIsRevertModalOpen(false);
+    setRevertReason("");
+  };
+
+  const confirmRevert = () => {
+    // Find the status option object for Active
+    const newStatus = statusOptions.find(option => option.value === "Active") || {
+      id: "",
+      label: "Active",
+      value: "Active",
+      color: getDefaultColor("Active")
+    };
+
+    if (onStatusChange) {
+      onStatusChange(newStatus, revertReason && revertReason.trim() ? revertReason.trim() : undefined);
+    }
+    closeRevertModal();
+  };
+
+  const remainingChars = maxReasonLength - revertReason.length;
+  const charCountClass = remainingChars < 50 ? (remainingChars < 0 ? 'error' : 'warning') : '';
 
   // Handle disabled button click to redirect to Files & Uploads tab
   const handleDisabledSubmitClick = () => {
@@ -266,7 +263,7 @@ const TopSection = ({
           <input
             type="text"
             className={`edit-top-title-input ${errors && errors.title ? "error" : ""}`}
-            value={editableTitle}
+            value={mode === "view" ? toTitleCase(editableTitle) : editableTitle}
             onChange={handleTitleChange}
             onKeyDown={handleKeyDown}
             ref={titleRef}
@@ -389,7 +386,7 @@ const TopSection = ({
                         </button>
                         <button
                           className="edit-top-status-btn edit-top-revert-btn"
-                          onClick={() => handleStatusChange("Active")}
+                          onClick={() => openRevertModal()}
                           title="Revert to Active Status"
                           disabled={isUpdatingStatus}
                         >
@@ -404,6 +401,48 @@ const TopSection = ({
           </div>
         </div>
       </div>
+      {isRevertModalOpen && (
+        <div className="revert-modal-overlay" onClick={closeRevertModal}>
+          <div className="revert-modal-container" onClick={(e) => e.stopPropagation()}>
+            <div className="revert-modal-header">
+              <h3 className="revert-modal-title">
+                <AlertCircle className="revert-modal-icon" />
+                Revert to Active
+              </h3>
+            </div>
+            <div className="revert-modal-body">
+              <p className="revert-modal-description">
+                Please provide a reason for reverting this task to Active status. This message will be posted to the task chat.
+              </p>
+              <div className="revert-modal-textarea-wrapper">
+                <textarea
+                  value={revertReason}
+                  onChange={(e) => setRevertReason(e.target.value)}
+                  placeholder="Enter reason (optional)"
+                  className="revert-modal-textarea"
+                  maxLength={maxReasonLength}
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="revert-modal-footer">
+              <div className={`revert-modal-char-count ${charCountClass}`}>
+                {remainingChars} characters remaining
+              </div>
+              <button onClick={closeRevertModal} className="revert-modal-btn revert-modal-btn-cancel">
+                Cancel
+              </button>
+              <button 
+                onClick={confirmRevert} 
+                className="revert-modal-btn revert-modal-btn-confirm"
+                disabled={remainingChars < 0}
+              >
+                Confirm Revert
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

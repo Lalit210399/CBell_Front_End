@@ -76,21 +76,21 @@ const EventTable = () => {
   };
 
   // Filter options
-  const statusOptions = [
-    { label: "All Status", value: "" },
-    { label: "Upcoming", value: "upcoming" },
-    { label: "Ongoing", value: "ongoing" },
-    { label: "Completed", value: "completed" },
-    { label: "Cancelled", value: "cancelled" }
-  ];
+  // const statusOptions = [
+  //   { label: "All Status", value: "" },
+  //   { label: "Upcoming", value: "upcoming" },
+  //   { label: "Ongoing", value: "ongoing" },
+  //   { label: "Completed", value: "completed" },
+  //   { label: "Cancelled", value: "cancelled" }
+  // ];
 
   const dateRangeOptions = [
     { label: "All Dates", value: "" },
-    { label: "Today", value: "today" },
-    { label: "This Week", value: "thisWeek" },
-    { label: "This Month", value: "thisMonth" },
-    { label: "Next 30 Days", value: "next30Days" },
-    { label: "Past Events", value: "past" }
+    { label: "Today", value: "Today" },
+    { label: "This Week", value: "This Week" },
+    { label: "This Month", value: "This Month" },
+    { label: "Next 30 Days", value: "Next 30 Days" },
+    // { label: "Past Events", value: "past Events" }
   ];
 
   // Helper function to determine event status
@@ -114,19 +114,19 @@ const EventTable = () => {
     const event = new Date(eventDate);
     
     switch (dateRange) {
-      case "today":
+      case "Today":
         return event.toDateString() === now.toDateString();
-      case "thisWeek":
+      case "This Week":
         const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
         const endOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
         return event >= startOfWeek && event <= endOfWeek;
-      case "thisMonth":
+      case "This Month":
         return event.getMonth() === now.getMonth() && event.getFullYear() === now.getFullYear();
-      case "next30Days":
+      case "Next 30 Days":
         const in30Days = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
         return event >= now && event <= in30Days;
-      case "past":
-        return event < now;
+      // case "Past Events":
+      //   return event < now;
       default:
         return true;
     }
@@ -189,10 +189,20 @@ const EventTable = () => {
           participantName = user.name;
         }
 
+        // Generate proper initials from the full name
+        const generateInitials = (name) => {
+          if (!name || name === "Unknown") return "?";
+          const words = name.trim().split(/\s+/);
+          if (words.length === 1) {
+            return words[0].charAt(0).toUpperCase();
+          }
+          return words.slice(0, 2).map(word => word.charAt(0).toUpperCase()).join('');
+        };
+
         return {
-          name: toCamelCase(participantName),
+          name: toTitleCase(participantName), // Use title case for display
           src: participantName,
-          fallback: participantName.charAt(0).toUpperCase() || "?",
+          fallback: generateInitials(participantName),
           size: "32px",
           shape: "circle",
         };
@@ -504,14 +514,14 @@ const EventTable = () => {
               />
             </div>
 
-            <div className="filter-group">
+            {/* <div className="filter-group">
               <label>Status</label>
               <CustomDropdown
                 options={statusOptions}
                 defaultLabel={filters.status ? toTitleCase(filters.status) : "All Status"}
                 onSelect={(option) => handleFilterChange("status", option.value)}
               />
-            </div>
+            </div> */}
 
             <div className="filter-group">
               <label>Date Range</label>

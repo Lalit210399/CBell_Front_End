@@ -2,13 +2,16 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../Context/UserContext";
+import { useMessages } from "../../Context/MessageContext";
 import useApi from "../../Hooks/useApi";
 import Tile from "../../CommonComponents/Tiles/Tiles";
 import EventCampaign from "../../CommonComponents/TimelineCard/TimelineCard";
 import RecentTasks from "../../CommonComponents/RecentTaskBox/RecentTask";
+
 import CustomDropdown from "../../CommonComponents/Dropdown/CustomDropdown";
 import PageSkeleton from "../../CommonComponents/SkeletonLoading/PageSkeleton";
 import {
+  CheckCircle,
   UserCheck,
   ClipboardList,
   Clock as ClockIcon,
@@ -19,6 +22,7 @@ import "./DesignerDashboard.css";
 
 const DesignerDashboard = () => {
   const { user, selectedOrganizationId, isViewingOwnOrganization, loading: userLoading, scopeChangeTrigger } = useUser();
+  const { showError, showWarning } = useMessages();
   const navigate = useNavigate();
 
   // State for orgIdReady - now based on global selectedOrganizationId
@@ -122,7 +126,7 @@ const DesignerDashboard = () => {
 
     const organizationId = selectedOrganizationId || user?.organizationId;
     const monthParam = `${selectedYear}-${String(selectedMonth).padStart(2, "0")}`;
-    
+
         const response = await fetchWithRefresh(
           `apis/dashboard/events?orgid=${organizationId}&filter=month&month=${monthParam}`,
           {
@@ -137,7 +141,7 @@ const DesignerDashboard = () => {
     if (!response.ok) {
       throw new Error("Events campaign API failed");
     }
-    
+
           const data = await response.json();
 
     // Transform API data into EventCampaign structure
@@ -154,6 +158,47 @@ const DesignerDashboard = () => {
             }],
           }));
   }, [orgIdReady, selectedOrganizationId, user?.organizationId, selectedMonth, selectedYear]);
+
+  // Active Events API
+  const fetchActiveEvents = useCallback(async () => {
+    if (!orgIdReady) return [];
+
+    const organizationId = selectedOrganizationId || user?.organizationId;
+
+    const response = await fetchWithRefresh(
+      `apis/dashboard/events?orgid=${organizationId}&filter=active`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Active events API failed");
+    }
+
+    const data = await response.json();
+
+    // Transform API data to match ActiveEvents component structure
+    return data.events.map((ev) => ({
+      id: ev.id,
+      eventName: ev.eventName,
+      assignTo: ev.assignedTo?.map((assignee) => ({
+        name: assignee.name,
+        src: assignee.avatar || "",
+        id: assignee.id
+      })) || [],
+      displayDate: new Date(ev.eventDate).toLocaleDateString("en-GB"),
+      createdBy: {
+        name: ev.createdByName || "Unknown",
+        src: ""
+      },
+      eventData: ev
+    }));
+  }, [orgIdReady, selectedOrganizationId, user?.organizationId]);
 
   // Tasks API
   // Tasks API
@@ -317,6 +362,15 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
     reset: resetEventsCampaign
   } = useApi(fetchEventsCampaign, [orgIdReady], false);
 
+  // Active Events
+  const {
+    data: activeEventsData,
+    loading: loadingActiveEvents,
+    error: errorActiveEvents,
+    execute: executeActiveEvents,
+    reset: resetActiveEvents
+  } = useApi(fetchActiveEvents, [orgIdReady], false);
+
   // Tasks - Create a memoized function for tasks
   const fetchTasksForCurrentTitle = useCallback(() => {
     // For "Total Tasks", use the filter state; for others, use the title
@@ -346,7 +400,36 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
     reset: resetMyTasks
   } = useApi(fetchMyTasksData, [orgIdReady], false);
 
+  // Handle API errors and show user-friendly messages
+  useEffect(() => {
+    if (errorSummary) {
+      showError('Failed to load dashboard summary. Please try again.', { duration: 5000 });
+    }
+  }, [errorSummary, showError]);
 
+  useEffect(() => {
+    if (errorEventsCampaign) {
+      showError('Failed to load events campaign data. Please try again.', { duration: 5000 });
+    }
+  }, [errorEventsCampaign, showError]);
+
+  useEffect(() => {
+    if (errorActiveEvents) {
+      showError('Failed to load active events data. Please try again.', { duration: 5000 });
+    }
+  }, [errorActiveEvents, showError]);
+
+  useEffect(() => {
+    if (errorTasks) {
+      showError('Failed to load tasks data. Please try again.', { duration: 5000 });
+    }
+  }, [errorTasks, showError]);
+
+  useEffect(() => {
+    if (errorMyTasks) {
+      showError('Failed to load assigned tasks. Please try again.', { duration: 5000 });
+    }
+  }, [errorMyTasks, showError]);
 
   // Execute APIs when orgIdReady changes
   useEffect(() => {
@@ -362,6 +445,13 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
       executeEventsCampaign();
     }
   }, [orgIdReady, selectedMonth, selectedYear, executeEventsCampaign]);
+
+  // Execute Active Events API when orgIdReady changes
+  useEffect(() => {
+    if (orgIdReady) {
+      executeActiveEvents();
+    }
+  }, [orgIdReady, executeActiveEvents]);
 
   // Clear and refetch summary on scope change to avoid stale counts
   useEffect(() => {
@@ -432,32 +522,31 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
 
   // Handle tile click
   const handleTileClick = useCallback((tile) => {
-    setCurrentTitle(tile.title);
+  // If user clicks the same tile again — do nothing
+  if (tile.title === currentTitle) return;
 
-    if (tile.title === "Tasks Assigned to Me") {
-      setActiveComponent("recent");
+  setCurrentTitle(tile.title);
+
+  if (tile.title === "Tasks Assigned to Me") {
+    setActiveComponent("recent");
+    setFilter("All");
+    resetMyTasks(); // only reset when switching
+  } else {
+    setActiveComponent("recent");
+
+    if (tile.title === "Total Tasks") {
       setFilter("All");
-      // Clear any stale data; effect will handle the fetch
-      resetMyTasks();
     } else {
-      setActiveComponent("recent");
-
-      // Set filter based on tile title - default to "All" for Total Tasks
-      if (tile.title === "Total Tasks") {
-        setFilter("All");
-      } else {
-        // Map tile titles to filter values that match the actual task status names
-        const filterMap = {
-          "Tasks Under Approval": "Under Approval",  // Match actual task status name
-          "Approved Tasks": "Approved",
-        };
-        setFilter(filterMap[tile.title] || tile.title);
-      }
-
-      // Clear stale tasks list; effect will run a single fetch
-      resetTasks();
+      const filterMap = {
+        "Tasks Under Approval": "Under Approval",
+        "Approved Tasks": "Approved",
+      };
+      setFilter(filterMap[tile.title] || tile.title);
     }
-  }, [resetMyTasks, resetTasks]);
+
+    resetTasks(); // only reset when switching
+  }
+}, [currentTitle, resetMyTasks, resetTasks]);
 
   // Single effect to handle all task fetching based on current title
   useEffect(() => {
