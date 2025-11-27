@@ -103,6 +103,77 @@
   font-family: 'Courier New', monospace;
 }
 
+/* Table responsive styles */
+.ql-editor table {
+  width: 100% !important;
+  border-collapse: collapse;
+  margin: 16px 0;
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ql-editor table,
+.ql-editor th,
+.ql-editor td {
+  border: 1px solid #ccc !important;
+}
+
+.ql-editor th,
+.ql-editor td {
+  padding: 8px 12px !important;
+  text-align: left;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal !important;
+  max-width: 300px;
+}
+
+.ql-editor th {
+  background-color: #f5f5f5 !important;
+  font-weight: bold;
+}
+
+.ql-editor tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.ql-editor tr:hover {
+  background-color: #f0f0f0;
+}
+
+/* Table cell selection and interaction */
+.ql-editor table td:hover,
+.ql-editor table th:hover {
+  background-color: #e3f2fd !important;
+}
+
+.ql-editor table td.ql-selected,
+.ql-editor table th.ql-selected {
+  background-color: #bbdefb !important;
+}
+
+/* Wrapper for horizontal scroll on mobile */
+.ql-editor {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent content overflow */
+.ql-editor {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.ql-editor p,
+.ql-editor li,
+.ql-editor blockquote {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
 /* Toolbar button styles */
 .ql-toolbar button {
   width: 28px;
@@ -149,5 +220,37 @@
   
   .ql-toolbar .ql-formats {
     margin-bottom: 4px !important;
+  }
+
+  /* Mobile table responsiveness */
+  .ql-editor table {
+    font-size: 12px;
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ql-editor th,
+  .ql-editor td {
+    padding: 6px 8px !important;
+    max-width: 150px;
+    min-width: 80px;
+  }
+
+  .ql-editor table,
+  .ql-editor th,
+  .ql-editor td {
+    border: 1px solid #bbb !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .ql-editor th,
+  .ql-editor td {
+    padding: 4px 6px !important;
+    max-width: 100px;
+    min-width: 60px;
+    font-size: 11px;
   }
 }
