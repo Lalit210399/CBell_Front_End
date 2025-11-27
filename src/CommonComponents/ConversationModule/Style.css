@@ -617,7 +617,7 @@
 
   .message-item.other .message-body {
     align-items: flex-start;
-    max-width: 72%;
+    /* max-width: 72%; */
   }
 
   .message-item.own .message-bubble {
