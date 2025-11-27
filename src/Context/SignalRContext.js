@@ -242,7 +242,7 @@ const initializeConnection = useCallback(async () => {
       const success = await signalRService.sendMessage(taskId, message.trim(), documentIds, messageType);
       return success;
     } catch (error) {
-      //console.error('[SignalRContext] Error sending message:', error);
+      //console.error('[SignalRContext] ❌ Error sending message:', error);
       setConnectionError(error.message);
       return false;
     }
