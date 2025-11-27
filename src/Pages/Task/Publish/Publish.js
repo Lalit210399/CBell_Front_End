@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import Table from "../../../CommonComponents/Table/Table";
 import { Download, Share2 } from "lucide-react";
 import { useUser } from "../../../Context/UserContext";
@@ -555,7 +556,7 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
         />
       )}
 
-      {showPostLinkModal && postLinkData && (
+      {showPostLinkModal && postLinkData && ReactDOM.createPortal(
         <div className="post-link-modal-overlay" onClick={() => setShowPostLinkModal(false)}>
           <div className="post-link-modal" onClick={(e) => e.stopPropagation()}>
             <div className="post-link-header">
@@ -689,7 +690,8 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
