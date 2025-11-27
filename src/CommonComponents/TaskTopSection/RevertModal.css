@@ -1,14 +1,17 @@
 /* Revert Modal Styles */
 .revert-modal-overlay {
   position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(4px);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
   display: flex;
-  align-items: center;
   justify-content: center;
-  z-index: 1050;
-  animation: fadeIn 0.2s ease-in-out;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
 }
 
 @keyframes fadeIn {
@@ -21,60 +24,72 @@
 }
 
 .revert-modal-container {
-  width: 460px;
-  max-width: 90vw;
-  background: #ffffff;
+  background: white;
   border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.05);
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 420px;
+  width: 90%;
+  animation: slideUp 0.3s ease;
   overflow: hidden;
 }
 
 @keyframes slideUp {
   from {
-    transform: translateY(30px) scale(0.95);
     opacity: 0;
+    transform: translateY(20px) scale(0.95);
   }
   to {
-    transform: translateY(0) scale(1);
     opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
 .revert-modal-header {
-  padding: 20px 24px 16px 24px;
-  background: linear-gradient(to bottom, #ffffff 0%, #fafbfc 100%);
-  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  gap: 12px;
 }
 
 .revert-modal-title {
   margin: 0;
-  font-size: 19px;
-  font-weight: 600;
-  color: #0f172a;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  letter-spacing: -0.02em;
+  font-family: 'Figtree', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  flex: 1;
 }
 
-.revert-modal-icon {
-  width: 22px;
-  height: 22px;
+.revert-modal-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fef3c7;
   color: #f59e0b;
   flex-shrink: 0;
 }
 
+.revert-modal-icon {
+  width: 20px;
+  height: 20px;
+}
+
 .revert-modal-body {
-  padding: 20px 24px;
+  padding: 24px 20px;
 }
 
 .revert-modal-description {
-  margin: 0 0 14px 0;
+  margin: 0 0 16px 0;
+  font-family: 'Figtree', sans-serif;
   font-size: 14px;
-  color: #475569;
-  line-height: 1.5;
-  font-weight: 400;
+  color: #374151;
+  line-height: 1.6;
 }
 
 .revert-modal-textarea-wrapper {
@@ -84,27 +99,27 @@
 .revert-modal-textarea {
   width: 100%;
   min-height: 100px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   font-size: 14px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-  color: #1e293b;
+  font-family: 'Figtree', sans-serif;
+  color: #374151;
   background: #ffffff;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
   resize: vertical;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
   outline: none;
   box-sizing: border-box;
   line-height: 1.5;
 }
 
 .revert-modal-textarea:hover {
-  border-color: #94a3b8;
+  border-color: #9ca3af;
 }
 
 .revert-modal-textarea:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  border-color: #02968A;
+  box-shadow: 0 0 0 3px rgba(2, 150, 138, 0.1);
   background: #ffffff;
 }
 
@@ -113,13 +128,12 @@
 }
 
 .revert-modal-footer {
-  padding: 16px 24px;
-  background: #f8fafc;
   display: flex;
+  gap: 12px;
   justify-content: flex-end;
-  align-items: center;
-  gap: 10px;
-  border-top: 1px solid #e2e8f0;
+  padding: 16px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
 }
 
 .revert-modal-char-count {
@@ -138,18 +152,17 @@
 }
 
 .revert-modal-btn {
-  padding: 9px 20px;
-  font-size: 14px;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-width: 120px;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-family: 'Figtree', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
 }
 
 .revert-modal-btn:disabled {
@@ -158,39 +171,36 @@
 }
 
 .revert-modal-btn-cancel {
-  background: #ffffff;
-  color: #475569;
-  border: 1.5px solid #cbd5e1;
-  font-weight: 500;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
 }
 
 .revert-modal-btn-cancel:hover:not(:disabled) {
-  background: #f8fafc;
-  border-color: #94a3b8;
-  color: #334155;
+  background: #f9fafb;
+  border-color: #9ca3af;
 }
 
 .revert-modal-btn-cancel:active:not(:disabled) {
-  background: #f1f5f9;
+  background: #f3f4f6;
   transform: scale(0.98);
 }
 
 .revert-modal-btn-confirm {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, #02968A 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(2, 150, 138, 0.2);
 }
 
 .revert-modal-btn-confirm:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.45);
+  background: linear-gradient(135deg, #028078 0%, #047857 100%);
+  box-shadow: 0 4px 8px rgba(2, 150, 138, 0.3);
   transform: translateY(-1px);
 }
 
 .revert-modal-btn-confirm:active:not(:disabled) {
   transform: translateY(0) scale(0.98);
-  box-shadow: 0 3px 10px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 2px 4px rgba(2, 150, 138, 0.2);
 }
 
 /* Responsive styles */

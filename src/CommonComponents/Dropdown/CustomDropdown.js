@@ -8,6 +8,7 @@ const CustomDropdown = ({
   onSelect,
   showDot = false,
   disabled = false, // new prop: disable dropdown if needed
+  compact = false, // new prop: compact mode for inline filters
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selected, setSelected] = useState(defaultLabel);
@@ -40,16 +41,16 @@ const CustomDropdown = ({
 
   return (
     <div
-      className={`dropdown-container ${disabled ? "disabled" : ""}`}
+      className={`dropdown-container ${disabled ? "disabled" : ""} ${compact ? "compact" : ""}`}
       ref={dropdownRef}
     >
       <button
-        className="dropdown_toggle"
+        className={`dropdown_toggle ${compact ? "compact" : ""}`}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
       >
         <span>{selected}</span>
-        <ChevronDown size={18} color="#8B8B8B"/>
+        <ChevronDown size={compact ? 16 : 18} color="#8B8B8B"/>
       </button>
 
       {isOpen && (

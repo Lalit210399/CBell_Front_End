@@ -90,3 +90,36 @@
 .dropdown_menu::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* Compact mode styles for inline filters */
+.dropdown-container.compact {
+  min-width: auto;
+}
+
+.dropdown_toggle.compact {
+  min-width: auto;
+  padding: 9px 12px;
+  height: 38px;
+  max-height: 38px;
+  font-size: 14px;
+  gap: 8px;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.dropdown_toggle.compact:hover {
+  border-color: #d1d5db;
+  background-color: #fafafa;
+}
+
+.dropdown-container.compact .dropdown_menu {
+  min-width: 160px;
+  margin-top: 4px;
+}
+
+.dropdown-container.compact .dropdown-item {
+  padding: 8px 12px;
+  font-size: 14px;
+}
