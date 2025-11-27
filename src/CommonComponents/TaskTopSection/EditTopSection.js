@@ -428,8 +428,10 @@ const TopSection = ({
         <div className="revert-modal-overlay" onClick={closeRevertModal}>
           <div className="revert-modal-container" onClick={(e) => e.stopPropagation()}>
             <div className="revert-modal-header">
-              <h3 className="revert-modal-title">
+              <div className="revert-modal-icon-wrapper">
                 <AlertCircle className="revert-modal-icon" />
+              </div>
+              <h3 className="revert-modal-title">
                 Revert to Active
               </h3>
             </div>
