@@ -203,7 +203,7 @@ const TopSection = ({
     };
 
     if (onStatusChange) {
-      onStatusChange(newStatus, revertReason && revertReason.trim() ? revertReason.trim() : undefined);
+      onStatusChange(newStatus, revertReason.trim());
     }
     closeRevertModal();
   };
@@ -437,13 +437,13 @@ const TopSection = ({
             </div>
             <div className="revert-modal-body">
               <p className="revert-modal-description">
-                Please provide a reason for reverting this task to Active status. This message will be posted to the task chat.
+                Please provide a reason for reverting this task to Active status. This message is required and will be posted to the task chat.
               </p>
               <div className="revert-modal-textarea-wrapper">
                 <textarea
                   value={revertReason}
                   onChange={(e) => setRevertReason(e.target.value)}
-                  placeholder="Enter reason (optional)"
+                  placeholder="Enter reason (required)"
                   className="revert-modal-textarea"
                   maxLength={maxReasonLength}
                   autoFocus
@@ -460,7 +460,7 @@ const TopSection = ({
               <button 
                 onClick={confirmRevert} 
                 className="revert-modal-btn revert-modal-btn-confirm"
-                disabled={remainingChars < 0}
+                disabled={remainingChars < 0 || !revertReason.trim()}
               >
                 Confirm Revert
               </button>
