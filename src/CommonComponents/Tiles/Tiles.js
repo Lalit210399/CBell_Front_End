@@ -14,13 +14,18 @@ const Tile = ({
 }) => {
   const backgroundColor = bgcolor;
   const iconBackgroundColor = iconBgColor || "#3B82F6"; // Default darker shade as per example
-  const tileBorderColor = isSelected ? borderColor : "#E4E6E9"; // Default border color for unselected
   const tileTextColor = textColor || "#111827"; // Default text color (dark gray)
+  const tileBorderColor = isSelected ? borderColor : "#E4E6E9";
   return (
     <div
       className="tile-container"
       style={{
         backgroundColor,
+        boxShadow: isSelected 
+          ? `0 4px 12px rgba(0, 0, 0, 0.15)` 
+          : "0 2px 6px rgba(0, 0, 0, 0.05)",
+        transform: isSelected ? "translateY(-2px)" : "none",
+        filter: isSelected ? "brightness(1) saturate(1.2)" : "none",
         borderColor: tileBorderColor,
         borderStyle: "solid",
         borderWidth: "1px",
