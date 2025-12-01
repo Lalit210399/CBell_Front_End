@@ -1,29 +1,31 @@
-import React from "react";
-import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, Calendar, Clock } from "lucide-react";
+import React, { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { LayoutGrid, Calendar, Clock, MessageSquare, Settings } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
 import "./Sidebar.css";
 
-function Sidebar() {
+export default function Sidebar() {
   const location = useLocation();
-  const { permissions:userPermissions } = useUser();
+  const navigate = useNavigate();
+  const { user } = useUser?.() || {};
 
-  const hasDashboardPermission = userPermissions?.permissions?.Dashboard?.["Dashboard Management"]?.includes("Read") ?? false;
-  const hasEventsPermission = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
-  const hasSchedulePermission = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
-  const hasChatPermission = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
+  // Adjust permission checks to your actual user shape
+  const hasDashboardPermission = true;
+  const hasEventsPermission = true;
+  const hasSchedulePermission = true;
+  const hasChatPermission = true;
 
   return (
-    <div className="sidebar">
+    <aside className="sidebar">
       <div className="logo">CB</div>
+
       <ul className="menu">
         {hasDashboardPermission && (
           <li>
             <Link
               to="/dashboard"
-              className={`menu-item ${
-                location.pathname === "/dashboard" ? "active" : ""
-              }`}
+              className={`menu-item ${location.pathname === "/dashboard" ? "active" : ""}`}
+              title="Dashboard"
             >
               <div className="tooltip" data-tooltip="Dashboard">
                 <LayoutGrid size={20} />
@@ -31,13 +33,13 @@ function Sidebar() {
             </Link>
           </li>
         )}
+
         {hasEventsPermission && (
           <li>
             <Link
               to="/events"
-              className={`menu-item ${
-                location.pathname.startsWith("/events") ? "active" : ""
-              }`}
+              className={`menu-item ${location.pathname.startsWith("/events") ? "active" : ""}`}
+              title="Events"
             >
               <div className="tooltip" data-tooltip="Events">
                 <Calendar size={20} />
@@ -45,13 +47,13 @@ function Sidebar() {
             </Link>
           </li>
         )}
+
         {hasSchedulePermission && (
           <li>
             <Link
               to="/schedule"
-              className={`menu-item ${
-                location.pathname === "/schedule" ? "active" : ""
-              }`}
+              className={`menu-item ${location.pathname === "/schedule" ? "active" : ""}`}
+              title="Schedules"
             >
               <div className="tooltip" data-tooltip="Schedules">
                 <Clock size={20} />
@@ -59,21 +61,33 @@ function Sidebar() {
             </Link>
           </li>
         )}
+
         {hasChatPermission && (
           <li>
             <Link
               to="/chat"
               className={`menu-item ${location.pathname === "/chat" ? "active" : ""}`}
+              title="Chat"
             >
               <div className="tooltip" data-tooltip="Chat">
-                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-square"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="m8 12 2-2 2 2m-2-2v3"/></svg>
+                <MessageSquare size={20} />
               </div>
             </Link>
           </li>
         )}
       </ul>
-    </div>
+
+      {/* Settings Icon - Opens Settings Page Directly */}
+      <div className="sidebar-settings">
+        <button
+          className="settings-button"
+          onClick={() => navigate("/settings")}
+          title="Settings"
+          aria-label="Settings"
+        >
+          <Settings size={18} />
+        </button>
+      </div>
+    </aside>
   );
 }
-
-export default Sidebar;

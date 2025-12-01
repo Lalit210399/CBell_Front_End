@@ -18,7 +18,9 @@ import { useUser } from "./Context/UserContext";
 import { NotificationProvider } from "./Context/NotificationContext";
 import ErrorBoundary from "./CommonComponents/ErrorBoundary"; 
 import ChatLayout from "./Pages/Chat/NewChatLayout";
-
+import EmailSettings from "./Pages/Settings/EmailSettings/EmailSettings";
+import ProfileSettings from "./Pages/Settings/ProfileSettings/ProfileSettings";
+import Settings from "./Pages/Settings/Settings";
 // Component to render appropriate dashboard based on user role
 const DashboardRouter = () => {
   const { user } = useUser();
@@ -83,6 +85,9 @@ function App() {
                         </RequirePermission>
                       }
                     />
+                    <Route path="/settings/email" element={<EmailSettings />} />
+                    <Route path="/settings/profile" element={<ProfileSettings />} />
+                    <Route path="/settings" element={<Settings />} />
                     {/* <Route path="/events/stepForm" element={<StepForm />} /> */}
                     {/* <Route path="/dashboard/stepForm" element={<StepForm />} /> */}
                     {/* <Route path="/schedule/stepForm" element={<StepForm />} /> */}

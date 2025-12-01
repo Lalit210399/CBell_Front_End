@@ -1,33 +1,10 @@
-# Organization Scope Refactoring Progress
+# TODO for EmailSettings Feature
 
-## ✅ Completed Tasks
-- [x] Refactored Dashboard.js to use centralized `useOrganizationScope` hook
-- [x] Removed redundant localStorage management from Dashboard
-- [x] Added proper organization scope synchronization
-
-## 🔄 In Progress
-- [ ] Critical-path testing of Dashboard changes
-- [ ] Refactor EventDetailPage to use organization scope hook
-- [ ] Refactor other components using manual localStorage
-
-## 📋 Pending Tasks
-- [ ] Add utility functions for organization scope management
-- [ ] Create context provider for organization scope (if needed)
-- [ ] Update all components to use centralized hook
-- [ ] Test organization scope changes across all components
-- [ ] Verify localStorage synchronization works correctly
-- [ ] Test organization switching functionality
-
-## 🧪 Testing Checklist
-- [ ] Dashboard loads with correct organization scope
-- [ ] Organization dropdown shows correct selected value
-- [ ] Organization change updates all dashboard data
-- [ ] localStorage persists organization selection
-- [ ] Organization scope syncs across browser tabs
-- [ ] API calls use correct organization ID
-- [ ] Error handling for invalid organization IDs
-
-## 📝 Notes
-- Current implementation uses `useOrganizationScope` hook for centralized management
-- Dashboard component successfully refactored to remove manual localStorage calls
-- Need to test organization switching and data refresh functionality
+- [ ] Create EmailSelector component in src/CommonComponents/EmailSelector/EmailSelector.js using MultiSelectDropdown
+- [ ] Create EmailSettings page in src/Pages/Settings/EmailSettings.js
+  - [ ] Display list of email IDs with add/edit/delete form
+  - [ ] Display list of email groups with add/edit/delete form
+  - [ ] Allow assignment of email IDs to groups
+- [ ] Add route for EmailSettings page in src/routes.js
+- [ ] Use Tailwind CSS for styling components
+- [ ] Test navigation and UI functionality with dummy data
