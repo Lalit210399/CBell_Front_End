@@ -6,6 +6,7 @@ const MessageContext = createContext();
 
 export const MessageProvider = ({ children }) => {
   const [messages, setMessages] = useState([]);
+  const [suppressErrors, setSuppressErrors] = useState(false);
 
   const addMessage = useCallback((message) => {
     const id = Date.now() + Math.random();
@@ -38,6 +39,11 @@ export const MessageProvider = ({ children }) => {
   }, []);
 
   const showError = useCallback((text, options = {}) => {
+    // When auth expired is in progress, suppress non-critical error messages
+    if (suppressErrors && !options.force) {
+      return null;
+    }
+
     return addMessage({
       text,
       type: 'Error', // Use proper case for existing MessageStrip
@@ -84,6 +90,28 @@ export const MessageProvider = ({ children }) => {
     
     return unregister;
   }, [showError, showWarning, showSuccess, showInfo]);
+
+  // Listen for global auth-expired events and suppress duplicate error messages
+  useEffect(() => {
+    const handleAuthExpired = (event) => {
+      // Clear all existing messages (avoid stale error strips)
+      clearAllMessages();
+
+      // Briefly suppress new error messages that result from multiple failing API calls
+      setSuppressErrors(true);
+
+      // Show a single warning to inform the user (duration can be customized)
+      addMessage({ text: 'Your session has expired. Please log in again to continue.', type: 'Warning', duration: 5000 });
+
+      // Re-enable error messages after a short delay
+      setTimeout(() => {
+        setSuppressErrors(false);
+      }, 3000);
+    };
+
+    window.addEventListener('auth-expired', handleAuthExpired);
+    return () => window.removeEventListener('auth-expired', handleAuthExpired);
+  }, [clearAllMessages, addMessage]);
 
   return (
     <MessageContext.Provider value={{

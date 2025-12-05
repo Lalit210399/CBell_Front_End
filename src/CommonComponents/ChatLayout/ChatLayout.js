@@ -103,6 +103,11 @@ const ChatLayout = ({ events, organizationId }) => {
       if (response.ok) {
         const allTaskFiles = await response.json();
 
+        // Normalize backend response like [{ message: 'No documents found for the given TaskId.' }]
+        const normalizedTaskFiles = (Array.isArray(allTaskFiles) && allTaskFiles.length === 1 && allTaskFiles[0] && typeof allTaskFiles[0].message === 'string')
+          ? []
+          : allTaskFiles;
+
         const getFileTypeFromMime = (mime, filename = '') => {
           if (mime && mime !== 'application/octet-stream') {
             if (mime.startsWith('image')) return 'image';
@@ -133,7 +138,7 @@ const ChatLayout = ({ events, organizationId }) => {
           return false;
         };
 
-        const processedFiles = allTaskFiles.map((doc) => {
+        const processedFiles = (normalizedTaskFiles || []).map((doc) => {
           const type = getFileTypeFromMime(doc.contentType, doc.filename);
           const src = `/apis/document/view/${doc.documentId}`;
           const category = isDesignerOrCreative(doc.userInfo) ? 'Work Submission' : 'Reference';

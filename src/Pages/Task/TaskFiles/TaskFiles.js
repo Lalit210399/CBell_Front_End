@@ -59,18 +59,24 @@ const TasksFiles = ({
         });
         const data = await res.json();
 
+        // Normalize backend response where it returns a single message object
+        // like [{ message: 'No documents found for the given TaskId.' }]
+        const normalizedData = (Array.isArray(data) && data.length === 1 && data[0] && typeof data[0].message === 'string')
+          ? []
+          : data;
+
         // Check if any file is already approved or published
-        const approvedOrPublishedExists = data.some(doc => 
+        const approvedOrPublishedExists = (normalizedData || []).some(doc => 
           doc.status === 'Approved' || doc.status === 'Published' || 
           (doc.publishedTo && doc.publishedTo.length > 0 && doc.publishedTo.some(p => p.isPublished === true))
         );
         setHasApprovedFile(approvedOrPublishedExists);
         
         // Check if there are any files at all
-        setHasAnyFiles(data.length > 0);
+        setHasAnyFiles((normalizedData || []).length > 0);
 
         // Check for work submission files (files uploaded by designers)
-        const workSubmissionFiles = data.filter(doc => {
+        const workSubmissionFiles = (normalizedData || []).filter(doc => {
           // Check if the uploader is a designer based on userInfo
           if (doc.userInfo && doc.userInfo.roles) {
             return doc.userInfo.roles.some(role => 
@@ -86,7 +92,7 @@ const TasksFiles = ({
         setHasWorkSubmissionFiles(workSubmissionFiles.length > 0);
 
         const filesWithPreview = await Promise.all(
-          data.map(async (doc) => {
+          (normalizedData || []).map(async (doc) => {
             const type = getFileTypeFromMime(doc.contentType, doc.filename);
             let src = '';
 

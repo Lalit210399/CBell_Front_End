@@ -24,6 +24,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar,
+  Sparkles,
+  Target,
+  TrendingUp,
 } from "lucide-react";
 import "./Dashboard.css";
 
@@ -59,6 +62,17 @@ const Dashboard = () => {
       return;
     }
     navigate("/events/eventDetailPage", { state: { mode: "create" } });
+  };
+
+  // Handle New Standalone Task button click
+  const handleNewTask = () => {
+    if (!isViewingOwnOrganization()) {
+      console.warn("Task creation is only allowed in your own organization");
+      return;
+    }
+    const organizationId = selectedOrganizationId || user?.organizationId;
+    // Navigate to the task creation view with no eventId so backend treats it as standalone
+    navigate('/events/eventDetailPage/tasks', { state: { mode: 'create', organizationId, eventId: null } });
   };
 
 
@@ -438,6 +452,7 @@ const Dashboard = () => {
     "Under Approval Tasks",
     "Approved Tasks",
     "Published Tasks",
+    "My Individual Tasks",
   ], []);
 
   // Refetch data for current component on scope change
@@ -621,6 +636,19 @@ const Dashboard = () => {
       // borderColor: "#E4E6E9",
       textColor: "rgba(88, 28, 135, 1)", // Purple
     },
+    {
+      icon: <UserCheck size={24} color="rgba(99, 102, 241, 1)" />,
+      count: loadingSummary
+        ? "..."
+        : errorSummary
+        ? "!" :summaryData?.tasksAssignedToMe ?? 0,
+      title: "My Individual Tasks",
+      subtitle: "Your Personal Task List",
+      bgcolor: "rgba(224, 231, 255, 0.2)",
+      iconBgColor: "rgba(99, 102, 241, 0.2)",
+      borderColor: "rgba(99, 102, 241, 1)",
+      textColor: "rgba(49, 46, 129, 1)", // Indigo
+    },
   ];
 
 
@@ -662,7 +690,8 @@ const Dashboard = () => {
           "Active Tasks": "Active", 
           "Under Approval Tasks": "Under Approval",  // Match API status value
           "Approved Tasks": "Approved",
-          "Published Tasks": "Published"
+          "Published Tasks": "Published",
+          "My Individual Tasks": "Assigned to Me",
         };
         setFilter(filterMap[tile.title] || tile.title);
       }
@@ -670,6 +699,42 @@ const Dashboard = () => {
       // Do not execute here; a dedicated effect will run when
       // currentTitle/activeComponent change to avoid stale state
     }
+  };
+
+  // Handle more button click on tiles - navigate to appropriate page based on tile type
+  const handleMoreClick = (tile) => {
+    // Handle Event tiles - navigate to events page
+    if (tile.title === "Active Events" || tile.title === "Events Assigned to Me") {
+      navigate('/events', {
+        state: {
+          filter: tile.title === "Active Events" ? "active" : "assigned",
+          title: tile.title
+        }
+      });
+      return;
+    }
+
+    // Handle Task tiles - navigate to tasks list page
+    const filterMap = {
+      "Total Tasks": "all",
+      "New Tasks": "New",
+      "Active Tasks": "Active",
+      "Under Approval Tasks": "Under Approval",
+      "Approved Tasks": "Approved",
+      "Published Tasks": "Published",
+      "Tasks Due Next 7 Days": "Due Soon",
+      "Overdue Tasks": "Overdue",
+      "My Individual Tasks": "Assigned to Me",
+    };
+
+    const filter = filterMap[tile.title] || "all";
+
+    navigate('/tasks/list', {
+      state: {
+        filter: filter,
+        title: tile.title
+      }
+    });
   };
 
   // Handle task click
@@ -738,6 +803,15 @@ const Dashboard = () => {
               + New Event
             </button>
           )}
+          {isViewingOwnOrganization() && (
+            <button
+              className="dashboard-btn dashboard-btn-secondary"
+              onClick={handleNewTask}
+              style={{ marginLeft: 8 }}
+            >
+              + New Task
+            </button>
+          )}
         </div>
       </div>
 
@@ -754,6 +828,7 @@ const Dashboard = () => {
               {...tile}
               onClick={() => handleTileClick(tile)}
               isSelected={tile.title === currentTitle}
+              onMoreClick={() => handleMoreClick(tile)}
             />
           ))}
         </div>
@@ -785,7 +860,7 @@ const Dashboard = () => {
                   "Total Tasks",
                 ].includes(currentTitle)}
                 hideAssignedToColumn={currentTitle === "New Tasks"}
-                showOrganizationColumn={currentTitle === "Events Assigned to Me" ? false : (currentTitle === "Tasks Assigned to Me")}
+                showOrganizationColumn={currentTitle === "Events Assigned to Me" ? false : (currentTitle === "My Individual Tasks")}
                 emptyStateMessage={`No ${currentTitle.toLowerCase()} found`}
               />
             </div>

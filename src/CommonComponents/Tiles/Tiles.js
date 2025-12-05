@@ -1,4 +1,5 @@
 import React from "react";
+import { SquareArrowOutUpRight } from "lucide-react";
 import "./Tiles.css";
 const Tile = ({
   icon,
@@ -11,11 +12,20 @@ const Tile = ({
   onClick,
   isSelected,
   textColor,
+  onMoreClick,
 }) => {
   const backgroundColor = bgcolor;
   const iconBackgroundColor = iconBgColor || "#3B82F6"; // Default darker shade as per example
   const tileTextColor = textColor || "#111827"; // Default text color (dark gray)
   const tileBorderColor = isSelected ? borderColor : "#E4E6E9";
+  
+  const handleMoreClick = (e) => {
+    e.stopPropagation();
+    if (onMoreClick) {
+      onMoreClick();
+    }
+  };
+  
   return (
     <div
       className="tile-container"
@@ -54,6 +64,16 @@ const Tile = ({
         <h3 className="tile-title">{title}</h3>
         <p className="tile-subtitle">{subtitle}</p>
       </div>
+      {onMoreClick && (
+        <button
+          className="tile-more-button"
+          onClick={handleMoreClick}
+          aria-label="View all tasks"
+          title="View full list"
+        >
+          <SquareArrowOutUpRight size={18} color="rgba(86, 148, 255, 1)"/>
+        </button>
+      )}
     </div>
   );
 };

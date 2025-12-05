@@ -805,7 +805,19 @@ const TaskDetailPage = () => {
     }
 
     try {
-      
+      // If navigation state explicitly included an eventId (i.e. user came from an event view),
+      // require that we have a valid event id when creating a task. Dashboard/task-list flows
+      // typically omit eventId (or pass null) and should be allowed to create standalone tasks.
+      const navigatedEventIdPresent = typeof location?.state?.eventId !== "undefined" && location?.state?.eventId !== null;
+      if (mode === "create" && navigatedEventIdPresent && !apiEventId) {
+        addMessage({
+          text: "Event ID is required when creating a task from an event. Please save the event first.",
+          type: "error",
+          duration: 4000,
+        });
+        return;
+      }
+
       if (selectedFiles.length > 0 && activeTab === "Files & Uploads") {
         try {
           const approvalResults = await Promise.allSettled(
@@ -903,7 +915,6 @@ const TaskDetailPage = () => {
       }
 
       const payload = {
-        EventId: mode === "edit" ? currentFormData.eventId : apiEventId,
         TaskTitle: toTitleCase(taskTitle),
         taskStatusId: statusId, // Use the validated status ID
         AssignedTo: (selectedParticipantIds || []).map((item) =>
@@ -918,6 +929,13 @@ const TaskDetailPage = () => {
         Description: currentFormData.description,
         OrganizationId: organizationId || currentFormData.organizationId
       };
+
+      // Only include EventId when editing (use the form value) or when we have a valid apiEventId.
+      if (mode === "edit") {
+        payload.EventId = currentFormData.eventId;
+      } else if (apiEventId) {
+        payload.EventId = apiEventId;
+      }
 
 
 
