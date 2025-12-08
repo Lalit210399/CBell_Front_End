@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { Toaster } from 'sonner';
 import MainLayout from "./Layouts/MainLayout";
 import Login from "./CommonComponents/UserAuth/Login";
 import Signup from "./CommonComponents/UserAuth/Signup";
@@ -19,6 +20,17 @@ import { useUser } from "./Context/UserContext";
 import { NotificationProvider } from "./Context/NotificationContext";
 import ErrorBoundary from "./CommonComponents/ErrorBoundary"; 
 import ChatLayout from "./Pages/Chat/NewChatLayout";
+
+// Admin Components
+import AdminProtectedRoute from "./Components/Admin/AdminProtectedRoute";
+import DashboardLayout from "./Layouts/DashboardLayout";
+import DashboardHome from "./Pages/Admin/DashboardHome";
+import UsersManagement from "./Pages/Admin/UsersManagement";
+import RolesManagement from "./Pages/Admin/RolesManagement";
+import OrganizationsManagement from "./Pages/Admin/OrganizationsManagement";
+import ModulesManagement from "./Pages/Admin/ModulesManagement";
+import FeaturesManagement from "./Pages/Admin/FeaturesManagement";
+import PermissionTypesManagement from "./Pages/Admin/PermissionTypesManagement";
 
 // Component to render appropriate dashboard based on user role
 const DashboardRouter = () => {
@@ -98,7 +110,28 @@ function App() {
           }
         />
 
+        {/* Admin Routes - Only accessible by Admin users */}
+        <Route
+          path="/admin/*"
+          element={
+            <ProtectedRoute>
+              <AdminProtectedRoute>
+                <DashboardLayout />
+              </AdminProtectedRoute>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<DashboardHome />} />
+          <Route path="users" element={<UsersManagement />} />
+          <Route path="roles" element={<RolesManagement />} />
+          <Route path="organizations" element={<OrganizationsManagement />} />
+          <Route path="permissions/modules" element={<ModulesManagement />} />
+          <Route path="permissions/features" element={<FeaturesManagement />} />
+          <Route path="permissions/types" element={<PermissionTypesManagement />} />
+        </Route>
+
         </Routes>
+        <Toaster position="top-right" richColors expand={false} duration={3000} />
       </Router>
     </ErrorBoundary>
   );

@@ -1,17 +1,27 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, Calendar, Clock } from "lucide-react";
+import { LayoutGrid, Calendar, Clock, Settings } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
 import "./Sidebar.css";
 
 function Sidebar() {
   const location = useLocation();
-  const { permissions:userPermissions } = useUser();
+  const { permissions:userPermissions, user } = useUser();
 
   const hasDashboardPermission = userPermissions?.permissions?.Dashboard?.["Dashboard Management"]?.includes("Read") ?? false;
   const hasEventsPermission = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
   const hasSchedulePermission = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
   const hasChatPermission = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
+  
+  // Check if user is Admin
+  const isAdmin = user?.roles?.some(role => 
+    role.name === 'Admin' || 
+    role.name === 'SuperAdmin' || 
+    role.name === 'Administrator'
+  );
+  
+  // Temporary: Always show admin for testing (remove this line in production)
+  const showAdmin = true; // Change to isAdmin in production
 
   return (
     <div className="sidebar">
@@ -67,6 +77,18 @@ function Sidebar() {
             >
               <div className="tooltip" data-tooltip="Chat">
                 <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-square"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="m8 12 2-2 2 2m-2-2v3"/></svg>
+              </div>
+            </Link>
+          </li>
+        )}
+        {showAdmin && (
+          <li>
+            <Link
+              to="/admin"
+              className={`menu-item ${location.pathname.startsWith("/admin") ? "active" : ""}`}
+            >
+              <div className="tooltip" data-tooltip="Admin Panel">
+                <Settings size={20} />
               </div>
             </Link>
           </li>
