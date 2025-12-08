@@ -215,43 +215,99 @@ const Dashboard = () => {
       };
 
     const apiFilter = filterMap[filterType] || "all";
-
-      const response = await fetchWithRefresh(
-        `apis/dashboard/tasks?orgid=${organizationId}&filter=${apiFilter}`,
-        {
+    // If user clicked the Individual Tasks tile, prefer the standalone endpoint
+    if (filterType === "My Individual Tasks") {
+      try {
+        const standaloneUrl = `/apis/task/standalone?organizationId=${organizationId}`;
+        const res = await fetchWithRefresh(standaloneUrl, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
             "ngrok-skip-browser-warning": "1",
           },
+        });
+
+        if (!res.ok) {
+          throw new Error("Standalone tasks API failed");
         }
-      );
+
+        const raw = await res.json();
+        
+        // Backend returns { message: "...", data: [...], totalCount: n }
+        const tasksArray = Array.isArray(raw.data) ? raw.data : [];
+
+        const mappedTasks = tasksArray.map((task) => {
+          // Extract assignedTo names from the assignedTo array
+          const assignedToNames = (task.assignedTo || []).map(user => user.name || "Unknown");
+
+          // Calculate days until due
+          const daysUntilDue = task.dueDate 
+            ? Math.ceil((new Date(task.dueDate) - new Date()) / (1000 * 60 * 60 * 24))
+            : null;
+
+          return {
+            id: task.id || task.taskId,
+            status: task.taskStatusName || task.statusName || task.status,
+            taskName: task.taskTitle || task.taskName,
+            eventName: task.eventName || "Standalone Task",
+            eventId: task.eventId,
+            assignedTo: assignedToNames.map((name, index) => ({
+              name: name,
+              src: "",
+              id: task.assignedTo?.[index]?.id || `user-${index}`
+            })),
+            dueDate: task.dueDate ? new Date(task.dueDate).toLocaleDateString("en-GB") : "",
+            description: task.description,
+            creativeType: task.creativeType,
+            daysUntilDue: daysUntilDue,
+            createdBy: task.createdByName || "Unknown",
+            updatedBy: task.updatedByName || task.updatedBy || "Unknown",
+          };
+        });
+        
+        return mappedTasks;
+      } catch (err) {
+        console.error("Error fetching standalone tasks:", err);
+        return [];
+      }
+    }
+
+    const response = await fetchWithRefresh(
+      `apis/dashboard/tasks?orgid=${organizationId}&filter=${apiFilter}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1",
+        },
+      }
+    );
 
     if (!response.ok) {
       throw new Error("Tasks API failed");
     }
-    
-        const data = await response.json();
 
-        // Transform API data to match the expected format for RecentTasks component
-    return data.tasks.map((task) => ({
+    const data = await response.json();
+
+    // Transform API data to match the expected format for RecentTasks component
+    return (data.tasks || []).map((task) => ({
       id: task.id || task.taskId,
-          status: task.taskStatusName,
-          taskName: task.taskTitle,
-          eventName: task.eventName,
+      status: task.taskStatusName,
+      taskName: task.taskTitle,
+      eventName: task.eventName,
       eventId: task.eventId,
-          assignedTo: task.assignedToNames?.map((name, index) => ({
-            name: name,
+      assignedTo: task.assignedToNames?.map((name, index) => ({
+        name: name,
         src: "",
         id: task.assignedTo?.[index] || `user-${index}`
       })) || [],
-          dueDate: new Date(task.dueDate).toLocaleDateString("en-GB"),
-          description: task.description,
-          creativeType: task.creativeType,
-          daysUntilDue: task.daysUntilDue,
-          createdBy: task.createdByName || "Unknown",
-          updatedBy: task.updatedByName || "Unknown",
-        }));
+      dueDate: task.dueDate ? new Date(task.dueDate).toLocaleDateString("en-GB") : "",
+      description: task.description,
+      creativeType: task.creativeType,
+      daysUntilDue: task.daysUntilDue,
+      createdBy: task.createdByName || "Unknown",
+      updatedBy: task.updatedByName || "Unknown",
+    }));
   }, [orgIdReady, selectedOrganizationId, user?.organizationId]);
 
   // Active Events API
@@ -641,7 +697,7 @@ const Dashboard = () => {
       count: loadingSummary
         ? "..."
         : errorSummary
-        ? "!" :summaryData?.tasksAssignedToMe ?? 0,
+        ? "!" :summaryData?.standaloneTasks ?? 0,
       title: "My Individual Tasks",
       subtitle: "Your Personal Task List",
       bgcolor: "rgba(224, 231, 255, 0.2)",
@@ -681,7 +737,7 @@ const Dashboard = () => {
       setActiveComponent("recent");
 
       // Set filter based on tile title - default to "All" for most tiles
-      if (tile.title === "Total Tasks" || tile.title === "Tasks Due Next 7 Days" || tile.title === "Overdue Tasks") {
+      if (tile.title === "Total Tasks" || tile.title === "Tasks Due Next 7 Days" || tile.title === "Overdue Tasks" || tile.title === "My Individual Tasks") {
         setFilter("All");
       } else {
         // Map tile titles to filter values that match the actual API status values
@@ -860,7 +916,7 @@ const Dashboard = () => {
                   "Total Tasks",
                 ].includes(currentTitle)}
                 hideAssignedToColumn={currentTitle === "New Tasks"}
-                showOrganizationColumn={currentTitle === "Events Assigned to Me" ? false : (currentTitle === "My Individual Tasks")}
+                showOrganizationColumn={false}
                 emptyStateMessage={`No ${currentTitle.toLowerCase()} found`}
               />
             </div>
