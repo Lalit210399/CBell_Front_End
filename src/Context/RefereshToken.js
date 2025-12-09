@@ -65,7 +65,7 @@ async function performTokenRefresh() {
   refreshPromise = await fetch("/apis/auth/refresh-token", {
     method: "POST",
     credentials: "include", // important
-    headers: { "ngrok-skip-browser-warning": "1" }, // optional
+    headers: { 'Content-Type': 'application/json' }, // optional
   })
     .then(async (res) => {
       if (!res.ok) {
