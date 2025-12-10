@@ -228,7 +228,7 @@ const ChatLayout = ({ events, organizationId }) => {
   };
 
   return (
-    <div className="whatsapp-layout-container">
+    <div className="whatsapp-layout">
       {/* ---------- LEFT SIDEBAR ---------- */}
       <div className="whatsapp-sidebar">
         <div className="sidebar-header">

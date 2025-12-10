@@ -1,7 +1,9 @@
 .Events {
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   background: #ffffff;
-  min-height: 100vh;
+  width: 100%;
 }
 
 /* New Events Header Styles */

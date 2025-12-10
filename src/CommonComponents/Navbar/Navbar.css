@@ -1,30 +1,21 @@
-/* Navbar.css */
-
+/* Navbar */
 .navbar {
-  width: calc(100% - 154px);
-  /* Adjusted to fit after Sidebar */
-  height: var(--navbarHeight);
-  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
-  position: fixed;
-  z-index: 1000;
-  left: 86px;
-  /* Start after Sidebar */
-  border-radius: var(--radius-lg);
-  margin: 24px 0px 24px 10px;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 24px;
-  border: solid 1px #eaeaea;
+  height: 72px;
   background-color: var(--white);
-  font-family: var(--font-family);
-  font-size: var(--font-size);
+  border: 1px solid #eaeaea;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  flex-shrink: 0;
+  z-index: 200;
 }
 
 .nav-links {
   display: flex;
   gap: 36px;
+  align-items: center;
 }
 
 .nav-links a {
@@ -32,13 +23,7 @@
   color: var(--navText);
   font-size: 18px;
   font-weight: 500;
-  width: 87px;
-  height: 26px;
-  font-stretch: normal;
-  font-style: normal;
-  line-height: normal;
-  letter-spacing: normal;
-  text-align: center;
+  transition: border-bottom 0.2s ease;
 }
 
 .nav-links a.active {
@@ -55,7 +40,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-right: 16px;
 }
 
 .scope-label {
@@ -77,13 +61,12 @@
   width: 30px;
   height: 30px;
   display: flex;
-  flex-direction: row;
-  justify-content: flex-start;
   align-items: center;
-  gap: 24px;
+  justify-content: center;
   padding: 4px;
   border-radius: 24px;
   background-color: var(--lightPink);
+  transition: background-color 0.2s ease;
 }
 
 .user-info {

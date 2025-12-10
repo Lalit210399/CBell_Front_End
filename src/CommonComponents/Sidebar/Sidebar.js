@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, Calendar, Clock } from "lucide-react";
+import { LayoutGrid, Calendar, Clock, MessageCircleMore } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
 import "./Sidebar.css";
 
@@ -14,20 +14,18 @@ function Sidebar() {
   const hasChatPermission = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
 
   return (
-    <div className="sidebar">
-      <div className="logo">CB</div>
-      <ul className="menu">
+    <nav className="sidebar" aria-label="Main navigation">
+      <div className="sidebar-logo">CB</div>
+      <ul className="sidebar-menu">
         {hasDashboardPermission && (
           <li>
             <Link
               to="/dashboard"
-              className={`menu-item ${
-                location.pathname === "/dashboard" ? "active" : ""
-              }`}
+              className={`sidebar-menu-item ${location.pathname === "/dashboard" ? "active" : ""}`}
+              aria-label="Dashboard"
+              title="Dashboard"
             >
-              <div className="tooltip" data-tooltip="Dashboard">
-                <LayoutGrid size={20} />
-              </div>
+              <LayoutGrid size={24} />
             </Link>
           </li>
         )}
@@ -35,13 +33,11 @@ function Sidebar() {
           <li>
             <Link
               to="/events"
-              className={`menu-item ${
-                location.pathname.startsWith("/events") ? "active" : ""
-              }`}
+              className={`sidebar-menu-item ${location.pathname.startsWith("/events") ? "active" : ""}`}
+              aria-label="Events"
+              title="Events"
             >
-              <div className="tooltip" data-tooltip="Events">
-                <Calendar size={20} />
-              </div>
+              <Calendar size={24} />
             </Link>
           </li>
         )}
@@ -49,13 +45,11 @@ function Sidebar() {
           <li>
             <Link
               to="/schedule"
-              className={`menu-item ${
-                location.pathname === "/schedule" ? "active" : ""
-              }`}
+              className={`sidebar-menu-item ${location.pathname === "/schedule" ? "active" : ""}`}
+              aria-label="Schedules"
+              title="Schedules"
             >
-              <div className="tooltip" data-tooltip="Schedules">
-                <Clock size={20} />
-              </div>
+              <Clock size={24} />
             </Link>
           </li>
         )}
@@ -63,16 +57,16 @@ function Sidebar() {
           <li>
             <Link
               to="/chat"
-              className={`menu-item ${location.pathname === "/chat" ? "active" : ""}`}
+              className={`sidebar-menu-item ${location.pathname === "/chat" ? "active" : ""}`}
+              aria-label="Chat"
+              title="Chat"
             >
-              <div className="tooltip" data-tooltip="Chat">
-                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-square"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="m8 12 2-2 2 2m-2-2v3"/></svg>
-              </div>
+              <MessageCircleMore size={24} />
             </Link>
           </li>
         )}
       </ul>
-    </div>
+    </nav>
   );
 }
 

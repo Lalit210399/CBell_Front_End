@@ -788,7 +788,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="dashboard-middle-container">
+    <div className="dashboard-middle">
       {/* Welcome Section */}
       <div className="welcome-section">
         <h2>Welcome {user?.firstName}, Plan Your Day Ahead</h2>
@@ -842,58 +842,56 @@ const Dashboard = () => {
       </div>
 
       {/* Bottom Section */}
-      <div className="Second_Row_Section">
-        <div className="bottom_section">
-          {/* Recent Tasks */}
-          {activeComponent === "recent" && (
-            <div className="recent-tasks">
-              <RecentTasks
-                tasks={(tasksData || []).slice(0, 5)}
-                title={currentTitle}
-                filter={filter}
-                onFilterChange={setFilter}
-                onTaskClick={handleTaskClick}
-                onEventClick={handleEventClick}
-                loading={loadingTasks}
-                error={errorTasks}
-                showDropdown={[
-                  "Total Tasks",
-                ].includes(currentTitle)}
-                hideAssignedToColumn={currentTitle === "New Tasks"}
-                showOrganizationColumn={currentTitle === "Events Assigned to Me" ? false : (currentTitle === "My Individual Tasks")}
-                emptyStateMessage={`No ${currentTitle.toLowerCase()} found`}
-              />
-            </div>
-          )}
+      <div className="dashboard-content-row">
+        {/* Recent Tasks */}
+        {activeComponent === "recent" && (
+          <div className="recent-tasks">
+            <RecentTasks
+              tasks={(tasksData || []).slice(0, 5)}
+              title={currentTitle}
+              filter={filter}
+              onFilterChange={setFilter}
+              onTaskClick={handleTaskClick}
+              onEventClick={handleEventClick}
+              loading={loadingTasks}
+              error={errorTasks}
+              showDropdown={[
+                "Total Tasks",
+              ].includes(currentTitle)}
+              hideAssignedToColumn={currentTitle === "New Tasks"}
+              showOrganizationColumn={currentTitle === "Events Assigned to Me" ? false : (currentTitle === "My Individual Tasks")}
+              emptyStateMessage={`No ${currentTitle.toLowerCase()} found`}
+            />
+          </div>
+        )}
 
-          {/* Active Events */}
-          {activeComponent === "activeEvents" && (
-            <div className="active-events">
-              <ActiveEvents
-                events={(activeEventsData || []).slice(0, 5)}
-                title="Active Events"
-                onEventClick={handleEventClick}
-                loading={loadingActiveEvents}
-                error={errorActiveEvents}
-                emptyStateMessage="No active events found"
-              />
-            </div>
-          )}
+        {/* Active Events */}
+        {activeComponent === "activeEvents" && (
+          <div className="active-events">
+            <ActiveEvents
+              events={(activeEventsData || []).slice(0, 5)}
+              title="Active Events"
+              onEventClick={handleEventClick}
+              loading={loadingActiveEvents}
+              error={errorActiveEvents}
+              emptyStateMessage="No active events found"
+            />
+          </div>
+        )}
 
-          {/* Events Assigned to Me */}
-          {activeComponent === "assignedToMe" && (
-            <div className="event-assign-to-me">
-              <EventAssignToMe
-                events={(eventAssignToMeData || []).slice(0, 5)}
-                title="Events Assigned to Me"
-                onEventClick={handleEventClick}
-                loading={loadingAssignToMe}
-                error={errorAssignToMe}
-                emptyStateMessage="No events assigned to you"
-              />
-            </div>
-          )}
-        </div>
+        {/* Events Assigned to Me */}
+        {activeComponent === "assignedToMe" && (
+          <div className="event-assign-to-me">
+            <EventAssignToMe
+              events={(eventAssignToMeData || []).slice(0, 5)}
+              title="Events Assigned to Me"
+              onEventClick={handleEventClick}
+              loading={loadingAssignToMe}
+              error={errorAssignToMe}
+              emptyStateMessage="No events assigned to you"
+            />
+          </div>
+        )}
 
         {/* Events Campaign Section */}
         <div className="events-campaign">
