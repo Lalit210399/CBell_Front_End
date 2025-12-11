@@ -1124,8 +1124,11 @@ const TaskDetailPage = () => {
       file.status === 'Approved' || file.status === 'Published' || file.isApproved
     ) || [];
 
+    console.log('=== PUBLISH FLOW DEBUG ===');
     console.log('handlePublish - fileData:', fileData);
+    console.log('handlePublish - fileData.uploadedFiles:', fileData.uploadedFiles);
     console.log('handlePublish - eligibleFiles:', eligibleFiles);
+    console.log('handlePublish - eligibleFiles count:', eligibleFiles.length);
 
     if (eligibleFiles.length === 0) {
       addMessage({
@@ -1138,15 +1141,22 @@ const TaskDetailPage = () => {
 
     // Use the first eligible file
     const file = eligibleFiles[0];
-    console.log('handlePublish - selected file:', file);
+    console.log('handlePublish - selected file (RAW):', file);
+    console.log('handlePublish - selected file contentType:', file.contentType);
+    console.log('handlePublish - selected file document:', file.document);
+    console.log('handlePublish - selected file documentId:', file.documentId);
     
     const fileDescription = file.description || file.name || '';
     const docId = file.documentId;
+    
+    const fileDetailToPass = { ...file, fullTask: taskData };
+    console.log('handlePublish - fileDetailToPass:', fileDetailToPass);
 
     setDescription(fileDescription);
     setDocumentId(docId);
-    setFileDetail({ ...file, fullTask: taskData });
+    setFileDetail(fileDetailToPass);
     setShowShareModal(true);
+    console.log('=== END PUBLISH FLOW DEBUG ===');
   };
 
   // Handle platform publish from FileShareModel

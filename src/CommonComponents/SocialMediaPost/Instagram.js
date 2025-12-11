@@ -11,13 +11,19 @@ const SocialMediaUploader = ({
   onSuccess,
   onPlatformPublish, // 🔐 API call function from parent (Publish.js)
   platform: forcedPlatform = null, // 🔐 From FileShareModel
+  documentId: propDocumentId = null, // 🔐 documentId passed from parent
 }) => {
   const fileName = fileDetail?.name || '';
-  const documentId = fileDetail?.url ? fileDetail.url.split('/').pop() : defaultImageUrl || '';
+  // Use documentId from props first, then from fileDetail, then try to extract from URL
+  const documentId = propDocumentId || fileDetail?.documentId || (fileDetail?.url ? fileDetail.url.split('/').pop() : defaultImageUrl || '');
   const [caption, setCaption] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [platform, setPlatform] = useState(forcedPlatform || 'instagram');
+  
+  console.log('SocialMediaUploader - documentId:', documentId);
+  console.log('SocialMediaUploader - propDocumentId:', propDocumentId);
+  console.log('SocialMediaUploader - fileDetail.documentId:', fileDetail?.documentId);
 
   useEffect(() => {
     if (open) {
