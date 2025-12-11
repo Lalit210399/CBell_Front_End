@@ -121,20 +121,34 @@ const TasksFiles = ({
               uploadDate: doc.uploadDate, // Add uploadDate field
               size: doc.fileSize || doc.size, // Add file size field
               userInfo: doc.userInfo, // Add userInfo field with roles and fullName
-              isApproved: doc.status === 'Approved' // Calculate isApproved
+              isApproved: doc.status === 'Approved' || doc.status === 'Published', // Include both Approved and Published files
+              contentType: doc.contentType, // Add contentType for platform detection
+              document: {
+                contentType: doc.contentType,
+                type: doc.contentType,
+                description: doc.description
+              }
             };
           })
         );
 
-        // Automatically select approved files
-        const approvedFiles = filesWithPreview.filter(file => file.isApproved);
-        if (approvedFiles.length > 0 && onFileSelect) {
-          approvedFiles.forEach(file => {
+        // Automatically select approved and published files
+        const eligibleFiles = filesWithPreview.filter(file => file.isApproved);
+        if (eligibleFiles.length > 0 && onFileSelect) {
+          eligibleFiles.forEach(file => {
             onFileSelect(file, true);
           });
         }
 
         setFetchedFiles(filesWithPreview);
+        
+        // Notify parent component with the fetched files
+        if (onFilesChange) {
+          onFilesChange({
+            uploadedFiles: filesWithPreview,
+            links: []
+          });
+        }
       } catch (error) {
         console.error("Error fetching task documents:", error);
       } finally {
@@ -146,7 +160,7 @@ const TasksFiles = ({
       hasFetchedRef.current = true;
       fetchDocuments();
     }
-  }, [taskId, onFileSelect, files]); // Include files to listen for refresh triggers
+  }, [taskId, onFileSelect, files, onFilesChange]); // Include files to listen for refresh triggers
 
   // Notify parent component when work submission files change
   useEffect(() => {

@@ -468,6 +468,60 @@
     transform: translateY(1px);
 }
 
+/* Publish Button */
+.edit-top-btn-publish {
+    background: var(--primary);
+    color: var(--white);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid var(--primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.edit-top-btn-publish:hover {
+    background: var(--primaryDark);
+    border-color: var(--primaryDark);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.edit-top-btn-publish:active {
+    transform: translateY(0);
+}
+
+/* View Links Button */
+.edit-top-btn-view-links {
+    background: var(--white);
+    color: var(--primary);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid var(--primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.edit-top-btn-view-links:hover {
+    background: var(--primary);
+    color: var(--white);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.edit-top-btn-view-links:active {
+    transform: translateY(0);
+}
+
 /* Status Change Buttons */
 .edit-top-status-change-buttons {
     display: flex;

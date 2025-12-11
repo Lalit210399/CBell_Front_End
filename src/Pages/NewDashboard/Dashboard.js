@@ -588,6 +588,19 @@ const Dashboard = () => {
       textColor: "rgba(88, 28, 135, 1)", // Purple
     },
     {
+      icon: <UserCheck size={24} color="rgba(99, 102, 241, 1)" />,
+      count: loadingSummary
+        ? "..."
+        : errorSummary
+        ? "!" :summaryData?.standaloneTaskCount ?? 0,
+      title: "My Individual Tasks",
+      subtitle: "Your Personal Task List",
+      bgcolor: "rgba(224, 231, 255, 0.2)",
+      iconBgColor: "rgba(99, 102, 241, 0.2)",
+      borderColor: "rgba(99, 102, 241, 1)",
+      textColor: "rgba(49, 46, 129, 1)", // Indigo
+    },
+    {
       icon: <ClockIcon size={24} color="#F59F0A" />,
       count: loadingSummary
         ? "..."
@@ -691,19 +704,6 @@ const Dashboard = () => {
       borderColor: "rgba(168, 85, 247, 1)",
       // borderColor: "#E4E6E9",
       textColor: "rgba(88, 28, 135, 1)", // Purple
-    },
-    {
-      icon: <UserCheck size={24} color="rgba(99, 102, 241, 1)" />,
-      count: loadingSummary
-        ? "..."
-        : errorSummary
-        ? "!" :summaryData?.standaloneTasks ?? 0,
-      title: "My Individual Tasks",
-      subtitle: "Your Personal Task List",
-      bgcolor: "rgba(224, 231, 255, 0.2)",
-      iconBgColor: "rgba(99, 102, 241, 0.2)",
-      borderColor: "rgba(99, 102, 241, 1)",
-      textColor: "rgba(49, 46, 129, 1)", // Indigo
     },
   ];
 

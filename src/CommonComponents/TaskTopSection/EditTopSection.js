@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { ArrowLeft, Save, Users, AlertCircle } from "lucide-react";
+import { ArrowLeft, Save, Users, AlertCircle, Send, ExternalLink } from "lucide-react";
 import AvatarList from "../Avatar/index";
 import UserDropdown from "../UserDropdown";
 import { useUser } from "../../Context/UserContext";
@@ -51,7 +51,9 @@ const TopSection = ({
   taskId = null,
   hasWorkSubmissionFiles = false,
   onTabChange, // Add callback to change tabs
-  eventDate = null // Add event date prop
+  eventDate = null, // Add event date prop
+  onPublish, // Callback for publish button
+  onViewLinks // Callback for view links button
 }) => {
   const { user } = useUser();
   const { taskStatuses } = useTaskStatus();
@@ -365,6 +367,29 @@ const TopSection = ({
 
         <div className="edit-top-right-section">
           <div className="edit-top-save-button-section" style={{ display: "flex", gap: "8px" }}>
+            {/* Publish and View Links buttons - visible only when status is Approved or Published and user is not a Designer */}
+            {!isDesigner && (status?.value === "Approved" || status?.value === "Published") && (
+              <>
+                <button 
+                  className="edit-top-btn-publish" 
+                  onClick={onPublish}
+                  title="Publish Document"
+                >
+                  <Send size={16} />
+                  Publish
+                </button>
+                
+                <button 
+                  className="edit-top-btn-view-links" 
+                  onClick={onViewLinks}
+                  title="View Links"
+                >
+                  <ExternalLink size={16} />
+                  View Links
+                </button>
+              </>
+            )}
+
             {/* Hide all buttons (Save, Under Review, Approved) when status is Approved or Published */}
             {status?.value !== "Approved" && status?.value !== "Published" && (
               <>

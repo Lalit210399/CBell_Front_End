@@ -51,8 +51,12 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [platform, setPlatform] = useState(null);
 
-  // Get file type for easier access
-  const fileType = fileDetail?.document?.contentType || fileDetail?.document?.type || fileDetail?.type;
+  // Get file type for easier access - check all possible locations
+  const fileType = fileDetail?.contentType || fileDetail?.document?.contentType || fileDetail?.document?.type || fileDetail?.type;
+
+  // Debug logging
+  console.log('FileShareModel - fileDetail:', fileDetail);
+  console.log('FileShareModel - fileType:', fileType);
 
   // Handle click outside to close modal
   useEffect(() => {
