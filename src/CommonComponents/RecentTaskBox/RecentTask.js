@@ -6,7 +6,7 @@ import { ListTodo } from "lucide-react";
 import { useTaskStatus } from "../../Hooks/useTaskStatus";
 import "./RecentTask.css";
 
-const RecentTasks = ({ tasks, onTaskClick, onEventClick, title = "Tasks", filter, onFilterChange, showDropdown = true, loading = false, disableClientFiltering = false, hideAssignedToColumn = false, showOrganizationColumn = false, showAssignedByColumn = false }) => {
+const RecentTasks = ({ tasks, onTaskClick, onEventClick, title = "Tasks", filter, onFilterChange, showDropdown = true, loading = false, disableClientFiltering = false, hideAssignedToColumn = false, showOrganizationColumn = false, showAssignedByColumn = false, hideEventNameColumn = false }) => {
   const { getActiveTaskStatuses } = useTaskStatus();
 
   // Generate filter options from task status context
@@ -162,7 +162,7 @@ const RecentTasks = ({ tasks, onTaskClick, onEventClick, title = "Tasks", filter
         columns={[
           { key: "status", label: "Status" },
           { key: "taskName", label: "Task Name" },
-          { key: "eventName", label: "Event Name" },
+          ...(hideEventNameColumn ? [] : [{ key: "eventName", label: "Event Name" }]),
           ...(showOrganizationColumn ? [{ key: "organizationName", label: "Organization Name" }] : []),
           ...(hideAssignedToColumn ? [] : [{ key: "assignedTo", label: "Assigned To" }]),
           ...(showAssignedByColumn ? [{ key: "assignedBy", label: "Assigned By" }] : []),
