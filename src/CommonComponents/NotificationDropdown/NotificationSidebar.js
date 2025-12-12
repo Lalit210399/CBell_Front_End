@@ -14,6 +14,15 @@ const NotificationsSidebar = ({ isOpen, onClose }) => {
   } = useNotification();
   
   const navigate = useNavigate();
+  const [expandedNotifications, setExpandedNotifications] = React.useState({});
+
+  const toggleExpanded = (e, notificationId) => {
+    e.stopPropagation();
+    setExpandedNotifications(prev => ({
+      ...prev,
+      [notificationId]: !prev[notificationId]
+    }));
+  };
 
   const handleNotificationNavigation = (notification) => {
     if (notification.category === 'event' && notification.data?.eventId) {
@@ -148,7 +157,17 @@ const NotificationsSidebar = ({ isOpen, onClose }) => {
                     </div>
                     <div className="notification-content">
                       <h4 className="notification-title" title={notification.title}>{notification.title}</h4>
-                      <p className="notification-body" title={notification.body}>{notification.body}</p>
+                      <p className={`notification-body ${expandedNotifications[notification.id] ? 'expanded' : ''}`} title={notification.body}>
+                        {notification.body}
+                      </p>
+                      {notification.body && notification.body.length > 60 && (
+                        <button
+                          className="show-more-btn"
+                          onClick={(e) => toggleExpanded(e, notification.id)}
+                        >
+                          {expandedNotifications[notification.id] ? 'Show less' : 'Show more'}
+                        </button>
+                      )}
                       <div className="notification-meta">
                         <span className="notification-time">
                           {formatDate(notification.createdAt)}

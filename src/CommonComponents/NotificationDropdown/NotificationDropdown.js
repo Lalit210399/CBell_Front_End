@@ -17,6 +17,7 @@ const NotificationDropdown = ({ onViewAllNotifications }) => {
   } = useNotification();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [expandedNotifications, setExpandedNotifications] = useState({});
   const dropdownRef = useRef(null);
 
   // Close dropdown on outside click
@@ -67,6 +68,14 @@ const NotificationDropdown = ({ onViewAllNotifications }) => {
   const handleMarkAllAsRead = async (e) => {
     e.stopPropagation();
     await markAllAsRead();
+  };
+
+  const toggleExpanded = (e, notificationId) => {
+    e.stopPropagation();
+    setExpandedNotifications(prev => ({
+      ...prev,
+      [notificationId]: !prev[notificationId]
+    }));
   };
 
   const formatDate = (dateString) => {
@@ -177,7 +186,17 @@ const NotificationDropdown = ({ onViewAllNotifications }) => {
                       </div>
                       <div className="notification-details">
                         <h4 className="notification-title">{notification.title}</h4>
-                        <p className="notification-body">{notification.body}</p>
+                        <p className={`notification-body ${expandedNotifications[notification.id] ? 'expanded' : ''}`}>
+                          {notification.body}
+                        </p>
+                        {notification.body && notification.body.length > 70 && (
+                          <button
+                            className="show-more-btn"
+                            onClick={(e) => toggleExpanded(e, notification.id)}
+                          >
+                            {expandedNotifications[notification.id] ? 'Show less' : 'Show more'}
+                          </button>
+                        )}
                         <div className="notification-meta">
                           <span className="notification-time">
                             {formatDate(notification.createdAt)}
