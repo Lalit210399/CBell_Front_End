@@ -773,14 +773,14 @@ const Dashboard = () => {
     // Handle Task tiles - navigate to tasks list page
     const filterMap = {
       "Total Tasks": "all",
-      "New Tasks": "New",
-      "Active Tasks": "Active",
-      "Under Approval Tasks": "Under Approval",
-      "Approved Tasks": "Approved",
-      "Published Tasks": "Published",
-      "Tasks Due Next 7 Days": "Due Soon",
-      "Overdue Tasks": "Overdue",
-      "My Individual Tasks": "Assigned to Me",
+      "New Tasks": "new",
+      "Active Tasks": "active",
+      "Under Approval Tasks": "under_review",
+      "Approved Tasks": "approved",
+      "Published Tasks": "published",
+      "Tasks Due Next 7 Days": "due_soon",
+      "Overdue Tasks": "overdue",
+      "My Individual Tasks": "assigned_to_me",
     };
 
     const filter = filterMap[tile.title] || "all";

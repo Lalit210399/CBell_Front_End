@@ -144,29 +144,79 @@
   }
 }
 
-/* Designer Summary Tiles - No scroll functionality */
+/* Designer Summary Tiles - mirror Dashboard sizing and scroll behaviour */
 .designer-summary-tiles {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
   gap: 20px;
+  overflow-x: auto;
+  /* enable horizontal scroll and snapping like Dashboard */
+  scroll-snap-type: x mandatory;
   padding: 10px 0;
+  flex: 1;
+  scroll-behavior: smooth;
 }
 
-/* Responsive grid for smaller screens */
-@media (max-width: 1200px) {
-  .designer-summary-tiles {
-    grid-template-columns: repeat(3, 1fr);
+.designer-summary-tiles::-webkit-scrollbar {
+  height: 6px;
+}
+
+.designer-summary-tiles::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+/* Make each tile take the same flex-basis as Dashboard (5-per-row) */
+.designer-summary-tiles > * {
+  flex: 0 0 calc(20% - 16px);
+  scroll-snap-align: start;
+}
+
+/* Responsive fallback: allow wrapping on very small screens */
+@media (max-width: 700px) {
+  .designer-summary-tiles > * {
+    flex: 0 0 calc(50% - 16px);
   }
 }
 
-@media (max-width: 900px) {
-  .designer-summary-tiles {
-    grid-template-columns: repeat(2, 1fr);
+@media (max-width: 420px) {
+  .designer-summary-tiles > * {
+    flex: 0 0 100%;
   }
 }
 
-@media (max-width: 500px) {
-  .designer-summary-tiles {
-    grid-template-columns: 1fr;
-  }
+/* Ensure Tile component fills its wrapper and matches Dashboard sizing */
+.designer-summary-tiles > * .tile-container {
+  width: 100%;
+  /*height: 100px;*/ /* same as Tiles.css */
+  padding: 10px 14px 10px 14px; /* match Tiles.css */
+  box-sizing: border-box;
+}
+
+/* When a tile is selected, Dashboard moves it up slightly; keep same behaviour */
+.designer-summary-tiles > * .tile-container[role="button"]:focus,
+.designer-summary-tiles > * .tile-container:focus {
+  outline: none;
+}
+
+/* Ensure typography and icon sizing match Tiles.css (Dashboard) */
+.designer-summary-tiles .tile-title {
+  font-size: 14px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.designer-summary-tiles .tile-subtitle {
+  font-size: 12px;
+  margin: 2px 0 0 0;
+}
+
+.designer-summary-tiles .tile-count {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.designer-summary-tiles .tile-icon {
+  padding: 12px;
+  font-size: 20px;
+  border-radius: 10px;
 }

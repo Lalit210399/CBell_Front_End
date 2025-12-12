@@ -67,22 +67,37 @@ const TaskList = () => {
       throw new Error("No organization selected");
     }
 
-    // Map filter to API parameter
+    // Map human-friendly or legacy filter labels to canonical API parameter
     const filterMap = {
       "all": "all",
       "Total Tasks": "all",
       "Tasks Assigned to Me": "assigned_to_me",
+      "Assigned to Me": "assigned_to_me",
+      "My Individual Tasks": "assigned_to_me",
       "Tasks Under Approval": "under_review",
-      "Approved Tasks": "approved",
-      "New": "new",
-      "Active": "active",
       "Under Approval": "under_review",
+      "Approved Tasks": "approved",
       "Approved": "approved",
+      "New": "new",
+      "New Tasks": "new",
+      "Active": "active",
+      "Active Tasks": "active",
       "Published": "published",
+      "Published Tasks": "published",
       "Cancelled": "cancelled",
+      "Tasks Due Next 7 Days": "due_soon",
+      "Due Soon": "due_soon",
+      "Overdue Tasks": "overdue",
+      "Overdue": "overdue",
+      // Accept canonical values as-is
+      "overdue": "overdue",
+      "due_soon": "due_soon",
+      "assigned_to_me": "assigned_to_me",
     };
 
-    const apiFilter = filterMap[initialFilter] || "all";
+    // Prefer mapped value, else accept canonical incoming filter, otherwise default to 'all'
+    const canonicalCandidates = ["all", "overdue", "due_soon", "assigned_to_me", "active", "new", "under_review", "approved", "published", "cancelled"];
+    const apiFilter = filterMap[initialFilter] || (canonicalCandidates.includes(initialFilter) ? initialFilter : "all");
     
     // Prepare headers
     const headers = {
@@ -103,6 +118,7 @@ const TaskList = () => {
       "Tasks Assigned to Me",
       "Assigned to Me",
       "My Individual Tasks",
+      "assigned_to_me",
       "assigned_to_me",
     ];
 

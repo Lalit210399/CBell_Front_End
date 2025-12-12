@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../Context/UserContext";
@@ -17,6 +17,8 @@ import {
   Clock as ClockIcon,
   CheckCircle as CheckCircleIcon,
   Calendar,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import "./DesignerDashboard.css";
 
@@ -499,6 +501,16 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
       textColor: "rgba(30, 58, 138, 1)", // Blue
     },
     {
+      icon: <UserCheck size={24} color="rgba(99, 102, 241, 1)" />,
+      count: loadingSummary ? "..." : errorSummary ? "!" : summaryData?.standaloneTaskCount ?? 0,
+      title: "My Individual Tasks",
+      subtitle: "Your Personal Task List",
+      bgcolor: "rgba(224, 231, 255, 0.2)",
+      iconBgColor: "rgba(99, 102, 241, 0.2)",
+      borderColor: "rgba(99, 102, 241, 1)",
+      textColor: "rgba(49, 46, 129, 1)", // Indigo
+    },
+    {
       icon: <ClockIcon size={24} color="rgba(249, 115, 22, 1)" />,
       count: loadingSummary ? "..." : errorSummary ? "!" : summaryData?.underApprovalTasks ?? 0,
       title: "Tasks Under Approval",
@@ -520,6 +532,21 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
     },
   ];
 
+  const tilesRef = useRef(null);
+
+  const scrollTiles = (direction) => {
+    if (!tilesRef.current) return;
+    const container = tilesRef.current;
+    const scrollAmount = container.offsetWidth; // scroll one viewport width
+    const newScrollLeft = direction === "left"
+      ? Math.max(0, container.scrollLeft - scrollAmount)
+      : Math.min(container.scrollWidth - container.offsetWidth, container.scrollLeft + scrollAmount);
+    container.scrollTo({
+      left: newScrollLeft,
+      behavior: "smooth",
+    });
+  };
+
   // Handle tile click
   const handleTileClick = useCallback((tile) => {
   // If user clicks the same tile again — do nothing
@@ -527,7 +554,7 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
 
   setCurrentTitle(tile.title);
 
-  if (tile.title === "Tasks Assigned to Me") {
+  if (tile.title === "Tasks Assigned to Me" || tile.title === "My Individual Tasks") {
     setActiveComponent("recent");
     setFilter("All");
     resetMyTasks(); // only reset when switching
@@ -554,6 +581,7 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
     const filterMap = {
       "Total Tasks": "all",
       "Tasks Assigned to Me": "assigned_to_me",
+      "My Individual Tasks": "assigned_to_me",
       "Tasks Under Approval": "under_review",
       "Approved Tasks": "approved",
     };
@@ -572,7 +600,7 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
   useEffect(() => {
     if (!orgIdReady) return;
     
-    if (currentTitle === "Tasks Assigned to Me") {
+    if (currentTitle === "Tasks Assigned to Me" || currentTitle === "My Individual Tasks") {
       // Clear and fetch my tasks
       resetMyTasks();
       executeMyTasks();
@@ -639,17 +667,53 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
         </div>
       </div>
 
-      {/* Summary Tiles - No scroll functionality */}
-      <div className="designer-summary-tiles">
-        {summaryTiles.map((tile, idx) => (
-          <Tile
-            key={idx}
-            {...tile}
-            onClick={() => handleTileClick(tile)}
-            isSelected={tile.title === currentTitle}
-            onMoreClick={() => handleMoreClick(tile)}
-          />
-        ))}
+      {/* Summary Tiles */}
+      <div className="tiles-container">
+        <button className="scroll-btn left" onClick={() => scrollTiles("left")}>
+          <ChevronLeft size={24} />
+        </button>
+
+        <div
+          className="designer-summary-tiles"
+          ref={tilesRef}
+          style={{
+            display: "flex",
+            gap: 20,
+            overflowX: "auto",
+            scrollSnapType: "x mandatory",
+            padding: "10px 0",
+            flex: 1,
+            scrollBehavior: "smooth",
+            // hide default scrollbar on modern browsers (still shows on some)
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+          }}
+        >
+          {summaryTiles.map((tile, idx) => (
+            <div
+              key={idx}
+              style={{
+                flex: "0 0 calc(20% - 16px)",
+                display: "flex",
+                scrollSnapAlign: "start",
+              }}
+            >
+              <Tile
+                {...tile}
+                onClick={() => handleTileClick(tile)}
+                isSelected={tile.title === currentTitle}
+                onMoreClick={() => handleMoreClick(tile)}
+              />
+            </div>
+          ))}
+        </div>
+
+        <button
+          className="scroll-btn right"
+          onClick={() => scrollTiles("right")}
+        >
+          <ChevronRight size={24} />
+        </button>
       </div>
 
       {/* Bottom Section */}
@@ -672,7 +736,7 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
                 ].includes(currentTitle)}
                 hideAssignedToColumn={currentTitle === "New Tasks"}
                 disableClientFiltering={true}
-                showOrganizationColumn={currentTitle === "Tasks Assigned to Me"}
+                showOrganizationColumn={currentTitle === "Tasks Assigned to Me" || currentTitle === "My Individual Tasks"}
                 showAssignedByColumn={true}
               />
             </div>
