@@ -3,7 +3,7 @@
     height: auto;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
     border-radius: var(--radius-md);
     padding: 15px 10px;
     border: 1px solid var(--colourBorder);
@@ -379,6 +379,47 @@
     color: #ea580c;
 }
 
+/* Event Date Section */
+.edit-top-event-date-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1;
+    padding: 0 8px;
+}
+
+.edit-top-event-date-section {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 6px 12px;
+}
+
+.edit-top-event-date-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    letter-spacing: 0.3px;
+}
+
+.edit-top-event-date-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+    white-space: nowrap;
+}
+
+.edit-top-event-date-time {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    white-space: nowrap;
+}
+
 .edit-top-status-badge.edit-top-status-approved {
     background-color: #dcfce7;
     color: #16a34a;
@@ -425,6 +466,60 @@
 
 .edit-top-btn-save:active {
     transform: translateY(1px);
+}
+
+/* Publish Button */
+.edit-top-btn-publish {
+    background: var(--primary);
+    color: var(--white);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid var(--primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.edit-top-btn-publish:hover {
+    background: var(--primaryDark);
+    border-color: var(--primaryDark);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.edit-top-btn-publish:active {
+    transform: translateY(0);
+}
+
+/* View Links Button */
+.edit-top-btn-view-links {
+    background: var(--white);
+    color: var(--primary);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid var(--primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.edit-top-btn-view-links:hover {
+    background: var(--primary);
+    color: var(--white);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.edit-top-btn-view-links:active {
+    transform: translateY(0);
 }
 
 /* Status Change Buttons */

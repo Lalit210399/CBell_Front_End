@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Avatar from './Avatar';
 import ReplyBox from './ReplyBox';
 import Reactions from './Reactions';
+import { getMessageTypeConfig, isSystemMessage } from './messageTypeConfig';
 
 const DocumentPreview = ({ docId, idx, total }) => {
   const url = `/apis/document/view/${docId}`;
@@ -126,6 +127,10 @@ const MessageItem = ({ message, currentUser, onReply, onReaction, isThread, onli
     setShowReplyBox(false);
   };
 
+  // Get message type configuration
+  const messageTypeConfig = getMessageTypeConfig(message.messageType);
+  const isSystemMsg = isSystemMessage(message.messageType);
+
   // determine online status: check by id first, fallback to name
   const userId = message.user?.id ? String(message.user.id) : null;
   const userName = message.user?.name ? String(message.user.name) : null;
@@ -146,19 +151,37 @@ const MessageItem = ({ message, currentUser, onReply, onReaction, isThread, onli
     : [];
 
   return (
-    <div className={`message-item ${isThread ? 'thread-starter' : ''} ${isOwnMessage ? 'own' : 'other'}`} style={{ position: 'relative' }}>
+    <div className={`message-item ${isThread ? 'thread-starter' : ''} ${isOwnMessage ? 'own' : 'other'} ${isSystemMsg ? 'system-message' : ''}`} style={{ position: 'relative' }}>
       
       <div className="message-content">
         <Avatar user={message.user} isOnline={isOnline} />
         <div className="message-body">
-          <div className={`message-bubble ${isOwnMessage ? 'bubble-own' : 'bubble-other'}`}>
+          <div 
+            className={`message-bubble ${isOwnMessage ? 'bubble-own' : 'bubble-other'} ${messageTypeConfig.className}`}
+            style={{
+              ...(messageTypeConfig.backgroundColor && { backgroundColor: messageTypeConfig.backgroundColor }),
+              ...(messageTypeConfig.borderColor && { borderColor: messageTypeConfig.borderColor }),
+            }}
+          >
             <div className="message-header">
+              {messageTypeConfig.showIcon && messageTypeConfig.icon && (
+                <span className="message-type-icon" aria-label={messageTypeConfig.label}>
+                  {messageTypeConfig.icon}
+                </span>
+              )}
               <span className="username">{message.user.name}</span>
               <span className="timestamp">
                 {new Date(message.createdOn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
-            <div className="message-text">{message.conversationText}</div>
+            <div 
+              className="message-text"
+              style={{
+                ...(messageTypeConfig.textColor && { color: messageTypeConfig.textColor }),
+              }}
+            >
+              {message.conversationText}
+            </div>
             {/* Render document links and previews if present */}
           {cleanedDocumentIds && cleanedDocumentIds.length > 0 && (
             <div style={{ margin: '8px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>

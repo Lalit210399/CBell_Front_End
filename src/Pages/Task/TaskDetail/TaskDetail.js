@@ -365,9 +365,6 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
           {errors?.specification && (
             <div className="field-error">{errors.specification}</div>
           )}
-          {eventDateProp && (
-            <div className="event-date-hint">Event date: {new Date(eventDateProp).toLocaleString()}</div>
-          )}
         </div>
       </div>
 

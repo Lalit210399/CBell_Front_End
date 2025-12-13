@@ -4,110 +4,74 @@ import "./Events.css";
 import Table from "../../CommonComponents/Table/Table";
 import AvatarList from "../../CommonComponents/Avatar/AvatarList";
 import CustomDropdown from "../../CommonComponents/Dropdown/CustomDropdown";
+import ConfirmationModal from "../../CommonComponents/ConfirmationModal";
+import SearchBar from "../../CommonComponents/SearchBar";
 import { useMessages } from "../../Context/MessageContext";
 import { useUser } from "../../Context/UserContext";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import useApi from "../../Hooks/useApi";
-import { Filter, X } from "lucide-react";
+import { useDebouncedCallback } from "../../Hooks/useDebounce";
+import { formatDateTime, toCamelCase, toTitleCase, generateInitials } from "../../CommonUtils/formatters";
+import { 
+  INITIAL_FILTER_STATE, 
+  DATE_RANGE_OPTIONS, 
+  PERMISSION_ACTIONS, 
+  PERMISSION_PATHS,
+  EVENT_STATUS,
+  SEARCH_DEBOUNCE_DELAY,
+  EMPTY_FIELD_TEXT 
+} from "../../CommonUtils/eventConstants";
+import { X, Trash2 } from "lucide-react";
 
 const EventTable = () => {
-  const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    eventName: "",
-    eventType: "",
-    status: "",
-    dateRange: "",
-    assignedUser: "",
-    createdBy: ""
-  });
+  const [filters, setFilters] = useState(INITIAL_FILTER_STATE);
   const [availableTypes, setAvailableTypes] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Delete confirmation modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState(null);
+  
   const navigate = useNavigate();
   const { addMessage } = useMessages();
   const { user, permissions: userPermissions, selectedOrganizationId, isViewingOwnOrganization, scopeChangeTrigger, loading: userLoading } = useUser();
 
 
-  const permissions = {
+  // Helper to check permission
+  const hasPermission = useCallback((action) => {
+    const { MODULE, FEATURE } = PERMISSION_PATHS.EVENTS;
+    return userPermissions?.permissions?.[MODULE]?.[FEATURE]?.includes(action) ?? false;
+  }, [userPermissions]);
+
+  const permissions = useMemo(() => ({
     // New Event: Only check organization scope (not canCRUD)
-    canCreate: (userPermissions?.permissions?.Events?.["Event Management"]?.includes("Create") ?? false) && isViewingOwnOrganization(),
-    canRead: userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false,
+    canCreate: hasPermission(PERMISSION_ACTIONS.CREATE) && isViewingOwnOrganization(),
+    canRead: hasPermission(PERMISSION_ACTIONS.READ),
     // Edit/Update/Delete/Archive/Duplicate: Check user permissions + organization scope (canCRUD checked per event)
-    canUpdate: (userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false) && isViewingOwnOrganization(),
-    canDelete: (userPermissions?.permissions?.Events?.["Event Management"]?.includes("Delete") ?? false) && isViewingOwnOrganization(),
-    canArchive: (userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false) && isViewingOwnOrganization(),
-    canDuplicate: (userPermissions?.permissions?.Events?.["Event Management"]?.includes("Update") ?? false) && isViewingOwnOrganization(),
-  };
-
-  const formatDateTime = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    // const hours = String(date.getHours()).padStart(2, "0");
-    // const minutes = String(date.getMinutes()).padStart(2, "0");
-    // return `${day}/${month}/${year} ${hours}:${minutes}`;
-    return `${day}/${month}/${year}`;
-  };
-
-  // Utility function to convert text to Camel Case
-  const toCamelCase = (text) => {
-    if (!text) return "";
-    return text
-      .toLowerCase()
-      .split(/[\s_-]+/)
-      .map((word, index) => 
-        index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1)
-      )
-      .join("");
-  };
-
-  // Utility function to convert text to Title Case for display
-  const toTitleCase = (text) => {
-    if (!text) return "";
-    return text
-      .replace(/([A-Z])/g, ' $1') // Add space before capital letters
-      .replace(/^./, str => str.toUpperCase()) // Capitalize first letter
-      .trim() // Remove leading/trailing spaces
-      .split(/[\s_-]+/)
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(" ");
-  };
-
-  // Filter options
-  // const statusOptions = [
-  //   { label: "All Status", value: "" },
-  //   { label: "Upcoming", value: "upcoming" },
-  //   { label: "Ongoing", value: "ongoing" },
-  //   { label: "Completed", value: "completed" },
-  //   { label: "Cancelled", value: "cancelled" }
-  // ];
-
-  const dateRangeOptions = [
-    { label: "All Dates", value: "" },
-    { label: "Today", value: "Today" },
-    { label: "This Week", value: "This Week" },
-    { label: "This Month", value: "This Month" },
-    { label: "Next 30 Days", value: "Next 30 Days" },
-    // { label: "Past Events", value: "past Events" }
-  ];
+    canUpdate: hasPermission(PERMISSION_ACTIONS.UPDATE) && isViewingOwnOrganization(),
+    canDelete: hasPermission(PERMISSION_ACTIONS.DELETE) && isViewingOwnOrganization(),
+    canArchive: hasPermission(PERMISSION_ACTIONS.UPDATE) && isViewingOwnOrganization(),
+    canDuplicate: hasPermission(PERMISSION_ACTIONS.UPDATE) && isViewingOwnOrganization(),
+  }), [hasPermission, isViewingOwnOrganization]);
 
   // Helper function to determine event status
   const getEventStatus = (eventDate) => {
-    if (!eventDate) return "unknown";
+    if (!eventDate) return EVENT_STATUS.UNKNOWN;
     const now = new Date();
     const event = new Date(eventDate);
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const eventDay = new Date(event.getFullYear(), event.getMonth(), event.getDate());
     
-    if (eventDay < today) return "completed";
-    if (eventDay.getTime() === today.getTime()) return "ongoing";
-    return "upcoming";
+    if (eventDay < today) return EVENT_STATUS.COMPLETED;
+    if (eventDay.getTime() === today.getTime()) return EVENT_STATUS.ONGOING;
+    return EVENT_STATUS.UPCOMING;
   };
 
   // Helper function to check if event matches date range filter
-  const matchesDateRange = (eventDate, dateRange) => {
+  // Wrapped in useCallback to maintain stable reference
+  const matchesDateRange = useCallback((eventDate, dateRange) => {
     if (!dateRange || !eventDate) return true;
     
     const now = new Date();
@@ -116,21 +80,28 @@ const EventTable = () => {
     switch (dateRange) {
       case "Today":
         return event.toDateString() === now.toDateString();
-      case "This Week":
-        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-        const endOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
+      case "This Week": {
+        // Create new date objects to avoid mutation
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
+        
+        const endOfWeek = new Date(now);
+        endOfWeek.setDate(now.getDate() + (6 - now.getDay()));
+        endOfWeek.setHours(23, 59, 59, 999);
+        
         return event >= startOfWeek && event <= endOfWeek;
+      }
       case "This Month":
         return event.getMonth() === now.getMonth() && event.getFullYear() === now.getFullYear();
-      case "Next 30 Days":
+      case "Next 30 Days": {
         const in30Days = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
         return event >= now && event <= in30Days;
-      // case "Past Events":
-      //   return event < now;
+      }
       default:
         return true;
     }
-  };
+  }, []);
 
   /** -------------------- API Function -------------------- **/
   const fetchEvents = useCallback(async () => {
@@ -189,16 +160,7 @@ const EventTable = () => {
           participantName = user.name;
         }
 
-        // Generate proper initials from the full name
-        const generateInitials = (name) => {
-          if (!name || name === "Unknown") return "?";
-          const words = name.trim().split(/\s+/);
-          if (words.length === 1) {
-            return words[0].charAt(0).toUpperCase();
-          }
-          return words.slice(0, 2).map(word => word.charAt(0).toUpperCase()).join('');
-        };
-
+        // Use imported generateInitials from formatters
         return {
           name: toTitleCase(participantName), // Use title case for display
           src: participantName,
@@ -258,20 +220,28 @@ const EventTable = () => {
   }, [executeFetchEvents, scopeChangeTrigger]);
 
   // Process events data and extract filter options
-  const originalEvents = useMemo(() => {
+  // Fixed: Removed setState calls from useMemo to avoid side effects
+  const { originalEvents, extractedTypes, extractedUsers } = useMemo(() => {
     if (!eventsData) {
-      return [];
+      return { originalEvents: [], extractedTypes: [], extractedUsers: [] };
     }
 
     // Extract unique types and users for filter options
     const uniqueTypes = [...new Set(eventsData.map(event => event.type).filter(type => type !== "N/A"))];
     const uniqueUsers = [...new Set(eventsData.map(event => event.createdBy).filter(user => user !== "Unknown"))];
     
-    setAvailableTypes(uniqueTypes.map(type => ({ label: toTitleCase(type), value: type })));
-    setAvailableUsers(uniqueUsers.map(user => ({ label: toTitleCase(user), value: user })));
-
-    return eventsData;
+    return {
+      originalEvents: eventsData,
+      extractedTypes: uniqueTypes.map(type => ({ label: toTitleCase(type), value: type })),
+      extractedUsers: uniqueUsers.map(user => ({ label: toTitleCase(user), value: user }))
+    };
   }, [eventsData]);
+
+  // Update available filter options when extracted data changes
+  useEffect(() => {
+    setAvailableTypes(extractedTypes);
+    setAvailableUsers(extractedUsers);
+  }, [extractedTypes, extractedUsers]);
 
   // Initialize filtered events when originalEvents changes
   useEffect(() => {
@@ -302,12 +272,19 @@ const EventTable = () => {
     setFilteredEvents(sorted);
   };
 
+  // Debounced search handler to avoid excessive filtering on every keystroke
+  const debouncedApplyFilters = useDebouncedCallback((filterValues) => {
+    applyFilters(filterValues);
+  }, SEARCH_DEBOUNCE_DELAY);
+
   const handleSearch = (query) => {
-    setFilters(prev => ({ ...prev, eventName: query }));
-    applyFilters({ ...filters, eventName: query });
+    setSearchQuery(query);
+    const newFilters = { ...filters, eventName: query };
+    setFilters(newFilters);
+    debouncedApplyFilters(newFilters);
   };
 
-  const applyFilters = (filterValues) => {
+  const applyFilters = useCallback((filterValues) => {
     let filtered = [...originalEvents];
 
     // Filter by event name
@@ -361,7 +338,7 @@ const EventTable = () => {
     }
 
     setFilteredEvents(filtered);
-  };
+  }, [originalEvents, matchesDateRange]);
 
   const handleFilterChange = (filterKey, value) => {
     const newFilters = { ...filters, [filterKey]: value };
@@ -370,15 +347,8 @@ const EventTable = () => {
   };
 
   const clearFilters = () => {
-    const clearedFilters = {
-      eventName: "",
-      eventType: "",
-      status: "",
-      dateRange: "",
-      assignedUser: "",
-      createdBy: ""
-    };
-    setFilters(clearedFilters);
+    setSearchQuery("");
+    setFilters(INITIAL_FILTER_STATE);
     setFilteredEvents(originalEvents);
   };
 
@@ -414,11 +384,27 @@ const EventTable = () => {
     loading: deleteLoading
   } = useApi(deleteEvent, [], false);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this event?")) return;
+  // Open delete confirmation modal
+  const handleDeleteClick = (event) => {
+    setEventToDelete(event);
+    setDeleteModalOpen(true);
+  };
+
+  // Close delete confirmation modal
+  const handleCloseDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setEventToDelete(null);
+  };
+
+  // Confirm delete action
+  const handleConfirmDelete = async () => {
+    if (!eventToDelete) return;
     
     try {
-      await executeDeleteEvent(id);
+      await executeDeleteEvent(eventToDelete.id);
+      
+      // Close modal
+      handleCloseDeleteModal();
       
       // Refresh the events list after successful deletion
       executeFetchEvents();
@@ -436,6 +422,9 @@ const EventTable = () => {
       });
     }
   };
+
+  // Get empty field text helper
+  const getEmptyText = (key) => EMPTY_FIELD_TEXT[key] || EMPTY_FIELD_TEXT.default;
 
   const columns = [
     { key: "name", label: "Event Name", skeletonWidth: "40%", skeletonHeight: "20px" },
@@ -463,99 +452,61 @@ const EventTable = () => {
         </div>
       </div>
 
-      <div className="events-controls">
-        <div className="search-container">
-          <div className="search-input-wrapper">
-            <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.35-4.35"></path>
-            </svg>
-            <input
-              type="text"
-              placeholder="Search events"
-              className="search-inputs"
-              onChange={(e) => handleSearch(e.target.value)}
+      <div className="events-toolbar">
+        <SearchBar
+          value={searchQuery}
+          onChange={(e) => handleSearch(e.target.value)}
+          placeholder="Search events..."
+          aria-label="Search events"
+          id="event-search-input"
+        />
+
+        <div className="filter-chips" role="group" aria-label="Event filters">
+          <CustomDropdown
+              options={[{ label: "All Types", value: "" }, ...availableTypes]}
+              defaultLabel={filters.eventType ? toTitleCase(filters.eventType) : "Event Type"}
+              onSelect={(option) => handleFilterChange("eventType", option.value)}
+              compact={true}
             />
-          </div>
-        </div>
-        <button 
-          className="filters-button"
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          <Filter className="filter-icon" size={16} />
-          Filters
+
+          <CustomDropdown
+              options={DATE_RANGE_OPTIONS}
+              defaultLabel={filters.dateRange ? toTitleCase(filters.dateRange) : "Date Range"}
+              onSelect={(option) => handleFilterChange("dateRange", option.value)}
+              compact={true}
+            />
+
+          <CustomDropdown
+              options={[{ label: "All Users", value: "" }, ...availableUsers]}
+              defaultLabel={filters.createdBy ? toTitleCase(filters.createdBy) : "Created By"}
+              onSelect={(option) => handleFilterChange("createdBy", option.value)}
+              compact={true}
+            />
+
+          <input
+              type="text"
+              id="assigned-user-filter"
+              placeholder="Assigned to..."
+              value={filters.assignedUser}
+              onChange={(e) => handleFilterChange("assignedUser", e.target.value)}
+              className="filter-chip-text-input"
+              aria-label="Filter by assigned user"
+            />
+
           {getActiveFiltersCount() > 0 && (
-            <span className="filter-count">{getActiveFiltersCount()}</span>
+            <button 
+              className="clear-filters-link"
+              onClick={clearFilters}
+              aria-label="Clear all filters"
+            >
+              <X size={14} aria-hidden="true" />
+              Clear
+            </button>
           )}
-        </button>
+        </div>
       </div>
 
-      {/* Filter Panel */}
-      {showFilters && (
-        <div className="filter-panel">
-          <div className="filter-panel-header">
-            <h3>Filter Events</h3>
-            <button 
-              className="clear-filters-btn"
-              onClick={clearFilters}
-            >
-              <X size={16} />
-              Clear All
-            </button>
-          </div>
-          
-          <div className="filter-grid">
-            <div className="filter-group">
-              <label>Event Type</label>
-              <CustomDropdown
-                options={[{ label: "All Types", value: "" }, ...availableTypes]}
-                defaultLabel={filters.eventType ? toTitleCase(filters.eventType) : "All Types"}
-                onSelect={(option) => handleFilterChange("eventType", option.value)}
-              />
-            </div>
-
-            {/* <div className="filter-group">
-              <label>Status</label>
-              <CustomDropdown
-                options={statusOptions}
-                defaultLabel={filters.status ? toTitleCase(filters.status) : "All Status"}
-                onSelect={(option) => handleFilterChange("status", option.value)}
-              />
-            </div> */}
-
-            <div className="filter-group">
-              <label>Date Range</label>
-              <CustomDropdown
-                options={dateRangeOptions}
-                defaultLabel={filters.dateRange ? toTitleCase(filters.dateRange) : "All Dates"}
-                onSelect={(option) => handleFilterChange("dateRange", option.value)}
-              />
-            </div>
-
-            <div className="filter-group">
-              <label>Created By</label>
-              <CustomDropdown
-                options={[{ label: "All Users", value: "" }, ...availableUsers]}
-                defaultLabel={filters.createdBy ? toTitleCase(filters.createdBy) : "All Users"}
-                onSelect={(option) => handleFilterChange("createdBy", option.value)}
-              />
-            </div>
-
-            <div className="filter-group">
-              <label>Assigned User</label>
-              <input
-                type="text"
-                placeholder="Search by participant name..."
-                value={filters.assignedUser}
-                onChange={(e) => handleFilterChange("assignedUser", e.target.value)}
-                className="filter-input"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="Table_Container">
+      <div className="Table_Container" role="region" aria-label="Events table">
         <Table
           columns={columns}
           data={filteredEvents}
@@ -564,23 +515,6 @@ const EventTable = () => {
           onRetry={handleRetry}
           onSort={handleSort}
           renderCell={(key, item) => {
-            const getEmptyText = (key) => {
-              switch (key) {
-                case "name":
-                  return "Untitled Event";
-                case "type":
-                  return "No Type";
-                case "date":
-                  return "No Date";
-                case "participants":
-                  return "No Team Members";
-                case "createdBy":
-                  return "Unknown Creator";
-                default:
-                  return "N/A";
-              }
-            };
-
             if (key === "participants") {
               return item.participants && item.participants.length > 0 ? (
                 <AvatarList
@@ -616,12 +550,11 @@ const EventTable = () => {
           addEventText="Click here to add a New Event"
           onAddEventClick={permissions.canCreate ? handleNewEvent : undefined}
           sortableColumns={["name", "type", "date", "createdBy"]}
-          onDelete={permissions.canDelete ? ({ id }) => handleDelete(id) : undefined}
+          onDelete={permissions.canDelete ? (event) => handleDeleteClick(event) : undefined}
           // onArchive={permissions.canArchive ? () => alert("Archive pressed") : undefined}
           // onDuplicate={permissions.canDuplicate ? () => alert("Duplicate pressed") : undefined}
           onRowClick={(event) => {
             if (!loading && !error && permissions.canRead) {
-
               navigate("/events/eventDetailPage", {
                 state: {
                   eventId: event.id,
@@ -633,6 +566,21 @@ const EventTable = () => {
           }}
         />
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+        title="Delete Event"
+        message={`Are you sure you want to delete the event "${eventToDelete ? toTitleCase(eventToDelete.name) : ''}"?`}
+        warningText="This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmButtonVariant="danger"
+        loading={deleteLoading}
+        icon={<Trash2 size={20} />}
+      />
     </div>
   );
 };

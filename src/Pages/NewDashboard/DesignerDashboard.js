@@ -548,6 +548,26 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
   }
 }, [currentTitle, resetMyTasks, resetTasks]);
 
+  // Handle more button click on tiles - navigate to TaskList page
+  const handleMoreClick = useCallback((tile) => {
+    // Map tile titles to appropriate filter values for tasks
+    const filterMap = {
+      "Total Tasks": "all",
+      "Tasks Assigned to Me": "assigned_to_me",
+      "Tasks Under Approval": "under_review",
+      "Approved Tasks": "approved",
+    };
+
+    const filter = filterMap[tile.title] || "all";
+
+    navigate('/tasks/list', {
+      state: {
+        filter: filter,
+        title: tile.title
+      }
+    });
+  }, [navigate]);
+
   // Single effect to handle all task fetching based on current title
   useEffect(() => {
     if (!orgIdReady) return;
@@ -627,6 +647,7 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
             {...tile}
             onClick={() => handleTileClick(tile)}
             isSelected={tile.title === currentTitle}
+            onMoreClick={() => handleMoreClick(tile)}
           />
         ))}
       </div>

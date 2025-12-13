@@ -59,18 +59,24 @@ const TasksFiles = ({
         });
         const data = await res.json();
 
+        // Normalize backend response where it returns a single message object
+        // like [{ message: 'No documents found for the given TaskId.' }]
+        const normalizedData = (Array.isArray(data) && data.length === 1 && data[0] && typeof data[0].message === 'string')
+          ? []
+          : data;
+
         // Check if any file is already approved or published
-        const approvedOrPublishedExists = data.some(doc => 
+        const approvedOrPublishedExists = (normalizedData || []).some(doc => 
           doc.status === 'Approved' || doc.status === 'Published' || 
           (doc.publishedTo && doc.publishedTo.length > 0 && doc.publishedTo.some(p => p.isPublished === true))
         );
         setHasApprovedFile(approvedOrPublishedExists);
         
         // Check if there are any files at all
-        setHasAnyFiles(data.length > 0);
+        setHasAnyFiles((normalizedData || []).length > 0);
 
         // Check for work submission files (files uploaded by designers)
-        const workSubmissionFiles = data.filter(doc => {
+        const workSubmissionFiles = (normalizedData || []).filter(doc => {
           // Check if the uploader is a designer based on userInfo
           if (doc.userInfo && doc.userInfo.roles) {
             return doc.userInfo.roles.some(role => 
@@ -85,8 +91,16 @@ const TasksFiles = ({
         
         setHasWorkSubmissionFiles(workSubmissionFiles.length > 0);
 
+        console.log('TaskFiles - API Response:', normalizedData);
+        
         const filesWithPreview = await Promise.all(
-          data.map(async (doc) => {
+          (normalizedData || []).map(async (doc) => {
+            console.log('TaskFiles - Processing document:', {
+              documentId: doc.documentId,
+              filename: doc.filename,
+              contentType: doc.contentType,
+              status: doc.status
+            });
             const type = getFileTypeFromMime(doc.contentType, doc.filename);
             let src = '';
 
@@ -104,7 +118,7 @@ const TasksFiles = ({
               src = `/apis/document/view/${doc.documentId}`;
             }
 
-            return {
+            const fileObject = {
               name: doc.filename,
               type,
               documentId: doc.documentId,
@@ -115,20 +129,36 @@ const TasksFiles = ({
               uploadDate: doc.uploadDate, // Add uploadDate field
               size: doc.fileSize || doc.size, // Add file size field
               userInfo: doc.userInfo, // Add userInfo field with roles and fullName
-              isApproved: doc.status === 'Approved' // Calculate isApproved
+              isApproved: doc.status === 'Approved' || doc.status === 'Published', // Include both Approved and Published files
+              contentType: doc.contentType, // Add contentType for platform detection
+              document: {
+                contentType: doc.contentType,
+                type: doc.contentType,
+                description: doc.description
+              }
             };
+            console.log('TaskFiles - Created file object:', fileObject);
+            return fileObject;
           })
         );
 
-        // Automatically select approved files
-        const approvedFiles = filesWithPreview.filter(file => file.isApproved);
-        if (approvedFiles.length > 0 && onFileSelect) {
-          approvedFiles.forEach(file => {
+        // Automatically select approved and published files
+        const eligibleFiles = filesWithPreview.filter(file => file.isApproved);
+        if (eligibleFiles.length > 0 && onFileSelect) {
+          eligibleFiles.forEach(file => {
             onFileSelect(file, true);
           });
         }
 
         setFetchedFiles(filesWithPreview);
+        
+        // Notify parent component with the fetched files
+        if (onFilesChange) {
+          onFilesChange({
+            uploadedFiles: filesWithPreview,
+            links: []
+          });
+        }
       } catch (error) {
         console.error("Error fetching task documents:", error);
       } finally {
@@ -140,7 +170,7 @@ const TasksFiles = ({
       hasFetchedRef.current = true;
       fetchDocuments();
     }
-  }, [taskId, onFileSelect, files]); // Include files to listen for refresh triggers
+  }, [taskId, onFileSelect, files, onFilesChange]); // Include files to listen for refresh triggers
 
   // Notify parent component when work submission files change
   useEffect(() => {

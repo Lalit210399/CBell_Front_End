@@ -5,13 +5,20 @@
   padding: 10px 14px 10px 14px;
   width: auto;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s ease;
+  transition: all 0.3s ease;
   cursor: pointer;
   flex-direction: column;
+  border: none;
+  position: relative;
 }
 
 .tile-container:hover {
   transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+.tile-container:hover .tile-more-button {
+  opacity: 1;
 }
 
 .tile-header {
@@ -53,3 +60,31 @@
   font-size: 12px;
   margin: 2px 0 0 0;
 }
+
+.tile-more-button {
+  position: absolute;
+  top: 0px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.tile-more-button:hover {
+  background: transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transform: scale(1.05);
+}
+
+.tile-more-button svg {
+  color: #374151;
+}
+

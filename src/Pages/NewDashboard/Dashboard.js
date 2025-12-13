@@ -24,6 +24,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar,
+  Sparkles,
+  Target,
+  TrendingUp,
 } from "lucide-react";
 import "./Dashboard.css";
 
@@ -59,6 +62,17 @@ const Dashboard = () => {
       return;
     }
     navigate("/events/eventDetailPage", { state: { mode: "create" } });
+  };
+
+  // Handle New Standalone Task button click
+  const handleNewTask = () => {
+    if (!isViewingOwnOrganization()) {
+      console.warn("Task creation is only allowed in your own organization");
+      return;
+    }
+    const organizationId = selectedOrganizationId || user?.organizationId;
+    // Navigate to the task creation view with no eventId so backend treats it as standalone
+    navigate('/events/eventDetailPage/tasks', { state: { mode: 'create', organizationId, eventId: null } });
   };
 
 
@@ -201,43 +215,99 @@ const Dashboard = () => {
       };
 
     const apiFilter = filterMap[filterType] || "all";
-
-      const response = await fetchWithRefresh(
-        `apis/dashboard/tasks?orgid=${organizationId}&filter=${apiFilter}`,
-        {
+    // If user clicked the Individual Tasks tile, prefer the standalone endpoint
+    if (filterType === "My Individual Tasks") {
+      try {
+        const standaloneUrl = `/apis/task/standalone?organizationId=${organizationId}`;
+        const res = await fetchWithRefresh(standaloneUrl, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
             "ngrok-skip-browser-warning": "1",
           },
+        });
+
+        if (!res.ok) {
+          throw new Error("Standalone tasks API failed");
         }
-      );
+
+        const raw = await res.json();
+        
+        // Backend returns { message: "...", data: [...], totalCount: n }
+        const tasksArray = Array.isArray(raw.data) ? raw.data : [];
+
+        const mappedTasks = tasksArray.map((task) => {
+          // Extract assignedTo names from the assignedTo array
+          const assignedToNames = (task.assignedTo || []).map(user => user.name || "Unknown");
+
+          // Calculate days until due
+          const daysUntilDue = task.dueDate 
+            ? Math.ceil((new Date(task.dueDate) - new Date()) / (1000 * 60 * 60 * 24))
+            : null;
+
+          return {
+            id: task.id || task.taskId,
+            status: task.taskStatusName || task.statusName || task.status,
+            taskName: task.taskTitle || task.taskName,
+            eventName: task.eventName || "Standalone Task",
+            eventId: task.eventId,
+            assignedTo: assignedToNames.map((name, index) => ({
+              name: name,
+              src: "",
+              id: task.assignedTo?.[index]?.id || `user-${index}`
+            })),
+            dueDate: task.dueDate ? new Date(task.dueDate).toLocaleDateString("en-GB") : "",
+            description: task.description,
+            creativeType: task.creativeType,
+            daysUntilDue: daysUntilDue,
+            createdBy: task.createdByName || "Unknown",
+            updatedBy: task.updatedByName || task.updatedBy || "Unknown",
+          };
+        });
+        
+        return mappedTasks;
+      } catch (err) {
+        console.error("Error fetching standalone tasks:", err);
+        return [];
+      }
+    }
+
+    const response = await fetchWithRefresh(
+      `apis/dashboard/tasks?orgid=${organizationId}&filter=${apiFilter}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1",
+        },
+      }
+    );
 
     if (!response.ok) {
       throw new Error("Tasks API failed");
     }
-    
-        const data = await response.json();
 
-        // Transform API data to match the expected format for RecentTasks component
-    return data.tasks.map((task) => ({
+    const data = await response.json();
+
+    // Transform API data to match the expected format for RecentTasks component
+    return (data.tasks || []).map((task) => ({
       id: task.id || task.taskId,
-          status: task.taskStatusName,
-          taskName: task.taskTitle,
-          eventName: task.eventName,
+      status: task.taskStatusName,
+      taskName: task.taskTitle,
+      eventName: task.eventName,
       eventId: task.eventId,
-          assignedTo: task.assignedToNames?.map((name, index) => ({
-            name: name,
+      assignedTo: task.assignedToNames?.map((name, index) => ({
+        name: name,
         src: "",
         id: task.assignedTo?.[index] || `user-${index}`
       })) || [],
-          dueDate: new Date(task.dueDate).toLocaleDateString("en-GB"),
-          description: task.description,
-          creativeType: task.creativeType,
-          daysUntilDue: task.daysUntilDue,
-          createdBy: task.createdByName || "Unknown",
-          updatedBy: task.updatedByName || "Unknown",
-        }));
+      dueDate: task.dueDate ? new Date(task.dueDate).toLocaleDateString("en-GB") : "",
+      description: task.description,
+      creativeType: task.creativeType,
+      daysUntilDue: task.daysUntilDue,
+      createdBy: task.createdByName || "Unknown",
+      updatedBy: task.updatedByName || "Unknown",
+    }));
   }, [orgIdReady, selectedOrganizationId, user?.organizationId]);
 
   // Active Events API
@@ -438,6 +508,7 @@ const Dashboard = () => {
     "Under Approval Tasks",
     "Approved Tasks",
     "Published Tasks",
+    "My Individual Tasks",
   ], []);
 
   // Refetch data for current component on scope change
@@ -515,6 +586,19 @@ const Dashboard = () => {
       borderColor: "rgba(168, 85, 247, 1)",
       // borderColor: "#E4E6E9",
       textColor: "rgba(88, 28, 135, 1)", // Purple
+    },
+    {
+      icon: <UserCheck size={24} color="rgba(99, 102, 241, 1)" />,
+      count: loadingSummary
+        ? "..."
+        : errorSummary
+        ? "!" :summaryData?.standaloneTaskCount ?? 0,
+      title: "My Individual Tasks",
+      subtitle: "Your Personal Task List",
+      bgcolor: "rgba(224, 231, 255, 0.2)",
+      iconBgColor: "rgba(99, 102, 241, 0.2)",
+      borderColor: "rgba(99, 102, 241, 1)",
+      textColor: "rgba(49, 46, 129, 1)", // Indigo
     },
     {
       icon: <ClockIcon size={24} color="#F59F0A" />,
@@ -653,7 +737,7 @@ const Dashboard = () => {
       setActiveComponent("recent");
 
       // Set filter based on tile title - default to "All" for most tiles
-      if (tile.title === "Total Tasks" || tile.title === "Tasks Due Next 7 Days" || tile.title === "Overdue Tasks") {
+      if (tile.title === "Total Tasks" || tile.title === "Tasks Due Next 7 Days" || tile.title === "Overdue Tasks" || tile.title === "My Individual Tasks") {
         setFilter("All");
       } else {
         // Map tile titles to filter values that match the actual API status values
@@ -662,7 +746,8 @@ const Dashboard = () => {
           "Active Tasks": "Active", 
           "Under Approval Tasks": "Under Approval",  // Match API status value
           "Approved Tasks": "Approved",
-          "Published Tasks": "Published"
+          "Published Tasks": "Published",
+          "My Individual Tasks": "Assigned to Me",
         };
         setFilter(filterMap[tile.title] || tile.title);
       }
@@ -670,6 +755,42 @@ const Dashboard = () => {
       // Do not execute here; a dedicated effect will run when
       // currentTitle/activeComponent change to avoid stale state
     }
+  };
+
+  // Handle more button click on tiles - navigate to appropriate page based on tile type
+  const handleMoreClick = (tile) => {
+    // Handle Event tiles - navigate to events page
+    if (tile.title === "Active Events" || tile.title === "Events Assigned to Me") {
+      navigate('/events', {
+        state: {
+          filter: tile.title === "Active Events" ? "active" : "assigned",
+          title: tile.title
+        }
+      });
+      return;
+    }
+
+    // Handle Task tiles - navigate to tasks list page
+    const filterMap = {
+      "Total Tasks": "all",
+      "New Tasks": "New",
+      "Active Tasks": "Active",
+      "Under Approval Tasks": "Under Approval",
+      "Approved Tasks": "Approved",
+      "Published Tasks": "Published",
+      "Tasks Due Next 7 Days": "Due Soon",
+      "Overdue Tasks": "Overdue",
+      "My Individual Tasks": "Assigned to Me",
+    };
+
+    const filter = filterMap[tile.title] || "all";
+
+    navigate('/tasks/list', {
+      state: {
+        filter: filter,
+        title: tile.title
+      }
+    });
   };
 
   // Handle task click
@@ -738,6 +859,15 @@ const Dashboard = () => {
               + New Event
             </button>
           )}
+          {isViewingOwnOrganization() && (
+            <button
+              className="dashboard-btn dashboard-btn-secondary"
+              onClick={handleNewTask}
+              style={{ marginLeft: 8 }}
+            >
+              + New Task
+            </button>
+          )}
         </div>
       </div>
 
@@ -754,6 +884,7 @@ const Dashboard = () => {
               {...tile}
               onClick={() => handleTileClick(tile)}
               isSelected={tile.title === currentTitle}
+              onMoreClick={() => handleMoreClick(tile)}
             />
           ))}
         </div>
@@ -785,7 +916,8 @@ const Dashboard = () => {
                   "Total Tasks",
                 ].includes(currentTitle)}
                 hideAssignedToColumn={currentTitle === "New Tasks"}
-                showOrganizationColumn={currentTitle === "Events Assigned to Me" ? false : (currentTitle === "Tasks Assigned to Me")}
+                hideEventNameColumn={currentTitle === "My Individual Tasks"}
+                showOrganizationColumn={false}
                 emptyStateMessage={`No ${currentTitle.toLowerCase()} found`}
               />
             </div>

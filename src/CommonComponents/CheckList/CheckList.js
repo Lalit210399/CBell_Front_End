@@ -17,6 +17,14 @@ const Checklist = ({
   const createPlaceholderItem = () => ({ text: "", checked: false, isPlaceholder: true });
 
   const transformItems = React.useCallback((items) => {
+    // If items is empty or only contains empty/null values, return a single placeholder for edit/create modes
+    const hasValidItems = (items || []).some(item => item.text !== null && item.text !== undefined && item.text !== "");
+    
+    if (!hasValidItems && mode !== "view") {
+      // Return only one placeholder item for empty list in edit/create modes
+      return [createPlaceholderItem()];
+    }
+
     let transformed = (items || [])
       .filter(item => item.text !== null && item.text !== undefined)
       .map(item => ({

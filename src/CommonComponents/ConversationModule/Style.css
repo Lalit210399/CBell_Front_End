@@ -96,7 +96,7 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    max-width: 72%; /* contain bubble width and avoid full-row cards */
+    /* max-width: 72%; contain bubble width and avoid full-row cards */
     width: 100%;
   }
 
@@ -612,12 +612,12 @@
   /* Ensure bubble sits to the correct side inside the constrained body */
   .message-item.own .message-body {
     align-items: flex-end;
-    max-width: 72%;
+    /* max-width: 72%; */
   }
 
   .message-item.other .message-body {
     align-items: flex-start;
-    max-width: 72%;
+    /* max-width: 72%; */
   }
 
   .message-item.own .message-bubble {
@@ -689,6 +689,61 @@
     margin-right: 8px;
     margin-left: 0;
   }
+
+/* Message Type Styles */
+/* System message specific styles */
+.message-type-system {
+  border: 2px solid #FFB020 !important;
+  box-shadow: 0 2px 8px rgba(255, 176, 32, 0.15);
+}
+
+.message-type-system .message-header {
+  font-weight: 600;
+}
+
+.message-type-icon {
+  font-size: 1.1em;
+  margin-right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Adjust system messages to span full width and center */
+.message-item.system-message .message-content {
+  justify-content: center;
+}
+
+.message-item.system-message .message-body {
+  /* max-width: 85%; */
+}
+
+.message-item.system-message .message-bubble {
+  max-width: 100%;
+}
+
+/* Normal chat message - no special styling needed, uses defaults */
+.message-type-normal {
+  /* Inherits default bubble styles */
+}
+
+/* Future message type styles can be added here */
+/* Example:
+.message-type-warning {
+  border: 2px solid #F59E0B !important;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+}
+
+.message-type-error {
+  border: 2px solid #EF4444 !important;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+}
+
+.message-type-success {
+  border: 2px solid #10B981 !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+}
+*/
 
 /* Responsive adjustments */
 @media (max-width: 768px) {

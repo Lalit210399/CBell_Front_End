@@ -8,16 +8,22 @@ const YouTubeUploader = ({
   fileDetail = null,
   onSuccess,
   onPlatformPublish,
-  taskId
+  taskId,
+  documentId: propDocumentId = null
 }) => {
   const fileName = fileDetail?.name || '';
-  const documentId = fileDetail?.url ? fileDetail.url.split('/').pop() : '';
+  // Use documentId from props first, then from fileDetail, then try to extract from URL
+  const documentId = propDocumentId || fileDetail?.documentId || (fileDetail?.url ? fileDetail.url.split('/').pop() : '');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState('');
   const [privacyStatus, setPrivacyStatus] = useState('public');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  
+  console.log('YouTubeUploader - documentId:', documentId);
+  console.log('YouTubeUploader - propDocumentId:', propDocumentId);
+  console.log('YouTubeUploader - fileDetail.documentId:', fileDetail?.documentId);
 
   useEffect(() => {
     if (open) {

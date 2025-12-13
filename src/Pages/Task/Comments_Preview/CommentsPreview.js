@@ -201,6 +201,15 @@ const CommentsPreview = ({ onFilesChange = () => {}, taskId, eventId, isActive, 
       const data = await res.json();
       if (!Array.isArray(data)) return;
 
+      // Normalize backend response: some endpoints return
+      // [{ message: 'No documents found for the given TaskId.' }] with 200 status.
+      // Treat that as an empty list of documents.
+      if (data.length === 1 && data[0] && typeof data[0].message === 'string') {
+        setAllFiles([]);
+        onFilesChangeRef.current({ files: [], description: '' });
+        return;
+      }
+
       const files = data.map((doc) => ({
         name: doc.filename,
         type: doc.contentType || "application/octet-stream",

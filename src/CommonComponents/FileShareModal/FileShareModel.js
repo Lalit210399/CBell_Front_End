@@ -51,8 +51,23 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [platform, setPlatform] = useState(null);
 
-  // Get file type for easier access
-  const fileType = fileDetail?.document?.contentType || fileDetail?.document?.type || fileDetail?.type;
+  // Get file type for easier access - check all possible locations
+  const fileType = fileDetail?.contentType || fileDetail?.document?.contentType || fileDetail?.document?.type || fileDetail?.type;
+
+  // Debug logging
+  console.log('=== FileShareModel RENDER ===');
+  console.log('FileShareModel - fileDetail (complete):', fileDetail);
+  console.log('FileShareModel - fileDetail.contentType:', fileDetail?.contentType);
+  console.log('FileShareModel - fileDetail.document:', fileDetail?.document);
+  console.log('FileShareModel - fileDetail.document.contentType:', fileDetail?.document?.contentType);
+  console.log('FileShareModel - fileType (final):', fileType);
+  console.log('FileShareModel - documentId:', documentId);
+  console.log('FileShareModel - Platform support checks:');
+  console.log('  - Facebook supported:', isFileTypeSupported(fileType, 'facebook'));
+  console.log('  - Instagram supported:', isFileTypeSupported(fileType, 'instagram'));
+  console.log('  - YouTube supported:', isFileTypeSupported(fileType, 'youtube'));
+  console.log('  - Email supported:', isFileTypeSupported(fileType, 'email'));
+  console.log('=== END FileShareModel RENDER ===');
 
   // Handle click outside to close modal
   useEffect(() => {
@@ -112,6 +127,7 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
           onClose={() => setShowSocialUploader(false)}
           defaultCaption={fileDetail?.document?.description || fileDetail?.description || description}
           fileDetail={fileDetail}
+          documentId={documentId}
           platform={platform}
           onSuccess={handlePlatformSuccess}
           onPlatformPublish={onPlatformPublish}
@@ -121,6 +137,7 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
           open={showYouTubeUploader}
           onClose={() => setShowYouTubeUploader(false)}
           fileDetail={fileDetail}
+          documentId={documentId}
           taskId={taskId}
           onSuccess={handlePlatformSuccess}
           onPlatformPublish={onPlatformPublish}

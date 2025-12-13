@@ -77,7 +77,7 @@ async startConnection() {
     if (!this.connection) return;
 
     this.connection.on("MessageReceived", (message) => {
-      //console.debug("[SignalR] 📨 Message Received:", message);
+      //console.log("[SignalR] 📨 Message Received payload:", message);
       (this.messageHandlers.onMessageReceived || []).forEach((h) => {
         try {
           h(message);
@@ -88,7 +88,7 @@ async startConnection() {
     });
 
     this.connection.on("UserJoinedTask", (data) => {
-      //console.info("[SignalR] 👤 User Joined Task:", data);
+      //console.log("[SignalR] 👤 User Joined Task payload:", data);
       (this.messageHandlers.onUserJoined || []).forEach((h) => {
         try {
           h(data);
@@ -99,7 +99,7 @@ async startConnection() {
     });
 
     this.connection.on("UserLeftTask", (data) => {
-      //console.info("[SignalR] 👋 User Left Task:", data);
+      //console.log("[SignalR] 👋 User Left Task payload:", data);
       (this.messageHandlers.onUserLeft || []).forEach((h) => {
         try {
           h(data);
@@ -110,7 +110,7 @@ async startConnection() {
     });
 
     this.connection.on("UserTyping", (typingInfo) => {
-      //console.debug("[SignalR] ⌨️ User Typing:", typingInfo);
+      //console.log("[SignalR] ⌨️ User Typing payload:", typingInfo);
       (this.messageHandlers.onUserTyping || []).forEach((h) => {
         try {
           h(typingInfo);
@@ -121,7 +121,7 @@ async startConnection() {
     });
 
     this.connection.on("OnlineUsers", (data) => {
-      //console.debug("[SignalR] 👥 Online Users:", data);
+      //console.log("[SignalR] 👥 Online Users payload:", data);
       (this.messageHandlers.onOnlineUsers || []).forEach((h) => {
         try {
           h(data);
@@ -199,14 +199,24 @@ async startConnection() {
     }
   }
 
-  async sendMessage(taskId, message, documentIds = []) {
+  async sendMessage(taskId, message, documentIds = [], messageType = 1, organizationId, eventId, userId, userName) {
     if (!this.connection) throw new Error("No SignalR connection");
     try {
-      await this.connection.invoke("SendMessage", taskId, message, documentIds);
-      //console.debug("[SignalR] Message sent successfully");
+      await this.connection.invoke(
+        "SendMessage", 
+        taskId, 
+        message, 
+        documentIds, 
+        messageType,
+        organizationId,
+        eventId,
+        userId,
+        userName
+      );
+      //console.debug("[SignalR] ✅ Message sent successfully");
       return true;
     } catch (err) {
-      //console.error("[SignalR] Error sending message:", err);
+      //console.error("[SignalR] ❌ Error sending message:", err);
       throw err;
     }
   }

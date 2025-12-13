@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./Dropdown.css";
 
-const Dropdown = ({ options, selectedOption, onSelect, disabled, multiSelect = false, className = "" }) => {
+const Dropdown = ({ options, selectedOption, onSelect, disabled, multiSelect = false, className = "", placeholder = "Select an option" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState(multiSelect ? [] : null);
   const dropdownRef = useRef(null);
@@ -33,9 +33,9 @@ const Dropdown = ({ options, selectedOption, onSelect, disabled, multiSelect = f
     if (multiSelect) {
       return selectedOptions.length > 0
         ? selectedOptions.map((opt) => opt.label).join(", ")
-        : "Select options";
+        : placeholder;
     }
-    return selectedOption ? selectedOption.label : "Select an option";
+    return selectedOption ? selectedOption.label : placeholder;
   };
 
   // Close dropdown when clicking outside
@@ -80,7 +80,7 @@ const Dropdown = ({ options, selectedOption, onSelect, disabled, multiSelect = f
                   readOnly
                 />
               )}
-              <span className="dot" style={{ backgroundColor: option.color }}></span>
+              {option.color && <span className="dot" style={{ backgroundColor: option.color }}></span>}
               <span className="label">{option.label}</span>
             </div>
           ))}
