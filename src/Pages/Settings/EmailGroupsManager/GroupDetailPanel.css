@@ -340,6 +340,48 @@
   background: #dc2626;
 }
 
+/* Error and Info Banners */
+.gdp-error-banner,
+.gdp-info-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.gdp-error-banner {
+  background-color: #fee;
+  border: 1px solid #fcc;
+  color: #c33;
+}
+
+.gdp-info-banner {
+  background-color: #e3f2fd;
+  border: 1px solid #90caf9;
+  color: #1565c0;
+}
+
+.gdp-error-banner button,
+.gdp-info-banner button {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  color: inherit;
+  opacity: 0.7;
+}
+
+.gdp-error-banner button:hover,
+.gdp-info-banner button:hover {
+  opacity: 1;
+}
+
 /* Responsive Design */
 @media (max-width: 640px) {
   .group-detail-panel {

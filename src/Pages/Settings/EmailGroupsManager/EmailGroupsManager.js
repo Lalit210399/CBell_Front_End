@@ -1,104 +1,96 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Search, X } from 'lucide-react';
+import { Users, Plus, Search, X, AlertCircle } from 'lucide-react';
 import { useEmailGroups } from '../../../Context/EmailGroupsContext';
+import { useUser } from '../../../Context/UserContext';
 import './EmailGroupsManager.css';
 import GroupDetailPanel from './GroupDetailPanel';
 import CreateGroupModal from './CreateGroupModal';
 
-// Dummy data for initial setup (only used if no groups exist)
-const initialGroups = [
-  {
-    id: 1,
-    name: 'Marketing Team',
-    members: [
-      'john.doe@company.com',
-      'jane.smith@company.com',
-      'mike.wilson@company.com',
-      'sarah.johnson@company.com',
-    ],
-  },
-  {
-    id: 2,
-    name: 'Development Team',
-    members: [
-      'dev1@company.com',
-      'dev2@company.com',
-      'dev3@company.com',
-      'dev4@company.com',
-      'dev5@company.com',
-    ],
-  },
-  {
-    id: 3,
-    name: 'Sales Department',
-    members: [
-      'sales1@company.com',
-      'sales2@company.com',
-      'sales3@company.com',
-    ],
-  },
-  {
-    id: 4,
-    name: 'Executive Team',
-    members: [
-      'ceo@company.com',
-      'cto@company.com',
-      'cfo@company.com',
-    ],
-  },
-  {
-    id: 5,
-    name: 'Customer Support',
-    members: [
-      'support1@company.com',
-      'support2@company.com',
-      'support3@company.com',
-      'support4@company.com',
-      'support5@company.com',
-      'support6@company.com',
-    ],
-  },
-  {
-    id: 6,
-    name: 'HR Department',
-    members: [
-      'hr1@company.com',
-      'hr2@company.com',
-    ],
-  },
-];
-
 const EmailGroupsManager = () => {
-  const { emailGroups, setEmailGroups, addGroup, updateGroup, deleteGroup } = useEmailGroups();
+  const { 
+    emailGroups, 
+    loading, 
+    error, 
+    fetchEmailGroups, 
+    addGroup, 
+    updateGroup, 
+    deleteGroup 
+  } = useEmailGroups();
+  
+  const { user, selectedOrganizationId } = useUser();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [localError, setLocalError] = useState(null);
 
-  // Load initial dummy data if no groups exist (first time setup)
+  // Fetch email groups when component mounts or organization changes
   useEffect(() => {
-    if (emailGroups.length === 0) {
-      setEmailGroups(initialGroups);
+    const organizationId = selectedOrganizationId || user?.organizationId;
+    
+    if (organizationId) {
+      fetchEmailGroups(organizationId).catch(err => {
+        console.error('Failed to load email groups:', err);
+        setLocalError(`Failed to load email groups: ${err.message}`);
+      });
+    } else {
+      setLocalError('No organization selected. Please select an organization.');
     }
-  }, [emailGroups.length, setEmailGroups]);
+  }, [selectedOrganizationId, user?.organizationId, fetchEmailGroups]);
 
   // Filter groups based on search query
   const filteredGroups = emailGroups.filter((group) =>
     group.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleCreateGroup = (newGroup) => {
-    addGroup(newGroup);
-    setIsCreateModalOpen(false);
+  const handleCreateGroup = async (newGroupData) => {
+    try {
+      setLocalError(null);
+      const organizationId = selectedOrganizationId || user?.organizationId;
+      
+      await addGroup({
+        ...newGroupData,
+        organizationId: organizationId
+      });
+      
+      setIsCreateModalOpen(false);
+    } catch (err) {
+      console.error('Error creating group:', err);
+      setLocalError(err.message || 'Failed to create group. Please try again.');
+    }
   };
 
-  const handleUpdateGroup = (updatedGroup) => {
-    updateGroup(updatedGroup.id, updatedGroup);
+  const handleUpdateGroup = async (updatedGroup) => {
+    try {
+      setLocalError(null);
+      const organizationId = selectedOrganizationId || user?.organizationId;
+      
+      await updateGroup(updatedGroup.id, {
+        name: updatedGroup.name,
+        members: updatedGroup.members,
+        organizationId: organizationId
+      });
+      
+      // Update selected group to reflect changes
+      setSelectedGroup(updatedGroup);
+    } catch (err) {
+      console.error('Error updating group:', err);
+      setLocalError(err.message || 'Failed to update group. Please try again.');
+    }
   };
 
-  const handleDeleteGroup = (groupId) => {
-    deleteGroup(groupId);
-    setSelectedGroup(null);
+  const handleDeleteGroup = async (groupId) => {
+    try {
+      setLocalError(null);
+      await deleteGroup(groupId);
+      setSelectedGroup(null);
+    } catch (err) {
+      console.error('Error deleting group:', err);
+      setLocalError(err.message || 'Failed to delete group. Please try again.');
+    }
   };
+
+  // Check if user has permission to manage groups (not a Designer)
+  const canManageGroups = user?.role !== 'Designer';
 
   return (
     <div className="email-groups-manager">
@@ -109,14 +101,36 @@ const EmailGroupsManager = () => {
             Manage your email distribution lists and contact groups
           </p>
         </div>
-        <button
-          className="egm-create-btn"
-          onClick={() => setIsCreateModalOpen(true)}
-        >
-          <Plus size={18} />
-          <span>New Group</span>
-        </button>
+        {canManageGroups && (
+          <button
+            className="egm-create-btn"
+            onClick={() => setIsCreateModalOpen(true)}
+            disabled={loading}
+          >
+            <Plus size={18} />
+            <span>New Group</span>
+          </button>
+        )}
       </div>
+
+      {/* Error Display */}
+      {(error || localError) && (
+        <div className="egm-error-banner">
+          <AlertCircle size={18} />
+          <span>{error || localError}</span>
+          <button onClick={() => setLocalError(null)}>
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* Permission Warning for Designers */}
+      {!canManageGroups && (
+        <div className="egm-info-banner">
+          <AlertCircle size={18} />
+          <span>You can view email groups but cannot create, edit, or delete them.</span>
+        </div>
+      )}
 
       <div className="egm-search-bar">
         <Search className="search-icon" size={18} />
@@ -126,6 +140,7 @@ const EmailGroupsManager = () => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="egm-search-input"
+          disabled={loading}
         />
         {searchQuery && (
           <button
@@ -138,14 +153,21 @@ const EmailGroupsManager = () => {
       </div>
 
       <div className="egm-groups-grid">
-        {filteredGroups.length === 0 ? (
+        {loading && emailGroups.length === 0 ? (
+          <div className="egm-loading-state">
+            <div className="loading-spinner"></div>
+            <p>Loading email groups...</p>
+          </div>
+        ) : filteredGroups.length === 0 ? (
           <div className="egm-empty-state">
             <Users size={48} className="empty-icon" />
             <h3>No groups found</h3>
             <p>
               {searchQuery
                 ? 'Try a different search term'
-                : 'Create your first email group to get started'}
+                : canManageGroups 
+                  ? 'Create your first email group to get started'
+                  : 'No email groups have been created yet'}
             </p>
           </div>
         ) : (
@@ -161,8 +183,8 @@ const EmailGroupsManager = () => {
               <div className="group-card-content">
                 <h3 className="group-card-title">{group.name}</h3>
                 <p className="group-card-count">
-                  {group.members.length}{' '}
-                  {group.members.length === 1 ? 'member' : 'members'}
+                  {group.members?.length || 0}{' '}
+                  {(group.members?.length || 0) === 1 ? 'member' : 'members'}
                 </p>
               </div>
               <div className="group-card-arrow">
@@ -193,6 +215,7 @@ const EmailGroupsManager = () => {
           onClose={() => setSelectedGroup(null)}
           onUpdate={handleUpdateGroup}
           onDelete={handleDeleteGroup}
+          canManage={canManageGroups}
         />
       )}
 

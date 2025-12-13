@@ -6,7 +6,10 @@ import "./Sidebar.css";
 
 function Sidebar() {
   const location = useLocation();
-  const { permissions:userPermissions } = useUser();
+  const { permissions:userPermissions, user } = useUser();
+
+  // Check if user is a Designer
+  const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
 
   const hasDashboardPermission = userPermissions?.permissions?.Dashboard?.["Dashboard Management"]?.includes("Read") ?? false;
   const hasEventsPermission = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
@@ -73,16 +76,18 @@ function Sidebar() {
         )}
       </ul>
       <ul className="menu menu-bottom">
-        <li>
-          <Link
-            to="/settings"
-            className={`menu-item ${location.pathname === "/settings" ? "active" : ""}`}
-          >
-            <div className="tooltip" data-tooltip="Settings">
-              <Settings size={20} />
-            </div>
-          </Link>
-        </li>
+        {!isDesigner && (
+          <li>
+            <Link
+              to="/settings"
+              className={`menu-item ${location.pathname === "/settings" ? "active" : ""}`}
+            >
+              <div className="tooltip" data-tooltip="Settings">
+                <Settings size={20} />
+              </div>
+            </Link>
+          </li>
+        )}
       </ul>
     </div>
   );

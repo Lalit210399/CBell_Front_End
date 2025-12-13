@@ -1,11 +1,25 @@
 import React, { useState } from 'react';
 import { User, Mail } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useUser } from '../../Context/UserContext';
 import './Settings.css';
 import EmailGroupsManager from './EmailGroupsManager/EmailGroupsManager';
 import ProfileSettings from './ProfileSettings/ProfileSettings';
 
 const Settings = () => {
+  const navigate = useNavigate();
+  const { user } = useUser();
   const [activeSection, setActiveSection] = useState('profile');
+
+  // Check if user is a Designer
+  const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
+
+  // Redirect designers away from settings page
+  React.useEffect(() => {
+    if (isDesigner) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isDesigner, navigate]);
 
   const menuSections = [
     { id: 'profile', label: 'Profile', icon: User },

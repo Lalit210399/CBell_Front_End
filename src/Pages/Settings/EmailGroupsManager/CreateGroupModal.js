@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Users, Mail, Plus, Trash2 } from 'lucide-react';
+import { validateEmail, normalizeEmail } from '../../../Services/EmailGroups';
 import './CreateGroupModal.css';
 
 const CreateGroupModal = ({ onClose, onCreate }) => {
@@ -7,17 +8,18 @@ const CreateGroupModal = ({ onClose, onCreate }) => {
   const [members, setMembers] = useState([]);
   const [newEmail, setNewEmail] = useState('');
   const [error, setError] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   const handleAddEmail = () => {
-    const email = newEmail.trim();
+    const email = normalizeEmail(newEmail);
+    
     if (!email) {
       setError('Please enter an email address');
       return;
     }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    // Validate email format
+    if (!validateEmail(email)) {
       setError('Please enter a valid email address');
       return;
     }
@@ -36,8 +38,10 @@ const CreateGroupModal = ({ onClose, onCreate }) => {
     setMembers(members.filter((email) => email !== emailToRemove));
   };
 
-  const handleCreateGroup = () => {
-    if (!groupName.trim()) {
+  const handleCreateGroup = async () => {
+    const trimmedName = groupName.trim();
+    
+    if (!trimmedName) {
       setError('Please enter a group name');
       return;
     }
@@ -47,10 +51,19 @@ const CreateGroupModal = ({ onClose, onCreate }) => {
       return;
     }
 
-    onCreate({
-      name: groupName.trim(),
-      members: members,
-    });
+    setIsCreating(true);
+    setError('');
+
+    try {
+      await onCreate({
+        name: trimmedName,
+        members: members,
+      });
+      // Modal will be closed by parent component on success
+    } catch (err) {
+      setError(err.message || 'Failed to create group. Please try again.');
+      setIsCreating(false);
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -74,7 +87,7 @@ const CreateGroupModal = ({ onClose, onCreate }) => {
               Set up a new email distribution group
             </p>
           </div>
-          <button className="cgm-close-btn" onClick={onClose}>
+          <button className="cgm-close-btn" onClick={onClose} disabled={isCreating}>
             <X size={20} />
           </button>
         </div>
@@ -92,6 +105,7 @@ const CreateGroupModal = ({ onClose, onCreate }) => {
               onChange={(e) => setGroupName(e.target.value)}
               className="cgm-input"
               autoFocus
+              disabled={isCreating}
             />
           </div>
 
@@ -113,9 +127,14 @@ const CreateGroupModal = ({ onClose, onCreate }) => {
                   }}
                   onKeyPress={handleKeyPress}
                   className="cgm-input with-icon"
+                  disabled={isCreating}
                 />
               </div>
-              <button className="cgm-add-btn" onClick={handleAddEmail}>
+              <button 
+                className="cgm-add-btn" 
+                onClick={handleAddEmail}
+                disabled={isCreating}
+              >
                 <Plus size={18} />
                 Add
               </button>
@@ -140,6 +159,7 @@ const CreateGroupModal = ({ onClose, onCreate }) => {
                       className="cgm-remove-btn"
                       onClick={() => handleRemoveEmail(email)}
                       title="Remove"
+                      disabled={isCreating}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -151,15 +171,19 @@ const CreateGroupModal = ({ onClose, onCreate }) => {
         </div>
 
         <div className="cgm-footer">
-          <button className="cgm-cancel-btn" onClick={onClose}>
+          <button 
+            className="cgm-cancel-btn" 
+            onClick={onClose}
+            disabled={isCreating}
+          >
             Cancel
           </button>
           <button
             className="cgm-create-btn"
             onClick={handleCreateGroup}
-            disabled={!groupName.trim() || members.length === 0}
+            disabled={!groupName.trim() || members.length === 0 || isCreating}
           >
-            Create Group
+            {isCreating ? 'Creating...' : 'Create Group'}
           </button>
         </div>
       </div>
