@@ -29,6 +29,14 @@
   margin: 0;
 }
 
+.menu-top {
+  flex: 1;
+}
+
+.menu-bottom {
+  margin-bottom: 20px;
+}
+
 .menu li {
   width: 100%;
   text-align: center;

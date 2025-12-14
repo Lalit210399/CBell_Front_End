@@ -5,6 +5,7 @@ import Signup from "./Pages/AuthN";
 import Dashboard from "./Pages/Dashboard";
 import Events from "./Pages/Events";
 import Schedule from "./Pages/Schedule";
+import Settings from "./Pages/Settings/Settings";
 
 function AppRoutes() {
   return (
@@ -15,6 +16,7 @@ function AppRoutes() {
         <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
         <Route path="/events" element={<MainLayout><Events /></MainLayout>} />
         <Route path="/schedule" element={<MainLayout><Schedule /></MainLayout>} />
+        <Route path="/settings" element={<MainLayout><Settings /></MainLayout>} />
       </Routes>
     </Router>
   );

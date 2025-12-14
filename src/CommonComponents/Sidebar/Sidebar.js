@@ -1,12 +1,15 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, Calendar, Clock } from "lucide-react";
+import { LayoutGrid, Calendar, Clock, Settings } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
 import "./Sidebar.css";
 
 function Sidebar() {
   const location = useLocation();
-  const { permissions:userPermissions } = useUser();
+  const { permissions:userPermissions, user } = useUser();
+
+  // Check if user is a Designer
+  const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
 
   const hasDashboardPermission = userPermissions?.permissions?.Dashboard?.["Dashboard Management"]?.includes("Read") ?? false;
   const hasEventsPermission = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
@@ -16,7 +19,7 @@ function Sidebar() {
   return (
     <div className="sidebar">
       <div className="logo">CB</div>
-      <ul className="menu">
+      <ul className="menu menu-top">
         {hasDashboardPermission && (
           <li>
             <Link
@@ -67,6 +70,20 @@ function Sidebar() {
             >
               <div className="tooltip" data-tooltip="Chat">
                 <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-square"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="m8 12 2-2 2 2m-2-2v3"/></svg>
+              </div>
+            </Link>
+          </li>
+        )}
+      </ul>
+      <ul className="menu menu-bottom">
+        {!isDesigner && (
+          <li>
+            <Link
+              to="/settings"
+              className={`menu-item ${location.pathname === "/settings" ? "active" : ""}`}
+            >
+              <div className="tooltip" data-tooltip="Settings">
+                <Settings size={20} />
               </div>
             </Link>
           </li>
