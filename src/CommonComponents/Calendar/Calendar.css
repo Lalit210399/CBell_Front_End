@@ -85,7 +85,7 @@
 
 .sidebar-events-list {
   flex: 1;
-  overflow-y: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
