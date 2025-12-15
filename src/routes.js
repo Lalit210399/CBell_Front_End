@@ -5,6 +5,8 @@ import Signup from "./Pages/AuthN";
 import Dashboard from "./Pages/Dashboard";
 import Events from "./Pages/Events";
 import Schedule from "./Pages/Schedule";
+import GuestInviteValidationPage from "./Pages/Guest/GuestInviteValidation";
+import GuestTaskReviewPage from "./Pages/Guest/GuestTaskReview";
 
 function AppRoutes() {
   return (
@@ -15,6 +17,9 @@ function AppRoutes() {
         <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
         <Route path="/events" element={<MainLayout><Events /></MainLayout>} />
         <Route path="/schedule" element={<MainLayout><Schedule /></MainLayout>} />
+        <Route path="/guest/invite-validation/:inviteId" element={<GuestInviteValidationPage />} />
+        <Route path="/guest/approvals/:inviteId" element={<GuestInviteValidationPage />} />
+        <Route path="/guest/tasks/:inviteId" element={<GuestTaskReviewPage />} />
       </Routes>
     </Router>
   );

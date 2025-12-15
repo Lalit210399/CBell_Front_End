@@ -9,7 +9,6 @@
     border: 1px solid var(--colourBorder);
     background: var(--white);
     flex-wrap: wrap;
-    margin: 10px;
 }
 
 /* Top Row - matches DetailTopSectionNew structure */
@@ -185,7 +184,7 @@
     border-radius: 16px;
     padding: 4px 8px;
     background: var(--white);
-    min-width: 120px;
+    min-width: auto;
 }
 
 .edit-top-add-participant-section {
