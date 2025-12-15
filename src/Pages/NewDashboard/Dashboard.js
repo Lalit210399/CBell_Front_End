@@ -592,7 +592,7 @@ const Dashboard = () => {
       count: loadingSummary
         ? "..."
         : errorSummary
-        ? "!" :summaryData?.standaloneTaskCount ?? 0,
+        ? "!" :summaryData?.standaloneTasks ?? 0,
       title: "My Individual Tasks",
       subtitle: "Your Personal Task List",
       bgcolor: "rgba(224, 231, 255, 0.2)",
