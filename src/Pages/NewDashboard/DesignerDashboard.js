@@ -551,19 +551,31 @@ const fetchTasksData = useCallback(async (filterType = "all") => {
   // Handle more button click on tiles - navigate to TaskList page
   const handleMoreClick = useCallback((tile) => {
     // Map tile titles to appropriate filter values for tasks
-    const filterMap = {
-      "Total Tasks": "all",
-      "Tasks Assigned to Me": "assigned_to_me",
-      "Tasks Under Approval": "under_review",
-      "Approved Tasks": "approved",
-    };
-
-    const filter = filterMap[tile.title] || "all";
+    let filter = "all";
+    let assignedToMe = false;
+    switch (tile.title) {
+      case "Total Tasks":
+        filter = "all";
+        break;
+      case "Tasks Assigned to Me":
+        filter = "all"; // Use 'all' but set assignedToMe flag
+        assignedToMe = true;
+        break;
+      case "Tasks Under Approval":
+        filter = "under_review";
+        break;
+      case "Approved Tasks":
+        filter = "approved";
+        break;
+      default:
+        filter = "all";
+    }
 
     navigate('/tasks/list', {
       state: {
-        filter: filter,
-        title: tile.title
+        filter,
+        title: tile.title,
+        assignedToMe
       }
     });
   }, [navigate]);
