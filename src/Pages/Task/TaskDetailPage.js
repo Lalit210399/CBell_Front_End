@@ -852,6 +852,16 @@ const TaskDetailPage = () => {
             if (result.status === "rejected") {
             }
           });
+              // Update local fileData so UI reflects approved files immediately
+              try {
+                const approvedIds = (selectedFiles || []).map(f => f.documentId);
+                setFileData(prev => ({
+                  ...prev,
+                  uploadedFiles: (prev.uploadedFiles || []).map(f => approvedIds.includes(f.documentId) ? { ...f, status: 'Approved', isApproved: true } : f)
+                }));
+              } catch (e) {
+                console.error('Failed to update local fileData after approval', e);
+              }
         } catch (fileError) {
           addMessage({
             text: "Error approving files",
@@ -1608,6 +1618,16 @@ const TaskDetailPage = () => {
               if (result.status === "rejected") {
               }
             });
+            // Update local fileData so UI reflects approved files immediately
+            try {
+              const approvedIds = (selectedFiles || []).map(f => f.documentId);
+              setFileData(prev => ({
+                ...prev,
+                uploadedFiles: (prev.uploadedFiles || []).map(f => approvedIds.includes(f.documentId) ? { ...f, status: 'Approved', isApproved: true } : f)
+              }));
+            } catch (e) {
+              console.error('Failed to update local fileData after approval', e);
+            }
           } catch (fileError) {
             addMessage({
               text: "Error approving files. Please try again.",
