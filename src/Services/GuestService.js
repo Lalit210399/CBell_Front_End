@@ -43,6 +43,7 @@ async function request(
             ...existing,
             token: refreshData.token,
             expiresAt: refreshData.expiresAt,
+            accessExpiresAt: refreshData.accessExpiresAt ?? existing.accessExpiresAt ?? null,
           }));
         }
         

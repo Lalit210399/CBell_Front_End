@@ -230,6 +230,7 @@ const NotificationsSidebar = ({ isOpen, onClose }) => {
                 <div
                   key={notification.id}
                   className={`notification-card ${notification.isRead ? 'read' : 'unread'}`}
+                   onClick={() => handleNotificationClick(notification)}
                   onMouseEnter={() => setHoveredNotificationId(notification.id)}
                   onMouseLeave={() => setHoveredNotificationId(null)}
                 >

@@ -484,28 +484,32 @@ export default function GuestTaskReviewPage() {
                 ? "Thank you for your approval! The task owner has been notified and will proceed accordingly."
                 : "Your feedback has been submitted. The task owner has been notified about the requested changes."}
             </p>
-            <div className="completion-details">
-              <div className="completion-detail-item">
-                <span className="detail-icon">📋</span>
-                <div>
-                  <strong>Task:</strong>
-                  <p>{invite?.taskTitle || taskDetails?.taskTitle || "—"}</p>
+            {actionStatus.includes("approved") && (
+              <>
+                <div className="completion-details">
+                  <div className="completion-detail-item">
+                    <span className="detail-icon">📋</span>
+                    <div>
+                      <strong>Task:</strong>
+                      <p>{invite?.taskTitle || taskDetails?.taskTitle || "—"}</p>
+                    </div>
+                  </div>
+                  <div className="completion-detail-item">
+                    <span className="detail-icon">🏢</span>
+                    <div>
+                      <strong>Organization:</strong>
+                      <p>{invite?.orgName || "—"}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="completion-detail-item">
-                <span className="detail-icon">🏢</span>
-                <div>
-                  <strong>Organization:</strong>
-                  <p>{invite?.orgName || "—"}</p>
+                <div className="completion-footer">
+                  <div className="completion-note">
+                    <span className="note-icon">ℹ️</span>
+                    <p>Your temporary guest access has been completed. This link is no longer active.</p>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className="completion-footer">
-              <div className="completion-note">
-                <span className="note-icon">ℹ️</span>
-                <p>Your temporary guest access has been completed. This link is no longer active.</p>
-              </div>
-            </div>
+              </>
+            )}
           </div>
         </div>
       </div>

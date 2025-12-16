@@ -163,6 +163,18 @@ export const EmailGroupsProvider = ({ children }) => {
     }
   }, []);
 
+  // Auto-load email groups when provider mounts or when user's organization changes.
+  // This ensures email groups are available (e.g. in the EmailForm/GroupSelector)
+  // even if the user hasn't visited Settings yet.
+  useEffect(() => {
+    // Call fetchEmailGroups with the user's organizationId (may be undefined).
+    // Catch errors to avoid unhandled promise rejections during mount.
+    fetchEmailGroups(user?.organizationId).catch((err) => {
+      // Intentionally swallow here — error is tracked in state via setError.
+      console.warn('Auto-fetch email groups failed:', err.message || err);
+    });
+  }, [user?.organizationId, fetchEmailGroups]);
+
   return (
     <EmailGroupsContext.Provider
       value={{
