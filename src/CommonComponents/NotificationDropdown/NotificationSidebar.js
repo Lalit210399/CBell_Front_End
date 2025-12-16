@@ -15,6 +15,7 @@ const NotificationsSidebar = ({ isOpen, onClose }) => {
   
   const navigate = useNavigate();
   const [expandedNotifications, setExpandedNotifications] = React.useState({});
+  const [, setHoveredNotificationId] = React.useState(null);
 
   const toggleExpanded = (e, notificationId) => {
     e.stopPropagation();

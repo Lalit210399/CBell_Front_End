@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, Calendar, Clock, Settings } from "lucide-react";
+import { LayoutGrid, Calendar, Clock, Settings, MessageCircleMore } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
 import "./Sidebar.css";
 
@@ -24,11 +24,13 @@ function Sidebar() {
           <li>
             <Link
               to="/dashboard"
-              className={`sidebar-menu-item ${location.pathname === "/dashboard" ? "active" : ""}`}
+              className={`menu-item ${location.pathname === "/dashboard" ? "active" : ""}`}
               aria-label="Dashboard"
               title="Dashboard"
             >
-              <LayoutGrid size={24} />
+              <div className="tooltip" data-tooltip="Dashboard">
+                <LayoutGrid size={24} />
+              </div>
             </Link>
           </li>
         )}
@@ -36,11 +38,13 @@ function Sidebar() {
           <li>
             <Link
               to="/events"
-              className={`sidebar-menu-item ${location.pathname.startsWith("/events") ? "active" : ""}`}
+              className={`menu-item ${location.pathname.startsWith("/events") ? "active" : ""}`}
               aria-label="Events"
               title="Events"
             >
-              <Calendar size={24} />
+              <div className="tooltip" data-tooltip="Events">
+                <Calendar size={24} />
+              </div>
             </Link>
           </li>
         )}
@@ -48,11 +52,13 @@ function Sidebar() {
           <li>
             <Link
               to="/schedule"
-              className={`sidebar-menu-item ${location.pathname === "/schedule" ? "active" : ""}`}
+              className={`menu-item ${location.pathname === "/schedule" ? "active" : ""}`}
               aria-label="Schedules"
               title="Schedules"
             >
-              <Clock size={24} />
+              <div className="tooltip" data-tooltip="Schedule">
+                <Clock size={24} />
+              </div>
             </Link>
           </li>
         )}
@@ -60,11 +66,13 @@ function Sidebar() {
           <li>
             <Link
               to="/chat"
-              className={`sidebar-menu-item ${location.pathname === "/chat" ? "active" : ""}`}
+              className={`menu-item ${location.pathname === "/chat" ? "active" : ""}`}
               aria-label="Chat"
               title="Chat"
             >
-              <MessageCircleMore size={24} />
+              <div className="tooltip" data-tooltip="Chat">
+                <MessageCircleMore size={24} />
+              </div>
             </Link>
           </li>
         )}
@@ -75,6 +83,8 @@ function Sidebar() {
             <Link
               to="/settings"
               className={`menu-item ${location.pathname === "/settings" ? "active" : ""}`}
+              aria-label="Settings"
+              title="Settings"
             >
               <div className="tooltip" data-tooltip="Settings">
                 <Settings size={20} />

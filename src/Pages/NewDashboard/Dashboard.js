@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../Context/UserContext";
@@ -31,7 +37,13 @@ import {
 import "./Dashboard.css";
 
 const Dashboard = () => {
-  const { user, selectedOrganizationId, isViewingOwnOrganization, loading: userLoading, scopeChangeTrigger } = useUser();
+  const {
+    user,
+    selectedOrganizationId,
+    isViewingOwnOrganization,
+    loading: userLoading,
+    scopeChangeTrigger,
+  } = useUser();
   const { showError, showWarning } = useMessages();
   const navigate = useNavigate();
 
@@ -45,7 +57,7 @@ const Dashboard = () => {
       setOrgIdReady(false);
       return;
     }
-    
+
     // Set orgIdReady to true when we have either selectedOrganizationId or user.organizationId
     // This ensures data loads even if selectedOrganizationId is not set initially
     const hasOrgId = selectedOrganizationId || user?.organizationId;
@@ -72,9 +84,10 @@ const Dashboard = () => {
     }
     const organizationId = selectedOrganizationId || user?.organizationId;
     // Navigate to the task creation view with no eventId so backend treats it as standalone
-    navigate('/events/eventDetailPage/tasks', { state: { mode: 'create', organizationId, eventId: null } });
+    navigate("/events/eventDetailPage/tasks", {
+      state: { mode: "create", organizationId, eventId: null },
+    });
   };
-
 
   // State for active component
   const [activeComponent, setActiveComponent] = useState("activeEvents");
@@ -128,10 +141,12 @@ const Dashboard = () => {
   // Dashboard Summary API
   const fetchSummaryData = useCallback(async () => {
     if (!orgIdReady) return null;
-    
+
     const organizationId = selectedOrganizationId || user?.organizationId;
-    const includeChildren = isViewingOwnOrganization() ? "&includeChildren=true" : "&includeChildren=false";
-    
+    const includeChildren = isViewingOwnOrganization()
+      ? "&includeChildren=true"
+      : "&includeChildren=false";
+
     const response = await fetchWithRefresh(
       `apis/dashboard/summary?orgid=${organizationId}&userid=${user?.userId}${includeChildren}`,
       {
@@ -146,9 +161,15 @@ const Dashboard = () => {
     if (!response.ok) {
       throw new Error("Dashboard summary API failed");
     }
-    
+
     return await response.json();
-  }, [orgIdReady, selectedOrganizationId, user?.organizationId, user?.userId, isViewingOwnOrganization]);
+  }, [
+    orgIdReady,
+    selectedOrganizationId,
+    user?.organizationId,
+    user?.userId,
+    isViewingOwnOrganization,
+  ]);
 
   // Active Events Count API (removed; summary provides this number)
 
@@ -157,50 +178,62 @@ const Dashboard = () => {
     if (!orgIdReady) return [];
 
     const organizationId = selectedOrganizationId || user?.organizationId;
-    const monthParam = `${selectedYear}-${String(selectedMonth).padStart(2, "0")}`;
-    
-        const response = await fetchWithRefresh(
-          `apis/dashboard/events?orgid=${organizationId}&filter=month&month=${monthParam}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              "ngrok-skip-browser-warning": "1",
-            },
-          }
-        );
+    const monthParam = `${selectedYear}-${String(selectedMonth).padStart(
+      2,
+      "0"
+    )}`;
+
+    const response = await fetchWithRefresh(
+      `apis/dashboard/events?orgid=${organizationId}&filter=month&month=${monthParam}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1",
+        },
+      }
+    );
 
     if (!response.ok) {
       throw new Error("Events campaign API failed");
     }
-    
-          const data = await response.json();
+
+    const data = await response.json();
 
     // Transform API data into EventCampaign structure
     return data.events.map((ev) => ({
-            date: new Date(ev.eventDate).toLocaleDateString("en-GB", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            }),
-            items: [{
-              name: ev.eventName,
-              id: ev.id,
-              // Use event's organization ID if available, otherwise use the current scope organization ID
-              organizationId: ev.organizationId || ev.orgId || organizationId,
-              eventData: {
-                ...ev,
-                organizationId: ev.organizationId || ev.orgId || organizationId
-              }
-            }],
-          }));
-  }, [orgIdReady, selectedOrganizationId, user?.organizationId, selectedMonth, selectedYear]);
+      date: new Date(ev.eventDate).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }),
+      items: [
+        {
+          name: ev.eventName,
+          id: ev.id,
+          // Use event's organization ID if available, otherwise use the current scope organization ID
+          organizationId: ev.organizationId || ev.orgId || organizationId,
+          eventData: {
+            ...ev,
+            organizationId: ev.organizationId || ev.orgId || organizationId,
+          },
+        },
+      ],
+    }));
+  }, [
+    orgIdReady,
+    selectedOrganizationId,
+    user?.organizationId,
+    selectedMonth,
+    selectedYear,
+  ]);
 
   // Tasks API
-  const fetchTasksData = useCallback(async (filterType = "all") => {
-    if (!orgIdReady) return [];
-    
-    const organizationId = selectedOrganizationId || user?.organizationId;
+  const fetchTasksData = useCallback(
+    async (filterType = "all") => {
+      if (!orgIdReady) return [];
+
+      const organizationId = selectedOrganizationId || user?.organizationId;
 
       // Map tile titles to API filter values
       const filterMap = {
@@ -214,66 +247,121 @@ const Dashboard = () => {
         "Published Tasks": "published",
       };
 
-    const apiFilter = filterMap[filterType] || "all";
-    // If user clicked the Individual Tasks tile, prefer the standalone endpoint
-    if (filterType === "My Individual Tasks") {
-      try {
-        const standaloneUrl = `/apis/task/standalone?organizationId=${organizationId}`;
-        const res = await fetchWithRefresh(standaloneUrl, {
+      const apiFilter = filterMap[filterType] || "all";
+      // If user clicked the Individual Tasks tile, prefer the standalone endpoint
+      if (filterType === "My Individual Tasks") {
+        try {
+          const standaloneUrl = `/apis/task/standalone?organizationId=${organizationId}`;
+          const res = await fetchWithRefresh(standaloneUrl, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "ngrok-skip-browser-warning": "1",
+            },
+          });
+
+          if (!res.ok) {
+            throw new Error("Standalone tasks API failed");
+          }
+
+          const raw = await res.json();
+
+          // Backend returns { message: "...", data: [...], totalCount: n }
+          const tasksArray = Array.isArray(raw.data) ? raw.data : [];
+
+          const mappedTasks = tasksArray.map((task) => {
+            // Extract assignedTo names from the assignedTo array
+            const assignedToNames = (task.assignedTo || []).map(
+              (user) => user.name || "Unknown"
+            );
+
+            // Calculate days until due
+            const daysUntilDue = task.dueDate
+              ? Math.ceil(
+                  (new Date(task.dueDate) - new Date()) / (1000 * 60 * 60 * 24)
+                )
+              : null;
+
+            return {
+              id: task.id || task.taskId,
+              status: task.taskStatusName || task.statusName || task.status,
+              taskName: task.taskTitle || task.taskName,
+              eventName: task.eventName || "Standalone Task",
+              eventId: task.eventId,
+              assignedTo: assignedToNames.map((name, index) => ({
+                name: name,
+                src: "",
+                id: task.assignedTo?.[index]?.id || `user-${index}`,
+              })),
+              dueDate: task.dueDate
+                ? new Date(task.dueDate).toLocaleDateString("en-GB")
+                : "",
+              description: task.description,
+              creativeType: task.creativeType,
+              daysUntilDue: daysUntilDue,
+              createdBy: task.createdByName || "Unknown",
+              updatedBy: task.updatedByName || task.updatedBy || "Unknown",
+            };
+          });
+
+          return mappedTasks;
+        } catch (err) {
+          console.error("Error fetching standalone tasks:", err);
+          return [];
+        }
+      }
+
+      const response = await fetchWithRefresh(
+        `apis/dashboard/tasks?orgid=${organizationId}&filter=${apiFilter}`,
+        {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
             "ngrok-skip-browser-warning": "1",
           },
-        });
-
-        if (!res.ok) {
-          throw new Error("Standalone tasks API failed");
         }
+      );
 
-        const raw = await res.json();
-        
-        // Backend returns { message: "...", data: [...], totalCount: n }
-        const tasksArray = Array.isArray(raw.data) ? raw.data : [];
-
-        const mappedTasks = tasksArray.map((task) => {
-          // Extract assignedTo names from the assignedTo array
-          const assignedToNames = (task.assignedTo || []).map(user => user.name || "Unknown");
-
-          // Calculate days until due
-          const daysUntilDue = task.dueDate 
-            ? Math.ceil((new Date(task.dueDate) - new Date()) / (1000 * 60 * 60 * 24))
-            : null;
-
-          return {
-            id: task.id || task.taskId,
-            status: task.taskStatusName || task.statusName || task.status,
-            taskName: task.taskTitle || task.taskName,
-            eventName: task.eventName || "Standalone Task",
-            eventId: task.eventId,
-            assignedTo: assignedToNames.map((name, index) => ({
-              name: name,
-              src: "",
-              id: task.assignedTo?.[index]?.id || `user-${index}`
-            })),
-            dueDate: task.dueDate ? new Date(task.dueDate).toLocaleDateString("en-GB") : "",
-            description: task.description,
-            creativeType: task.creativeType,
-            daysUntilDue: daysUntilDue,
-            createdBy: task.createdByName || "Unknown",
-            updatedBy: task.updatedByName || task.updatedBy || "Unknown",
-          };
-        });
-        
-        return mappedTasks;
-      } catch (err) {
-        console.error("Error fetching standalone tasks:", err);
-        return [];
+      if (!response.ok) {
+        throw new Error("Tasks API failed");
       }
-    }
+
+      const data = await response.json();
+
+      // Transform API data to match the expected format for RecentTasks component
+      return (data.tasks || []).map((task) => ({
+        id: task.id || task.taskId,
+        status: task.taskStatusName,
+        taskName: task.taskTitle,
+        eventName: task.eventName,
+        eventId: task.eventId,
+        assignedTo:
+          task.assignedToNames?.map((name, index) => ({
+            name: name,
+            src: "",
+            id: task.assignedTo?.[index] || `user-${index}`,
+          })) || [],
+        dueDate: task.dueDate
+          ? new Date(task.dueDate).toLocaleDateString("en-GB")
+          : "",
+        description: task.description,
+        creativeType: task.creativeType,
+        daysUntilDue: task.daysUntilDue,
+        createdBy: task.createdByName || "Unknown",
+        updatedBy: task.updatedByName || "Unknown",
+      }));
+    },
+    [orgIdReady, selectedOrganizationId, user?.organizationId]
+  );
+
+  // Active Events API
+  const fetchActiveEventsData = useCallback(async () => {
+    if (!orgIdReady) return [];
+
+    const organizationId = selectedOrganizationId || user?.organizationId;
 
     const response = await fetchWithRefresh(
-      `apis/dashboard/tasks?orgid=${organizationId}&filter=${apiFilter}`,
+      `apis/dashboard/events?orgid=${organizationId}&filter=active`,
       {
         method: "GET",
         headers: {
@@ -284,74 +372,32 @@ const Dashboard = () => {
     );
 
     if (!response.ok) {
-      throw new Error("Tasks API failed");
+      throw new Error("Active Events API failed");
     }
 
     const data = await response.json();
 
-    // Transform API data to match the expected format for RecentTasks component
-    return (data.tasks || []).map((task) => ({
-      id: task.id || task.taskId,
-      status: task.taskStatusName,
-      taskName: task.taskTitle,
-      eventName: task.eventName,
-      eventId: task.eventId,
-      assignedTo: task.assignedToNames?.map((name, index) => ({
-        name: name,
-        src: "",
-        id: task.assignedTo?.[index] || `user-${index}`
-      })) || [],
-      dueDate: task.dueDate ? new Date(task.dueDate).toLocaleDateString("en-GB") : "",
-      description: task.description,
-      creativeType: task.creativeType,
-      daysUntilDue: task.daysUntilDue,
-      createdBy: task.createdByName || "Unknown",
-      updatedBy: task.updatedByName || "Unknown",
-    }));
-  }, [orgIdReady, selectedOrganizationId, user?.organizationId]);
-
-  // Active Events API
-  const fetchActiveEventsData = useCallback(async () => {
-    if (!orgIdReady) return [];
-    
-    const organizationId = selectedOrganizationId || user?.organizationId;
-
-      const response = await fetchWithRefresh(
-        `apis/dashboard/events?orgid=${organizationId}&filter=active`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "1",
-          },
-        }
-      );
-
-    if (!response.ok) {
-      throw new Error("Active Events API failed");
-    }
-    
-        const data = await response.json();
-
-        // Transform API data to match the expected format for ActiveEvents component
+    // Transform API data to match the expected format for ActiveEvents component
     return data.events.map((event) => ({
       status: "Active",
-          eventName: event.eventName,
+      eventName: event.eventName,
       // Use event's organization ID if available, otherwise use the current scope organization ID
       organizationId: event.organizationId || event.orgId || organizationId,
-      assignTo: event.assignedUsers?.map((user, index) => ({
-        name: user.userName || user.name || user.fullName || `User ${index + 1}`,
-        src: user.src || "",
-        id: user.userId || user.id || `user-${index}`
-      })) || [],
+      assignTo:
+        event.assignedUsers?.map((user, index) => ({
+          name:
+            user.userName || user.name || user.fullName || `User ${index + 1}`,
+          src: user.src || "",
+          id: user.userId || user.id || `user-${index}`,
+        })) || [],
       displayDate: new Date(event.eventDate).toLocaleDateString("en-GB"),
       eventDate: new Date(event.eventDate).toLocaleDateString("en-GB"),
-          createdBy: { 
-            name: event.createdByUser?.fullName || "Unknown", 
-        src: ""
-          },
-          description: event.eventDescription,
-          location: event.locationDetails,
+      createdBy: {
+        name: event.createdByUser?.fullName || "Unknown",
+        src: "",
+      },
+      description: event.eventDescription,
+      location: event.locationDetails,
       eventType: event.eventTypeDesc || "Event",
       id: event.id,
     }));
@@ -360,12 +406,14 @@ const Dashboard = () => {
   // Assigned Events API
   const fetchAssignedEvents = useCallback(async () => {
     if (!orgIdReady) return [];
-    
+
     const organizationId = selectedOrganizationId || user?.organizationId;
     const userId = user?.userId;
-    
-    const includeChildren = isViewingOwnOrganization() ? "&includeChildren=true" : "&includeChildren=false";
-    
+
+    const includeChildren = isViewingOwnOrganization()
+      ? "&includeChildren=true"
+      : "&includeChildren=false";
+
     const response = await fetchWithRefresh(
       `apis/dashboard/assigned-events?orgid=${organizationId}&userid=${userId}${includeChildren}`,
       {
@@ -380,29 +428,41 @@ const Dashboard = () => {
     if (!response.ok) {
       throw new Error("Assigned events API failed");
     }
-    
+
     const data = await response.json();
-    
+
     // Transform API data to match EventAssignToMe component format
     return data.events.map((event) => ({
       id: event.id || event.eventId,
       status: event.status || "Active",
       eventName: event.eventName,
-      collegeName: event.organizationName || event.collegeName || event.college || "",
+      collegeName:
+        event.organizationName || event.collegeName || event.college || "",
       // Use event's organization ID if available, otherwise use the current scope organization ID
       organizationId: event.organizationId || event.orgId || organizationId,
-      assignTo: event.assignedUsers?.map((user, index) => ({
-        name: user.userName || user.name || user.fullName || `User ${index + 1}`,
-        src: user.src || "",
-        id: user.userId || user.id || `user-${index}`
-      })) || [],
+      assignTo:
+        event.assignedUsers?.map((user, index) => ({
+          name:
+            user.userName || user.name || user.fullName || `User ${index + 1}`,
+          src: user.src || "",
+          id: user.userId || user.id || `user-${index}`,
+        })) || [],
       eventDate: new Date(event.eventDate).toLocaleDateString("en-GB"),
       createdBy: {
-        name: event.createdByUser?.fullName || event.createdByUser?.name || "Unknown",
+        name:
+          event.createdByUser?.fullName ||
+          event.createdByUser?.name ||
+          "Unknown",
         src: event.createdByUser?.src || "",
       },
     }));
-  }, [orgIdReady, selectedOrganizationId, user?.organizationId, user?.userId, isViewingOwnOrganization]);
+  }, [
+    orgIdReady,
+    selectedOrganizationId,
+    user?.organizationId,
+    user?.userId,
+    isViewingOwnOrganization,
+  ]);
 
   /** -------------------- Use API Hooks -------------------- **/
   // Dashboard Summary
@@ -410,7 +470,7 @@ const Dashboard = () => {
     data: summaryData,
     loading: loadingSummary,
     error: errorSummary,
-    execute: executeSummary
+    execute: executeSummary,
   } = useApi(fetchSummaryData, [orgIdReady], false);
 
   // Active Events Count (removed)
@@ -420,8 +480,12 @@ const Dashboard = () => {
     data: allEvents,
     loading: loadingEventsCampaign,
     error: errorEventsCampaign,
-    execute: executeEventsCampaign
-  } = useApi(fetchEventsCampaign, [orgIdReady, selectedMonth, selectedYear], false);
+    execute: executeEventsCampaign,
+  } = useApi(
+    fetchEventsCampaign,
+    [orgIdReady, selectedMonth, selectedYear],
+    false
+  );
 
   // Tasks - Create a memoized function for tasks
   const fetchTasksForCurrentTitle = useCallback(() => {
@@ -432,7 +496,7 @@ const Dashboard = () => {
     data: tasksData,
     loading: loadingTasks,
     error: errorTasks,
-    execute: executeTasks
+    execute: executeTasks,
   } = useApi(fetchTasksForCurrentTitle, [orgIdReady, currentTitle], false);
 
   // Active Events
@@ -440,7 +504,7 @@ const Dashboard = () => {
     data: activeEventsData,
     loading: loadingActiveEvents,
     error: errorActiveEvents,
-    execute: executeActiveEvents
+    execute: executeActiveEvents,
   } = useApi(fetchActiveEventsData, [orgIdReady], false);
 
   // Assigned Events
@@ -448,37 +512,47 @@ const Dashboard = () => {
     data: eventAssignToMeData,
     loading: loadingAssignToMe,
     error: errorAssignToMe,
-    execute: executeAssignedEvents
+    execute: executeAssignedEvents,
   } = useApi(fetchAssignedEvents, [orgIdReady], false);
 
   // Handle API errors and show user-friendly messages
   useEffect(() => {
     if (errorSummary) {
-      showError('Failed to load dashboard summary. Please try again.', { duration: 5000 });
+      showError("Failed to load dashboard summary. Please try again.", {
+        duration: 5000,
+      });
     }
   }, [errorSummary, showError]);
 
   useEffect(() => {
     if (errorEventsCampaign) {
-      showError('Failed to load events campaign data. Please try again.', { duration: 5000 });
+      showError("Failed to load events campaign data. Please try again.", {
+        duration: 5000,
+      });
     }
   }, [errorEventsCampaign, showError]);
 
   useEffect(() => {
     if (errorTasks) {
-      showError('Failed to load tasks data. Please try again.', { duration: 5000 });
+      showError("Failed to load tasks data. Please try again.", {
+        duration: 5000,
+      });
     }
   }, [errorTasks, showError]);
 
   useEffect(() => {
     if (errorActiveEvents) {
-      showError('Failed to load active events. Please try again.', { duration: 5000 });
+      showError("Failed to load active events. Please try again.", {
+        duration: 5000,
+      });
     }
   }, [errorActiveEvents, showError]);
 
   useEffect(() => {
     if (errorAssignToMe) {
-      showError('Failed to load assigned events. Please try again.', { duration: 5000 });
+      showError("Failed to load assigned events. Please try again.", {
+        duration: 5000,
+      });
     }
   }, [errorAssignToMe, showError]);
 
@@ -489,7 +563,13 @@ const Dashboard = () => {
       executeActiveEvents();
       executeAssignedEvents();
     }
-  }, [orgIdReady, scopeChangeTrigger, executeSummary, executeActiveEvents, executeAssignedEvents]);
+  }, [
+    orgIdReady,
+    scopeChangeTrigger,
+    executeSummary,
+    executeActiveEvents,
+    executeAssignedEvents,
+  ]);
 
   // Separate effect for events campaign to only run when month/year changes
   useEffect(() => {
@@ -499,17 +579,20 @@ const Dashboard = () => {
   }, [orgIdReady, selectedMonth, selectedYear, executeEventsCampaign]);
 
   // Define task tiles for reuse
-  const taskTiles = useMemo(() => [
-    "Total Tasks",
-    "Tasks Due Next 7 Days",
-    "Overdue Tasks",
-    "New Tasks",
-    "Active Tasks",
-    "Under Approval Tasks",
-    "Approved Tasks",
-    "Published Tasks",
-    "My Individual Tasks",
-  ], []);
+  const taskTiles = useMemo(
+    () => [
+      "Total Tasks",
+      "Tasks Due Next 7 Days",
+      "Overdue Tasks",
+      "New Tasks",
+      "Active Tasks",
+      "Under Approval Tasks",
+      "Approved Tasks",
+      "Published Tasks",
+      "My Individual Tasks",
+    ],
+    []
+  );
 
   // Refetch data for current component on scope change
   useEffect(() => {
@@ -523,7 +606,14 @@ const Dashboard = () => {
         executeTasks();
       }
     }
-  }, [activeComponent, currentTitle, orgIdReady, executeActiveEvents, executeTasks, taskTiles]);
+  }, [
+    activeComponent,
+    currentTitle,
+    orgIdReady,
+    executeActiveEvents,
+    executeTasks,
+    taskTiles,
+  ]);
 
   // Filter events by selected month
   const filteredEvents = useMemo(() => {
@@ -537,7 +627,6 @@ const Dashboard = () => {
       );
     });
   }, [allEvents, selectedMonth, selectedYear]);
-
 
   /** -------------------- Tiles Data -------------------- **/
   const summaryTiles = [
@@ -562,7 +651,8 @@ const Dashboard = () => {
       count: loadingSummary
         ? "..."
         : errorSummary
-        ? "!" :summaryData?.assignedEvents ?? 0,
+        ? "!"
+        : summaryData?.assignedEvents ?? 0,
       title: "Events Assigned to Me",
       subtitle: "Events I'm Managing",
       bgcolor: "rgba(185, 210, 251, 0.2)",
@@ -577,7 +667,8 @@ const Dashboard = () => {
       count: loadingSummary
         ? "..."
         : errorSummary
-        ? "!" :summaryData?.totalTasks ?? 0,
+        ? "!"
+        : summaryData?.totalTasks ?? 0,
       title: "Total Tasks",
       subtitle: "All Tasks Across Events",
       bgcolor: "rgba(224, 194, 251, 0.2)",
@@ -592,7 +683,8 @@ const Dashboard = () => {
       count: loadingSummary
         ? "..."
         : errorSummary
-        ? "!" :summaryData?.standaloneTasks ?? 0,
+        ? "!"
+        : summaryData?.standaloneTasks ?? 0,
       title: "My Individual Tasks",
       subtitle: "Your Personal Task List",
       bgcolor: "rgba(224, 231, 255, 0.2)",
@@ -605,7 +697,8 @@ const Dashboard = () => {
       count: loadingSummary
         ? "..."
         : errorSummary
-        ? "!" :summaryData?.dueSoonTasks ?? 0,
+        ? "!"
+        : summaryData?.dueSoonTasks ?? 0,
       title: "Tasks Due Next 7 Days",
       subtitle: "Tasks Due Soon",
       bgcolor: "rgba(245, 159, 10, 0.1)",
@@ -620,7 +713,8 @@ const Dashboard = () => {
       count: loadingSummary
         ? "..."
         : errorSummary
-        ? "!" :summaryData?.overdueTasks ?? 0,
+        ? "!"
+        : summaryData?.overdueTasks ?? 0,
       title: "Overdue Tasks",
       subtitle: "For Institute Level",
       bgcolor: "rgba(242, 178, 178, 0.2)",
@@ -635,7 +729,8 @@ const Dashboard = () => {
       count: loadingSummary
         ? "..."
         : errorSummary
-        ? "!" :summaryData?.newTasks ?? 0,
+        ? "!"
+        : summaryData?.newTasks ?? 0,
       title: "New Tasks",
       subtitle: "Awaiting Assignment",
       bgcolor: "rgba(219, 223, 226, 0.2)",
@@ -650,7 +745,8 @@ const Dashboard = () => {
       count: loadingSummary
         ? "..."
         : errorSummary
-        ? "!" :summaryData?.activeTasks ?? 0,
+        ? "!"
+        : summaryData?.activeTasks ?? 0,
       title: "Active Tasks",
       subtitle: "Currently In Progress",
       bgcolor: "rgba(216, 230, 253, 0.2)",
@@ -665,7 +761,8 @@ const Dashboard = () => {
       count: loadingSummary
         ? "..."
         : errorSummary
-        ? "!" :summaryData?.underApprovalTasks ?? 0,
+        ? "!"
+        : summaryData?.underApprovalTasks ?? 0,
       title: "Under Approval Tasks",
       subtitle: "Awaiting Approvals",
       bgcolor: "rgba(253, 205, 170, 0.2)",
@@ -680,7 +777,8 @@ const Dashboard = () => {
       count: loadingSummary
         ? "..."
         : errorSummary
-        ? "!" :summaryData?.approvedTasks ?? 0,
+        ? "!"
+        : summaryData?.approvedTasks ?? 0,
       title: "Approved Tasks",
       subtitle: "Ready To Publish",
       bgcolor: "rgba(176, 233, 197, 0.2)",
@@ -695,7 +793,8 @@ const Dashboard = () => {
       count: loadingSummary
         ? "..."
         : errorSummary
-        ? "!" :summaryData?.publishedTasks ?? 0,
+        ? "!"
+        : summaryData?.publishedTasks ?? 0,
       title: "Published Tasks",
       subtitle: "Completed Tasks",
       bgcolor: "rgba(224, 194, 251, 0.2)",
@@ -707,16 +806,19 @@ const Dashboard = () => {
     },
   ];
 
-
   const tilesRef = useRef(null);
 
   const scrollTiles = (direction) => {
     if (!tilesRef.current) return;
     const container = tilesRef.current;
     const scrollAmount = container.offsetWidth; // scroll one viewport width
-    const newScrollLeft = direction === "left"
-      ? Math.max(0, container.scrollLeft - scrollAmount)
-      : Math.min(container.scrollWidth - container.offsetWidth, container.scrollLeft + scrollAmount);
+    const newScrollLeft =
+      direction === "left"
+        ? Math.max(0, container.scrollLeft - scrollAmount)
+        : Math.min(
+            container.scrollWidth - container.offsetWidth,
+            container.scrollLeft + scrollAmount
+          );
     container.scrollTo({
       left: newScrollLeft,
       behavior: "smooth",
@@ -737,14 +839,19 @@ const Dashboard = () => {
       setActiveComponent("recent");
 
       // Set filter based on tile title - default to "All" for most tiles
-      if (tile.title === "Total Tasks" || tile.title === "Tasks Due Next 7 Days" || tile.title === "Overdue Tasks" || tile.title === "My Individual Tasks") {
+      if (
+        tile.title === "Total Tasks" ||
+        tile.title === "Tasks Due Next 7 Days" ||
+        tile.title === "Overdue Tasks" ||
+        tile.title === "My Individual Tasks"
+      ) {
         setFilter("All");
       } else {
         // Map tile titles to filter values that match the actual API status values
         const filterMap = {
           "New Tasks": "New",
-          "Active Tasks": "Active", 
-          "Under Approval Tasks": "Under Approval",  // Match API status value
+          "Active Tasks": "Active",
+          "Under Approval Tasks": "Under Approval", // Match API status value
           "Approved Tasks": "Approved",
           "Published Tasks": "Published",
           "My Individual Tasks": "Assigned to Me",
@@ -760,12 +867,15 @@ const Dashboard = () => {
   // Handle more button click on tiles - navigate to appropriate page based on tile type
   const handleMoreClick = (tile) => {
     // Handle Event tiles - navigate to events page
-    if (tile.title === "Active Events" || tile.title === "Events Assigned to Me") {
-      navigate('/events', {
+    if (
+      tile.title === "Active Events" ||
+      tile.title === "Events Assigned to Me"
+    ) {
+      navigate("/events", {
         state: {
           filter: tile.title === "Active Events" ? "active" : "assigned",
-          title: tile.title
-        }
+          title: tile.title,
+        },
       });
       return;
     }
@@ -785,24 +895,24 @@ const Dashboard = () => {
 
     const filter = filterMap[tile.title] || "all";
 
-    navigate('/tasks/list', {
+    navigate("/tasks/list", {
       state: {
         filter: filter,
-        title: tile.title
-      }
+        title: tile.title,
+      },
     });
   };
 
   // Handle task click
   const handleTaskClick = (task, key) => {
-    navigate('/events/eventDetailPage/tasks', { 
-      state: { 
-        taskId: task.id, 
-        mode: "view", 
+    navigate("/events/eventDetailPage/tasks", {
+      state: {
+        taskId: task.id,
+        mode: "view",
         eventId: task.eventId || null,
         eventName: task.eventName || null,
-        organizationId: selectedOrganizationId || user?.organizationId 
-      } 
+        organizationId: selectedOrganizationId || user?.organizationId,
+      },
     });
   };
 
@@ -844,7 +954,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="dashboard-middle">
+    <div className="dashboard-middle-container">
       {/* Welcome Section */}
       <div className="welcome-section">
         <h2>Welcome {user?.firstName}, Plan Your Day Ahead</h2>
@@ -912,9 +1022,7 @@ const Dashboard = () => {
                 onEventClick={handleEventClick}
                 loading={loadingTasks}
                 error={errorTasks}
-                showDropdown={[
-                  "Total Tasks",
-                ].includes(currentTitle)}
+                showDropdown={["Total Tasks"].includes(currentTitle)}
                 hideAssignedToColumn={currentTitle === "New Tasks"}
                 hideEventNameColumn={currentTitle === "My Individual Tasks"}
                 showOrganizationColumn={false}
@@ -923,62 +1031,63 @@ const Dashboard = () => {
             </div>
           )}
 
-        {/* Active Events */}
-        {activeComponent === "activeEvents" && (
-          <div className="active-events">
-            <ActiveEvents
-              events={(activeEventsData || []).slice(0, 5)}
-              title="Active Events"
-              onEventClick={handleEventClick}
-              loading={loadingActiveEvents}
-              error={errorActiveEvents}
-              emptyStateMessage="No active events found"
-            />
-          </div>
-        )}
-
-        {/* Events Assigned to Me */}
-        {activeComponent === "assignedToMe" && (
-          <div className="event-assign-to-me">
-            <EventAssignToMe
-              events={(eventAssignToMeData || []).slice(0, 5)}
-              title="Events Assigned to Me"
-              onEventClick={handleEventClick}
-              loading={loadingAssignToMe}
-              error={errorAssignToMe}
-              emptyStateMessage="No events assigned to you"
-            />
-          </div>
-        )}
-
-        {/* Events Campaign Section */}
-        <div className="events-campaign">
-          <div className="event-header">
-            <div className="event-title">
-              <Calendar size={20} />
-              <span>Events Campaign</span>
-            </div>
-
-            {/* Month Dropdown */}
-            <div className="month-dropdown">
-              <CustomDropdown
-                options={monthOptions}
-                defaultLabel={monthOptions[selectedMonthIndex]?.label}
-                onSelect={(opt) => setSelectedMonthIndex(opt.value)}
+          {/* Active Events */}
+          {activeComponent === "activeEvents" && (
+            <div className="active-events">
+              <ActiveEvents
+                events={(activeEventsData || []).slice(0, 5)}
+                title="Active Events"
+                onEventClick={handleEventClick}
+                loading={loadingActiveEvents}
+                error={errorActiveEvents}
+                emptyStateMessage="No active events found"
               />
             </div>
-          </div>
+          )}
 
-          {/* EventCampaign without header */}
-          <EventCampaign
-            title="Events Campaign"
-            month={monthOptions[selectedMonthIndex]?.label}
-            events={filteredEvents || []}
-            onItemClick={handleEventCampaignClick}
-            loading={loadingEventsCampaign}
-            error={errorEventsCampaign}
-            emptyStateMessage={`No events scheduled for ${monthOptions[selectedMonthIndex]?.label}`}
-          />
+          {/* Events Assigned to Me */}
+          {activeComponent === "assignedToMe" && (
+            <div className="event-assign-to-me">
+              <EventAssignToMe
+                events={(eventAssignToMeData || []).slice(0, 5)}
+                title="Events Assigned to Me"
+                onEventClick={handleEventClick}
+                loading={loadingAssignToMe}
+                error={errorAssignToMe}
+                emptyStateMessage="No events assigned to you"
+              />
+            </div>
+          )}
+
+          {/* Events Campaign Section */}
+          <div className="events-campaign">
+            <div className="event-header">
+              <div className="event-title">
+                <Calendar size={20} />
+                <span>Events Campaign</span>
+              </div>
+
+              {/* Month Dropdown */}
+              <div className="month-dropdown">
+                <CustomDropdown
+                  options={monthOptions}
+                  defaultLabel={monthOptions[selectedMonthIndex]?.label}
+                  onSelect={(opt) => setSelectedMonthIndex(opt.value)}
+                />
+              </div>
+            </div>
+
+            {/* EventCampaign without header */}
+            <EventCampaign
+              title="Events Campaign"
+              month={monthOptions[selectedMonthIndex]?.label}
+              events={filteredEvents || []}
+              onItemClick={handleEventCampaignClick}
+              loading={loadingEventsCampaign}
+              error={errorEventsCampaign}
+              emptyStateMessage={`No events scheduled for ${monthOptions[selectedMonthIndex]?.label}`}
+            />
+          </div>
         </div>
       </div>
     </div>

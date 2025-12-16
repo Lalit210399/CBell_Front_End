@@ -18,6 +18,7 @@ const NotificationDropdown = ({ onViewAllNotifications }) => {
 
   const [isOpen, setIsOpen] = useState(false);
   const [expandedNotifications, setExpandedNotifications] = useState({});
+  const [, setHoveredNotificationId] = useState(null);
   const dropdownRef = useRef(null);
 
   // Close dropdown on outside click

@@ -12,11 +12,11 @@ const MainLayout = ({ children }) => {
     location.pathname === "/signup";
 
   return (
-    <div className={`layout ${hideNavAndSidebar ? "no-nav-sidebar" : ""}`}>
+    <div className={`layout-container ${hideNavAndSidebar ? "no-nav-sidebar" : ""}`}>
       {!hideNavAndSidebar && <Sidebar />}
-      <div className="mainLayout">
+      <div className="main-content-container">
         {!hideNavAndSidebar && <Navbar />}
-        <div className="childLayout">{children}</div>
+        <div className="main-content">{children}</div>
       </div>
     </div>
   );
