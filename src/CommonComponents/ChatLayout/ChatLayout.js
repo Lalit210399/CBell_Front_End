@@ -228,7 +228,7 @@ const ChatLayout = ({ events, organizationId }) => {
   };
 
   return (
-    <div className="whatsapp-layout">
+    <div className="whatsapp-layout-container">
       {/* ---------- LEFT SIDEBAR ---------- */}
       <div className="whatsapp-sidebar">
         <div className="sidebar-header">
@@ -289,7 +289,7 @@ const ChatLayout = ({ events, organizationId }) => {
                     <span className="event-icon">
                       {expandedEventId === event.id ? <CalendarCheck /> : <Calendar />}
                     </span>
-                    <span className="event-name-text">{event.eventName}</span>
+                    <span className="event-name">{event.eventName}</span>
                   </div>
                   {/* Task count badge - commented out for now */}
                   {/* <span className="task-count-badge">
@@ -301,7 +301,7 @@ const ChatLayout = ({ events, organizationId }) => {
                 {expandedEventId === event.id && (
                   <div className="event-task-list">
                     {loadingTasks[event.id] ? (
-                      <div className="tasks-loading">
+                      <div className="page-loading">
                         <div className="loading-spinner"></div>
                         <p>Loading tasks...</p>
                       </div>
