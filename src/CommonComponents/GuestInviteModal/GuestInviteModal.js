@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import GuestService from "../../Services/GuestService";
+import "./GuestInviteModal.css";
 
 export default function GuestInviteModal({
   isOpen,

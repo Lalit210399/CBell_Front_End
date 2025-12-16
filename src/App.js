@@ -22,7 +22,7 @@ import ErrorBoundary from "./CommonComponents/ErrorBoundary";
 import ChatLayout from "./Pages/Chat/NewChatLayout";
 import GuestInviteValidationPage from "./Pages/Guest/GuestInviteValidation";
 import GuestTaskReviewPage from "./Pages/Guest/GuestTaskReview";
-import Settings from "./Pages/Settings/Settings";
+import Settings from "./Pages/Settings/Settings"; 
 
 // Component to render appropriate dashboard based on user role
 const DashboardRouter = () => {

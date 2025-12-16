@@ -39,6 +39,15 @@ const TaskList = () => {
   const initialFilter = location.state?.filter || "all";
   const pageTitle = location.state?.title || "All Tasks";
 
+  const assignedToMeLabels = [
+    "Tasks Assigned to Me",
+    "Assigned to Me",
+    "My Individual Tasks",
+    "assigned_to_me",
+  ];
+
+  const isAssignedToMeView = assignedToMeLabels.includes(initialFilter);
+
   const [filters, setFilters] = useState(INITIAL_FILTER_STATE);
   const [availableStatuses, setAvailableStatuses] = useState([]);
   const [availableEvents, setAvailableEvents] = useState([]);
@@ -118,8 +127,6 @@ const TaskList = () => {
       "Tasks Assigned to Me",
       "Assigned to Me",
       "My Individual Tasks",
-      "assigned_to_me",
-      "assigned_to_me",
     ];
 
     let data = [];
@@ -142,7 +149,7 @@ const TaskList = () => {
       if (!Array.isArray(data)) {
         data = Array.isArray(resp) ? resp : [];
       }
-    } else if (initialFilter === "Tasks Assigned to Me") {
+    } else if (initialFilter === "Tasks Assigned to Me" || initialFilter === "assigned_to_me") {
       // Backwards-compatible fallback to the my-tasks endpoint
       const userId = user?.userId;
       const includeChildren = isViewingOwnOrganization() ? "true" : "false";
@@ -204,7 +211,9 @@ const TaskList = () => {
         eventName: toCamelCase(task.eventName) || "N/A",
         eventId: task.eventId,
         dueDate: task.dueDate ? formatDateTime(task.dueDate) : "N/A",
-        createdBy: toCamelCase(task.createdByName || task.createdBy?.name || task.createdBy) || "Unknown",
+        createdBy: toCamelCase(
+          task.assignmentDetails?.[0]?.assignedByName || task.assignedByName || task.createdByName || task.createdBy?.name || task.createdBy
+        ) || "Unknown",
         participants: allParticipants,
         rawData: task,
         organizationName: task.organizationName,
@@ -446,14 +455,14 @@ const TaskList = () => {
   // Get empty field text helper
   const getEmptyText = (key) => EMPTY_FIELD_TEXT[key] || EMPTY_FIELD_TEXT.default;
 
-  const columns = [
+  const columns = useMemo(() => [
     { key: "name", label: "Task Name", skeletonWidth: "30%", skeletonHeight: "20px" },
     { key: "status", label: "Status", skeletonWidth: "10%", skeletonHeight: "20px" },
     { key: "eventName", label: "Event", skeletonWidth: "15%", skeletonHeight: "20px" },
     { key: "participants", label: "Assigned To", skeletonWidth: "20%", skeletonHeight: "40px" },
     { key: "dueDate", label: "Due Date", skeletonWidth: "12%", skeletonHeight: "20px" },
-    { key: "createdBy", label: "Created By", skeletonWidth: "13%", skeletonHeight: "20px" },
-  ];
+    { key: "createdBy", label: isAssignedToMeView ? "Assigned By" : "Created By", skeletonWidth: "13%", skeletonHeight: "20px" },
+  ], [isAssignedToMeView]);
 
   return (
     <div className="TaskList">
@@ -535,6 +544,7 @@ const TaskList = () => {
           error={error}
           onRetry={handleRetry}
           onSort={handleSort}
+          showActions={!isDesigner}
           renderCell={(key, item) => {
             if (key === "participants") {
               return item.participants && item.participants.length > 0 ? (
