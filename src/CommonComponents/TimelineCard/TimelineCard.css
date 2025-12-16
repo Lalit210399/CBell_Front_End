@@ -7,13 +7,12 @@
   max-width: 375px;
   font-family: 'Lato', sans-serif;
   overflow-y: auto;
-  /* transition: box-shadow 0.3s ease, transform 0.2s ease; */
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
 }
 
-/* Card hover */
 .event-campaign-container:hover {
-  /* box-shadow: 0px 6px 14px rgba(0, 0, 0, 0.08); */
-  /* transform: translateY(-2px); */
+  box-shadow: 0px 6px 14px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
 }
 
 .event-header {

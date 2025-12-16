@@ -1,15 +1,15 @@
-/* NotificationsSidebar.css */
+/* Minimalistic NotificationsSidebar.css */
 .notifications-sidebar-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.3);
   z-index: 10000;
   display: flex;
   justify-content: flex-end;
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn 0.2s ease;
 }
 
 @keyframes fadeIn {
@@ -18,14 +18,14 @@
 }
 
 .notifications-sidebar {
-  width: 450px;
+  width: 420px;
   height: 100vh;
-  background: linear-gradient(135deg, #ffffff, #f8fffe);
-  border-left: 3px solid #02968A;
+  background: #FFFFFF;
+  border-left: 1px solid #E5E7EB;
   display: flex;
   flex-direction: column;
   animation: slideInRight 0.3s ease;
-  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.08);
 }
 
 @keyframes slideInRight {
@@ -47,14 +47,15 @@
 .sidebar-title {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .sidebar-title h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 700;
-  font-family: 'Lato', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  color: #1E293B;
 }
 
 .unread-badge {
@@ -68,11 +69,6 @@
     right: 224px;
     top: 19px;
     animation: pulse 2s infinite;
-}
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
 }
 
 .sidebar-actions {
@@ -98,30 +94,32 @@
 }
 
 .mark-all-read-btn:hover {
-  background: rgba(201, 255, 212, 0.3);
-  transform: translateY(-2px);
+  background: #F3F4F6;
+  color: #1F2937;
+  border-color: #D1D5DB;
 }
 
 .close-sidebar-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  padding: 8px;
+  background: transparent;
+  border: none;
+  color: #6B7280;
+  padding: 6px;
   display: flex;
   border-radius: 6px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .close-sidebar-btn:hover {
-  background: rgba(220, 38, 38, 0.2);
-  transform: scale(1.1);
+  background: #F3F4F6;
+  color: #1F2937;
 }
 
 .sidebar-content {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 0;
+  padding: 8px 0;
 }
 
 .empty-state {
@@ -132,24 +130,25 @@
   height: 100%;
   padding: 40px;
   text-align: center;
-  color: #043E54;
+  color: #9CA3AF;
 }
 
 .empty-state p {
-  margin: 16px 0 8px 0;
-  font-size: 18px;
-  font-weight: 600;
-  font-family: 'Lato', sans-serif;
+  margin: 12px 0 6px 0;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  color: #6B7280;
 }
 
 .empty-state span {
-  color: #02968A;
-  font-size: 14px;
-  font-weight: 500;
+  color: #9CA3AF;
+  font-size: 13px;
+  font-weight: 400;
 }
 
 .notifications-list {
-  padding: 0 16px;
+  padding: 0;
 }
 
 .notification-card {
@@ -164,16 +163,24 @@
   box-shadow: 0 2px 8px rgba(4, 62, 84, 0.1);
   transition: all 0.3s ease;
   cursor: pointer;
+  gap: 12px;
+  border-left: 4px solid transparent;
 }
 
 .notification-card.unread {
-  background: linear-gradient(135deg, #C9FFD4, #e8f8f5);
-  box-shadow: 0 4px 12px rgba(2, 150, 138, 0.15);
+  background: linear-gradient(to right, #EFF6FF, #FFFFFF);
+  border-left: 4px solid #3B82F6;
+  box-shadow: inset 0 0 12px rgba(59, 130, 246, 0.05);
 }
 
 .notification-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(4, 62, 84, 0.15);
+  background: linear-gradient(to right, #F0F4FF, #FFFFFF);
+  border-left-color: #E0E7FF;
+}
+
+.notification-card.unread:hover {
+  background: linear-gradient(to right, #E0F2FE, #FFFFFF);
+  box-shadow: inset 0 0 16px rgba(59, 130, 246, 0.08);
 }
 
 .notification-main {
@@ -184,8 +191,10 @@
 
 .notification-icon {
   font-size: 20px;
-  margin-top: 2px;
-  filter: drop-shadow(0 2px 4px rgba(4, 62, 84, 0.2));
+  margin-top: 0;
+  flex-shrink: 0;
+  opacity: 0.9;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
 .notification-content {
@@ -196,8 +205,13 @@
   margin: 0 0 4px 0;
   font-size: 14px;
   font-weight: 700;
-  color: #043E54;
-  font-family: 'Lato', sans-serif;
+  background: linear-gradient(135deg, #043E54 0%, #02968A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .notification-body {
@@ -243,8 +257,8 @@
 }
 
 .notification-time {
-  color: #043E54;
-  font-weight: 600;
+  color: #9CA3AF;
+  font-weight: 400;
 }
 
 .notification-category {
@@ -260,9 +274,10 @@
 
 .notification-actions {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.2s ease;
+  flex-shrink: 0;
 }
 
 .notification-card:hover .notification-actions {
@@ -270,44 +285,41 @@
 }
 
 .action-btn {
-  background: rgba(4, 62, 84, 0.1);
-  border: 1px solid rgba(4, 62, 84, 0.2);
-  padding: 6px;
-  border-radius: 6px;
+  background: transparent;
+  border: 1px solid #E5E7EB;
+  padding: 5px;
+  border-radius: 5px;
   cursor: pointer;
-  color: #043E54;
-  transition: all 0.3s ease;
+  color: #6B7280;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .action-btn.mark-read:hover {
-  background: linear-gradient(135deg, #C9FFD4, #C9FFD4);
-  color: #02968A;
-  transform: scale(1.1);
-  box-shadow: 0 2px 8px rgba(2, 150, 138, 0.3);
+  background: #DBEAFE;
+  color: #1D4ED8;
+  border-color: #BFDBFE;
 }
 
 .action-btn.delete:hover {
-  background: linear-gradient(135deg, #ffebee, #ffebee);
-  color: #d32f2f;
-  transform: scale(1.1);
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+  background: #FEE2E2;
+  color: #DC2626;
+  border-color: #FECACA;
 }
 
 .action-btn.external:hover {
-  background: linear-gradient(135deg, #e3f2fd, #e3f2fd);
-  color: #1976d2;
-  transform: scale(1.1);
-  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
+  background: #DBEAFE;
+  color: #1D4ED8;
+  border-color: #BFDBFE;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .notifications-sidebar {
     width: 100%;
-    max-width: 400px;
+    max-width: 420px;
   }
 }
 
@@ -317,19 +329,27 @@
   }
   
   .notifications-sidebar .notification-sidebar-header {
-    padding: 16px;
+    padding: 14px;
   }
   
   .sidebar-title h2 {
-    font-size: 18px;
+    font-size: 15px;
   }
   
   .notification-card {
-    padding: 12px;
+    padding: 12px 14px;
   }
-  
-  .mark-all-read-btn {
-    padding: 6px 12px;
-    font-size: 12px;
+
+  .notification-item-actions {
+    opacity: 1;
   }
+}
+
+.highlighted-name {
+  font-weight: 700;
+  background: linear-gradient(135deg, #02968A 0%, #043E54 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  padding: 0 2px;
 }

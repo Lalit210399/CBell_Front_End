@@ -1,4 +1,4 @@
-/* Notification Dropdown Styles */
+/* Minimalistic Notification Dropdown Styles */
 .notification-dropdown {
   position: relative;
   display: inline-block;
@@ -13,41 +13,38 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  /* background-color: #C9FFD4; */
-  border: 2px solid transparent;
+  border: none;
+  background: transparent;
 }
 
 .notification-bell:hover {
-  /* background-color: #02968A; */
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(2, 150, 138, 0.3);
+  background: rgba(4, 62, 84, 0.05);
+  transform: scale(1.02);
 }
 
 .bell-icon {
   color: #043E54;
-  transition: all 0.3s ease;
-}
-
-.notification-bell:hover .bell-icon {
-  /* color: white; */
+  transition: all 0.2s ease;
+  width: 24px;
+  height: 24px;
 }
 
 .notification-badge {
   position: absolute;
-  top: -2px;
-  right: -2px;
+  top: 0;
+  right: 0;
   background: linear-gradient(135deg, #02968A, #043E54);
   color: white;
   border-radius: 50%;
-  min-width: 20px;
-  height: 20px;
+  min-width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   border: 2px solid white;
-  box-shadow: 0 3px 8px rgba(4, 62, 84, 0.4);
+  box-shadow: 0 2px 8px rgba(2, 150, 138, 0.4);
   animation: pulse 2s infinite;
 }
 
@@ -66,22 +63,23 @@
   background: linear-gradient(135deg, #ffffff, #f8fffe);
   border: 2px solid #02968A;
   border-radius: 12px;
-  box-shadow: 0 12px 40px rgba(4, 62, 84, 0.15), 0 4px 16px rgba(2, 150, 138, 0.1);
-  z-index: 1000;
+  box-shadow: 0 10px 25px rgba(4, 62, 84, 0.15);
+  z-index: 1100;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   animation: slideDown 0.3s ease-out;
+  margin-top: 8px;
 }
 
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-10px) scale(0.95);
+    transform: translateY(-8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
@@ -91,22 +89,24 @@
   align-items: center;
   padding: 12px 16px;
   border-bottom: 2px solid #C9FFD4;
-  background: linear-gradient(135deg, #043E54, #02968A);
-  color: white;
+  background: linear-gradient(135deg, #E7F7EA 0%, #F0FEFB 100%);
+  position: relative;
 }
 
 .notification-title-section {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0;
 }
 
 .notification-header h3 {
   margin: 0;
   font-size: 16px;
+  font-size: 16px;
   font-weight: 700;
-  color: white;
-  font-family: 'Lato', sans-serif;
+  color: #043E54;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  letter-spacing: 0.5px;
 }
 
 .unread-count-badge {
@@ -128,42 +128,32 @@
 
 .notification-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  align-items: center;
 }
 
 .mark-all-read-btn,
-.settings-btn,
 .close-btn {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 8px;
   border-radius: 6px;
   cursor: pointer;
-  color: white;
-  transition: all 0.3s ease;
+  color: #6B7280;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .mark-all-read-btn:hover {
-  background-color: rgba(201, 255, 212, 0.3);
-  color: #C9FFD4;
-  transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(201, 255, 212, 0.3);
-}
-
-.settings-btn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
-  transform: scale(1.05);
+  background-color: #F3F4F6;
+  color: #1F2937;
 }
 
 .close-btn:hover {
-  background-color: rgba(220, 38, 38, 0.2);
-  color: #ff6b6b;
-  transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
+  background-color: #F3F4F6;
+  color: #1F2937;
 }
 
 .notification-content {
@@ -177,14 +167,14 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 24px;
-  color: #d32f2f;
-  background: linear-gradient(135deg, #ffebee, #fff5f5);
-  font-size: 14px;
+  padding: 12px 16px;
+  color: #DC2626;
+  background: #FEE2E2;
+  font-size: 13px;
   font-weight: 500;
-  border-left: 4px solid #d32f2f;
-  margin: 8px;
-  border-radius: 8px;
+  border-left: 3px solid #DC2626;
+  margin: 12px;
+  border-radius: 6px;
 }
 
 .notification-loading {
@@ -193,17 +183,17 @@
   align-items: center;
   justify-content: center;
   padding: 40px 24px;
-  color: #043E54;
-  gap: 16px;
+  color: #6B7280;
+  gap: 12px;
 }
 
 .loading-spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid #C9FFD4;
-  border-top: 3px solid #02968A;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #E5E7EB;
+  border-top: 2px solid #1F2937;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
@@ -218,24 +208,24 @@
   justify-content: center;
   padding: 40px 24px;
   text-align: center;
-  color: #043E54;
+  color: #9CA3AF;
 }
 
 .notification-empty p {
-  margin: 16px 0 8px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #043E54;
+  margin: 12px 0 6px 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: #6B7280;
 }
 
 .notification-empty small {
-  font-size: 14px;
-  color: #02968A;
-  font-weight: 500;
+  font-size: 13px;
+  color: #9CA3AF;
+  font-weight: 400;
 }
 
 .notification-list {
-  padding: 8px 0;
+  padding: 0;
 }
 
 .notification-item {
@@ -253,21 +243,19 @@
 }
 
 .notification-item:hover {
-  background: linear-gradient(135deg, #f8fffe, #e8f8f5);
-  transform: translateX(4px);
-  box-shadow: 0 2px 8px rgba(2, 150, 138, 0.1);
+  background: linear-gradient(to right, #F0FEFB, #FFFFFF);
+  border-left-color: #C9FFD4;
 }
 
 .notification-item.unread {
-  background: linear-gradient(135deg, #C9FFD4, #e8f8f5);
+  background: linear-gradient(to right, #E7F7EA, #FFFFFF);
   border-left: 4px solid #02968A;
-  box-shadow: 0 2px 8px rgba(2, 150, 138, 0.15);
+  box-shadow: inset 0 0 12px rgba(2, 150, 138, 0.05);
 }
 
 .notification-item.unread:hover {
-  background: linear-gradient(135deg, #B8F5C8, #d4f4dd);
-  transform: translateX(4px);
-  box-shadow: 0 4px 12px rgba(2, 150, 138, 0.2);
+  background: linear-gradient(to right, #D2F1E9, #FFFFFF);
+  box-shadow: inset 0 0 16px rgba(2, 150, 138, 0.08);
 }
 
 .notification-item:last-child {
@@ -278,15 +266,18 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  gap: 12px;
   flex: 1;
   min-width: 0;
 }
 
 .notification-icon {
   font-size: 20px;
+  font-size: 20px;
   flex-shrink: 0;
-  margin-top: 2px;
-  filter: drop-shadow(0 2px 4px rgba(4, 62, 84, 0.2));
+  margin-top: 0;
+  opacity: 0.9;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
 .notification-details {
@@ -298,9 +289,14 @@
   margin: 0 0 4px 0;
   font-size: 14px;
   font-weight: 700;
-  color: #043E54;
+  background: linear-gradient(135deg, #043E54 0%, #02968A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   line-height: 1.3;
-  font-family: 'Lato', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .notification-body {
@@ -308,6 +304,15 @@
   font-size: 13px;
   color: #02968A;
   line-height: 1.4;
+  font-weight: 400;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.notification-body.collapsed {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -348,8 +353,8 @@
 }
 
 .notification-time {
-  font-weight: 600;
-  color: #02968A;
+  font-weight: 400;
+  color: #9CA3AF;
 }
 
 .notification-category {
@@ -365,52 +370,45 @@
 
 .notification-item-actions {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   opacity: 0;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   flex-shrink: 0;
 }
 
 .notification-item:hover .notification-item-actions {
   opacity: 1;
-  transform: translateX(-4px);
 }
 
 .action-btn {
-  background: rgba(4, 62, 84, 0.1);
-  border: 1px solid rgba(4, 62, 84, 0.2);
-  padding: 6px;
-  border-radius: 6px;
+  background: transparent;
+  border: 1px solid #E5E7EB;
+  padding: 5px;
+  border-radius: 5px;
   cursor: pointer;
-  color: #043E54;
-  transition: all 0.3s ease;
+  color: #6B7280;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .mark-read-btn:hover {
-  /* background: linear-gradient(135deg, #C9FFD4, #B8F5C8); */
-  background: linear-gradient(135deg, #C9FFD4, #C9FFD4);
-  color: #02968A;
-  transform: scale(1.1);
-  box-shadow: 0 2px 8px rgba(2, 150, 138, 0.3);
+  background: #DBEAFE;
+  color: #1D4ED8;
+  border-color: #BFDBFE;
 }
 
 .delete-btn:hover {
-  /* background: linear-gradient(135deg, #ffebee, #ffcdd2); */
-  background: linear-gradient(135deg, #ffebee, #ffebee);
-  color: #d32f2f;
-  transform: scale(1.1);
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+  background: #FEE2E2;
+  color: #DC2626;
+  border-color: #FECACA;
 }
 
 .external-btn:hover {
-  /* background: linear-gradient(135deg, #e3f2fd, #bbdefb); */
-  background: linear-gradient(135deg, #e3f2fd, #e3f2fd);
-  color: #1976d2;
-  transform: scale(1.1);
-  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
+  background: #DBEAFE;
+  color: #1D4ED8;
+  border-color: #BFDBFE;
 }
 
 .notification-footer {
@@ -421,42 +419,42 @@
 
 .view-all-btn {
   width: 100%;
-  background: linear-gradient(135deg, #02968A, #043E54);
+  background: linear-gradient(135deg, #3B82F6, #2563EB);
   border: none;
   padding: 10px 16px;
   border-radius: 8px;
   cursor: pointer;
   color: white;
   font-size: 13px;
+  font-size: 13px;
   font-weight: 600;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(4, 62, 84, 0.2);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
 }
 
 .view-all-btn:hover {
-  background: linear-gradient(135deg, #043E54, #02968A);
+  background: linear-gradient(135deg, #2563EB, #1D4ED8);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(4, 62, 84, 0.3);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 /* Responsive Design */
 @media (max-width: 480px) {
   .notification-panel {
-    width: 340px;
+    width: 360px;
     right: -10px;
   }
 
   .notification-header {
-    padding: 16px 20px;
+    padding: 12px 14px;
   }
 
   .notification-item {
-    padding: 12px 20px;
-    margin: 0 4px;
+    padding: 12px 14px;
   }
 
   .notification-footer {
-    padding: 12px 20px;
+    padding: 12px 14px;
   }
 
   .notification-bell {
@@ -466,5 +464,14 @@
   .bell-icon {
     font-size: 20px;
   }
+}
+
+.highlighted-name {
+  font-weight: 700;
+  background: linear-gradient(135deg, #02968A 0%, #043E54 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  padding: 0 2px;
 }
 

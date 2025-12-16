@@ -9,6 +9,7 @@ import TaskDetail from "./TaskDetail/TaskDetail";
 import TopSection from "../../CommonComponents/TaskTopSection/EditTopSection";
 import Breadcrumb from "../../CommonComponents/Breadcrumb/Breadcrumb";
 import PageSkeleton from "../../CommonComponents/SkeletonLoading/PageSkeleton";
+import GuestInviteModal from "../../CommonComponents/GuestInviteModal/GuestInviteModal";
 import { useUser } from "../../Context/UserContext";
 import { useMessages } from "../../Context/MessageContext";
 import { useTaskStatus } from "../../Hooks/useTaskStatus";
@@ -81,6 +82,7 @@ const TaskDetailPage = () => {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [apiEventId, setApiEventId] = useState(locationEventId); // Store eventId from API response
   const [hasWorkSubmissionFiles, setHasWorkSubmissionFiles] = useState(false); // Track work submission files
+  const [guestModalOpen, setGuestModalOpen] = useState(false);
   const [showPostLinkModal, setShowPostLinkModal] = useState(false);
   const [postLinkData, setPostLinkData] = useState(null);
   const [selectedPlatformIndex, setSelectedPlatformIndex] = useState(0);
@@ -131,6 +133,29 @@ const TaskDetailPage = () => {
     canCRUD: true, // Default to true for new tasks
     accessLevel: "FULL_ACCESS", // Default to full access for new tasks
   });
+
+  const guestTaskPayload = useMemo(() => {
+    if (mode === "create") {
+      return null;
+    }
+
+    const resolvedTaskId = taskId || taskData.id;
+    if (!resolvedTaskId) {
+      return null;
+    }
+
+    const resolvedEventId = apiEventId || taskData.eventId || locationEventId;
+    const resolvedOrgId = taskData.organizationId || organizationId || user?.organizationId;
+
+    return {
+      id: resolvedTaskId,
+      title: taskTitle || taskData.taskTitle || taskData.title || "Task",
+      eventId: resolvedEventId,
+      eventName: navEventName || eventName || taskData.eventName,
+      orgId: resolvedOrgId,
+      orgName: taskData.organizationName || user?.organization?.name || user?.organizationName || "Organization",
+    };
+  }, [mode, taskId, taskData, apiEventId, locationEventId, organizationId, user?.organizationId, user?.organization?.name, user?.organizationName, taskTitle, navEventName, eventName]);
 
   // No default status options - only use API data
 
@@ -1814,6 +1839,8 @@ const TaskDetailPage = () => {
     return taskLoading || usersLoading || statusLoading;
   }, [mode, taskLoading, usersLoading, statusLoading]);
 
+  const canInviteGuests = Boolean(guestTaskPayload);
+
   if (!user) {
     return <PageSkeleton type="task" />;
   }
@@ -1824,8 +1851,11 @@ const TaskDetailPage = () => {
 
   return (
     <div className="task-creation-module fade-in">
-      <div className="BreadCrumb">
+      <div className="BreadCrumb" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <Breadcrumb items={breadcrumbItems} />
+        {canInviteGuests && (
+          <button className="primary" onClick={() => setGuestModalOpen(true)}>Add Guests</button>
+        )}
       </div>
 
       <div className="Top-Section">
@@ -1874,6 +1904,20 @@ const TaskDetailPage = () => {
           setActiveTab={handleTabChange}
         />
       </div>
+      {guestModalOpen && guestTaskPayload && (
+        <GuestInviteModal
+          isOpen={guestModalOpen}
+          onClose={() => setGuestModalOpen(false)}
+          tasks={[{ id: guestTaskPayload.id, title: guestTaskPayload.title, eventId: guestTaskPayload.eventId, orgId: guestTaskPayload.orgId }]}
+          events={guestTaskPayload.eventId ? [{ id: guestTaskPayload.eventId, name: guestTaskPayload.eventName || "Current Event" }] : []}
+          orgs={guestTaskPayload.orgId ? [{ id: guestTaskPayload.orgId, name: guestTaskPayload.orgName }] : []}
+          lockedTask={guestTaskPayload}
+          onCreated={() => {
+            setGuestModalOpen(false);
+            addMessage({ text: "Guest invite created", type: "success", duration: 2500 });
+          }}
+        />
+      )}
 
       {/* Post Link Modal */}
       {showPostLinkModal && postLinkData && ReactDOM.createPortal(

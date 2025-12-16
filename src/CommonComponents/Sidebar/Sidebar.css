@@ -1,21 +1,18 @@
-/* Sidebar.css */
-
+/* Sidebar */
 .sidebar {
-  width: var(--sidebarWidth);
+  width: 80px;
   height: 100vh;
-  background-color: var(--primary); /* Sidebar background */
+  background-color: var(--primary);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 20px;
-  position: fixed;
-  left: 0;
-  top: 0;
-  font-family: var(--font-family);
-  font-size: var(--font-size);
+  padding: 20px 0;
+  position: relative;
+  flex-shrink: 0;
+  z-index: 300;
 }
 
-.logo {
+.sidebar-logo {
   color: var(--white);
   font-size: 22px;
   font-weight: bold;
@@ -23,9 +20,9 @@
   margin-bottom: 20px;
 }
 
-.menu {
+.sidebar-menu {
   list-style: none;
-  padding: 0px 20px 0 0;
+  padding: 0 20px 0 0;
   margin: 0;
 }
 
@@ -42,7 +39,7 @@
   text-align: center;
 }
 
-.menu-item {
+.sidebar-menu-item {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -51,46 +48,44 @@
   color: var(--white);
   text-decoration: none;
   border-radius: var(--radius-md);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  transition: background-color 0.2s ease;
 }
 
-/* Hover state */
-.menu-item:hover {
+.sidebar-menu-item:hover {
   background-color: var(--hover);
 }
 
-/* Active state */
-.menu-item.active {
+.sidebar-menu-item.active {
   background-color: var(--primaryDark);
   color: #f0f0f0;
   border-radius: var(--radius-md);
 }
 
-.tooltip {
+/* Custom tooltips positioned to the right of sidebar */
+.sidebar-menu-item {
   position: relative;
-  display: inline-block;
-  cursor: pointer;
 }
 
-.tooltip::after {
-  content: attr(data-tooltip);
+.sidebar-menu-item::after {
+  content: attr(title);
   position: absolute;
-  bottom: -45px;
-  left: 10px;
-  transform: translateX(-50%);
+  left: calc(100% + 15px);
+  top: 50%;
+  transform: translateY(-50%);
   background-color: var(--tooltipBg);
   color: var(--tooltipText);
-  padding: 4px 8px;
+  padding: 6px 12px;
   border-radius: var(--radius-sm);
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s ease;
-  font-size: 12px;
-  margin-bottom: 8px;
-  z-index: 10;
+  transition: opacity 0.2s ease;
+  font-size: 13px;
+  z-index: 1200;
+  font-weight: 500;
 }
 
-.tooltip:hover::after {
+.sidebar-menu-item:hover::after {
   opacity: 1;
 }

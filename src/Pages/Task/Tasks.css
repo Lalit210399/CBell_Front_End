@@ -1,43 +1,47 @@
-.task-creation-module {
-    /* height: 100%; */
-    /* width: 100%; */
-    padding: 15px;
-  }
-  .event-detail-module {
-    /* height: 100%; */
-    /* width: 100%; */
-    padding: 15px;
-  }
-  
-  .BreadCrumb {
-    height: auto;
-    width: 100%;
-    padding: 5px 0;
-    margin-bottom: 10px;
-  }
-  
-  .Top-Section {
-    height: auto;
-    margin-bottom: 15px;
-  }
-  
-  .Inner-Content {
-    height: auto;
-    width: 100%;
-    min-height: 0;
-  }
+.tasks-page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
 
-  .icon-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 4px;
-    transition: transform 0.2s;
+.task-creation-module {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.event-detail-module {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.BreadCrumb {
+  width: 100%;
+  padding: 5px 0;
+}
+
+.Top-Section {
+  /* margin-bottom: 16px; */
+}
+
+.Inner-Content {
+  width: 100%;
+  min-height: 0;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  transition: transform 0.2s;
 }
 
 .icon-btn:hover {
-    transform: scale(1.1);
-    color: #007bff;
+  transform: scale(1.1);
+  color: #007bff;
 }
 
 .create-mode-message {
@@ -49,6 +53,7 @@
   border-radius: 8px;
   margin: 1rem;
 }
+
 
 .error-container {
   display: flex;

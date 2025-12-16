@@ -2,18 +2,10 @@
   padding: 12px 20px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
   background-color: #f9fafb;
-  /* min-height: 100vh; */
-  font-family: 'Lato', sans-serif;
-  color: #374151;
+  width: 100%;
 }
-
-/* .month-dropdown {
-    position: relative;
-    top: 65px;
-    left: 252px;
-} */
 
 /* Welcome Section */
 .welcome-section {
@@ -21,6 +13,7 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
+  gap: 16px;
 }
 
 .welcome-section h2 {
@@ -33,44 +26,7 @@
 .welcome-controls {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-top: 10px;
-}
-
-.scope-section {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.scope-label {
-  font-weight: 600;
-  font-size: 1rem;
-  color: #374151;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.scope-dropdown {
-  min-width: 150px;
-}
-
-
-.new-event-btn{
-  background-color: #02968A;
-  color: white;
-  padding: 8px 12px;
-  border-radius: 12px;
-  font-weight: 400;
-  font-size: 1rem;
-  cursor: pointer;
-  border: none;
-  transition: background-color 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
+  gap: 12px;
 }
 
 .dashboard-btn {
@@ -100,100 +56,51 @@
   background-color: #d1d5db;
 }
 
-
-/* Tasks By Status Tiles */
-.status-tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  /* background-color: rgb(77, 48, 48); */
-  /* border: 1px solid; */
-  gap: 15px;
-}
-
-/* Bottom Section */
-.bottom_section {
+/* Dashboard Content Sections */
+.dashboard-content-row {
   display: flex;
   gap: 20px;
-  /* flex-wrap: wrap; */
-}
-/* Bottom Section */
-.Second_Row_Section {
-  display: flex;
-  gap: 20px;
-  /* flex-wrap: wrap; */
+  flex-wrap: wrap;
 }
 
 .events-campaign {
+  flex: 1 1 400px;
   min-width: 402px;
   background-color: white;
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  /* top: -37px; */
   height: 340px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-  z-index: 10;
 }
 
 .recent-tasks {
   flex: 2 1 600px;
   min-width: 600px;
-  /* background-color: white; */
   border-radius: 12px;
   height: 380px;
   display: flex;
   flex-direction: column;
-  
-  /* border: 1px solid; */
-  top: -37px
-    /* padding: 20px; */
-    /* box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); */
-  
 }
 
 /* Responsive adjustments */
 @media (max-width: 900px) {
-  .bottom-section {
+  .dashboard-content-row {
     flex-direction: column;
   }
 
   .recent-tasks,
+  .active-events,
+  .event-assign-to-me,
   .events-campaign {
     min-width: 100%;
   }
 }
 
-/* Summary Tiles */
-.summary-tiles {
-  display: flex;
-  gap: 20px;
-  overflow-x: auto;
-  /* enable horizontal scroll */
-  scroll-snap-type: x mandatory;
-  /* smooth snapping */
-  padding-bottom: 10px;
-}
-
-.summary-tiles::-webkit-scrollbar {
-  height: 8px;
-  display: none;
-  /* hide scrollbar by default */
-}
-
-.summary-tiles::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 4px;
-}
-
-.summary-tiles>* {
-  flex: 0 0 calc(20% - 16px);
-  /* 5 tiles per row */
-  scroll-snap-align: start;
-  /* min-width: 200px;           prevent too small tiles on small screens */
-}
-
-/* Container for tiles + arrows */
+/* Tiles Container with Scroll */
 .tiles-container {
   position: relative;
   display: flex;
@@ -205,11 +112,9 @@
   gap: 20px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  scroll-snap-align: start;
+  scroll-behavior: smooth;
   padding: 10px 0;
   flex: 1;
-  /* flex: 0 0 calc(20% - 16px); */
-  scroll-behavior: smooth;
 }
 
 .summary-tiles::-webkit-scrollbar {
@@ -221,11 +126,10 @@
   border-radius: 4px;
 }
 
-/* Exactly 5 tiles visible */
-/* .summary-tiles > * { */
-/* flex: 0 0 calc(20% - 16px); */
-/* scroll-snap-align: start; */
-/* } */
+.summary-tiles > * {
+  flex: 0 0 calc(20% - 16px);
+  scroll-snap-align: start;
+}
 
 /* Arrow buttons */
 .scroll-btn {
@@ -307,4 +211,19 @@
 .empty-state-subtitle {
   font-size: 12px;
   opacity: 0.7;
+}
+
+.event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.event-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  color: #374151;
 }

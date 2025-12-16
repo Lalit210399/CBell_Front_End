@@ -148,43 +148,6 @@
   font-size: 14px;
 }
 
-.sidebar-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.sidebar-menu-item {
-  display: flex;
-  align-items: center;
-  padding: 14px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 15px;
-  color: #555;
-  background: transparent;
-  border: none;
-  text-align: left;
-  gap: 12px;
-  font-weight: 500;
-}
-
-.sidebar-menu-item:hover {
-  background: #f5f5f5;
-}
-
-.sidebar-menu-item.active {
-  background: #043E54;
-  color: white;
-  font-weight: 600;
-}
-
-.sidebar-menu-item svg {
-  width: 20px;
-  height: 20px;
-}
-
 .calendar-main {
   flex: 1;
   display: flex;
