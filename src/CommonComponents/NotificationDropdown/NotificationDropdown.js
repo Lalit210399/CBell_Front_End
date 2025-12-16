@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BellRing, X, Check, Trash2, ExternalLink, AlertCircle } from 'lucide-react';
+import { BellRing, X, Check, Trash2, ExternalLink, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNotification } from '../../Context/NotificationContext';
 import './NotificationDropdown.css';
 
@@ -34,14 +34,12 @@ const NotificationDropdown = ({ onViewAllNotifications }) => {
     };
   }, []);
 
-  // const handleBellHover = () => {
-  //   setIsOpen(true);
-  //   refreshNotifications();
-  // };
-
-  // const handleBellLeave = () => {
-  //   setIsOpen(false);
-  // };
+  const toggleExpandNotification = (notificationId) => {
+    setExpandedNotifications(prev => ({
+      ...prev,
+      [notificationId]: !prev[notificationId]
+    }));
+  };
 
   const handleBellClick = () => {
     refreshNotifications();
@@ -103,6 +101,86 @@ const NotificationDropdown = ({ onViewAllNotifications }) => {
       default:
         return '📢';
     }
+  };
+
+  // Helper function to parse notification body and highlight event/task names
+  const renderHighlightedBody = (body, type, notificationData) => {
+    if (!body) return null;
+
+    // Patterns to match event/task names in quotes
+    // Matches text like: 'assigned to "Event Name"' or 'task "Task Name"'
+    const patterns = [
+      /"([^"]+)"/g,  // Matches text in double quotes
+      /'([^']+)'/g   // Matches text in single quotes
+    ];
+
+    let parts = [];
+    let lastIndex = 0;
+
+    // Extract quoted names and their positions
+    const matches = [];
+    patterns.forEach(pattern => {
+      let match;
+      while ((match = pattern.exec(body)) !== null) {
+        matches.push({
+          start: match.index,
+          end: match.index + match[0].length,
+          name: match[1],
+          fullMatch: match[0]
+        });
+      }
+    });
+
+    // Also look for event and task names from data object if they exist in the body
+    if (notificationData?.eventName && body.includes(notificationData.eventName)) {
+      const index = body.indexOf(notificationData.eventName);
+      if (index !== -1) {
+        matches.push({
+          start: index,
+          end: index + notificationData.eventName.length,
+          name: notificationData.eventName,
+          fullMatch: notificationData.eventName
+        });
+      }
+    }
+
+    if (notificationData?.taskName && body.includes(notificationData.taskName)) {
+      const index = body.indexOf(notificationData.taskName);
+      if (index !== -1) {
+        matches.push({
+          start: index,
+          end: index + notificationData.taskName.length,
+          name: notificationData.taskName,
+          fullMatch: notificationData.taskName
+        });
+      }
+    }
+
+    // Remove duplicates and sort matches by start position
+    const uniqueMatches = Array.from(new Map(
+      matches.map(m => [m.start + '-' + m.end, m])
+    ).values());
+    uniqueMatches.sort((a, b) => a.start - b.start);
+
+    // Build JSX with highlighted sections
+    uniqueMatches.forEach(match => {
+      if (lastIndex < match.start) {
+        parts.push(body.substring(lastIndex, match.start));
+      }
+      parts.push(
+        <span key={`highlight-${match.start}-${match.end}`} className="highlighted-name">
+          {match.fullMatch}
+        </span>
+      );
+      lastIndex = match.end;
+    });
+
+    // Add remaining text
+    if (lastIndex < body.length) {
+      parts.push(body.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : body;
   };
 
   return (
@@ -178,7 +256,8 @@ const NotificationDropdown = ({ onViewAllNotifications }) => {
                   <div
                     key={notification.id}
                     className={`notification-item ${notification.isRead ? 'read' : 'unread'}`}
-                    onClick={() => handleNotificationClick(notification)}
+                    onMouseEnter={() => setHoveredNotificationId(notification.id)}
+                    onMouseLeave={() => setHoveredNotificationId(null)}
                   >
                     <div className="notification-item-content">
                       <div className="notification-icon">
