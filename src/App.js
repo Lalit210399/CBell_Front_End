@@ -22,8 +22,7 @@ import ErrorBoundary from "./CommonComponents/ErrorBoundary";
 import ChatLayout from "./Pages/Chat/NewChatLayout";
 import GuestInviteValidationPage from "./Pages/Guest/GuestInviteValidation";
 import GuestTaskReviewPage from "./Pages/Guest/GuestTaskReview";
-import Settings from "./Pages/Settings/Settings";
-import Settings from "./Pages/Settings/Settings";
+import Settings from "./Pages/Settings/Settings"; 
 
 // Component to render appropriate dashboard based on user role
 const DashboardRouter = () => {
@@ -66,7 +65,6 @@ function App() {
             element={
               <ProtectedRoute>
                 <NotificationProvider>
-                  <EmailGroupsProvider>
                   <EmailGroupsProvider>
                   <MainLayout>
                     <Routes>
@@ -124,7 +122,6 @@ function App() {
                       element={<Settings />}
                     />
                     {/* <Route path="/events/stepForm" element={<StepForm />} /> */}
-                      />
                       <Route
                       path="/settings"
                       element={<Settings />}
@@ -144,9 +141,6 @@ function App() {
                       <Route path="/instagram" element={<Instagram />} />
                     </Routes>
                   </MainLayout>
-                </EmailGroupsProvider>
-            </NotificationProvider>
-            </ProtectedRoute>
                 </EmailGroupsProvider>
             </NotificationProvider>
             </ProtectedRoute>
