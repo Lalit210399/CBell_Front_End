@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import GuestService from "../../Services/GuestService";
 import { useNavigate, useParams } from "react-router-dom";
 import { decodeGuestToken, gatherTaskIds, resolveTaskId } from "./guestUtils";
-import "./Guest.css";
 
 export default function GuestInviteValidationPage() {
   const { inviteId } = useParams();

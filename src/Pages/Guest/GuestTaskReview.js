@@ -5,7 +5,6 @@ import { resolveTaskId, resolveTaskIdFromToken } from "./guestUtils";
 import TabMenu from "../../CommonComponents/TabMenu/TabMenu";
 import TaskDetail from "../Task/TaskDetail/TaskDetail";
 import CheckList from "../../CommonComponents/CheckList/CheckList";
-import "./Guest.css";
 
 const SESSION_ERROR_CODES = new Set([401, 403, 410, 423, 440, 498]);
 const DEFAULT_SESSION_ERROR =
