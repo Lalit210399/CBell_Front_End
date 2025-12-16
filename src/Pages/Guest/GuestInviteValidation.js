@@ -8,62 +8,80 @@ export default function GuestInviteValidationPage() {
   const { inviteId } = useParams();
   const navigate = useNavigate();
   const [error, setError] = useState("");
+  const [otpAllowed, setOtpAllowed] = useState(true);
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const inputsRef = useRef([]);
   const [verifying, setVerifying] = useState(false);
   const [autoRefreshing, setAutoRefreshing] = useState(false);
-
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
   const storageKey = useMemo(() => `guest_session_${inviteId}`, [inviteId]);
 
   useEffect(() => {
     if (typeof sessionStorage === "undefined") return;
-    
-    const tryAutoRefresh = async () => {
+
+    const bootstrap = async () => {
+      if (!inviteId) {
+        setError("Invalid invite link.");
+        setOtpAllowed(false);
+        return;
+      }
+
+      setAutoRefreshing(true);
+      setError("");
+      setOtpAllowed(true);
+
       try {
-        const raw = sessionStorage.getItem(storageKey);
-        
-        // If we have a valid token, go to task page
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed?.token && (!parsed.expiresAt || new Date(parsed.expiresAt).getTime() > Date.now())) {
-            navigate(`/guest/tasks/${inviteId}`, { replace: true });
-            return;
-          }
-          
-          // Token expired but we might still be within access window - try refresh
-          if (parsed?.accessExpiresAt && new Date(parsed.accessExpiresAt).getTime() > Date.now()) {
-            setAutoRefreshing(true);
-            try {
-              const refreshData = await GuestService.refreshToken(inviteId);
-              sessionStorage.setItem(storageKey, JSON.stringify({
-                ...parsed,
-                token: refreshData.token,
-                expiresAt: refreshData.expiresAt,
-              }));
-              navigate(`/guest/tasks/${inviteId}`, { replace: true });
-              return;
-            } catch (refreshErr) {
-              // Refresh failed, clear storage and show OTP page
-              sessionStorage.removeItem(storageKey);
-              setAutoRefreshing(false);
-            }
-          } else {
-            // Access window expired
-            sessionStorage.removeItem(storageKey);
-          }
-        }
-        
-        setAutoRefreshing(false);
+        // Recommended flow: attempt refresh-token before showing OTP UI
+        const refreshData = await GuestService.refreshToken(inviteId);
+        const nextToken = refreshData?.token;
+        if (!nextToken) throw new Error("Session refresh succeeded but token was missing. Please retry.");
+
+        const decodedToken = decodeGuestToken(nextToken);
+        const derivedTaskId = resolveTaskId(refreshData) || resolveTaskId(decodedToken);
+        const taskPool = gatherTaskIds(decodedToken, refreshData).filter(Boolean);
+
+        const payload = {
+          token: nextToken,
+          expiresAt: refreshData?.expiresAt || null,
+          accessExpiresAt: refreshData?.accessExpiresAt || null,
+          taskId: derivedTaskId || taskPool[0] || null,
+          taskIds: taskPool.length ? taskPool : null,
+        };
+
+        sessionStorage.setItem(storageKey, JSON.stringify(payload));
+        navigate(`/guest/tasks/${inviteId}`, { replace: true });
       } catch (err) {
-        sessionStorage.removeItem(storageKey);
+        // Clear any stale session and decide whether to show OTP
+        try {
+          sessionStorage.removeItem(storageKey);
+        } catch (_) {}
+
+        const status = err?.status;
+        if (status === 400) {
+          // First-time visitor: must verify OTP
+          setError("");
+          setOtpAllowed(true);
+          return;
+        }
+        if (status === 410) {
+          setError("Invite expired");
+          setOtpAllowed(false);
+          return;
+        }
+        if (status === 403) {
+          setError("Invite revoked");
+          setOtpAllowed(false);
+          return;
+        }
+
+        setError(err?.message || "Unable to validate invite. Please try again.");
+        setOtpAllowed(true);
+      } finally {
         setAutoRefreshing(false);
       }
     };
-    
-    tryAutoRefresh();
+
+    bootstrap();
   }, [storageKey, navigate, inviteId]);
 
 
@@ -136,44 +154,49 @@ export default function GuestInviteValidationPage() {
         {autoRefreshing && <div className="loading">Restoring your session…</div>}
         {error && !autoRefreshing && <div className="error">{error}</div>}
 
-        <div className="otp-section">
-          <label className="otp-label">Enter verification code</label>
-          <div className="otp-grid">
-            {otp.map((d, i) => (
-              <input
-                key={i}
-                ref={el => inputsRef.current[i] = el}
-                className="otp-input"
-                inputMode="numeric"
-                maxLength={1}
-                value={d}
-                onChange={e => handleOtpChange(i, e.target.value)}
-                onPaste={handlePaste}
-                autoFocus={i === 0}
-              />
-            ))}
-          </div>
-          <p className="otp-hint">Check your email for the 6-digit verification code</p>
-        </div>
+        {!autoRefreshing && otpAllowed && (
+          <>
+            <div className="otp-section">
+              <label className="otp-label">Enter verification code</label>
+              <div className="otp-grid">
+                {otp.map((d, i) => (
+                  <input
+                    key={i}
+                    ref={el => inputsRef.current[i] = el}
+                    className="otp-input"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={d}
+                    onChange={e => handleOtpChange(i, e.target.value)}
+                    onPaste={handlePaste}
+                    autoFocus={i === 0}
+                    disabled={verifying}
+                  />
+                ))}
+              </div>
+              <p className="otp-hint">Check your email for the 6-digit verification code</p>
+            </div>
 
-        <button
-          className="primary verify-btn"
-          disabled={verifying || otpStr.length !== 6}
-          onClick={verify}
-        >
-          {verifying ? (
-            <>
-              <span className="spinner-small"></span>
-              Verifying…
-            </>
-          ) : (
-            'Verify & Continue'
-          )}
-        </button>
+            <button
+              className="primary verify-btn"
+              disabled={verifying || otpStr.length !== 6}
+              onClick={verify}
+            >
+              {verifying ? (
+                <>
+                  <span className="spinner-small"></span>
+                  Verifying…
+                </>
+              ) : (
+                'Verify & Continue'
+              )}
+            </button>
 
-        <div className="otp-footer">
-          <p className="help-text">Didn't receive the code? Check your spam folder or contact the sender.</p>
-        </div>
+            <div className="otp-footer">
+              <p className="help-text">Didn't receive the code? Check your spam folder or contact the sender.</p>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -1889,7 +1889,7 @@ const TaskDetailPage = () => {
     <div className="task-creation-module fade-in">
       <div className="BreadCrumb" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <Breadcrumb items={breadcrumbItems} />
-        {canInviteGuests && (
+        {canInviteGuests && !isDesigner && (taskStatus?.value === "Under Approval" || taskStatus?.label === "Under Approval") && (
           <button className="primary" onClick={() => setGuestModalOpen(true)}>Add Guests</button>
         )}
       </div>
