@@ -38,6 +38,11 @@ const EventTable = () => {
   const { addMessage } = useMessages();
   const { user, permissions: userPermissions, selectedOrganizationId, isViewingOwnOrganization, scopeChangeTrigger, loading: userLoading } = useUser();
 
+  // Helper to check if user is a Designer
+  const isDesigner = user?.roles?.some(role =>
+    role.name === "Designer" || role.displayName === "Designer"
+  );
+
 
   // Helper to check permission
   const hasPermission = useCallback((action) => {
@@ -550,7 +555,8 @@ const EventTable = () => {
           addEventText="Click here to add a New Event"
           onAddEventClick={permissions.canCreate ? handleNewEvent : undefined}
           sortableColumns={["name", "type", "date", "createdBy"]}
-          onDelete={permissions.canDelete ? (event) => handleDeleteClick(event) : undefined}
+          onDelete={!isDesigner && permissions.canDelete ? (event) => handleDeleteClick(event) : undefined}
+          showActions={!isDesigner}
           // onArchive={permissions.canArchive ? () => alert("Archive pressed") : undefined}
           // onDuplicate={permissions.canDuplicate ? () => alert("Duplicate pressed") : undefined}
           onRowClick={(event) => {

@@ -1152,46 +1152,82 @@ const TaskDetailPage = () => {
     }
   };
 
-  // Handle publish button click - open FileShareModel with fetched files
-  const handlePublish = () => {
-    // Get approved and published files from fileData (which is populated when user visits Files & Uploads tab)
-    const eligibleFiles = fileData.uploadedFiles?.filter(file => 
-      file.status === 'Approved' || file.status === 'Published' || file.isApproved
-    ) || [];
-
-    console.log('=== PUBLISH FLOW DEBUG ===');
-    console.log('handlePublish - fileData:', fileData);
-    console.log('handlePublish - fileData.uploadedFiles:', fileData.uploadedFiles);
-    console.log('handlePublish - eligibleFiles:', eligibleFiles);
-    console.log('handlePublish - eligibleFiles count:', eligibleFiles.length);
-
-    if (eligibleFiles.length === 0) {
-      addMessage({
-        text: "No approved or published files available to publish. Please visit the Files & Uploads tab first.",
-        type: "info",
-        duration: 3000,
-      });
+  // Handle publish button click - fetch documents, switch to Files tab, and open FileShareModel if files exist
+  const handlePublish = async () => {
+    if (!taskId && !taskData?.id) {
+      addMessage({ text: "Task ID not available", type: "error", duration: 2000 });
       return;
     }
 
-    // Use the first eligible file
-    const file = eligibleFiles[0];
-    console.log('handlePublish - selected file (RAW):', file);
-    console.log('handlePublish - selected file contentType:', file.contentType);
-    console.log('handlePublish - selected file document:', file.document);
-    console.log('handlePublish - selected file documentId:', file.documentId);
-    
-    const fileDescription = file.description || file.name || '';
-    const docId = file.documentId;
-    
-    const fileDetailToPass = { ...file, fullTask: taskData };
-    console.log('handlePublish - fileDetailToPass:', fileDetailToPass);
+    const resolvedTaskId = taskId || taskData?.id;
 
-    setDescription(fileDescription);
-    setDocumentId(docId);
-    setFileDetail(fileDetailToPass);
-    setShowShareModal(true);
-    console.log('=== END PUBLISH FLOW DEBUG ===');
+    try {
+      const orgId = taskData?.organizationId || organizationId || user?.organizationId;
+      const headers = {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': '1'
+      };
+      if (orgId && orgId !== user?.organizationId) {
+        headers['X-Context-Organization'] = orgId;
+      }
+
+      const res = await fetchWithRefresh(`/apis/document-details/task/${resolvedTaskId}`, {
+        method: 'GET',
+        headers,
+      });
+
+      if (!res.ok) {
+        addMessage({ text: 'Failed to fetch files for publishing', type: 'error', duration: 3000 });
+        // Still navigate to Files & Uploads so user can try uploading
+        setActiveTab('Files & Uploads');
+        return;
+      }
+
+      const data = await res.json();
+      const normalizedData = (Array.isArray(data) && data.length === 1 && data[0] && typeof data[0].message === 'string') ? [] : data;
+
+      // Map backend docs to the shape TasksFiles expects (minimal mapping)
+      const mappedFiles = (normalizedData || []).map(doc => ({
+        name: doc.filename,
+        type: doc.contentType,
+        documentId: doc.documentId,
+        description: doc.description,
+        src: `/apis/document/view/${doc.documentId}`,
+        status: doc.status || 'Pending',
+        publishedTo: doc.publishedTo || [],
+        uploadDate: doc.uploadDate,
+        size: doc.fileSize || doc.size,
+        userInfo: doc.userInfo,
+        isApproved: doc.status === 'Approved' || doc.status === 'Published',
+        contentType: doc.contentType,
+        document: {
+          contentType: doc.contentType,
+          type: doc.contentType,
+          description: doc.description
+        }
+      }));
+
+      // Update parent fileData so TaskFiles receives the files immediately
+      setFileData({ uploadedFiles: mappedFiles, links: [] });
+
+      // Switch to Files & Uploads tab
+      setActiveTab('Files & Uploads');
+
+      if ((mappedFiles || []).length > 0) {
+        // Use first file for publish modal
+        const file = mappedFiles[0];
+        setDescription(file.description || file.name || '');
+        setDocumentId(file.documentId);
+        setFileDetail({ ...file, fullTask: taskData });
+        setShowShareModal(true);
+      } else {
+        addMessage({ text: 'No files available for this task. Please upload files in Files & Uploads.', type: 'info', duration: 3000 });
+      }
+    } catch (err) {
+      console.error('Publish fetch error:', err);
+      addMessage({ text: `Failed to fetch files: ${err.message}`, type: 'error', duration: 4000 });
+      setActiveTab('Files & Uploads');
+    }
   };
 
   // Handle platform publish from FileShareModel
