@@ -484,7 +484,7 @@ export default function GuestTaskReviewPage() {
                 ? "Thank you for your approval! The task owner has been notified and will proceed accordingly."
                 : "Your feedback has been submitted. The task owner has been notified about the requested changes."}
             </p>
-            {actionStatus.includes("approved") && (
+            {/* {actionStatus.includes("approved") && (
               <>
                 <div className="completion-details">
                   <div className="completion-detail-item">
@@ -509,7 +509,7 @@ export default function GuestTaskReviewPage() {
                   </div>
                 </div>
               </>
-            )}
+            )} */}
           </div>
         </div>
       </div>
