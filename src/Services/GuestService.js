@@ -1,9 +1,9 @@
 // Lightweight guest invite and task service
 const API_BASE = "/apis";
-
+ 
 // Store for retry logic
 let refreshPromise = null;
-
+ 
 async function request(
   path,
   { method = "GET", body, token, headers = {}, inviteId, retry = true } = {}
@@ -20,10 +20,10 @@ async function request(
     opts.headers["Session-Identifier"] = token;
   }
   if (body !== undefined) opts.body = JSON.stringify(body);
-  
+ 
   const res = await fetch(`${API_BASE}${path}`, opts);
   const data = await res.json().catch(() => null);
-  
+ 
   if (!res.ok) {
     // Handle 401 - token expired, try to refresh
     if (res.status === 401 && retry && inviteId) {
@@ -34,7 +34,7 @@ async function request(
         }
         const refreshData = await refreshPromise;
         refreshPromise = null;
-        
+       
         // Store new token in sessionStorage
         if (typeof sessionStorage !== "undefined") {
           const storageKey = `guest_session_${inviteId}`;
@@ -46,7 +46,7 @@ async function request(
             accessExpiresAt: refreshData.accessExpiresAt ?? existing.accessExpiresAt ?? null,
           }));
         }
-        
+       
         // Retry the original request with new token
         return request(path, { method, body, token: refreshData.token, headers, inviteId, retry: false });
       } catch (refreshErr) {
@@ -59,7 +59,7 @@ async function request(
         throw err;
       }
     }
-    
+   
     const msg = (data && data.message) || res.statusText || "Request failed";
     const err = new Error(msg);
     err.status = res.status;
@@ -68,7 +68,7 @@ async function request(
   }
   return data;
 }
-
+ 
 export const GuestService = {
   createGuestInvite(payload) {
     // payload: { guestEmail, guestName?, taskId, message?, accessDurationHours }
@@ -108,5 +108,7 @@ export const GuestService = {
     }).then(response => response.data || response);
   },
 };
-
+ 
 export default GuestService;
+ 
+ 

@@ -6,16 +6,16 @@ import TabMenu from "../../CommonComponents/TabMenu/TabMenu";
 import TaskDetail from "../Task/TaskDetail/TaskDetail";
 import CheckList from "../../CommonComponents/CheckList/CheckList";
 import "./Guest.css";
-
+ 
 const SESSION_ERROR_CODES = new Set([401, 403, 410, 423, 440, 498]);
 const DEFAULT_SESSION_ERROR =
   "Your invite has expired or was revoked. Please request a new invite from the organizer.";
-
+ 
 export default function GuestTaskReviewPage() {
   const { inviteId } = useParams();
   const navigate = useNavigate();
   const storageKey = useMemo(() => `guest_session_${inviteId}`, [inviteId]);
-
+ 
   const [invite, setInvite] = useState(null);
   const [taskDetails, setTaskDetails] = useState(null);
   const [statusInfo, setStatusInfo] = useState(null);
@@ -41,18 +41,18 @@ export default function GuestTaskReviewPage() {
   const [rejectReason, setRejectReason] = useState("");
   const awaitingStageRef = useRef(false);
   const noop = useCallback(() => {}, []);
-
+ 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
-
+ 
   const redirectToValidation = useCallback(() => {
     if (typeof sessionStorage !== "undefined")
       sessionStorage.removeItem(storageKey);
     navigate(`/guest/invite-validation/${inviteId}`, { replace: true });
   }, [navigate, inviteId, storageKey]);
-
+ 
   useEffect(() => {
     if (typeof sessionStorage === "undefined") return;
     try {
@@ -83,15 +83,15 @@ export default function GuestTaskReviewPage() {
       redirectToValidation();
     }
   }, [storageKey, redirectToValidation]);
-
+ 
   useEffect(() => {
     if (taskId || !token) return;
     const derived = resolveTaskIdFromToken(token);
     if (derived) setTaskId(derived);
   }, [token, taskId]);
-
-
-
+ 
+ 
+ 
   const handleSessionFailure = useCallback((err) => {
     if (!err || !SESSION_ERROR_CODES.has(err.status)) return false;
     setSessionInvalid(true);
@@ -103,7 +103,7 @@ export default function GuestTaskReviewPage() {
     );
     return true;
   }, []);
-
+ 
   useEffect(() => {
     if (!token || !taskId) return;
     let cancelled = false;
@@ -136,7 +136,7 @@ export default function GuestTaskReviewPage() {
       cancelled = true;
     };
   }, [taskId, token, handleSessionFailure]);
-
+ 
   // Token auto-refreshes on 401, so we don't need to redirect on token expiry
   // Only check if access window (48h) has expired
   useEffect(() => {
@@ -145,9 +145,9 @@ export default function GuestTaskReviewPage() {
     setError("Your access window has expired. Please request a new invite from the organizer.");
     setSessionInvalid(true);
   }, [accessExpiresAt, now]);
-
-
-
+ 
+ 
+ 
   const sessionCountdown = useMemo(() => {
     if (!expiresAt) return null;
     const diff = new Date(expiresAt).getTime() - now;
@@ -156,7 +156,7 @@ export default function GuestTaskReviewPage() {
     const ss = Math.floor((diff % 60000) / 1000);
     return `${mm}m ${ss}s`;
   }, [expiresAt, now]);
-
+ 
   const accessWindow = useMemo(() => {
     if (!accessExpiresAt) return null;
     const diff = new Date(accessExpiresAt).getTime() - now;
@@ -165,11 +165,11 @@ export default function GuestTaskReviewPage() {
     const mm = Math.floor((diff % 3600000) / 60000);
     return `${hh}h ${mm}m`;
   }, [accessExpiresAt, now]);
-
+ 
   const statusLabel = useMemo(() => {
     return statusInfo?.name || taskDetails?.taskStatus || taskDetails?.status || invite?.status || "—";
   }, [statusInfo, taskDetails, invite]);
-
+ 
   const statusColor = useMemo(() => {
     // Use official status color codes
     const statusLower = statusLabel?.toLowerCase() || "";
@@ -183,7 +183,7 @@ export default function GuestTaskReviewPage() {
     };
     return colorMap[statusLower] || statusInfo?.color || "#f3f4f6";
   }, [statusInfo, statusLabel]);
-
+ 
   const statusTextColor = useMemo(() => {
     const statusLower = statusLabel?.toLowerCase() || "";
     const textColorMap = {
@@ -196,15 +196,15 @@ export default function GuestTaskReviewPage() {
     };
     return textColorMap[statusLower] || "#6b7280";
   }, [statusLabel]);
-
+ 
   const normalizedStatus = statusLabel?.toLowerCase?.() || "";
   const isUnderApproval = normalizedStatus.includes("under approval") || normalizedStatus.includes("pending approval");
   const awaitingApproval = canApprove || canReject;
-  
+ 
   // Block actions if task is not in Under Approval status
   const canActuallyApprove = canApprove && isUnderApproval;
   const canActuallyReject = canReject && isUnderApproval;
-  
+ 
   useEffect(() => {
     if (!awaitingStageRef.current && awaitingApproval) {
       setDecisionSubmitted(false);
@@ -248,7 +248,7 @@ export default function GuestTaskReviewPage() {
       checklist: checklistItems,
     };
   }, [taskDetails, checklistItems, dueDateValue, invite]);
-
+ 
   const tabs = useMemo(() => {
     if (!taskDetails) return [];
     const detailsContent = detailTaskData ? (
@@ -268,7 +268,7 @@ export default function GuestTaskReviewPage() {
     ) : (
       <div className="empty-state">Task details are unavailable.</div>
     );
-
+ 
     const checklistContent = checklistItems.length ? (
       <div className="guest-checklist-tab">
         <CheckList
@@ -281,7 +281,7 @@ export default function GuestTaskReviewPage() {
     ) : (
       <div className="empty-state">No checklist items have been provided.</div>
     );
-
+ 
     const attachmentsContent = attachments.length ? (
       <div className="guest-attachments-panel">
         <p className="attachment-instruction">Select the document you're approving:</p>
@@ -297,7 +297,7 @@ export default function GuestTaskReviewPage() {
             file.status ? `Status: ${file.status}` : null,
           ].filter(Boolean);
           return (
-            <div 
+            <div
               className={`guest-attachment-card selectable ${selectedDocumentId === docId ? 'selected' : ''}`}
               key={docId || `attachment-${idx}`}
               onClick={() => setSelectedDocumentId(docId)}
@@ -331,7 +331,7 @@ export default function GuestTaskReviewPage() {
     ) : (
       <div className="empty-state">No attachments have been uploaded yet.</div>
     );
-
+ 
     const commentsContent = comments.length ? (
       <div className="guest-comments-panel">
         {comments.map((entry, idx) => {
@@ -354,7 +354,7 @@ export default function GuestTaskReviewPage() {
     ) : (
       <div className="empty-state">No comments yet.</div>
     );
-
+ 
     return [
       { label: "Details", component: detailsContent },
       {
@@ -387,27 +387,27 @@ export default function GuestTaskReviewPage() {
     invite,
     taskId,
   ]);
-
+ 
   const handleApprove = async () => {
     if (!token || !taskId || sessionInvalid || decisionSubmitted) return;
-    
+   
     if (!isUnderApproval) {
       setError(`Cannot approve task. Task must be in 'Under Approval' status. Current status: ${statusLabel}`);
       return;
     }
-    
+   
     if (!selectedDocumentId) {
       setError("Please select a document from the Attachments tab before approving");
       setActiveTab("Attachments");
       return;
     }
-    
+   
     setActionStatus("");
     setError("");
     try {
       const result = await GuestService.approveTask(taskId, token, "", selectedDocumentId, inviteId);
       setActionStatus("Task approved successfully");
-      
+     
       if (result) {
         setTaskDetails(result.task || null);
         setInvite(result.invite || null);
@@ -418,33 +418,33 @@ export default function GuestTaskReviewPage() {
         setCanReject(result.canReject ?? false);
         setIsExpired(result.isExpired ?? false);
       }
-      
+     
       setDecisionSubmitted(true);
     } catch (e) {
       if (handleSessionFailure(e)) return;
       setError(e.message || "Approval failed");
     }
   };
-
+ 
   const handleRejectSubmit = async () => {
     if (!token || !taskId || sessionInvalid || decisionSubmitted) return;
-    
+   
     if (!isUnderApproval) {
       setError(`Cannot reject task. Task must be in 'Under Approval' status. Current status: ${statusLabel}`);
       return;
     }
-    
+   
     if (!rejectReason.trim()) {
       setError("Please provide a reason for requesting changes");
       return;
     }
-    
+   
     setActionStatus("");
     setError("");
     try {
       const result = await GuestService.rejectTask(taskId, token, rejectReason, inviteId);
       setActionStatus("Changes requested successfully");
-      
+     
       if (result) {
         setTaskDetails(result.task || null);
         setInvite(result.invite || null);
@@ -455,7 +455,7 @@ export default function GuestTaskReviewPage() {
         setCanReject(result.canReject ?? false);
         setIsExpired(result.isExpired ?? false);
       }
-      
+     
       setRejectReason("");
       setShowRejectModal(false);
       setDecisionSubmitted(true);
@@ -464,7 +464,7 @@ export default function GuestTaskReviewPage() {
       setError(e.message || "Request changes failed");
     }
   };
-
+ 
   // Show completion screen after successful decision
   if (decisionSubmitted && actionStatus) {
     return (
@@ -480,7 +480,7 @@ export default function GuestTaskReviewPage() {
               {actionStatus.includes("approved") ? "Task Approved Successfully" : "Changes Requested Successfully"}
             </h2>
             <p className="completion-message">
-              {actionStatus.includes("approved") 
+              {actionStatus.includes("approved")
                 ? "Thank you for your approval! The task owner has been notified and will proceed accordingly."
                 : "Your feedback has been submitted. The task owner has been notified about the requested changes."}
             </p>
@@ -515,7 +515,7 @@ export default function GuestTaskReviewPage() {
       </div>
     );
   }
-
+ 
   return (
     <div className="guest-wrap">
       <div className="guest-card task-review-card">
@@ -528,7 +528,7 @@ export default function GuestTaskReviewPage() {
             </div>
           </div>
         )}
-
+ 
         {invite && (
           <div className="compact-header">
             <div className="header-main">
@@ -561,7 +561,7 @@ export default function GuestTaskReviewPage() {
             )}
           </div>
         )}
-
+ 
         {loadingTask && <div className="loading">Loading task details…</div>}
         {!loadingTask && taskDetails && (
           <div className="guest-task-shell">
@@ -606,7 +606,7 @@ export default function GuestTaskReviewPage() {
                 )}
               </div>
             </div>
-
+ 
             {(isExpired || !isUnderApproval || (decisionSubmitted && actionStatus)) && (
               <div className="status-alerts">
                 {isExpired && (
@@ -638,7 +638,7 @@ export default function GuestTaskReviewPage() {
                 )}
               </div>
             )}
-
+ 
             <TabMenu
               tabs={tabs}
               activeTab={activeTab}
@@ -647,7 +647,7 @@ export default function GuestTaskReviewPage() {
             />
           </div>
         )}
-
+ 
         {showRejectModal && (
           <div className="reject-modal-backdrop" onClick={() => setShowRejectModal(false)}>
             <div className="reject-modal" onClick={(e) => e.stopPropagation()}>
@@ -669,8 +669,8 @@ export default function GuestTaskReviewPage() {
                 <button className="btn-cancel" onClick={() => { setShowRejectModal(false); setRejectReason(""); }}>
                   Cancel
                 </button>
-                <button 
-                  className="btn-submit-reject" 
+                <button
+                  className="btn-submit-reject"
                   onClick={handleRejectSubmit}
                   disabled={!rejectReason.trim()}
                 >
@@ -684,3 +684,5 @@ export default function GuestTaskReviewPage() {
     </div>
   );
 }
+ 
+ 
