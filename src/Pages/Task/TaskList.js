@@ -12,7 +12,7 @@ import { fetchWithRefresh } from "../../Context/RefereshToken";
 import useApi from "../../Hooks/useApi";
 import { useDebouncedCallback } from "../../Hooks/useDebounce";
 import { formatDateTime, toCamelCase, toTitleCase, generateInitials } from "../../CommonUtils/formatters";
-import { X, Trash2, Plus } from "lucide-react";
+import { X, Trash2 } from "lucide-react";
 
 const SEARCH_DEBOUNCE_DELAY = 300;
 
@@ -39,11 +39,17 @@ const TaskList = () => {
   const initialFilter = location.state?.filter || "all";
   const pageTitle = location.state?.title || "All Tasks";
 
+  // "My Individual Tasks" must always load from /apis/task/standalone.
+  // We key off both filter and title for robustness.
+  const isStandaloneTasksView =
+    initialFilter === "standalone" || pageTitle === "My Individual Tasks";
+
   const assignedToMeLabels = [
     "Tasks Assigned to Me",
     "Assigned to Me",
     "My Individual Tasks",
     "assigned_to_me",
+    "standalone",
   ];
 
   const isAssignedToMeView = assignedToMeLabels.includes(initialFilter);
@@ -74,6 +80,80 @@ const TaskList = () => {
 
     if (!organizationId) {
       throw new Error("No organization selected");
+    }
+
+    // Hard rule: standalone view always uses the standalone endpoint.
+    if (isStandaloneTasksView) {
+      const headers = {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "1",
+      };
+
+      const isViewingOwnOrg = organizationId === user?.organizationId;
+      if (!isViewingOwnOrg) {
+        headers["X-Context-Organization"] = organizationId;
+      }
+
+      const standaloneUrl = `/apis/task/standalone?organizationId=${organizationId}`;
+      const standaloneRes = await fetchWithRefresh(standaloneUrl, {
+        method: "GET",
+        headers,
+      });
+
+      if (!standaloneRes.ok) {
+        throw new Error(
+          `Failed to fetch standalone tasks: ${standaloneRes.status} - ${standaloneRes.statusText}`
+        );
+      }
+
+      const resp = await standaloneRes.json();
+      let data = resp.tasks || resp.data?.tasks || resp.data || resp || [];
+      if (!Array.isArray(data)) {
+        data = Array.isArray(resp) ? resp : [];
+      }
+
+      if (!Array.isArray(data)) {
+        throw new Error("Expected an array of tasks but got something else");
+      }
+
+      const formatted = data.map(task => {
+        const assignedUsers = task.assignedToNames || task.assignedTo || [];
+
+        const allParticipants = assignedUsers.map((user, index) => {
+          let participantName = "Unknown";
+          if (typeof user === "string") {
+            participantName = user;
+          } else if (user && user.name) {
+            participantName = user.name;
+          }
+
+          return {
+            name: toTitleCase(participantName),
+            src: participantName,
+            fallback: generateInitials(participantName),
+            size: "32px",
+            shape: "circle",
+          };
+        });
+
+        return {
+          id: task.id || task.taskId || Date.now().toString(),
+          name: toCamelCase(task.taskTitle || task.taskName) || "Unnamed Task",
+          status: task.taskStatusName || task.statusName || "N/A",
+          eventName: toCamelCase(task.eventName) || "N/A",
+          eventId: task.eventId,
+          dueDate: task.dueDate ? formatDateTime(task.dueDate) : "N/A",
+          createdBy: toCamelCase(
+            task.assignmentDetails?.[0]?.assignedByName || task.assignedByName || task.createdByName || task.createdBy?.name || task.createdBy
+          ) || "Unknown",
+          participants: allParticipants,
+          rawData: task,
+          organizationName: task.organizationName,
+          creativeType: task.creativeType || task.priority,
+        };
+      });
+
+      return formatted;
     }
 
     // Map human-friendly or legacy filter labels to canonical API parameter
@@ -127,6 +207,7 @@ const TaskList = () => {
       "Tasks Assigned to Me",
       "Assigned to Me",
       "My Individual Tasks",
+      "standalone",
     ];
 
     let data = [];
@@ -222,7 +303,7 @@ const TaskList = () => {
     });
 
     return formatted;
-  }, [selectedOrganizationId, user?.organizationId, user?.userId, initialFilter, isViewingOwnOrganization]);
+  }, [selectedOrganizationId, user?.organizationId, user?.userId, initialFilter, isViewingOwnOrganization, isStandaloneTasksView]);
 
   /** -------------------- State Management -------------------- **/
   const [tasksData, setTasksData] = useState(null);
@@ -455,14 +536,26 @@ const TaskList = () => {
   // Get empty field text helper
   const getEmptyText = (key) => EMPTY_FIELD_TEXT[key] || EMPTY_FIELD_TEXT.default;
 
-  const columns = useMemo(() => [
-    { key: "name", label: "Task Name", skeletonWidth: "30%", skeletonHeight: "20px" },
-    { key: "status", label: "Status", skeletonWidth: "10%", skeletonHeight: "20px" },
-    { key: "eventName", label: "Event", skeletonWidth: "15%", skeletonHeight: "20px" },
-    { key: "participants", label: "Assigned To", skeletonWidth: "20%", skeletonHeight: "40px" },
-    { key: "dueDate", label: "Due Date", skeletonWidth: "12%", skeletonHeight: "20px" },
-    { key: "createdBy", label: isAssignedToMeView ? "Assigned By" : "Created By", skeletonWidth: "13%", skeletonHeight: "20px" },
-  ], [isAssignedToMeView]);
+  const columns = useMemo(() => {
+    const base = [
+      { key: "name", label: "Task Name", skeletonWidth: "30%", skeletonHeight: "20px" },
+      { key: "status", label: "Status", skeletonWidth: "10%", skeletonHeight: "20px" },
+      // Standalone (My Individual Tasks) should not show Event column
+      ...(isStandaloneTasksView
+        ? []
+        : [{ key: "eventName", label: "Event", skeletonWidth: "15%", skeletonHeight: "20px" }]),
+      { key: "participants", label: "Assigned To", skeletonWidth: "20%", skeletonHeight: "40px" },
+      { key: "dueDate", label: "Due Date", skeletonWidth: "12%", skeletonHeight: "20px" },
+      {
+        key: "createdBy",
+        label: isAssignedToMeView ? "Assigned By" : "Created By",
+        skeletonWidth: "13%",
+        skeletonHeight: "20px",
+      },
+    ];
+
+    return base;
+  }, [isAssignedToMeView, isStandaloneTasksView]);
 
   return (
     <div className="TaskList">
@@ -580,7 +673,11 @@ const TaskList = () => {
           noDataText="No Tasks Found"
           addEventText="Click here to add a New Task"
           onAddEventClick={!isDesigner ? handleNewTask : undefined}
-          sortableColumns={["name", "status", "eventName", "dueDate", "createdBy"]}
+          sortableColumns={
+            isStandaloneTasksView
+              ? ["name", "status", "dueDate", "createdBy"]
+              : ["name", "status", "eventName", "dueDate", "createdBy"]
+          }
           onDelete={!isDesigner ? (task) => handleDeleteClick(task) : undefined}
           onRowClick={(task) => {
             if (!loading && !error) {
