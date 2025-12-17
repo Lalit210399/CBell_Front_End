@@ -42,7 +42,31 @@ export const signin = async (credentials) => {
  
     const data = await response.json();
  
+    // If server responded with 401 (session revoked / unauthorized),
+    // clear any stale auth cookies and localStorage to ensure a clean state.
     if (!response.ok) {
+      if (response.status === 401) {
+        try {
+          const cookieNames = ["auth_token", "user", "permissions"];
+          cookieNames.forEach((name) => {
+            const base = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+            document.cookie = base;
+            document.cookie = `${base} SameSite=Lax;`;
+            document.cookie = `${base} SameSite=Strict;`;
+            if (window.location.protocol === "https:") {
+              document.cookie = `${base} SameSite=None; Secure;`;
+              document.cookie = `${base} SameSite=Strict; Secure;`;
+            }
+          });
+        } catch (e) {
+          console.warn('Failed to clear cookies after 401:', e);
+        }
+        try {
+          localStorage.clear();
+        } catch (e) {
+          console.warn('Failed to clear localStorage after 401:', e);
+        }
+      }
       throw new Error(data.message || `Login failed with status ${response.status}`);
     }
  
