@@ -890,7 +890,8 @@ const Dashboard = () => {
       "Published Tasks": "published",
       "Tasks Due Next 7 Days": "due_soon",
       "Overdue Tasks": "overdue",
-      "My Individual Tasks": "assigned_to_me",
+      // Explicitly route to standalone tasks view (must use /apis/task/standalone)
+      "My Individual Tasks": "standalone",
     };
 
     const filter = filterMap[tile.title] || "all";
