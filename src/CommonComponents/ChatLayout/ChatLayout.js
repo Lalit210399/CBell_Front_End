@@ -3,7 +3,7 @@ import React, { useState, useCallback, useMemo, useEffect } from "react";
 import ConversationModule from "../ConversationModule/ConversationModule";
 import TaskFilesPanel from "./TaskFilesPanel";
 import { useUser } from "../../Context/UserContext";
-import { Calendar, CalendarCheck, ListChecks, Users, Search, FolderOpen } from 'lucide-react';
+import { Calendar, CalendarCheck, ListChecks, Users, Search, FolderOpen, MessageCircle } from 'lucide-react';
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import "./ChatLayout.css";
 
@@ -341,7 +341,7 @@ const ChatLayout = ({ events, organizationId }) => {
                       }}
                       title="Chat about this event"
                     >
-                      💬
+                      <MessageCircle />
                     </button>
                   </div>
                 </div>
