@@ -9,16 +9,6 @@ const AdminRoles = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredRoles = useMemo(() => {
-    return roles.filter(role =>
-      role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      JSON.stringify(role.permissions).toLowerCase().includes(searchTerm.toLowerCase())
-    ).map(role => ({
-      ...role,
-      permissions: formatPermissions(role.permissions)
-    }));
-  }, [roles, searchTerm]);
-
   const formatPermissions = (permissions) => {
     const modules = ['Users', 'Roles', 'Events'];
     const actions = ['Create', 'Read', 'Update', 'Delete'];
@@ -39,11 +29,21 @@ const AdminRoles = () => {
     return permissionStrings.join(' | ');
   };
 
+  const filteredRoles = useMemo(() => {
+    return roles.filter(role =>
+      role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      JSON.stringify(role.permissions).toLowerCase().includes(searchTerm.toLowerCase())
+    ).map(role => ({
+      ...role,
+      permissions: formatPermissions(role.permissions)
+    }));
+  }, [roles, searchTerm]);
+
   const columns = [
-    { key: 'name', label: 'Role' },
-    { key: 'permissions', label: 'Permissions' },
-    { key: 'users', label: 'Users' },
-    { key: 'created', label: 'Created' },
+    { key: 'name', label: 'Role Name' },
+    { key: 'displayName', label: 'Display Name' },
+    { key: 'description', label: 'Description' },
+    { key: 'actions', label: 'Actions' },
   ];
 
   const handleEdit = (role) => {

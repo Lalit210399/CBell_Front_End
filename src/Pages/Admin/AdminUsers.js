@@ -19,10 +19,10 @@ const AdminUsers = () => {
   const columns = [
     { key: 'name', label: 'Name' },
     { key: 'email', label: 'Email' },
-    { key: 'organizationName', label: 'Organization' },
-    { key: 'organizationCode', label: 'Org Code' },
-    { key: 'role', label: 'Role' },
+    { key: 'organizationId', label: 'OrganizationId' },
+    { key: 'roles', label: 'Roles' },
     { key: 'status', label: 'Status' },
+    { key: 'action', label: 'Action' },
   ];
 
   const handleAssignRoles = (user) => {
@@ -40,7 +40,7 @@ const AdminUsers = () => {
     if (key === 'status') {
       return <span className={item.status === 'Active' ? 'status-active' : 'status-inactive'}>{item.status}</span>;
     }
-    if (key === 'role') {
+    if (key === 'roles') {
       // Get role names from roles array
       const userRoles = item.roles.map(roleId => {
         const role = roles.find(r => r.id === roleId);

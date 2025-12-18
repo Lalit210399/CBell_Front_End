@@ -5,10 +5,14 @@ import Signup from "./Pages/AuthN";
 import Dashboard from "./Pages/Dashboard";
 import Events from "./Pages/Events";
 import Schedule from "./Pages/Schedule";
-import AdminDashboard from "./Pages/Admin/AdminDashboard";
-import AdminUsers from "./Pages/Admin/AdminUsers";
-import AdminRoles from "./Pages/Admin/AdminRoles";
-import AssignRoles from "./Pages/Admin/AssignRoles";
+import AdminLayout from "./layouts/AdminLayout";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminRoles from "./pages/admin/AdminRoles";
+import AssignRoles from "./pages/admin/AssignRoles";
+import CreateRole from "./pages/admin/CreateRole";
+import EditRole from "./pages/admin/EditRole";
 
 function AppRoutes() {
   return (
@@ -19,11 +23,14 @@ function AppRoutes() {
         <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
         <Route path="/events" element={<MainLayout><Events /></MainLayout>} />
         <Route path="/schedule" element={<MainLayout><Schedule /></MainLayout>} />
-        <Route path="/admin" element={<MainLayout><AdminDashboard /></MainLayout>} />
-        <Route path="/admin/dashboard" element={<MainLayout><AdminDashboard /></MainLayout>} />
-        <Route path="/admin/users" element={<MainLayout><AdminUsers /></MainLayout>} />
-        <Route path="/admin/users/:id/roles" element={<MainLayout><AssignRoles /></MainLayout>} />
-        <Route path="/admin/roles" element={<MainLayout><AdminRoles /></MainLayout>} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
+        <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
+        <Route path="/admin/users" element={<AdminLayout><AdminUsers /></AdminLayout>} />
+        <Route path="/admin/users/:id/assign-roles" element={<AdminLayout><AssignRoles /></AdminLayout>} />
+        <Route path="/admin/roles" element={<AdminLayout><AdminRoles /></AdminLayout>} />
+        <Route path="/admin/roles/create" element={<AdminLayout><CreateRole /></AdminLayout>} />
+        <Route path="/admin/roles/:id/edit" element={<AdminLayout><EditRole /></AdminLayout>} />
       </Routes>
     </Router>
   );
