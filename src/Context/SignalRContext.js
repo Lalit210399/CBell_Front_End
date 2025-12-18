@@ -142,17 +142,17 @@ const initializeConnection = useCallback(async () => {
         if (signalRService.connection) {
           // attach lifecycle handlers
           signalRService.connection.onreconnected(() => {
-            console.log('[SignalRContext] Connection reconnected, updating state');
+
             setIsConnected(true);
             setConnectionError(null);
           });
           signalRService.connection.onclose((error) => {
-            console.log('[SignalRContext] Connection closed:', error?.message);
+
             setIsConnected(false);
             setConnectionError(error ? (error.message || 'Connection closed') : 'Connection closed');
           });
           signalRService.connection.onreconnecting(() => {
-            console.log('[SignalRContext] Connection reconnecting...');
+
             setIsConnected(false);
             setConnectionError('Reconnecting...');
           });

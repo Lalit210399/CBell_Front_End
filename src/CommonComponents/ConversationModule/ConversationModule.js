@@ -160,7 +160,6 @@ const ConversationModule = ({
   // SignalR Message Handlers
   const handleMessageReceived = useCallback(
     (message) => {
-      console.log("[ConversationModule] Message received via SignalR:", message, "current taskId:", taskId, "current eventId:", eventId, "message.taskId:", message.taskId, "message.eventId:", message.eventId);
 
       // Check if message is for current chat (either task or event)
       // For event chats, check both eventId and taskId (backend might be inconsistent)
@@ -169,16 +168,16 @@ const ConversationModule = ({
         : (message.taskId === taskId);
 
       if (isMessageForCurrentChat) {
-        console.log("[ConversationModule] Message is for current chat, updating messages");
+
         setMessages((prev) => {
           // Check if message already exists by server id to avoid duplicates
           const exists = prev.some((m) => m.threadId === message.conversationId);
           if (exists) {
-            console.log("[ConversationModule] Message already exists, skipping");
+
             return prev;
           }
 
-          console.log("[ConversationModule] Adding new message to state");
+
           // Try to find an optimistic message we previously inserted so we can replace it
           const normalizedIncomingText = (message.message || "").trim();
           const serverTime = message.sentAt ? new Date(message.sentAt).getTime() : null;
@@ -328,7 +327,7 @@ const ConversationModule = ({
         }
 
         if (success) {
-          console.log('[ConversationModule] Successfully rejoined chat after reconnection');
+
           // Optionally fetch latest messages to catch any missed during disconnection
           // await fetchMessages();
         } else {
@@ -412,7 +411,7 @@ const ConversationModule = ({
         // Use SignalR to send real-time message - pass empty string for taskId in event chats
         const messageTaskId = isEventChat ? "" : taskId;
         const success = await sendMessage(messageTaskId, trimmedContent, documentIds, messageType, organizationId, eventId, userId, userName);
-        console.log("[ConversationModule] Send message result:", success);
+
 
         if (success) {
           // Optimistically add message to UI, but avoid adding if a server message

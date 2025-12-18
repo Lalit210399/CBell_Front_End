@@ -85,7 +85,7 @@ async startConnection() {
     await Promise.race([connectionPromise, timeoutPromise]);
     // Debug: log successful connection
     try {
-      console.debug('[SignalR] ✅ Connected, id=', this.connection.connectionId);
+      // Connection successful
     } catch (e) {}
     return true;
   } catch (err) {
@@ -99,7 +99,7 @@ async startConnection() {
     if (!this.connection) return;
 
     this.connection.on("MessageReceived", (message) => {
-      console.debug("[SignalR] 📨 MessageReceived:", message);
+
       (this.messageHandlers.onMessageReceived || []).forEach((h) => {
         try {
           h(message);
@@ -110,7 +110,7 @@ async startConnection() {
     });
 
     this.connection.on("MessageReceivedEvent", (message) => {
-      console.debug("[SignalR] 📨 MessageReceivedEvent:", message);
+
       (this.messageHandlers.onMessageReceived || []).forEach((h) => {
         try {
           h(message);
@@ -238,14 +238,14 @@ async startConnection() {
   async joinTaskChat(taskId, organizationId, eventId) {
     if (!this.connection) return false;
     try {
-      console.debug('[SignalR] -> JoinTaskChat invoke', { taskId, organizationId, eventId, connectionId: this.connection?.connectionId });
+
       await this.connection.invoke(
         "JoinTaskChat",
         taskId,
         organizationId,
         eventId
       );
-      console.debug(`[SignalR] ✅ Joined task chat: ${taskId} (event:${eventId})`);
+
       return true;
     } catch (err) {
       console.warn(`[SignalR] ❌ Error joining task chat ${taskId}:`, err && err.message ? err.message : err);
@@ -256,13 +256,13 @@ async startConnection() {
   async joinEventChat(eventId, organizationId) {
     if (!this.connection) return false;
     try {
-      console.debug('[SignalR] -> JoinEventChat invoke', { eventId, organizationId, connectionId: this.connection?.connectionId });
+
       await this.connection.invoke(
         "JoinEventChat",
         eventId,
         organizationId
       );
-      console.debug(`[SignalR] ✅ Joined event chat: ${eventId}`);
+
       return true;
     } catch (err) {
       console.warn(`[SignalR] ❌ Error joining event chat ${eventId}:`, err && err.message ? err.message : err);
@@ -277,7 +277,7 @@ async startConnection() {
       const isEventMessage = !taskId || taskId === "";
       const tId = isEventMessage ? null : taskId;
       const eId = isEventMessage ? (eventId || "") : "";
-      console.debug('[SignalR] -> SendMessage invoke', { tId, eId, message, documentIds, organizationId, userId, isEventMessage });
+
       await this.connection.invoke(
         "SendMessage",
         tId,
@@ -289,7 +289,7 @@ async startConnection() {
         userId,
         userName
       );
-      console.debug('[SignalR] ✅ SendMessage completed');
+
       return true;
     } catch (err) {
       console.warn('[SignalR] ❌ Error sending message:', err && err.message ? err.message : err);
