@@ -1,46 +1,59 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./CheckList.css";
 
-const Checklist = ({ 
-  initialItems = [], 
-  onChecklistChange, 
+const Checklist = ({
+  initialItems = [],
+  onChecklistChange,
   mode = "view",
-  canEdit = null, 
-  onChecklistUpdate = null, 
-  taskId = null, 
-  isUpdatingChecklist = false, 
-  onUpdateChecklist = null, 
+  canEdit = null,
+  onChecklistUpdate = null,
+  showCheckbox = true,
+  taskId = null,
+  isUpdatingChecklist = false,
+  onUpdateChecklist = null,
   onChecklistChanges = null,
   hasError = false,
-  errorMessage = ""
+  errorMessage = "",
 }) => {
-  const createPlaceholderItem = () => ({ text: "", checked: false, isPlaceholder: true });
+  const createPlaceholderItem = () => ({
+    text: "",
+    checked: false,
+    isPlaceholder: true,
+  });
 
-  const transformItems = React.useCallback((items) => {
-    // If items is empty or only contains empty/null values, return a single placeholder for edit/create modes
-    const hasValidItems = (items || []).some(item => item.text !== null && item.text !== undefined && item.text !== "");
-    
-    if (!hasValidItems && mode !== "view") {
-      // Return only one placeholder item for empty list in edit/create modes
-      return [createPlaceholderItem()];
-    }
+  const transformItems = React.useCallback(
+    (items) => {
+      // If items is empty or only contains empty/null values, return a single placeholder for edit/create modes
+      const hasValidItems = (items || []).some(
+        (item) =>
+          item.text !== null && item.text !== undefined && item.text !== ""
+      );
 
-    let transformed = (items || [])
-      .filter(item => item.text !== null && item.text !== undefined)
-      .map(item => ({
-        text: item.text,
-        checked: item.checked || false,
-        isPlaceholder: false
-      }));
+      if (!hasValidItems && mode !== "view") {
+        // Return only one placeholder item for empty list in edit/create modes
+        return [createPlaceholderItem()];
+      }
 
-    // Add placeholder item for create/edit modes, but not for view mode
-    if (mode !== "view") {
-      transformed.push(createPlaceholderItem());
-    }
-    return transformed;
-  }, [mode]);
+      let transformed = (items || [])
+        .filter((item) => item.text !== null && item.text !== undefined)
+        .map((item) => ({
+          text: item.text,
+          checked: item.checked || false,
+          isPlaceholder: false,
+        }));
 
-  const [checklist, setChecklist] = useState(() => transformItems(initialItems));
+      // Add placeholder item for create/edit modes, but not for view mode
+      if (mode !== "view") {
+        transformed.push(createPlaceholderItem());
+      }
+      return transformed;
+    },
+    [mode]
+  );
+
+  const [checklist, setChecklist] = useState(() =>
+    transformItems(initialItems)
+  );
   const inputRefs = useRef([]);
   const isInitialRender = useRef(true);
   const isUpdatingFromProps = useRef(false);
@@ -68,7 +81,11 @@ const Checklist = ({
 
   // Check for changes and notify parent
   useEffect(() => {
-    if (isInitialRender.current || isUpdatingFromProps.current || !originalChecklist.current) {
+    if (
+      isInitialRender.current ||
+      isUpdatingFromProps.current ||
+      !originalChecklist.current
+    ) {
       return;
     }
 
@@ -78,7 +95,7 @@ const Checklist = ({
 
     const hasChangesNow = currentString !== originalString;
     setHasChanges(hasChangesNow);
-    
+
     if (onChecklistChanges) {
       onChecklistChanges(hasChangesNow);
     }
@@ -88,13 +105,17 @@ const Checklist = ({
   useEffect(() => {
     const transformed = transformItems(initialItems);
     isUpdatingFromProps.current = true;
-    setChecklist(prevChecklist => {
+    setChecklist((prevChecklist) => {
       const currentNormalized = normalizeItems(prevChecklist);
       const incomingNormalized = normalizeItems(transformed);
 
-      if (JSON.stringify(currentNormalized) !== JSON.stringify(incomingNormalized)) {
+      if (
+        JSON.stringify(currentNormalized) !== JSON.stringify(incomingNormalized)
+      ) {
         // Update original data when props change
-        originalChecklist.current = JSON.stringify(normalizeItems(initialItems));
+        originalChecklist.current = JSON.stringify(
+          normalizeItems(initialItems)
+        );
         setHasChanges(false); // Reset changes when new data comes in
         return transformed;
       }
@@ -125,16 +146,23 @@ const Checklist = ({
     }
   }, [onUpdateChecklist, taskId, isUpdatingChecklist, checklist]);
 
-
   // Handle parent notifications when checklist changes (but not during initial render or prop updates)
   useEffect(() => {
-    if (isInitialRender.current || isUpdatingFromProps.current || !isEditable || !onChecklistChange) {
+    if (
+      isInitialRender.current ||
+      isUpdatingFromProps.current ||
+      !isEditable ||
+      !onChecklistChange
+    ) {
       return;
     }
 
-    const filteredChecklist = checklist.filter(item => item.text !== null && item.text !== undefined && !item.isPlaceholder);
+    const filteredChecklist = checklist.filter(
+      (item) =>
+        item.text !== null && item.text !== undefined && !item.isPlaceholder
+    );
     const lastNotified = lastNotifiedChecklist.current;
-    
+
     // Only notify if the checklist actually changed
     if (JSON.stringify(filteredChecklist) !== JSON.stringify(lastNotified)) {
       lastNotifiedChecklist.current = filteredChecklist;
@@ -142,11 +170,9 @@ const Checklist = ({
     }
   }, [checklist, isEditable, onChecklistChange]);
 
-
-
   const toggleCheck = (index) => {
     if (!isEditable) return;
-    setChecklist(prev => {
+    setChecklist((prev) => {
       const updated = prev.map((item, i) =>
         i === index ? { ...item, checked: !item.checked } : item
       );
@@ -156,24 +182,24 @@ const Checklist = ({
 
   const handleInputChange = (index, value) => {
     if (!isEditable) return;
-    setChecklist(prev => {
+    setChecklist((prev) => {
       const updated = prev.map((item, i) =>
         i === index ? { ...item, text: value, isPlaceholder: false } : item
       );
-      if (!updated.some(item => item.isPlaceholder) && mode !== "view") {
+      if (!updated.some((item) => item.isPlaceholder) && mode !== "view") {
         updated.push(createPlaceholderItem());
       }
       return updated;
     });
-    
+
     // Auto-resize textarea
     const textarea = inputRefs.current[index];
     if (textarea) {
       // Reset height to auto to get the natural height
-      textarea.style.height = 'auto';
+      textarea.style.height = "auto";
       // Set height to scrollHeight to fit content
       const newHeight = textarea.scrollHeight;
-      textarea.style.height = newHeight + 'px';
+      textarea.style.height = newHeight + "px";
     }
   };
 
@@ -182,7 +208,7 @@ const Checklist = ({
 
     if (event.key === "Enter") {
       event.preventDefault();
-      setChecklist(prev => {
+      setChecklist((prev) => {
         let newList = [...prev];
         if (newList[index].isPlaceholder && newList[index].text) {
           newList[index] = { ...newList[index], isPlaceholder: false };
@@ -203,10 +229,14 @@ const Checklist = ({
       });
     }
 
-    if (event.key === "Backspace" && !checklist[index].text && !checklist[index].isPlaceholder) {
-      setChecklist(prev => {
+    if (
+      event.key === "Backspace" &&
+      !checklist[index].text &&
+      !checklist[index].isPlaceholder
+    ) {
+      setChecklist((prev) => {
         let newList = prev.filter((_, i) => i !== index);
-        if (!newList.some(item => item.isPlaceholder) && mode !== "view") {
+        if (!newList.some((item) => item.isPlaceholder) && mode !== "view") {
           newList.push(createPlaceholderItem());
         }
         setTimeout(() => {
@@ -223,22 +253,25 @@ const Checklist = ({
       inputRefs.current.forEach((textarea) => {
         if (textarea) {
           // Reset height to auto to get the natural height
-          textarea.style.height = 'auto';
+          textarea.style.height = "auto";
           // Set height to scrollHeight to fit content
           const newHeight = textarea.scrollHeight;
-          textarea.style.height = newHeight + 'px';
+          textarea.style.height = newHeight + "px";
         }
       });
     };
-    
+
     // Resize after a short delay to ensure DOM is updated
     const timeoutId = setTimeout(resizeTextareas, 100);
     return () => clearTimeout(timeoutId);
   }, [checklist]);
 
   // Filter out placeholder items in view mode
-  const displayItems = !isEditable 
-    ? checklist.filter(item => !item.isPlaceholder && item.text !== null && item.text !== undefined)
+  const displayItems = !isEditable
+    ? checklist.filter(
+        (item) =>
+          !item.isPlaceholder && item.text !== null && item.text !== undefined
+      )
     : checklist;
 
   return (
@@ -258,45 +291,57 @@ const Checklist = ({
           </div>
         </div>
       )}
-      
+
       {displayItems.map((item, index) => {
-        const originalIndex = checklist.findIndex(originalItem => originalItem === item);
+        const originalIndex = checklist.findIndex(
+          (originalItem) => originalItem === item
+        );
         return (
-          <label key={originalIndex} className={`checklist-item ${item.checked ? "checked" : ""}`}>
-            <input
-              type="checkbox"
-              checked={item.checked}
-              onChange={() => toggleCheck(originalIndex)}
-              disabled={!isEditable || item.isPlaceholder}
-            />
-            <span 
-              className="checkbox-custom"
-              onClick={(e) => {
-                if (!item.isPlaceholder && isEditable) {
-                  e.preventDefault();
-                  toggleCheck(originalIndex);
+          <label
+            key={originalIndex}
+            className={`checklist-item ${item.checked ? "checked" : ""}`}
+          >
+            {showCheckbox && (
+              <>
+                <input
+                  type="checkbox"
+                  checked={item.checked}
+                  onChange={() => toggleCheck(originalIndex)}
+                  disabled={!isEditable || item.isPlaceholder}
+                />
+                <span
+                  className="checkbox-custom"
+                  onClick={(e) => {
+                    if (!item.isPlaceholder && isEditable) {
+                      e.preventDefault();
+                      toggleCheck(originalIndex);
+                    }
+                  }}
+                ></span>
+              </>
+            )}
+
+            {mode === "view" ? (
+              <div className="checklist-input checklist-view-text">
+                {item.text}
+              </div>
+            ) : (
+              <textarea
+                ref={(el) => (inputRefs.current[originalIndex] = el)}
+                placeholder={item.isPlaceholder ? "Add checklist item..." : ""}
+                value={item.text}
+                onChange={(e) =>
+                  handleInputChange(originalIndex, e.target.value)
                 }
-              }}
-            ></span>
-          {mode === "view" ? (
-            <div className="checklist-input checklist-view-text">
-              {item.text}
-            </div>
-          ) : (
-            <textarea
-              ref={(el) => (inputRefs.current[originalIndex] = el)}
-              placeholder={item.isPlaceholder ? "Add checklist item..." : ""}
-              value={item.text}
-              onChange={(e) => handleInputChange(originalIndex, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(originalIndex, e)}
-              className="checklist-input"
-              rows={1}
-            />
-          )}
+                onKeyDown={(e) => handleKeyDown(originalIndex, e)}
+                className="checklist-input"
+                rows={1}
+              />
+            )}
           </label>
         );
       })}
-      
+
       {/* {hasError && errorMessage && (
         <div className="checklist-error-message">
           {errorMessage}
