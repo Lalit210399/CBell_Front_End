@@ -181,7 +181,7 @@ const List = ({
       </div>
       <div className="guests-list-container">
         {guests.map((guest, index) => (
-          <div key={index} className="guest-card">
+          <div key={index} className="guest_card">
             <div className="avatar-circle">
               {getInitials(guest.name)}
             </div>
@@ -245,7 +245,7 @@ const List = ({
         ))}
         {isEditMode && (
           <div 
-            className="guest-card placeholder-card" 
+            className="guest_card placeholder-card" 
             onClick={handleAddGuest}
             role="button"
             tabIndex={0}

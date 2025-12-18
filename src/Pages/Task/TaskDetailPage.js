@@ -92,6 +92,15 @@ const TaskDetailPage = () => {
     return doc.status === "Approved" || doc.status === "Published";
   };
 
+  const showPublishedBadgeOnly = useCallback(() => {
+    setTaskStatus({
+      id: "published-ui-only",
+      label: "Published",
+      value: "Published",
+      color: "purple",
+    });
+  }, []);
+
   const [createdBy, setCreatedBy] = useState(
     user ? `${user.firstName} ${user.lastName}` : "User"
   );
@@ -1368,32 +1377,32 @@ const TaskDetailPage = () => {
 
   // Handle platform publish from FileShareModel
   const handlePlatformPublish = async (docId, platform, publishData = {}) => {
-  // ✅ FINAL SAFETY CHECK
-  if (!fileDetail || !isDocumentPublishable(fileDetail)) {
-    addMessage({
-      text: "This document is not approved for publishing. Only Approved or Published files can be published.",
-      type: "error",
-      duration: 4000,
-    });
-    return;
-  }
+    // ✅ FINAL SAFETY CHECK
+    if (!fileDetail || !isDocumentPublishable(fileDetail)) {
+      addMessage({
+        text: "This document is not approved for publishing. Only Approved or Published files can be published.",
+        type: "error",
+        duration: 4000,
+      });
+      return;
+    }
 
-  const organizationId = user?.organizationId;
-  const taskIdParam = taskId;
+    const organizationId = user?.organizationId;
+    const taskIdParam = taskId;
 
-  if (platform === "email") {
-    await handlePublishRecord(docId, platform);
-    addMessage({
-      text: "Email published successfully!",
-      type: "success",
-      duration: 3000,
-    });
-    return;
-  }
+    if (platform === "email" || platform === "facebook" || platform === "instagram") {
+      await handlePublishRecord(docId, platform);
+      showPublishedBadgeOnly();
+      addMessage({
+        text: "published successfully!",
+        type: "success",
+        duration: 3000,
+      });
+      return;
+    }
 
-  // ---- existing logic unchanged below ----
-};
-
+    // ---- existing logic unchanged below ----
+  };
 
   const saveSocialMediaPostLink = async (docId, platform, postData) => {
     const organizationId = user?.organizationId;
