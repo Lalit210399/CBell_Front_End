@@ -46,7 +46,7 @@ const AssignRoles = () => {
 
   return (
     <div className="assign-roles">
-      <h2>Assign Roles to {user.name}</h2>
+      <h2>Assign Roles to {user.firstName} {user.lastName}</h2>
       <div className="current-roles">
         <h3>Current Roles:</h3>
         <ul>

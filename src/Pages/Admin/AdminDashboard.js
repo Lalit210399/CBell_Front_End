@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Tile from '../../CommonComponents/Tiles/Tiles';
 import Table from '../../CommonComponents/Table/Table';
@@ -15,19 +16,53 @@ import {
 } from "lucide-react";
 
 const AdminDashboard = () => {
-  const { users, roles, loading, error } = useAdmin();
+  const { users, loading, error, isLoggedIn } = useAdmin();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('users');
+
+  // Original roles data for dashboard
+  const dashboardRoles = [
+    {
+      id: 1,
+      name: 'super_admin',
+      displayName: 'Super Administrator',
+      description: 'Complete system access with all permissions',
+    },
+    {
+      id: 2,
+      name: 'admin',
+      displayName: 'Administrator',
+      description: 'Full administrative access except system settings',
+    },
+    {
+      id: 3,
+      name: 'manager',
+      displayName: 'Manager',
+      description: 'Management access for users and events',
+    },
+    {
+      id: 4,
+      name: 'moderator',
+      displayName: 'Moderator',
+      description: 'Content moderation and user management',
+    },
+    {
+      id: 5,
+      name: 'user',
+      displayName: 'User',
+      description: 'Basic user access with limited permissions',
+    },
+  ];
 
   // Calculate statistics
   const stats = useMemo(() => {
     const totalUsers = users.length;
     const activeUsers = users.filter(user => user.status === 'Active').length;
-    const totalRoles = roles.length;
-    const adminRoles = roles.filter(role => role.name === 'admin').length;
+    const totalRoles = dashboardRoles.length;
+    const adminRoles = dashboardRoles.filter(role => role.name === 'admin').length;
 
     return { totalUsers, activeUsers, totalRoles, adminRoles };
-  }, [users, roles]);
+  }, [users, dashboardRoles]);
 
   // Dashboard tiles
   const dashboardTiles = [
@@ -118,11 +153,15 @@ const AdminDashboard = () => {
   const recentUsers = users.slice(-5).reverse();
 
   // Recent roles (last 5)
-  const recentRoles = roles.slice(-5).reverse();
+  const recentRoles = dashboardRoles.slice(-5).reverse();
 
   const userColumns = [
-    { key: 'name', label: 'Name' },
-    { key: 'email', label: 'Email' },
+    { key: 'firstName', label: 'First Name' },
+    { key: 'lastName', label: 'Last Name' },
+    { key: 'email', label: 'Email Address' },
+    { key: 'organizationName', label: 'Organization' },
+    { key: 'organizationCode', label: 'Org Code' },
+    { key: 'role', label: 'Role' },
     { key: 'status', label: 'Status' },
   ];
 
@@ -148,6 +187,13 @@ const AdminDashboard = () => {
       <div className="welcome-section">
         <h2>Admin Panel - Manage Users & Roles</h2>
         <div className="welcome-controls">
+          <button
+            className="dashboard-btn dashboard-btn-primary"
+            onClick={() => navigate('/admin/users/create')}
+          >
+            <Plus size={16} />
+            Create User
+          </button>
           <button
             className="dashboard-btn dashboard-btn-primary"
             onClick={handleCreateRole}
@@ -215,8 +261,7 @@ const AdminDashboard = () => {
             loading={loading}
             onRowClick={handleRoleEdit}
             showActions={true}
-            actionLabel="Edit"
-            onAction={handleRoleEdit}
+            onDelete={handleRoleDelete}
           />
         </div>
       </div>

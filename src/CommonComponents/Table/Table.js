@@ -14,6 +14,7 @@ const Table = ({
   onDuplicate,
   onArchive,
   onDelete,
+  onEdit,
   showActions = true,
   onRowClick,
   loading = false,
@@ -174,6 +175,17 @@ const Table = ({
                   ))}
                   {showActions && (
                     <td className="action-container action-column" onClick={(e) => e.stopPropagation()}>
+                     
+                        {onEdit && (
+                          <button
+                            className="action-button"
+                            onClick={() => onEdit(item)}
+                            title="Edit item"
+                          >
+                            ✏️
+                          </button>
+                        )}
+                        
                       {onDelete && (
                         <button
                           className="delete-button"
@@ -191,7 +203,7 @@ const Table = ({
                         ⋮
                       </button>
                       {menuOpenIndex === index && (
-                        <div 
+                        <div
                           className={`dropdown_menu ${dropdownPosition[index]?.left !== undefined ? 'dropdown-left' : ''}`}
                           ref={menuRef}
                           style={dropdownPosition[index] || {}}

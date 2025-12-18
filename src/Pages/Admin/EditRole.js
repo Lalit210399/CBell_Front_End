@@ -122,8 +122,8 @@ const EditRole = () => {
           </table>
         </div>
         <div className="actions">
-          <button type="submit">Update</button>
-          <button type="button" onClick={() => navigate('/admin/roles')}>Cancel</button>
+          <button type="submit" className="btn-primary">Update</button>
+          <button type="button" className="btn-secondary" onClick={() => navigate('/admin/roles')}>Cancel</button>
         </div>
       </form>
     </div>

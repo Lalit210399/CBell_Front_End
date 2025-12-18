@@ -11,7 +11,7 @@ const AdminUsers = () => {
 
   const filteredUsers = useMemo(() => {
     return users.filter(user =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [users, searchTerm]);
@@ -19,7 +19,9 @@ const AdminUsers = () => {
   const columns = [
     { key: 'name', label: 'Name' },
     { key: 'email', label: 'Email' },
-    { key: 'organizationId', label: 'Organization' },
+    { key: 'organizationName', label: 'Organization' },
+    { key: 'organizationCode', label: 'Org Code' },
+    { key: 'role', label: 'Role' },
     { key: 'status', label: 'Status' },
   ];
 
@@ -27,9 +29,24 @@ const AdminUsers = () => {
     navigate(`/admin/users/${user.id}/roles`);
   };
 
+  const handleAddUser = () => {
+    navigate('/admin/users/create');
+  };
+
   const renderCell = (key, item) => {
+    if (key === 'name') {
+      return `${item.firstName} ${item.lastName}`;
+    }
     if (key === 'status') {
       return <span className={item.status === 'Active' ? 'status-active' : 'status-inactive'}>{item.status}</span>;
+    }
+    if (key === 'role') {
+      // Get role names from roles array
+      const userRoles = item.roles.map(roleId => {
+        const role = roles.find(r => r.id === roleId);
+        return role ? role.displayName : 'Unknown';
+      });
+      return userRoles.join(', ');
     }
     return item[key];
   };
@@ -39,8 +56,10 @@ const AdminUsers = () => {
 
   return (
     <div className="admin-users">
-      <h2>Users Management</h2>
+      <h2>Users</h2>
+      <p>Manage user accounts and permissions.</p>
       <div className="search-bar">
+        <button className="create-button" onClick={handleAddUser}>Add User</button>
         <input
           type="text"
           placeholder="Search users..."
