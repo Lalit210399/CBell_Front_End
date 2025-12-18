@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-
+ 
 const UserContext = createContext();
-
+ 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [permissions, setPermissions] = useState(null);
@@ -9,22 +9,28 @@ export const UserProvider = ({ children }) => {
   const [selectedOrganizationId, setSelectedOrganizationId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [scopeChangeTrigger, setScopeChangeTrigger] = useState(0);
-
+ 
   useEffect(() => {
     // simulate restoring session from localStorage
     const storedUser = localStorage.getItem("user");
     const storedPermissions = localStorage.getItem("permissions");
     const storedScope = localStorage.getItem("scope");
     const storedSelectedOrg = localStorage.getItem("dashboard-selected-organization");
-
+ 
     if (storedUser) setUser(JSON.parse(storedUser));
     if (storedPermissions) setPermissions(JSON.parse(storedPermissions));
     if (storedScope) setScope(JSON.parse(storedScope));
-    if (storedSelectedOrg) setSelectedOrganizationId(storedSelectedOrg);
-
+    if (storedSelectedOrg) {
+      const normalizedStored = String(storedSelectedOrg).trim().toLowerCase();
+      // "All" is Schedule-only: never restore it globally.
+      if (normalizedStored !== "all" && normalizedStored !== "*") {
+        setSelectedOrganizationId(storedSelectedOrg);
+      }
+    }
+ 
     setLoading(false); // ✅ auth state resolved
   }, []);
-
+ 
   // Initialize selected organization when user and scope are available
   useEffect(() => {
     if (user?.organizationId && scope?.accessibleOrganizations && !selectedOrganizationId) {
@@ -39,33 +45,36 @@ export const UserProvider = ({ children }) => {
       }
     }
   }, [user?.organizationId, scope?.accessibleOrganizations, selectedOrganizationId]);
-
+ 
   // Listen for auth expiration events
   useEffect(() => {
     const handleAuthExpired = (event) => {
       //console.log('Auth expired event received:', event.detail);
       resetUserState();
     };
-
+ 
     window.addEventListener('auth-expired', handleAuthExpired);
-    
+   
     return () => {
       window.removeEventListener('auth-expired', handleAuthExpired);
     };
   }, []);
-
+ 
   // Helper function to check if user is viewing their own organization
   const isViewingOwnOrganization = () => {
     return selectedOrganizationId === user?.organizationId;
   };
-
+ 
   const handleScopeChange = (organizationId, currentLocation = null) => {
+    const normalizedOrg = String(organizationId || "").trim().toLowerCase();
+    const isAllOrganizationsSelected = normalizedOrg === "all" || normalizedOrg === "*";
+ 
     // Check if scope change is allowed on current page
     if (currentLocation) {
       // Only allow scope changes on the exact main pages, not sub-paths
       const allowedPages = ['/dashboard','/designer-dashboard', '/events', '/schedule', '/chat'];
       const isAllowedPage = allowedPages.includes(currentLocation.pathname);
-      
+     
       // If not on an allowed page, change scope and redirect to dashboard
       if (!isAllowedPage) {
         // Change the scope first
@@ -82,19 +91,20 @@ export const UserProvider = ({ children }) => {
         return;
       }
     }
-    
+   
     // Normal scope change for allowed pages
-    setSelectedOrganizationId(String(organizationId));
-    if (organizationId) {
-      localStorage.setItem("dashboard-selected-organization", String(organizationId));
-    } else {
+    setSelectedOrganizationId(isAllOrganizationsSelected ? "all" : String(organizationId));
+    // "All" is Schedule-only: don't persist it, so other pages never restore into "all".
+    if (!organizationId || isAllOrganizationsSelected) {
       localStorage.removeItem("dashboard-selected-organization");
+    } else {
+      localStorage.setItem("dashboard-selected-organization", String(organizationId));
     }
-    
+   
     // Trigger scope change for components to refetch data
     setScopeChangeTrigger(prev => prev + 1);
   };
-
+ 
   // Reset all user-related state (to be called on logout)
   const resetUserState = () => {
     setUser(null);
@@ -103,15 +113,15 @@ export const UserProvider = ({ children }) => {
     setSelectedOrganizationId(null);
     setScopeChangeTrigger(0);
   };
-
+ 
   return (
-    <UserContext.Provider value={{ 
-      user, 
-      setUser, 
-      permissions, 
-      setPermissions, 
-      scope, 
-      setScope, 
+    <UserContext.Provider value={{
+      user,
+      setUser,
+      permissions,
+      setPermissions,
+      scope,
+      setScope,
       selectedOrganizationId,
       handleScopeChange,
       isViewingOwnOrganization,
@@ -123,12 +133,13 @@ export const UserProvider = ({ children }) => {
     </UserContext.Provider>
   );
 };
-
+ 
 /**
-
+ 
  * @name useUser
  * Custom hook to access UserContext
  * @throws {Error} If used outside of UserProvider
  * @returns {Object} UserContext
  */
 export const useUser = () => useContext(UserContext);
+ 

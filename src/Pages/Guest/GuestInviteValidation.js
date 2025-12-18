@@ -3,43 +3,43 @@ import GuestService from "../../Services/GuestService";
 import { useNavigate, useParams } from "react-router-dom";
 import { decodeGuestToken, gatherTaskIds, resolveTaskId } from "./guestUtils";
 import "./Guest.css";
-
+ 
 export default function GuestInviteValidationPage() {
   const { inviteId } = useParams();
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [otpAllowed, setOtpAllowed] = useState(true);
-
+ 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const inputsRef = useRef([]);
   const [verifying, setVerifying] = useState(false);
   const [autoRefreshing, setAutoRefreshing] = useState(false);
   const storageKey = useMemo(() => `guest_session_${inviteId}`, [inviteId]);
-
+ 
   useEffect(() => {
     if (typeof sessionStorage === "undefined") return;
-
+ 
     const bootstrap = async () => {
       if (!inviteId) {
         setError("Invalid invite link.");
         setOtpAllowed(false);
         return;
       }
-
+ 
       setAutoRefreshing(true);
       setError("");
       setOtpAllowed(true);
-
+ 
       try {
         // Recommended flow: attempt refresh-token before showing OTP UI
         const refreshData = await GuestService.refreshToken(inviteId);
         const nextToken = refreshData?.token;
         if (!nextToken) throw new Error("Session refresh succeeded but token was missing. Please retry.");
-
+ 
         const decodedToken = decodeGuestToken(nextToken);
         const derivedTaskId = resolveTaskId(refreshData) || resolveTaskId(decodedToken);
         const taskPool = gatherTaskIds(decodedToken, refreshData).filter(Boolean);
-
+ 
         const payload = {
           token: nextToken,
           expiresAt: refreshData?.expiresAt || null,
@@ -47,7 +47,7 @@ export default function GuestInviteValidationPage() {
           taskId: derivedTaskId || taskPool[0] || null,
           taskIds: taskPool.length ? taskPool : null,
         };
-
+ 
         sessionStorage.setItem(storageKey, JSON.stringify(payload));
         navigate(`/guest/tasks/${inviteId}`, { replace: true });
       } catch (err) {
@@ -55,7 +55,7 @@ export default function GuestInviteValidationPage() {
         try {
           sessionStorage.removeItem(storageKey);
         } catch (_) {}
-
+ 
         const status = err?.status;
         if (status === 400) {
           // First-time visitor: must verify OTP
@@ -73,21 +73,21 @@ export default function GuestInviteValidationPage() {
           setOtpAllowed(false);
           return;
         }
-
+ 
         setError(err?.message || "Unable to validate invite. Please try again.");
         setOtpAllowed(true);
       } finally {
         setAutoRefreshing(false);
       }
     };
-
+ 
     bootstrap();
   }, [storageKey, navigate, inviteId]);
-
-
-
+ 
+ 
+ 
   const otpStr = useMemo(() => otp.join("").trim(), [otp]);
-
+ 
   const handleOtpChange = (idx, val) => {
     const v = val.replace(/\D/g, "").slice(0, 1);
     setOtp(prev => {
@@ -97,7 +97,7 @@ export default function GuestInviteValidationPage() {
     });
     if (v && inputsRef.current[idx + 1]) inputsRef.current[idx + 1].focus();
   };
-
+ 
   const handlePaste = (e) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData('text');
@@ -113,7 +113,7 @@ export default function GuestInviteValidationPage() {
       inputsRef.current[nextEmptyIndex]?.focus();
     }
   };
-
+ 
   const verify = async () => {
     setVerifying(true);
     setError("");
@@ -141,7 +141,7 @@ export default function GuestInviteValidationPage() {
       setVerifying(false);
     }
   };
-
+ 
   return (
     <div className="guest-wrap">
       <div className="guest-card otp-card">
@@ -150,10 +150,10 @@ export default function GuestInviteValidationPage() {
           <h2>Verify Your Access</h2>
           <p className="otp-subtitle">Enter the 6-digit code sent to your email</p>
         </div>
-
+ 
         {autoRefreshing && <div className="loading">Restoring your session…</div>}
         {error && !autoRefreshing && <div className="error">{error}</div>}
-
+ 
         {!autoRefreshing && otpAllowed && (
           <>
             <div className="otp-section">
@@ -176,7 +176,7 @@ export default function GuestInviteValidationPage() {
               </div>
               <p className="otp-hint">Check your email for the 6-digit verification code</p>
             </div>
-
+ 
             <button
               className="primary verify-btn"
               disabled={verifying || otpStr.length !== 6}
@@ -191,7 +191,7 @@ export default function GuestInviteValidationPage() {
                 'Verify & Continue'
               )}
             </button>
-
+ 
             <div className="otp-footer">
               <p className="help-text">Didn't receive the code? Check your spam folder or contact the sender.</p>
             </div>
@@ -201,3 +201,4 @@ export default function GuestInviteValidationPage() {
     </div>
   );
 }
+ 
