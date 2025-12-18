@@ -145,14 +145,19 @@ const ConversationModule = ({
   // SignalR Message Handlers
   const handleMessageReceived = useCallback(
     (message) => {
-      //console.debug("[ConversationModule] Message received via SignalR:", message);
+      console.log("[ConversationModule] Message received via SignalR:", message, "current taskId:", taskId, "message.taskId:", message.taskId);
 
       if (message.taskId === taskId) {
+        console.log("[ConversationModule] Message is for current task, updating messages");
         setMessages((prev) => {
           // Check if message already exists by server id to avoid duplicates
           const exists = prev.some((m) => m.threadId === message.conversationId);
-          if (exists) return prev;
+          if (exists) {
+            console.log("[ConversationModule] Message already exists, skipping");
+            return prev;
+          }
 
+          console.log("[ConversationModule] Adding new message to state");
           // Try to find an optimistic message we previously inserted so we can replace it
           const normalizedIncomingText = (message.message || "").trim();
           const serverTime = message.sentAt ? new Date(message.sentAt).getTime() : null;
@@ -271,6 +276,34 @@ const ConversationModule = ({
     fetchMessages,
   ]);
 
+  // Rejoin chat when connection is restored
+  useEffect(() => {
+    if (!isActive || !taskId || !isConnected) return;
+
+    // Add a small delay to ensure connection is fully established
+    const rejoinTimeout = setTimeout(async () => {
+      try {
+        // Double-check connection is still active
+        if (!isConnected) return;
+
+        const organizationId = currentUser?.organizationId || user?.organizationId;
+        const success = await joinTaskChat(taskId, organizationId, eventId);
+
+        if (success) {
+          console.log('[ConversationModule] Successfully rejoined chat after reconnection');
+          // Optionally fetch latest messages to catch any missed during disconnection
+          // await fetchMessages();
+        } else {
+          console.error('[ConversationModule] Failed to rejoin chat after reconnection');
+        }
+      } catch (error) {
+        console.error('[ConversationModule] Failed to rejoin chat on reconnection:', error);
+      }
+    }, 1500); // Increased delay to 1.5 seconds
+
+    return () => clearTimeout(rejoinTimeout);
+  }, [isConnected, isActive, taskId, joinTaskChat, currentUser, user, eventId]);
+
   // Handle typing indicators
   const handleTypingStart = useCallback(() => {
     if (!isConnected || !taskId) return;
@@ -318,6 +351,7 @@ const ConversationModule = ({
         
         // Use SignalR to send real-time message
         const success = await sendMessage(taskId, content, documentIds, messageType, organizationId, eventId, userId, userName);
+        console.log("[ConversationModule] Send message result:", success);
 
         if (success) {
           // Optimistically add message to UI, but avoid adding if a server message

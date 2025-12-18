@@ -13,12 +13,14 @@ const ChatLayout = ({ events, organizationId }) => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [eventsWithTasks, setEventsWithTasks] = useState({});
   const [loadingTasks, setLoadingTasks] = useState({});
+  const [failedTasks, setFailedTasks] = useState({}); // Track failed task fetches
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isFilePanelOpen, setIsFilePanelOpen] = useState(false);
   const [taskFiles, setTaskFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const [loadedTaskFiles, setLoadedTaskFiles] = useState({}); // Track loaded task files
 
   // --- Debounce search query ---
   useEffect(() => {
@@ -31,11 +33,13 @@ const ChatLayout = ({ events, organizationId }) => {
 
   // --- Fetch tasks for a specific event ---
   const fetchEventTasks = async (eventId, eventOrgId) => {
-    if (eventsWithTasks[eventId]) {
+    // Don't fetch if already loaded or currently loading
+    if (eventsWithTasks[eventId] !== undefined || loadingTasks[eventId]) {
       return;
     }
 
     setLoadingTasks(prev => ({ ...prev, [eventId]: true }));
+    setFailedTasks(prev => ({ ...prev, [eventId]: false })); // Reset failed state
 
     // Use event's organization ID if available, otherwise fall back to the global organizationId
     const orgIdToUse = eventOrgId || organizationId;
@@ -57,12 +61,14 @@ const ChatLayout = ({ events, organizationId }) => {
           ...prev,
           [eventId]: tasks || []
         }));
+        setFailedTasks(prev => ({ ...prev, [eventId]: false }));
       } else {
         console.error('Failed to fetch tasks for event:', eventId);
         setEventsWithTasks(prev => ({
           ...prev,
           [eventId]: []
         }));
+        setFailedTasks(prev => ({ ...prev, [eventId]: true }));
       }
     } catch (error) {
       console.error('Error fetching tasks for event:', eventId, error);
@@ -70,9 +76,16 @@ const ChatLayout = ({ events, organizationId }) => {
         ...prev,
         [eventId]: []
       }));
+      setFailedTasks(prev => ({ ...prev, [eventId]: true }));
     } finally {
       setLoadingTasks(prev => ({ ...prev, [eventId]: false }));
     }
+  };
+
+  // --- Retry failed task fetch ---
+  const retryFetchTasks = async (eventId, event) => {
+    const eventOrgId = event.organizationId || event.orgId;
+    await fetchEventTasks(eventId, eventOrgId);
   };
 
   // --- Toggle event expand ---
@@ -80,7 +93,8 @@ const ChatLayout = ({ events, organizationId }) => {
     if (expandedEventId === eventId) {
       setExpandedEventId(null);
     } else {
-      if (!eventsWithTasks[eventId]) {
+      // Fetch if not loaded yet (undefined) or if previously failed
+      if (eventsWithTasks[eventId] === undefined || failedTasks[eventId]) {
         // Pass the event's organization ID to the fetch function
         const eventOrgId = event.organizationId || event.orgId;
         await fetchEventTasks(eventId, eventOrgId);
@@ -91,7 +105,13 @@ const ChatLayout = ({ events, organizationId }) => {
 
   // --- Fetch task files ---
   const fetchTaskFiles = useCallback(async (taskId, eventId) => {
+    // Don't fetch if already loaded or currently loading
+    if (loadedTaskFiles[taskId] || loadingFiles) {
+      return;
+    }
+
     setLoadingFiles(true);
+
     try {
       const response = await fetchWithRefresh(
         `/apis/document-details/task/${taskId}`,
@@ -159,22 +179,30 @@ const ChatLayout = ({ events, organizationId }) => {
         });
 
         setTaskFiles(processedFiles);
+        setLoadedTaskFiles(prev => ({ ...prev, [taskId]: true }));
       } else {
         console.error('Failed to fetch task files');
         setTaskFiles([]);
+        // Don't mark as loaded on failure, so it can retry
       }
     } catch (error) {
       console.error('Error fetching task files:', error);
       setTaskFiles([]);
+      // Don't mark as loaded on failure, so it can retry
     } finally {
       setLoadingFiles(false);
     }
-  }, []);
+  }, [loadedTaskFiles, loadingFiles]);
 
   // --- Fetch files when task is selected ---
   useEffect(() => {
     if (selectedTask?.id && selectedTask?.eventId) {
+      // Clear previous task files when switching tasks
+      setTaskFiles([]);
       fetchTaskFiles(selectedTask.id, selectedTask.eventId);
+    } else {
+      // Clear files when no task is selected
+      setTaskFiles([]);
     }
   }, [selectedTask?.id, selectedTask?.eventId, fetchTaskFiles]);
 
@@ -347,6 +375,17 @@ const ChatLayout = ({ events, organizationId }) => {
                     ) : debouncedSearchQuery ? (
                       <div className="empty-tasks-in-event">
                         <p>No tasks available for this event</p>
+                      </div>
+                    ) : failedTasks[event.id] ? (
+                      <div className="empty-tasks-in-event error-state">
+                        <p>Failed to load tasks</p>
+                        <button 
+                          className="retry-button"
+                          onClick={() => retryFetchTasks(event.id, event)}
+                          disabled={loadingTasks[event.id]}
+                        >
+                          {loadingTasks[event.id] ? 'Loading...' : 'Retry'}
+                        </button>
                       </div>
                     ) : (
                       <div className="empty-tasks-in-event">

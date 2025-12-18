@@ -14,6 +14,24 @@ class SignalRService {
     };
   }
 
+  // Try to read auth token from cookie or localStorage.user.accessToken
+  _readAccessToken() {
+    try {
+      // cookie helper
+      const match = document.cookie.match(new RegExp('(^| )auth_token=([^;]+)'));
+      if (match && match[2]) return decodeURIComponent(match[2]);
+
+      const userRaw = localStorage.getItem('user');
+      if (userRaw) {
+        const u = JSON.parse(userRaw);
+        return u?.accessToken || u?.token || u?.authToken || null;
+      }
+    } catch (e) {
+      // ignore
+    }
+    return null;
+  }
+
 async startConnection() {
   // 🧩 If already connected or connecting — skip
   if (this.connection && (
@@ -30,6 +48,7 @@ async startConnection() {
 
     this.connection = new signalR.HubConnectionBuilder()
       .withUrl(`/apis/chatHub`, {
+        accessTokenFactory: () => this._readAccessToken() || "",
         withCredentials: true,
       })
       .withAutomaticReconnect({
@@ -64,7 +83,10 @@ async startConnection() {
     );
 
     await Promise.race([connectionPromise, timeoutPromise]);
-    //console.info('✅ [SignalR] Successfully connected:', this.connection.connectionId);
+    // Debug: log successful connection
+    try {
+      console.debug('[SignalR] ✅ Connected, id=', this.connection.connectionId);
+    } catch (e) {}
     return true;
   } catch (err) {
     //console.error('❌ [SignalR] Connection Error:', err);
@@ -77,7 +99,7 @@ async startConnection() {
     if (!this.connection) return;
 
     this.connection.on("MessageReceived", (message) => {
-      //console.log("[SignalR] 📨 Message Received payload:", message);
+      console.debug("[SignalR] 📨 MessageReceived:", message);
       (this.messageHandlers.onMessageReceived || []).forEach((h) => {
         try {
           h(message);
@@ -98,6 +120,16 @@ async startConnection() {
       });
     });
 
+    this.connection.on("UserJoinedEvent", (data) => {
+      (this.messageHandlers.onUserJoined || []).forEach((h) => {
+        try {
+          h(data);
+        } catch (e) {
+          // ignore
+        }
+      });
+    });
+
     this.connection.on("UserLeftTask", (data) => {
       //console.log("[SignalR] 👋 User Left Task payload:", data);
       (this.messageHandlers.onUserLeft || []).forEach((h) => {
@@ -105,6 +137,16 @@ async startConnection() {
           h(data);
         } catch (e) {
           //console.error("[SignalR] handler error onUserLeft", e);
+        }
+      });
+    });
+
+    this.connection.on("UserLeftEvent", (data) => {
+      (this.messageHandlers.onUserLeft || []).forEach((h) => {
+        try {
+          h(data);
+        } catch (e) {
+          // ignore
         }
       });
     });
@@ -185,38 +227,48 @@ async startConnection() {
   async joinTaskChat(taskId, organizationId, eventId) {
     if (!this.connection) return false;
     try {
+      console.debug('[SignalR] -> JoinTaskChat invoke', { taskId, organizationId, eventId, connectionId: this.connection?.connectionId });
       await this.connection.invoke(
         "JoinTaskChat",
         taskId,
         organizationId,
         eventId
       );
-      //console.info(`[SignalR] Joined task chat: ${taskId}`);
+      console.debug(`[SignalR] ✅ Joined task chat: ${taskId} (event:${eventId})`);
       return true;
     } catch (err) {
-      //console.error(`[SignalR] Error joining task chat ${taskId}:`, err);
+      console.warn(`[SignalR] ❌ Error joining task chat ${taskId}:`, err && err.message ? err.message : err);
       throw err;
     }
+  }
+
+  async joinEventChat(eventId, organizationId) {
+    // Backend expects JoinTaskChat with empty taskId and eventId param
+    return this.joinTaskChat('', organizationId, eventId);
   }
 
   async sendMessage(taskId, message, documentIds = [], messageType = 1, organizationId, eventId, userId, userName) {
     if (!this.connection) throw new Error("No SignalR connection");
     try {
+      const tId = taskId || "";
+      // If sending a task-level message, do not include eventId (server expects empty)
+      const eId = tId ? "" : (eventId || "");
+      console.debug('[SignalR] -> SendMessage invoke', { tId, eId, message, documentIds, organizationId, userId });
       await this.connection.invoke(
-        "SendMessage", 
-        taskId, 
-        message, 
-        documentIds, 
+        "SendMessage",
+        tId,
+        message,
+        documentIds,
         messageType,
         organizationId,
-        eventId,
+        eId,
         userId,
         userName
       );
-      //console.debug("[SignalR] ✅ Message sent successfully");
+      console.debug('[SignalR] ✅ SendMessage completed');
       return true;
     } catch (err) {
-      //console.error("[SignalR] ❌ Error sending message:", err);
+      console.warn('[SignalR] ❌ Error sending message:', err && err.message ? err.message : err);
       throw err;
     }
   }
@@ -224,19 +276,28 @@ async startConnection() {
   async getOnlineUsers(taskId) {
     if (!this.connection) return [];
     try {
-      await this.connection.invoke("GetOnlineUsers", taskId);
+      // Some server implementations expect two args; always send a second arg (empty when unknown)
+      await this.connection.invoke("GetOnlineUsers", taskId || "", "");
     } catch (err) {
       //console.error("[SignalR] Error getting online users:", err);
     }
   }
+  
+  async leaveEventChat(eventId, organizationId) {
+    // Leave by calling LeaveTaskChat with empty taskId and eventId
+    return this.leaveTaskChat('', eventId);
+  }
 
-  async leaveTaskChat(taskId) {
+  async leaveTaskChat(taskId, eventId) {
     if (!this.connection) return;
     try {
-      await this.connection.invoke("LeaveTaskChat", taskId);
-      //console.info(`[SignalR] Left task chat: ${taskId}`);
+      // Always invoke LeaveTaskChat with two args to satisfy hub signature
+      const tId = taskId || "";
+      const eId = typeof eventId !== 'undefined' ? (eventId || "") : "";
+      await this.connection.invoke('LeaveTaskChat', tId, eId);
+      //console.info(`[SignalR] Left chat: ${taskId || eventId}`);
     } catch (err) {
-      //console.error(`[SignalR] Error leaving task chat ${taskId}:`, err);
+      //console.error(`[SignalR] Error leaving chat ${taskId || eventId}:`, err);
       throw err;
     }
   }
@@ -256,6 +317,25 @@ async startConnection() {
       await this.connection.invoke("StopTyping", taskId);
     } catch (err) {
       //console.error("[SignalR] Error stopping typing:", err);
+    }
+  }
+
+  async startTypingEvent(eventId) {
+    if (!this.connection) return;
+    try {
+      // Backend uses StartTyping with empty taskId and eventId
+      await this.connection.invoke('StartTyping', '', eventId);
+    } catch (err) {
+      // ignore
+    }
+  }
+
+  async stopTypingEvent(eventId) {
+    if (!this.connection) return;
+    try {
+      await this.connection.invoke('StopTyping', '', eventId);
+    } catch (err) {
+      // ignore
     }
   }
 
