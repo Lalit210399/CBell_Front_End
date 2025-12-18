@@ -168,6 +168,7 @@
   transition: background-color 0.2s;
   position: relative;
   min-height: 50px;
+  margin-bottom: 5px;
 }
 
 .task-item:hover {
@@ -718,11 +719,11 @@
 
 .event-chat-btn:hover {
   background-color: #e3f2fd;
-  color: #1976d2;
+  color: #076488;
 }
 
 .event-chat-btn.active {
-  background-color: #1976d2;
+  background-color: #043E54;
   color: white;
 }
 
