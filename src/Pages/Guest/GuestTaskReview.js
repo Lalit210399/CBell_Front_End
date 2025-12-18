@@ -275,6 +275,7 @@ export default function GuestTaskReviewPage() {
           initialItems={checklistItems}
           mode="view"
           canEdit={false}
+          showCheckbox={false} 
           onChecklistChange={null}
         />
       </div>
