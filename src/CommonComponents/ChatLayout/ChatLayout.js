@@ -11,6 +11,7 @@ const ChatLayout = ({ events, organizationId }) => {
   const { user } = useUser();
   const [expandedEventId, setExpandedEventId] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(null); // Add selected event for event chat
   const [eventsWithTasks, setEventsWithTasks] = useState({});
   const [loadingTasks, setLoadingTasks] = useState({});
   const [failedTasks, setFailedTasks] = useState({}); // Track failed task fetches
@@ -88,7 +89,7 @@ const ChatLayout = ({ events, organizationId }) => {
     await fetchEventTasks(eventId, eventOrgId);
   };
 
-  // --- Toggle event expand ---
+  // --- Handle event expansion (show/hide tasks) ---
   const handleEventClick = async (eventId, event) => {
     if (expandedEventId === eventId) {
       setExpandedEventId(null);
@@ -101,6 +102,18 @@ const ChatLayout = ({ events, organizationId }) => {
       }
       setExpandedEventId(eventId);
     }
+  };
+
+  // --- Handle event chat selection ---
+  const handleEventChatClick = (event) => {
+    setSelectedEvent(event);
+    setSelectedTask(null); // Clear task selection when selecting event chat
+  };
+
+  // --- Handle task selection ---
+  const handleTaskClick = (task, event) => {
+    setSelectedTask(formatTaskForConversation(task, event));
+    setSelectedEvent(null); // Clear event selection when selecting task
   };
 
   // --- Fetch task files ---
@@ -319,10 +332,18 @@ const ChatLayout = ({ events, organizationId }) => {
                     </span>
                     <span className="event-name">{event.eventName}</span>
                   </div>
-                  {/* Task count badge - commented out for now */}
-                  {/* <span className="task-count-badge">
-                    {event.tasks?.length || 0} Tasks
-                  </span> */}
+                  <div className="event-actions">
+                    <button
+                      className={`event-chat-btn ${selectedEvent?.id === event.id ? 'active' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent event expansion
+                        handleEventChatClick(event);
+                      }}
+                      title="Chat about this event"
+                    >
+                      💬
+                    </button>
+                  </div>
                 </div>
 
                 {/* --- Task List under Event --- */}
@@ -340,7 +361,7 @@ const ChatLayout = ({ events, organizationId }) => {
                           className={`task-item ${
                             selectedTask?.id === task.id ? "active" : ""
                           }`}
-                          onClick={() => setSelectedTask(formatTaskForConversation(task, event))}
+                          onClick={() => handleTaskClick(task, event)}
                         >
                           <div className="task-info">
                             <div className="task-title-row">
@@ -411,23 +432,23 @@ const ChatLayout = ({ events, organizationId }) => {
 
       {/* ---------- RIGHT CHAT AREA ---------- */}
       <div className="whatsapp-chat-area">
-        {selectedTask ? (
+        {selectedTask || selectedEvent ? (
           <div className="chat-container">
             <div className="chat-header">
               <div className="chat-header-content">
                 <div className="chat-header-left">
                   <div className="chat-header-info">
                     <div className="chat-header-row-1">
-                      <h3 className="chat-header-title">{selectedTask.taskTitle}</h3>
-                      {/* <span
-                        className={`chat-header-status status-${selectedTask.taskStatusName.toLowerCase()}`}
-                      >
-                        {selectedTask.taskStatusName}
-                      </span> */}
+                      <h3 className="chat-header-title">
+                        {selectedTask ? selectedTask.taskTitle : `Event: ${selectedEvent.eventName}`}
+                      </h3>
+                      <span className="chat-type-badge">
+                        {selectedTask ? 'Task Chat' : 'Event Chat'}
+                      </span>
                     </div>
                     <div className="chat-header-row-2">
                       <div className="chat-header-row-2-left">
-                        {selectedTask.assignedToNames?.length > 0 && (
+                        {selectedTask && selectedTask.assignedToNames?.length > 0 && (
                           <span className="chat-header-assigned">
                             <span className="assigned-label"><Users size={14}/></span>
                             <span className="assigned-names">
@@ -440,16 +461,18 @@ const ChatLayout = ({ events, organizationId }) => {
                   </div>
                 </div>
                 <div className="chat-header-actions">
-                  <button 
-                    className={`files-toggle-btn ${isFilePanelOpen ? 'active' : ''}`}
-                    onClick={toggleFilePanel}
-                    title="Toggle work files"
-                  >
-                    <FolderOpen size={20} />
-                    {taskFiles.length > 0 && (
-                      <span className="files-count-badge">{taskFiles.length}</span>
-                    )}
-                  </button>
+                  {selectedTask && (
+                    <button 
+                      className={`files-toggle-btn ${isFilePanelOpen ? 'active' : ''}`}
+                      onClick={toggleFilePanel}
+                      title="Toggle work files"
+                    >
+                      <FolderOpen size={20} />
+                      {taskFiles.length > 0 && (
+                        <span className="files-count-badge">{taskFiles.length}</span>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -458,13 +481,13 @@ const ChatLayout = ({ events, organizationId }) => {
               <div className="chat-content-main">
                 <ConversationModule
                   currentUser={getCurrentUser()}
-                  taskId={selectedTask.id}
-                  eventId={selectedTask.eventId}
+                  taskId={selectedTask?.id}
+                  eventId={selectedTask?.eventId || selectedEvent?.id}
                   isActive={true}
-                  users={selectedTask.assignedToNames || []}
+                  users={selectedTask?.assignedToNames || []}
                 />
               </div>
-              {isFilePanelOpen && (
+              {selectedTask && isFilePanelOpen && (
                 <TaskFilesPanel 
                   files={taskFiles}
                   loading={loadingFiles}
@@ -476,8 +499,8 @@ const ChatLayout = ({ events, organizationId }) => {
         ) : (
           <div className="empty-chat-state">
             <div className="empty-chat-icon">💬</div>
-            <h3>Select a Task to Chat</h3>
-            <p>Choose a task from the list to start a conversation with your team</p>
+            <h3>Select a Task or Event to Chat</h3>
+            <p>Choose a task to chat with your team, or click the chat icon 💬 next to an event to discuss the event</p>
           </div>
         )}
       </div>

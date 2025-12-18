@@ -109,6 +109,17 @@ async startConnection() {
       });
     });
 
+    this.connection.on("MessageReceivedEvent", (message) => {
+      console.debug("[SignalR] 📨 MessageReceivedEvent:", message);
+      (this.messageHandlers.onMessageReceived || []).forEach((h) => {
+        try {
+          h(message);
+        } catch (e) {
+          //console.error("[SignalR] handler error onMessageReceivedEvent", e);
+        }
+      });
+    });
+
     this.connection.on("UserJoinedTask", (data) => {
       //console.log("[SignalR] 👤 User Joined Task payload:", data);
       (this.messageHandlers.onUserJoined || []).forEach((h) => {
@@ -243,17 +254,30 @@ async startConnection() {
   }
 
   async joinEventChat(eventId, organizationId) {
-    // Backend expects JoinTaskChat with empty taskId and eventId param
-    return this.joinTaskChat('', organizationId, eventId);
+    if (!this.connection) return false;
+    try {
+      console.debug('[SignalR] -> JoinEventChat invoke', { eventId, organizationId, connectionId: this.connection?.connectionId });
+      await this.connection.invoke(
+        "JoinEventChat",
+        eventId,
+        organizationId
+      );
+      console.debug(`[SignalR] ✅ Joined event chat: ${eventId}`);
+      return true;
+    } catch (err) {
+      console.warn(`[SignalR] ❌ Error joining event chat ${eventId}:`, err && err.message ? err.message : err);
+      throw err;
+    }
   }
 
   async sendMessage(taskId, message, documentIds = [], messageType = 1, organizationId, eventId, userId, userName) {
     if (!this.connection) throw new Error("No SignalR connection");
     try {
-      const tId = taskId || "";
-      // If sending a task-level message, do not include eventId (server expects empty)
-      const eId = tId ? "" : (eventId || "");
-      console.debug('[SignalR] -> SendMessage invoke', { tId, eId, message, documentIds, organizationId, userId });
+      // For event chats, pass null for taskId as required by backend
+      const isEventMessage = !taskId || taskId === "";
+      const tId = isEventMessage ? null : taskId;
+      const eId = isEventMessage ? (eventId || "") : "";
+      console.debug('[SignalR] -> SendMessage invoke', { tId, eId, message, documentIds, organizationId, userId, isEventMessage });
       await this.connection.invoke(
         "SendMessage",
         tId,
@@ -284,8 +308,13 @@ async startConnection() {
   }
   
   async leaveEventChat(eventId, organizationId) {
-    // Leave by calling LeaveTaskChat with empty taskId and eventId
-    return this.leaveTaskChat('', eventId);
+    if (!this.connection) return;
+    try {
+      await this.connection.invoke('LeaveEventChat', eventId, organizationId);
+      //console.info(`[SignalR] Left event chat: ${eventId}`);
+    } catch (err) {
+      //console.error(`[SignalR] Error leaving event chat ${eventId}:`, err);
+    }
   }
 
   async leaveTaskChat(taskId, eventId) {
@@ -323,8 +352,7 @@ async startConnection() {
   async startTypingEvent(eventId) {
     if (!this.connection) return;
     try {
-      // Backend uses StartTyping with empty taskId and eventId
-      await this.connection.invoke('StartTyping', '', eventId);
+      await this.connection.invoke('StartTypingEvent', eventId);
     } catch (err) {
       // ignore
     }
@@ -333,7 +361,7 @@ async startConnection() {
   async stopTypingEvent(eventId) {
     if (!this.connection) return;
     try {
-      await this.connection.invoke('StopTyping', '', eventId);
+      await this.connection.invoke('StopTypingEvent', eventId);
     } catch (err) {
       // ignore
     }
