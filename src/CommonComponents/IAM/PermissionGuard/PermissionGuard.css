@@ -1,0 +1,5 @@
+/* CommonComponents/IAM/PermissionGuard/PermissionGuard.css */
+
+.permission-guard-fallback {
+  display: none;
+}

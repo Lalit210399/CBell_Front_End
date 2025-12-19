@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { User, Mail } from 'lucide-react';
+import { User, Mail, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../Context/UserContext';
 import './Settings.css';
 import EmailGroupsManager from './EmailGroupsManager/EmailGroupsManager';
 import ProfileSettings from './ProfileSettings/ProfileSettings';
+import IAMSettings from './IAM/IAMSettings';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -13,6 +14,14 @@ const Settings = () => {
 
   // Check if user is a Designer
   const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
+
+  // Check if user is an Admin (has admin-related roles)
+  const isAdmin = user?.roles?.some(role => 
+    role.name === "Admin" || 
+    role.name === "SuperAdmin" || 
+    role.displayName === "Administrator" ||
+    role.displayName === "Super Administrator"
+  );
 
   // Redirect designers away from settings page
   React.useEffect(() => {
@@ -24,6 +33,8 @@ const Settings = () => {
   const menuSections = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'email', label: 'Email Groups', icon: Mail },
+    // Show IAM section only for admins
+    ...(isAdmin ? [{ id: 'iam', label: 'Access Control', icon: Shield }] : []),
     // { id: 'notifications', label: 'Notifications', icon: Bell },
     // { id: 'security', label: 'Security', icon: Shield },
     // { id: 'appearance', label: 'Appearance', icon: Palette },
@@ -36,6 +47,8 @@ const Settings = () => {
         return <EmailGroupsManager />;
       case 'profile':
         return <ProfileSettings />;
+      case 'iam':
+        return <IAMSettings />;
       case 'notifications':
         return (
           <div className="settings-content-placeholder">

@@ -1,0 +1,225 @@
+/* Pages/Settings/IAM/ModuleManagement/CreateEditModuleModal.css */
+
+.cem-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.cem-modal {
+  background: #fff;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 550px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.cem-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px;
+  border-bottom: 1px solid #E5E5E5;
+  background: #F5F5F5;
+}
+
+.cem-header-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cem-icon {
+  color: var(--theme-primary, #043E54);
+  flex-shrink: 0;
+}
+
+.cem-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.cem-close-btn {
+  padding: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  color: #555;
+  transition: all 0.2s;
+}
+
+.cem-close-btn:hover:not(:disabled) {
+  background: #E5E5E5;
+  color: #333;
+}
+
+.cem-close-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cem-form {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.cem-form-group {
+  margin-bottom: 20px;
+}
+
+.cem-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.cem-required {
+  color: #DC3545;
+}
+
+.cem-input,
+.cem-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #E5E5E5;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.cem-input:focus,
+.cem-textarea:focus {
+  outline: none;
+  border-color: var(--theme-primary, #043E54);
+}
+
+.cem-input.error,
+.cem-textarea.error {
+  border-color: #DC3545;
+}
+
+.cem-input:disabled,
+.cem-textarea:disabled {
+  background: #F5F5F5;
+  cursor: not-allowed;
+}
+
+.cem-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.cem-error-text {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #DC3545;
+}
+
+.cem-help-text {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #777;
+}
+
+.cem-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 15px 20px;
+  border-top: 1px solid #E5E5E5;
+  background: #F9FAFB;
+}
+
+.cem-btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.cem-btn-primary {
+  background: var(--theme-primary, #043E54);
+  color: #fff;
+}
+
+.cem-btn-primary:hover:not(:disabled) {
+  background: var(--theme-primary-dark, rgb(4, 51, 69));
+}
+
+.cem-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cem-btn-secondary {
+  background: #fff;
+  color: #555;
+  border: 1px solid #E5E5E5;
+}
+
+.cem-btn-secondary:hover:not(:disabled) {
+  background: #F5F5F5;
+  border-color: #ccc;
+}
+
+.cem-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .cem-modal-backdrop {
+    padding: 0;
+  }
+
+  .cem-modal {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .cem-header {
+    padding: 15px;
+  }
+
+  .cem-title {
+    font-size: 16px;
+  }
+
+  .cem-form {
+    padding: 15px;
+  }
+
+  .cem-footer {
+    flex-direction: column-reverse;
+    padding: 15px;
+  }
+
+  .cem-btn {
+    width: 100%;
+  }
+}
