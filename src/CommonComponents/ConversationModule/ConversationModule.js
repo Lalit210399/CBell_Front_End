@@ -1,6 +1,7 @@
 // src/components/ConversationModule.jsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { AlertTriangle } from "lucide-react";
 import MessageList from "./MessageList";
 import NewMessageBox from "./NewMessageBox";
 import { useUser } from "../../Context/UserContext";
@@ -18,17 +19,27 @@ const ConversationModule = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isNewConversation, setIsNewConversation] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState(null);
+
+  // Validation error state
+  const [validationError, setValidationError] = useState("");
+
+  // Determine if this is a task chat or event chat
+  const isEventChat = !taskId && !!eventId;
+  const chatId = taskId || eventId; // Use whichever is available
+
   const {
     isConnected,
     connectionError,
     joinTaskChat,
+    joinEventChat,
     sendMessage,
     registerHandlers,
     onlineUsers,
     typingUsers,
     startTyping,
     stopTyping,
+    startTypingEvent,
+    stopTypingEvent,
   } = useSignalR();
 
   // Debug: Log connection state changes
@@ -65,21 +76,19 @@ const ConversationModule = ({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleResponse = async (response) => {
-    if (response.status === 404) {
-      setIsNewConversation(true);
-      return null;
-    }
+  // Clear validation errors after 5 seconds
+  useEffect(() => {
+    if (validationError) {
+      const timer = setTimeout(() => {
+        setValidationError("");
+      }, 5000);
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || "Failed to fetch messages");
+      return () => clearTimeout(timer);
     }
-    return data;
-  };
+  }, [validationError]);
 
   const fetchMessages = useCallback(async () => {
-    if (!isActive || !taskId) return;
+    if (!isActive || !chatId) return;
 
     try {
       setLoading(true);
@@ -87,9 +96,13 @@ const ConversationModule = ({
 
       const { fetchWithRefresh } = await import("../../Context/RefereshToken");
 
-      // Updated API endpoint to match your backend
+      // Use appropriate API endpoint based on chat type
+      const apiEndpoint = isEventChat
+        ? `/apis/chat-thread/get-event-chat/${eventId}`
+        : `/apis/chat-thread/get-task-chat/${taskId}`;
+
       const response = await fetchWithRefresh(
-        `/apis/chat-thread/get-task-chat/${taskId}`,
+        apiEndpoint,
         {
           method: "GET",
           headers: {
@@ -125,33 +138,45 @@ const ConversationModule = ({
 
       setMessages(transformedMessages);
       setIsNewConversation(false);
-      setLastUpdated(new Date().toISOString());
 
-      // Join the SignalR chat room for this task
-      if (isConnected && taskId) {
-        const organizationId =
-          currentUser?.organizationId || user?.organizationId;
-        await joinTaskChat(taskId, organizationId, eventId);
+      // Join the appropriate chat room
+      if (isConnected && chatId) {
+        const organizationId = currentUser?.organizationId || user?.organizationId;
+        if (isEventChat) {
+          await joinEventChat(eventId, organizationId);
+        } else {
+          await joinTaskChat(taskId, organizationId, eventId);
+        }
       }
     } catch (err) {
-      //console.error("[ConversationModule] Error fetching messages:", err);
+      console.error("[ConversationModule] Error fetching messages:", err);
       setError(err.message);
       setIsNewConversation(true);
     } finally {
       setLoading(false);
     }
-  }, [taskId, eventId, isActive, isConnected, joinTaskChat, currentUser, user, getInitialsFromUserName]);
+  }, [taskId, eventId, isActive, isConnected, joinTaskChat, joinEventChat, currentUser, user, getInitialsFromUserName, isEventChat, chatId]);
 
   // SignalR Message Handlers
   const handleMessageReceived = useCallback(
     (message) => {
-      //console.debug("[ConversationModule] Message received via SignalR:", message);
 
-      if (message.taskId === taskId) {
+      // Check if message is for current chat (either task or event)
+      // For event chats, check both eventId and taskId (backend might be inconsistent)
+      const isMessageForCurrentChat = isEventChat
+        ? (message.eventId === eventId || message.taskId === eventId)
+        : (message.taskId === taskId);
+
+      if (isMessageForCurrentChat) {
+
         setMessages((prev) => {
           // Check if message already exists by server id to avoid duplicates
           const exists = prev.some((m) => m.threadId === message.conversationId);
-          if (exists) return prev;
+          if (exists) {
+
+            return prev;
+          }
+
 
           // Try to find an optimistic message we previously inserted so we can replace it
           const normalizedIncomingText = (message.message || "").trim();
@@ -202,27 +227,39 @@ const ConversationModule = ({
         });
       }
     },
-    [taskId, getInitialsFromUserName]
+    [taskId, eventId, isEventChat, getInitialsFromUserName]
   );
 
   const handleUserJoined = useCallback(
     (data) => {
-      if (data.taskId === taskId) {
+      // Check if user joined current chat (task or event)
+      // For event chats, check both eventId and taskId (backend might be inconsistent)
+      const isUserJoinedCurrentChat = isEventChat
+        ? (data.eventId === eventId || data.taskId === eventId)
+        : (data.taskId === taskId);
+
+      if (isUserJoinedCurrentChat) {
         //console.info(` [ConversationModule] User joined: ${data.userName}`);
         // You could show a notification here
       }
     },
-    [taskId]
+    [taskId, eventId, isEventChat]
   );
 
   const handleUserLeft = useCallback(
     (data) => {
-      if (data.taskId === taskId) {
+      // Check if user left current chat (task or event)
+      // For event chats, check both eventId and taskId (backend might be inconsistent)
+      const isUserLeftCurrentChat = isEventChat
+        ? (data.eventId === eventId || data.taskId === eventId)
+        : (data.taskId === taskId);
+
+      if (isUserLeftCurrentChat) {
         //console.info(` [ConversationModule] User left: ${data.userName}`);
         // You could show a notification here
       }
     },
-    [taskId]
+    [taskId, eventId, isEventChat]
   );
 
   const handleUserTyping = useCallback((typingInfo) => {
@@ -236,7 +273,7 @@ const ConversationModule = ({
 
   // Setup SignalR handlers and join chat
   useEffect(() => {
-    if (!isActive || !taskId) return;
+    if (!isActive || !chatId) return;
 
     // Register SignalR handlers and capture unsubscribe
     const unregister = registerHandlers({
@@ -261,7 +298,7 @@ const ConversationModule = ({
     };
   }, [
     isActive,
-    taskId,
+    chatId,
     registerHandlers,
     handleMessageReceived,
     handleUserJoined,
@@ -271,13 +308,50 @@ const ConversationModule = ({
     fetchMessages,
   ]);
 
+  // Rejoin chat when connection is restored
+  useEffect(() => {
+    if (!isActive || !chatId || !isConnected) return;
+
+    // Add a small delay to ensure connection is fully established
+    const rejoinTimeout = setTimeout(async () => {
+      try {
+        // Double-check connection is still active
+        if (!isConnected) return;
+
+        const organizationId = currentUser?.organizationId || user?.organizationId;
+        let success;
+        if (isEventChat) {
+          success = await joinEventChat(eventId, organizationId);
+        } else {
+          success = await joinTaskChat(taskId, organizationId, eventId);
+        }
+
+        if (success) {
+
+          // Optionally fetch latest messages to catch any missed during disconnection
+          // await fetchMessages();
+        } else {
+          console.error('[ConversationModule] Failed to rejoin chat after reconnection');
+        }
+      } catch (error) {
+        console.error('[ConversationModule] Failed to rejoin chat on reconnection:', error);
+      }
+    }, 1500); // Increased delay to 1.5 seconds
+
+    return () => clearTimeout(rejoinTimeout);
+  }, [isConnected, isActive, chatId, isEventChat, eventId, taskId, joinTaskChat, joinEventChat, currentUser, user]);
+
   // Handle typing indicators
   const handleTypingStart = useCallback(() => {
-    if (!isConnected || !taskId) return;
+    if (!isConnected || !chatId) return;
 
     const now = Date.now();
     if (now - lastTypingTimeRef.current > 2000) {
-      startTyping(taskId);
+      if (isEventChat) {
+        startTypingEvent(eventId);
+      } else {
+        startTyping(taskId);
+      }
       lastTypingTimeRef.current = now;
     }
 
@@ -288,25 +362,43 @@ const ConversationModule = ({
 
     // Stop typing after 3 seconds of inactivity
     typingTimeoutRef.current = setTimeout(() => {
-      stopTyping(taskId);
+      if (isEventChat) {
+        stopTypingEvent(eventId);
+      } else {
+        stopTyping(taskId);
+      }
     }, 3000);
-  }, [isConnected, taskId, startTyping, stopTyping]);
+  }, [isConnected, chatId, isEventChat, eventId, taskId, startTyping, stopTyping, startTypingEvent, stopTypingEvent]);
 
   const handleTypingStop = useCallback(() => {
-    if (!isConnected || !taskId) return;
+    if (!isConnected || !chatId) return;
 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-    stopTyping(taskId);
-  }, [isConnected, taskId, stopTyping]);
+
+    if (isEventChat) {
+      stopTypingEvent(eventId);
+    } else {
+      stopTyping(taskId);
+    }
+  }, [isConnected, chatId, isEventChat, eventId, taskId, stopTyping, stopTypingEvent]);
 
   const handleSendMessage = useCallback(
     async (content, documentIds = [], messageType = 1) => {
-      if (
-        (!content || content.trim() === "") &&
-        (!documentIds || documentIds.length === 0)
-      ) {
+      // Clear any previous validation errors
+      setValidationError("");
+
+      // Client-side validation
+      const trimmedContent = (content || "").trim();
+
+      if (!trimmedContent && (!documentIds || documentIds.length === 0)) {
+        setValidationError("Message cannot be empty");
+        return;
+      }
+
+      if (trimmedContent.length > 2000) {
+        setValidationError("Message is too long (maximum 2000 characters)");
         return;
       }
 
@@ -315,9 +407,11 @@ const ConversationModule = ({
         const organizationId = currentUser?.organizationId || user?.organizationId;
         const userId = currentUser?.id || user?.id;
         const userName = `${currentUser?.firstName || user?.firstName || ''} ${currentUser?.lastName || user?.lastName || ''}`.trim() || currentUser?.userName || user?.userName;
-        
-        // Use SignalR to send real-time message
-        const success = await sendMessage(taskId, content, documentIds, messageType, organizationId, eventId, userId, userName);
+
+        // Use SignalR to send real-time message - pass empty string for taskId in event chats
+        const messageTaskId = isEventChat ? "" : taskId;
+        const success = await sendMessage(messageTaskId, trimmedContent, documentIds, messageType, organizationId, eventId, userId, userName);
+
 
         if (success) {
           // Optimistically add message to UI, but avoid adding if a server message
@@ -332,7 +426,7 @@ const ConversationModule = ({
                 `${currentUser.firstName} ${currentUser.lastName}`
               ),
             },
-            conversationText: content,
+            conversationText: trimmedContent,
             createdOn: new Date().toISOString(),
             messageType: messageType, // Include messageType in optimistic message
             replies: [],
@@ -341,7 +435,7 @@ const ConversationModule = ({
             isOptimistic: true, // Mark as optimistic
           };
 
-          const normalizedContent = (content || "").trim();
+          const normalizedContent = trimmedContent;
           const now = Date.now();
 
           setMessages((prev) => {
@@ -372,15 +466,26 @@ const ConversationModule = ({
           handleTypingStop();
         }
       } catch (err) {
-          //console.error("[ConversationModule] Failed to send message:", err);
-        // You could show an error message to the user here
+        console.error("[ConversationModule] Failed to send message:", err);
+
+        // Handle specific error types
+        const errorMessage = err?.message || err?.toString() || "Failed to send message";
+
+        if (errorMessage.toLowerCase().includes("empty") ||
+            errorMessage.toLowerCase().includes("validation")) {
+          // Validation error
+          setValidationError(errorMessage);
+        } else {
+          // Generic error
+          setValidationError("Failed to send message. Please try again.");
+        }
       }
     },
-    [taskId, sendMessage, currentUser, handleTypingStop, getInitialsFromUserName]
+    [taskId, eventId, isEventChat, sendMessage, currentUser, user, handleTypingStop, getInitialsFromUserName]
   );
 
-  // Get typing users for current task
-  const currentTypingUsers = typingUsers[taskId] || [];
+  // Get typing users for current chat (task or event)
+  const currentTypingUsers = typingUsers[chatId] || [];
 
   // Normalize online users for internal use (ids + names)
   const normalizedOnlineUsers = (onlineUsers || []).map((u) => {
@@ -398,8 +503,21 @@ const ConversationModule = ({
     <div className="conversation-container">
       {/* Connection Status */}
       {connectionError && (
-        <div className="connection-error">
-          Connection error: {connectionError}
+        <div className="connection-error-banner">
+          <AlertTriangle className="connection-error-icon" />
+          <div className="connection-error-content">
+            <div className="connection-error-title">Connection Issue</div>
+            <div className="connection-error-message">
+              {connectionError.includes('Rate limit') 
+                ? 'You\'re sending messages too quickly. Please wait a moment before trying again.'
+                : connectionError.includes('Reconnecting')
+                ? 'Reconnecting to chat... Please wait.'
+                : connectionError.includes('Connection closed')
+                ? 'Chat connection lost. Attempting to reconnect...'
+                : `Connection error: ${connectionError}`
+              }
+            </div>
+          </div>
         </div>
       )}
 
@@ -464,9 +582,9 @@ const ConversationModule = ({
           onSend={handleSendMessage}
           onTypingStart={() => handleTypingStart()}
           onTypingStop={() => handleTypingStop()}
-          disabled={false} // Always enabled for testing
           placeholder={"Type a message..."}
           currentUser={currentUser}
+          validationError={validationError}
         />
       {/* </div> */}
     </div>

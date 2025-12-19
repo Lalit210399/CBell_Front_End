@@ -117,6 +117,7 @@ const NewMessageBox = ({
   onTypingStop,
   disabled = false,
   placeholder = "Type a message...",
+  validationError = "",
 }) => {
   const { user } = useUser();
   const [message, setMessage] = useState("");
@@ -356,6 +357,12 @@ const NewMessageBox = ({
             onRemove={handleRemoveFile}
             inline
           />
+        )}
+
+        {validationError && (
+          <div className="validation-error">
+            {validationError}
+          </div>
         )}
       </div>
     </div>

@@ -54,20 +54,6 @@ const FileShareModel = ({ onClose, fileDetail, documentId, description, onPlatfo
   // Get file type for easier access - check all possible locations
   const fileType = fileDetail?.contentType || fileDetail?.document?.contentType || fileDetail?.document?.type || fileDetail?.type;
 
-  // Debug logging
-  console.log('=== FileShareModel RENDER ===');
-  console.log('FileShareModel - fileDetail (complete):', fileDetail);
-  console.log('FileShareModel - fileDetail.contentType:', fileDetail?.contentType);
-  console.log('FileShareModel - fileDetail.document:', fileDetail?.document);
-  console.log('FileShareModel - fileDetail.document.contentType:', fileDetail?.document?.contentType);
-  console.log('FileShareModel - fileType (final):', fileType);
-  console.log('FileShareModel - documentId:', documentId);
-  console.log('FileShareModel - Platform support checks:');
-  console.log('  - Facebook supported:', isFileTypeSupported(fileType, 'facebook'));
-  console.log('  - Instagram supported:', isFileTypeSupported(fileType, 'instagram'));
-  console.log('  - YouTube supported:', isFileTypeSupported(fileType, 'youtube'));
-  console.log('  - Email supported:', isFileTypeSupported(fileType, 'email'));
-  console.log('=== END FileShareModel RENDER ===');
 
   // Handle click outside to close modal
   useEffect(() => {
