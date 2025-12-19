@@ -174,7 +174,7 @@ const Publish = ({ eventId, canPublish = true, user: userProp }) => {
       }
 
       const result = await response.json();
-      console.log('Social media post link saved successfully:', result);
+
       return result;
     } catch (err) {
       console.error('Error saving social media post link:', err);

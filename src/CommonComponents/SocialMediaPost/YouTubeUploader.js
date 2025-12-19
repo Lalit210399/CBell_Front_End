@@ -21,9 +21,6 @@ const YouTubeUploader = ({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   
-  console.log('YouTubeUploader - documentId:', documentId);
-  console.log('YouTubeUploader - propDocumentId:', propDocumentId);
-  console.log('YouTubeUploader - fileDetail.documentId:', fileDetail?.documentId);
 
   useEffect(() => {
     if (open) {
