@@ -1390,14 +1390,112 @@ const TaskDetailPage = () => {
     const organizationId = user?.organizationId;
     const taskIdParam = taskId;
 
-    if (platform === "email" || platform === "facebook" || platform === "instagram") {
+    if (platform === "email") {
+      // Email publishing is handled elsewhere; just record and notify
       await handlePublishRecord(docId, platform);
       showPublishedBadgeOnly();
       addMessage({
-        text: "published successfully!",
+        text: "Email published successfully!",
         type: "success",
         duration: 3000,
       });
+      // Refresh Files & Uploads tab files list
+      setFileData((prev) => ({
+        ...prev,
+        refreshTrigger: (prev.refreshTrigger || 0) + 1,
+      }));
+      return;
+    }
+
+    // Handle Facebook/Instagram/YouTube publishing by calling the respective endpoints
+    if (platform === "facebook" || platform === "instagram" || platform === "youtube") {
+      const orgId = user?.organizationId;
+      const taskIdForPayload = taskIdParam || taskData?.id;
+
+      let endpoint = "";
+      let payload = {};
+
+      if (platform === "youtube") {
+        endpoint = "/apis/youtube/upload";
+        payload = {
+          organizationId: orgId,
+          documentId: docId,
+          taskId: taskIdForPayload,
+          title: publishData.title || fileDetail?.name || "Video",
+          description: publishData.description || "",
+          tags: publishData.tags || [],
+          privacyStatus: publishData.privacyStatus || "public",
+        };
+      } else {
+        endpoint = platform === "instagram" ? "/apis/socialmedia/post/instagram" : "/apis/socialmedia/post/facebook";
+        payload = {
+          organizationId: orgId,
+          documentId: docId,
+          taskId: taskIdForPayload,
+          caption: publishData.caption || fileDetail?.description || fileDetail?.name || "",
+        };
+      }
+
+      try {
+        const response = await fetchWithRefresh(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "1",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          // Try to read response body for better error message
+          let errMsg = `Failed to post to ${platform}`;
+          try {
+            const errJson = await response.json();
+            errMsg = errJson.message || errMsg;
+          } catch (e) {
+            try {
+              const txt = await response.text();
+              if (txt) errMsg = txt;
+            } catch (e2) {}
+          }
+          throw new Error(errMsg);
+        }
+
+        const result = await response.json();
+
+        // If the API returned a public post URL, persist it to our post-links endpoint
+        if (result && (result.postUrl || result.success)) {
+          const postId = result.postId || result.id || "";
+          const postUrl = result.postUrl || result.url || "";
+          if (postUrl) {
+            await saveSocialMediaPostLink(docId, platform, { postId, postUrl });
+            // Mirror Publish.js: show the post link modal to the user
+            setPostLinkData({
+              platform: platform.charAt(0).toUpperCase() + platform.slice(1),
+              postUrl,
+              postId,
+            });
+            setShowPostLinkModal(true);
+          }
+        }
+
+        // Record publish and update UI
+        await handlePublishRecord(docId, platform);
+        showPublishedBadgeOnly();
+        addMessage({
+          text: `${platform.charAt(0).toUpperCase() + platform.slice(1)} published successfully!`,
+          type: "success",
+          duration: 3000,
+        });
+        // Refresh Files & Uploads tab files list so UI reflects published status
+        setFileData((prev) => ({
+          ...prev,
+          refreshTrigger: (prev.refreshTrigger || 0) + 1,
+        }));
+      } catch (err) {
+        addMessage({ text: err.message || `Failed to publish to ${platform}`, type: "error", duration: 5000 });
+      }
+
       return;
     }
 
