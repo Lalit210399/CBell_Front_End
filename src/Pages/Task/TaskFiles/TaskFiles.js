@@ -91,16 +91,10 @@ const TasksFiles = ({
         
         setHasWorkSubmissionFiles(workSubmissionFiles.length > 0);
 
-        console.log('TaskFiles - API Response:', normalizedData);
         
         const filesWithPreview = await Promise.all(
           (normalizedData || []).map(async (doc) => {
-            console.log('TaskFiles - Processing document:', {
-              documentId: doc.documentId,
-              filename: doc.filename,
-              contentType: doc.contentType,
-              status: doc.status
-            });
+
             const type = getFileTypeFromMime(doc.contentType, doc.filename);
             let src = '';
 
@@ -137,7 +131,7 @@ const TasksFiles = ({
                 description: doc.description
               }
             };
-            console.log('TaskFiles - Created file object:', fileObject);
+
             return fileObject;
           })
         );

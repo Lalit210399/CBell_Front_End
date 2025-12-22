@@ -21,9 +21,6 @@ const SocialMediaUploader = ({
   const [message, setMessage] = useState('');
   const [platform, setPlatform] = useState(forcedPlatform || 'instagram');
   
-  console.log('SocialMediaUploader - documentId:', documentId);
-  console.log('SocialMediaUploader - propDocumentId:', propDocumentId);
-  console.log('SocialMediaUploader - fileDetail.documentId:', fileDetail?.documentId);
 
   useEffect(() => {
     if (open) {
