@@ -44,11 +44,63 @@ const RoleManagement = () => {
 
   // (dummy data provided from shared dummyData.js)
 
+  // Fetch data on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [rolesData, modulesData, featuresData, permTypesData] = await Promise.all([
+          fetchRoles().catch(err => { 
+            console.error('Failed to fetch roles:', err); 
+            return []; 
+          }),
+          fetchModules().catch(err => { 
+            console.error('Failed to fetch modules:', err); 
+            return []; 
+          }),
+          fetchFeatures().catch(err => { 
+            console.error('Failed to fetch features:', err); 
+            return []; 
+          }),
+          fetchPermissionTypes().catch(err => { 
+            console.error('Failed to fetch permission types:', err); 
+            return []; 
+          })
+        ]);
+        
+        // console.log('IAM Data loaded:', {
+        //   roles: rolesData?.length || 0,
+        //   modules: modulesData?.length || 0,
+        //   features: featuresData?.length || 0,
+        //   permissionTypes: permTypesData?.length || 0
+        // });
+      } catch (err) {
+        console.error('Error loading IAM data:', err);
+      }
+    };
+    
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount
+
   // Use effective data (hook-provided if available, otherwise local dummy data)
   const effectiveRoles = (roles && roles.length > 0) ? roles : localRoles;
   const effectiveModules = (modules && modules.length > 0) ? modules : localModules;
   const effectiveFeatures = (features && features.length > 0) ? features : localFeatures;
   const effectivePermissionTypes = (permissionTypes && permissionTypes.length > 0) ? permissionTypes : localPermissionTypes;
+
+  // Debug: Log effective data
+  useEffect(() => {
+    // console.log('Role Management Data:', {
+    //   rolesFromAPI: roles,
+    //   rolesCount: roles?.length,
+    //   effectiveRolesCount: effectiveRoles.length,
+    //   modulesCount: effectiveModules.length,
+    //   featuresCount: effectiveFeatures.length,
+    //   permissionTypesCount: effectivePermissionTypes.length,
+    //   loading,
+    //   error
+    // });
+  }, [roles, effectiveRoles, effectiveModules, effectiveFeatures, effectivePermissionTypes, loading, error]);
 
   // Filter roles based on search query
   const filteredRoles = effectiveRoles.filter((role) =>
@@ -139,8 +191,8 @@ const RoleManagement = () => {
   ];
 
   // Render custom cells
-  const renderCell = (role, column) => {
-    switch (column.key) {
+  const renderCell = (columnKey, role) => {
+    switch (columnKey) {
       case 'permissions':
         const permCount = countPermissions(role);
         return (
@@ -183,7 +235,7 @@ const RoleManagement = () => {
       case 'description':
         return <span className="rm-description">{role.description || '—'}</span>;
       default:
-        return role[column.key];
+        return role[columnKey];
     }
   };
 
@@ -237,26 +289,23 @@ const RoleManagement = () => {
       </div>
 
       {!hasRequiredData && (
-        <div className="rm-no-data">
-          <Shield size={48} />
-          <h3>Setup Required</h3>
-          <p>Please create modules, features, and permission types before creating roles.</p>
+        <div className="rm-warning" style={{ padding: '12px 20px', background: '#fff3cd', color: '#856404', borderRadius: '4px', margin: '16px 0', border: '1px solid #ffeaa7' }}>
+          <AlertCircle size={16} style={{ display: 'inline', marginRight: '8px' }} />
+          <span>Warning: Modules ({effectiveModules.length}), Features ({effectiveFeatures.length}), or Permission Types ({effectivePermissionTypes.length}) data is missing. Role management may not work correctly.</span>
         </div>
       )}
 
-      {/* Roles Table */}
-      {hasRequiredData && (
-        <div className="rm-table-container">
-          <Table
-            columns={columns}
-            data={filteredRoles}
-            renderCell={renderCell}
-            noDataText="No roles found. Create your first role to get started."
-            loading={loading}
-            showActions={false}
-          />
-        </div>
-      )}
+      {/* Roles Table - Always show if we have roles */}
+      <div className="rm-table-container">
+        <Table
+          columns={columns}
+          data={filteredRoles}
+          renderCell={renderCell}
+          noDataText="No roles found. Create your first role to get started."
+          loading={loading}
+          showActions={false}
+        />
+      </div>
 
       {/* Create/Edit Role Modal */}
       {(isCreateModalOpen || editingRole) && hasRequiredData && (

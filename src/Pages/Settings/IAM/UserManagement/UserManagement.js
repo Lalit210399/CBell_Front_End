@@ -13,8 +13,8 @@ import "./UserManagement.css";
 
 const UserManagement = () => {
   const { user, selectedOrganizationId } = useContext(UserContext);
-  console.log("👤 User from Context:", user);
-  console.log("🏢 Selected Organization ID:", selectedOrganizationId);
+  // console.log("👤 User from Context:", user);
+  // console.log("🏢 Selected Organization ID:", selectedOrganizationId);
   
   const {
     roles,
@@ -67,9 +67,9 @@ const UserManagement = () => {
 
         // Fetch users from hierarchy API
         if (orgId) {
-          console.log("🔄 Fetching users for organization:", orgId);
+          // console.log("🔄 Fetching users for organization:", orgId);
           const fetchedUsers = await fetchHierarchyUsers(orgId);
-          console.log("✅ Users fetched successfully:", fetchedUsers);
+          // console.log("✅ Users fetched successfully:", fetchedUsers);
           setUsers(fetchedUsers);
         } else {
           console.warn("⚠️ No organizationId found. User:", user, "SelectedOrgId:", selectedOrganizationId);

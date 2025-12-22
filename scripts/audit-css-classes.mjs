@@ -355,6 +355,6 @@ function audit() {
 }
 
 const result = audit();
-console.log(`Wrote report: ${path.relative(projectRoot, result.reportPath)}`);
-console.log(`Total files flagged: ${result.findingsCount}`);
+// console.log(`Wrote report: ${path.relative(projectRoot, result.reportPath)}`);
+// console.log(`Total files flagged: ${result.findingsCount}`);
 process.exit(result.findingsCount === 0 ? 0 : 2);

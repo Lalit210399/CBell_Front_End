@@ -57,6 +57,59 @@ export const roles = [
     ],
     isActive: true,
   },
+  // Additional roles from API
+  {
+    id: '682368bc134f67223e186e4a',
+    name: 'Admin',
+    displayName: 'Administrator',
+    description: 'Full access to all features',
+    permissions: [
+      { moduleId: '6823660ba427aa892ec05fdc', featureId: '6823678f134f67223e186e49', permissionValue: 63 },
+      { moduleId: '6824644353655e3728f9298d', featureId: '6824647953655e3728f9298e', permissionValue: 63 },
+      { moduleId: '68247a17f26109963cd28983', featureId: '68247a43f26109963cd28984', permissionValue: 3 },
+      { moduleId: '682d9e78ad238630db749e16', featureId: '682d9ea5ad238630db749e17', permissionValue: 2 },
+      { moduleId: '682da865ad238630db749e18', featureId: '682da881ad238630db749e19', permissionValue: 3 },
+      { moduleId: '682daacbad238630db749e1a', featureId: '682daae3ad238630db749e1b', permissionValue: 11 },
+      { moduleId: '68cba4922f53897558e870e4', featureId: '68cba4cd2f53897558e870e5', permissionValue: 16 },
+      { moduleId: '68cba4922f53897558e870e4', featureId: '68d3b0e90c4354e5d0f72e63', permissionValue: 3 },
+      { moduleId: '68cba4922f53897558e870e4', featureId: '68d805462d428eca32719dab', permissionValue: 15 }
+    ],
+    isActive: true
+  },
+  {
+    id: '68236ac1134f67223e186e4b',
+    name: 'Manager',
+    displayName: 'Manager',
+    description: 'Full access all features',
+    permissions: [
+      { moduleId: '6823660ba427aa892ec05fdc', featureId: '6823678f134f67223e186e49', permissionValue: 63 },
+      { moduleId: '6824644353655e3728f9298d', featureId: '6824647953655e3728f9298e', permissionValue: 63 },
+      { moduleId: '68247a17f26109963cd28983', featureId: '68247a43f26109963cd28984', permissionValue: 3 },
+      { moduleId: '682d9e78ad238630db749e16', featureId: '682d9ea5ad238630db749e17', permissionValue: 2 },
+      { moduleId: '682da865ad238630db749e18', featureId: '682da881ad238630db749e19', permissionValue: 3 },
+      { moduleId: '682daacbad238630db749e1a', featureId: '682daae3ad238630db749e1b', permissionValue: 11 },
+      { moduleId: '68cba4922f53897558e870e4', featureId: '68cba4cd2f53897558e870e5', permissionValue: 16 },
+      { moduleId: '68cba4922f53897558e870e4', featureId: '68d3b0e90c4354e5d0f72e63', permissionValue: 3 },
+      { moduleId: '68cba4922f53897558e870e4', featureId: '68d805462d428eca32719dab', permissionValue: 15 }
+    ],
+    isActive: true
+  },
+  {
+    id: '68236aec134f67223e186e4c',
+    name: 'Designer',
+    displayName: 'Designer',
+    description: 'Limited access',
+    permissions: [
+      { moduleId: '6823660ba427aa892ec05fdc', featureId: '6823678f134f67223e186e49', permissionValue: 2 },
+      { moduleId: '68247a17f26109963cd28983', featureId: '68247a43f26109963cd28984', permissionValue: 3 },
+      { moduleId: '682d9e78ad238630db749e16', featureId: '682d9ea5ad238630db749e17', permissionValue: 2 },
+      { moduleId: '682da865ad238630db749e18', featureId: '682da881ad238630db749e19', permissionValue: 0 },
+      { moduleId: '682daacbad238630db749e1a', featureId: '682daae3ad238630db749e1b', permissionValue: 11 },
+      { moduleId: '6824644353655e3728f9298d', featureId: '6824647953655e3728f9298e', permissionValue: 6 },
+      { moduleId: '68cba4922f53897558e870e4', featureId: '68d805462d428eca32719dab', permissionValue: 2 }
+    ],
+    isActive: true
+  }
 ];
 
 export const users = [

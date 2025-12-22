@@ -179,9 +179,13 @@ export const IAMProvider = ({ children }) => {
     setRolesError(null);
     try {
       const data = await IAMService.getAllRoles();
+      // console.log('Fetched roles from API:', data);
+      // console.log('Roles type:', Array.isArray(data) ? 'Array' : typeof data);
+      // console.log('Roles count:', Array.isArray(data) ? data.length : 'N/A');
       setRoles(data);
       return data;
     } catch (error) {
+      // console.error('Failed to fetch roles:', error);
       setRolesError(error.message);
       throw error;
     } finally {
