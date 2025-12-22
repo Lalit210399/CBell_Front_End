@@ -36,9 +36,12 @@ export const SignalRProvider = ({ children }) => {
           setConnectionError(null);
         }
         //console.debug('[SignalRContext] Forced sync: isConnected =', isNowConnected, 'actual state:', state);
+      } else if (isNowConnected && connectionError) {
+        // If we're connected and there's still an error, clear it since connection is working
+        setConnectionError(null);
       }
     }
-  }, []);
+  }, [connectionError]);
 
   // Initialize SignalR connection
 const initializeConnection = useCallback(async () => {
@@ -110,18 +113,22 @@ const initializeConnection = useCallback(async () => {
           },
 
           onUserTyping: (typingInfo) => {
-            const { TaskId, UserId, IsTyping } = typingInfo;
+            const { TaskId, EventId, UserId, IsTyping } = typingInfo;
             setTypingUsers(prev => {
               const newTypingUsers = { ...prev };
-              if (!newTypingUsers[TaskId]) {
-                newTypingUsers[TaskId] = [];
+              // Use TaskId or EventId as the key
+              const chatId = TaskId || EventId;
+              if (!chatId) return prev;
+
+              if (!newTypingUsers[chatId]) {
+                newTypingUsers[chatId] = [];
               }
               if (IsTyping) {
-                if (!newTypingUsers[TaskId].includes(UserId)) {
-                  newTypingUsers[TaskId] = [...newTypingUsers[TaskId], UserId];
+                if (!newTypingUsers[chatId].includes(UserId)) {
+                  newTypingUsers[chatId] = [...newTypingUsers[chatId], UserId];
                 }
               } else {
-                newTypingUsers[TaskId] = newTypingUsers[TaskId].filter(id => id !== UserId);
+                newTypingUsers[chatId] = newTypingUsers[chatId].filter(id => id !== UserId);
               }
               return newTypingUsers;
             });
@@ -135,14 +142,17 @@ const initializeConnection = useCallback(async () => {
         if (signalRService.connection) {
           // attach lifecycle handlers
           signalRService.connection.onreconnected(() => {
+
             setIsConnected(true);
             setConnectionError(null);
           });
           signalRService.connection.onclose((error) => {
+
             setIsConnected(false);
             setConnectionError(error ? (error.message || 'Connection closed') : 'Connection closed');
           });
           signalRService.connection.onreconnecting(() => {
+
             setIsConnected(false);
             setConnectionError('Reconnecting...');
           });
@@ -215,12 +225,51 @@ const initializeConnection = useCallback(async () => {
       const success = await signalRService.joinTaskChat(taskId, organizationId, eventId);
       if (success) {
         setCurrentTaskId(taskId);
+        // Clear any existing connection errors since we successfully joined
+        if (connectionError) {
+          setConnectionError(null);
+        }
         // Get online users for the task
         await signalRService.getOnlineUsers(taskId);
       }
       return success;
     } catch (error) {
       //console.error('[SignalRContext] Error joining task chat:', error);
+      setConnectionError(error.message);
+      return false;
+    }
+  }, [isConnected, currentTaskId]);
+
+  // Join event chat
+  const joinEventChat = useCallback(async (eventId, organizationId) => {
+    if (!isConnected || !eventId) {
+      //console.error('[SignalRContext] Cannot join event chat: Not connected or missing eventId');
+      return false;
+    }
+
+    // Leave current task chat if any
+    if (currentTaskId) {
+      try {
+        await signalRService.leaveTaskChat(currentTaskId);
+      } catch (error) {
+        //console.error('[SignalRContext] Error leaving previous task chat:', error);
+      }
+      setCurrentTaskId(null);
+    }
+
+    try {
+      const success = await signalRService.joinEventChat(eventId, organizationId);
+      if (success) {
+        // Clear any existing connection errors since we successfully joined
+        if (connectionError) {
+          setConnectionError(null);
+        }
+        // Get online users for the event
+        await signalRService.getOnlineUsers(eventId);
+      }
+      return success;
+    } catch (error) {
+      //console.error('[SignalRContext] Error joining event chat:', error);
       setConnectionError(error.message);
       return false;
     }
@@ -240,6 +289,10 @@ const initializeConnection = useCallback(async () => {
 
     try {
       const success = await signalRService.sendMessage(taskId, message.trim(), documentIds, messageType, organizationId, eventId, userId, userName);
+      if (success && connectionError) {
+        // Clear any existing connection errors since we successfully sent a message
+        setConnectionError(null);
+      }
       return success;
     } catch (error) {
       //console.error('[SignalRContext] ❌ Error sending message:', error);
@@ -257,6 +310,17 @@ const initializeConnection = useCallback(async () => {
   const stopTyping = useCallback((taskId) => {
     if (!isConnected) return;
     signalRService.stopTyping(taskId);
+  }, [isConnected]);
+
+  // Event typing indicators
+  const startTypingEvent = useCallback((eventId) => {
+    if (!isConnected) return;
+    signalRService.startTypingEvent(eventId);
+  }, [isConnected]);
+
+  const stopTypingEvent = useCallback((eventId) => {
+    if (!isConnected) return;
+    signalRService.stopTypingEvent(eventId);
   }, [isConnected]);
 
   // Leave task chat method
@@ -277,6 +341,22 @@ const initializeConnection = useCallback(async () => {
       return false;
     }
   }, [isConnected, currentTaskId]);
+
+  // Leave event chat method
+  const leaveEventChat = useCallback(async (eventId) => {
+    if (!isConnected) {
+      //console.error('[SignalRContext] Cannot leave event chat: Not connected to SignalR');
+      return false;
+    }
+
+    try {
+      await signalRService.leaveEventChat(eventId);
+      return true;
+    } catch (error) {
+      //console.error('[SignalRContext] Error leaving event chat:', error);
+      return false;
+    }
+  }, [isConnected]);
 
   // Enhanced register handlers
   const registerHandlers = useCallback((handlers) => {
@@ -312,10 +392,14 @@ const initializeConnection = useCallback(async () => {
     
     // Methods
     joinTaskChat,
+    joinEventChat,
     sendMessage,
     startTyping,
     stopTyping,
-    leaveTaskChat, // Fixed: Now defined as a function
+    startTypingEvent,
+    stopTypingEvent,
+    leaveTaskChat,
+    leaveEventChat,
     registerHandlers,
     getOnlineUsers,
     

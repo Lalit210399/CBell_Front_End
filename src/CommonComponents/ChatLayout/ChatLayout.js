@@ -3,7 +3,7 @@ import React, { useState, useCallback, useMemo, useEffect } from "react";
 import ConversationModule from "../ConversationModule/ConversationModule";
 import TaskFilesPanel from "./TaskFilesPanel";
 import { useUser } from "../../Context/UserContext";
-import { Calendar, CalendarCheck, ListChecks, Users, Search, FolderOpen } from 'lucide-react';
+import { Calendar, CalendarCheck, ListChecks, Users, Search, FolderOpen, MessageCircle } from 'lucide-react';
 import { fetchWithRefresh } from "../../Context/RefereshToken";
 import "./ChatLayout.css";
 
@@ -11,14 +11,17 @@ const ChatLayout = ({ events, organizationId }) => {
   const { user } = useUser();
   const [expandedEventId, setExpandedEventId] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(null); // Add selected event for event chat
   const [eventsWithTasks, setEventsWithTasks] = useState({});
   const [loadingTasks, setLoadingTasks] = useState({});
+  const [failedTasks, setFailedTasks] = useState({}); // Track failed task fetches
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isFilePanelOpen, setIsFilePanelOpen] = useState(false);
   const [taskFiles, setTaskFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const [loadedTaskFiles, setLoadedTaskFiles] = useState({}); // Track loaded task files
 
   // --- Debounce search query ---
   useEffect(() => {
@@ -31,11 +34,13 @@ const ChatLayout = ({ events, organizationId }) => {
 
   // --- Fetch tasks for a specific event ---
   const fetchEventTasks = async (eventId, eventOrgId) => {
-    if (eventsWithTasks[eventId]) {
+    // Don't fetch if already loaded or currently loading
+    if (eventsWithTasks[eventId] !== undefined || loadingTasks[eventId]) {
       return;
     }
 
     setLoadingTasks(prev => ({ ...prev, [eventId]: true }));
+    setFailedTasks(prev => ({ ...prev, [eventId]: false })); // Reset failed state
 
     // Use event's organization ID if available, otherwise fall back to the global organizationId
     const orgIdToUse = eventOrgId || organizationId;
@@ -57,12 +62,14 @@ const ChatLayout = ({ events, organizationId }) => {
           ...prev,
           [eventId]: tasks || []
         }));
+        setFailedTasks(prev => ({ ...prev, [eventId]: false }));
       } else {
         console.error('Failed to fetch tasks for event:', eventId);
         setEventsWithTasks(prev => ({
           ...prev,
           [eventId]: []
         }));
+        setFailedTasks(prev => ({ ...prev, [eventId]: true }));
       }
     } catch (error) {
       console.error('Error fetching tasks for event:', eventId, error);
@@ -70,17 +77,25 @@ const ChatLayout = ({ events, organizationId }) => {
         ...prev,
         [eventId]: []
       }));
+      setFailedTasks(prev => ({ ...prev, [eventId]: true }));
     } finally {
       setLoadingTasks(prev => ({ ...prev, [eventId]: false }));
     }
   };
 
-  // --- Toggle event expand ---
+  // --- Retry failed task fetch ---
+  const retryFetchTasks = async (eventId, event) => {
+    const eventOrgId = event.organizationId || event.orgId;
+    await fetchEventTasks(eventId, eventOrgId);
+  };
+
+  // --- Handle event expansion (show/hide tasks) ---
   const handleEventClick = async (eventId, event) => {
     if (expandedEventId === eventId) {
       setExpandedEventId(null);
     } else {
-      if (!eventsWithTasks[eventId]) {
+      // Fetch if not loaded yet (undefined) or if previously failed
+      if (eventsWithTasks[eventId] === undefined || failedTasks[eventId]) {
         // Pass the event's organization ID to the fetch function
         const eventOrgId = event.organizationId || event.orgId;
         await fetchEventTasks(eventId, eventOrgId);
@@ -89,9 +104,27 @@ const ChatLayout = ({ events, organizationId }) => {
     }
   };
 
+  // --- Handle event chat selection ---
+  const handleEventChatClick = (event) => {
+    setSelectedEvent(event);
+    setSelectedTask(null); // Clear task selection when selecting event chat
+  };
+
+  // --- Handle task selection ---
+  const handleTaskClick = (task, event) => {
+    setSelectedTask(formatTaskForConversation(task, event));
+    setSelectedEvent(null); // Clear event selection when selecting task
+  };
+
   // --- Fetch task files ---
   const fetchTaskFiles = useCallback(async (taskId, eventId) => {
+    // Don't fetch if already loaded or currently loading
+    if (loadedTaskFiles[taskId] || loadingFiles) {
+      return;
+    }
+
     setLoadingFiles(true);
+
     try {
       const response = await fetchWithRefresh(
         `/apis/document-details/task/${taskId}`,
@@ -159,22 +192,30 @@ const ChatLayout = ({ events, organizationId }) => {
         });
 
         setTaskFiles(processedFiles);
+        setLoadedTaskFiles(prev => ({ ...prev, [taskId]: true }));
       } else {
         console.error('Failed to fetch task files');
         setTaskFiles([]);
+        // Don't mark as loaded on failure, so it can retry
       }
     } catch (error) {
       console.error('Error fetching task files:', error);
       setTaskFiles([]);
+      // Don't mark as loaded on failure, so it can retry
     } finally {
       setLoadingFiles(false);
     }
-  }, []);
+  }, [loadedTaskFiles, loadingFiles]);
 
   // --- Fetch files when task is selected ---
   useEffect(() => {
     if (selectedTask?.id && selectedTask?.eventId) {
+      // Clear previous task files when switching tasks
+      setTaskFiles([]);
       fetchTaskFiles(selectedTask.id, selectedTask.eventId);
+    } else {
+      // Clear files when no task is selected
+      setTaskFiles([]);
     }
   }, [selectedTask?.id, selectedTask?.eventId, fetchTaskFiles]);
 
@@ -291,10 +332,18 @@ const ChatLayout = ({ events, organizationId }) => {
                     </span>
                     <span className="event-name">{event.eventName}</span>
                   </div>
-                  {/* Task count badge - commented out for now */}
-                  {/* <span className="task-count-badge">
-                    {event.tasks?.length || 0} Tasks
-                  </span> */}
+                  <div className="event-actions">
+                    <button
+                      className={`event-chat-btn ${selectedEvent?.id === event.id ? 'active' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent event expansion
+                        handleEventChatClick(event);
+                      }}
+                      title="Chat about this event"
+                    >
+                      <MessageCircle />
+                    </button>
+                  </div>
                 </div>
 
                 {/* --- Task List under Event --- */}
@@ -312,7 +361,7 @@ const ChatLayout = ({ events, organizationId }) => {
                           className={`task-item ${
                             selectedTask?.id === task.id ? "active" : ""
                           }`}
-                          onClick={() => setSelectedTask(formatTaskForConversation(task, event))}
+                          onClick={() => handleTaskClick(task, event)}
                         >
                           <div className="task-info">
                             <div className="task-title-row">
@@ -348,6 +397,17 @@ const ChatLayout = ({ events, organizationId }) => {
                       <div className="empty-tasks-in-event">
                         <p>No tasks available for this event</p>
                       </div>
+                    ) : failedTasks[event.id] ? (
+                      <div className="empty-tasks-in-event error-state">
+                        <p>Failed to load tasks</p>
+                        <button 
+                          className="retry-button"
+                          onClick={() => retryFetchTasks(event.id, event)}
+                          disabled={loadingTasks[event.id]}
+                        >
+                          {loadingTasks[event.id] ? 'Loading...' : 'Retry'}
+                        </button>
+                      </div>
                     ) : (
                       <div className="empty-tasks-in-event">
                         <p>No tasks available for this event</p>
@@ -372,23 +432,23 @@ const ChatLayout = ({ events, organizationId }) => {
 
       {/* ---------- RIGHT CHAT AREA ---------- */}
       <div className="whatsapp-chat-area">
-        {selectedTask ? (
+        {selectedTask || selectedEvent ? (
           <div className="chat-container">
             <div className="chat-header">
               <div className="chat-header-content">
                 <div className="chat-header-left">
                   <div className="chat-header-info">
                     <div className="chat-header-row-1">
-                      <h3 className="chat-header-title">{selectedTask.taskTitle}</h3>
-                      {/* <span
-                        className={`chat-header-status status-${selectedTask.taskStatusName.toLowerCase()}`}
-                      >
-                        {selectedTask.taskStatusName}
-                      </span> */}
+                      <h3 className="chat-header-title">
+                        {selectedTask ? selectedTask.taskTitle : `Event: ${selectedEvent.eventName}`}
+                      </h3>
+                      <span className="chat-type-badge">
+                        {selectedTask ? 'Task Chat' : 'Event Chat'}
+                      </span>
                     </div>
                     <div className="chat-header-row-2">
                       <div className="chat-header-row-2-left">
-                        {selectedTask.assignedToNames?.length > 0 && (
+                        {selectedTask && selectedTask.assignedToNames?.length > 0 && (
                           <span className="chat-header-assigned">
                             <span className="assigned-label"><Users size={14}/></span>
                             <span className="assigned-names">
@@ -401,16 +461,18 @@ const ChatLayout = ({ events, organizationId }) => {
                   </div>
                 </div>
                 <div className="chat-header-actions">
-                  <button 
-                    className={`files-toggle-btn ${isFilePanelOpen ? 'active' : ''}`}
-                    onClick={toggleFilePanel}
-                    title="Toggle work files"
-                  >
-                    <FolderOpen size={20} />
-                    {taskFiles.length > 0 && (
-                      <span className="files-count-badge">{taskFiles.length}</span>
-                    )}
-                  </button>
+                  {selectedTask && (
+                    <button 
+                      className={`files-toggle-btn ${isFilePanelOpen ? 'active' : ''}`}
+                      onClick={toggleFilePanel}
+                      title="Toggle work files"
+                    >
+                      <FolderOpen size={20} />
+                      {taskFiles.length > 0 && (
+                        <span className="files-count-badge">{taskFiles.length}</span>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -419,13 +481,13 @@ const ChatLayout = ({ events, organizationId }) => {
               <div className="chat-content-main">
                 <ConversationModule
                   currentUser={getCurrentUser()}
-                  taskId={selectedTask.id}
-                  eventId={selectedTask.eventId}
+                  taskId={selectedTask?.id}
+                  eventId={selectedTask?.eventId || selectedEvent?.id}
                   isActive={true}
-                  users={selectedTask.assignedToNames || []}
+                  users={selectedTask?.assignedToNames || []}
                 />
               </div>
-              {isFilePanelOpen && (
+              {selectedTask && isFilePanelOpen && (
                 <TaskFilesPanel 
                   files={taskFiles}
                   loading={loadingFiles}
@@ -437,8 +499,8 @@ const ChatLayout = ({ events, organizationId }) => {
         ) : (
           <div className="empty-chat-state">
             <div className="empty-chat-icon">💬</div>
-            <h3>Select a Task to Chat</h3>
-            <p>Choose a task from the list to start a conversation with your team</p>
+            <h3>Select a Task or Event to Chat</h3>
+            <p>Choose a task to chat with your team, or click the chat icon 💬 next to an event to discuss the event</p>
           </div>
         )}
       </div>
