@@ -168,7 +168,7 @@ const Table = ({
                   {columns.map((column) => (
                     <td key={column.key}>
                       {renderCell
-                        ? renderCell(item, column)
+                        ? renderCell(column.key, item)
                         : item[column.key]}
                     </td>
                   ))}
