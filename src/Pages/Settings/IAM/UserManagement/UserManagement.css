@@ -1,7 +1,7 @@
 /* Pages/Settings/IAM/UserManagement/UserManagement.css */
 
 .um-container {
-  width: 100%;
+  /* width: 100%; */
   max-width: 1400px;
   margin: 0 auto;
   padding: 24px;
@@ -77,6 +77,12 @@
   box-shadow: 0 0 0 3px rgba(2, 150, 138, 0.1);
 }
 
+.um-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .um-stats {
   display: flex;
   align-items: center;
@@ -91,6 +97,28 @@
 .um-stat-item strong {
   color: var(--theme-primary, #043E54);
   font-weight: 600;
+}
+
+.um-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.um-btn-primary {
+  background-color: var(--theme-soft, #02968A);
+  color: white;
+}
+
+.um-btn-primary:hover {
+  background-color: var(--theme-primary, #043E54);
 }
 
 /* Table */

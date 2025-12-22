@@ -135,7 +135,7 @@ const RoleManagement = () => {
     { key: 'description', label: 'Description' },
     { key: 'permissions', label: 'Permissions' },
     { key: 'isActive', label: 'Status' },
-    { key: 'actions', label: 'Actions' },
+    // { key: 'actions', label: 'Actions' },
   ];
 
   // Render custom cells
@@ -225,7 +225,7 @@ const RoleManagement = () => {
             className="rm-search-input"
           />
         </div>
-        <button
+        {/* <button
           className="rm-create-btn"
           onClick={() => setIsCreateModalOpen(true)}
           disabled={!hasRequiredData}
@@ -233,7 +233,7 @@ const RoleManagement = () => {
         >
           <Plus size={18} />
           <span>Create Role</span>
-        </button>
+        </button> */}
       </div>
 
       {!hasRequiredData && (

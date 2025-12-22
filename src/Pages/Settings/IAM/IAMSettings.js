@@ -12,21 +12,21 @@ import './IAMSettings.css';
  * Provides tabbed navigation between Modules, Features, Roles, and Users
  */
 const IAMSettings = () => {
-  const [activeTab, setActiveTab] = useState('modules');
+  const [activeTab, setActiveTab] = useState('roles');
 
   const tabs = [
-    { id: 'modules', label: 'Modules', icon: Package },
-    { id: 'features', label: 'Features', icon: Grid },
+    // { id: 'modules', label: 'Modules', icon: Package },
+    // { id: 'features', label: 'Features', icon: Grid },
     { id: 'roles', label: 'Roles', icon: Shield },
     { id: 'users', label: 'Users', icon: Users },
   ];
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'modules':
-        return <ModuleManagement />;
-      case 'features':
-        return <FeatureManagement />;
+      // case 'modules':
+      //   return <ModuleManagement />;
+      // case 'features':
+      //   return <FeatureManagement />;
       case 'roles':
         return <RoleManagement />;
       case 'users':

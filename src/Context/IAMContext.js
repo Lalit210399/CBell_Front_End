@@ -30,6 +30,11 @@ export const IAMProvider = ({ children }) => {
   const [permissionsLoading, setPermissionsLoading] = useState(false);
   const [permissionsError, setPermissionsError] = useState(null);
 
+  // Users State (Basic IAM)
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState(null);
+
   // ==================== Modules ====================
 
   const fetchModules = useCallback(async () => {
@@ -257,6 +262,35 @@ export const IAMProvider = ({ children }) => {
     }
   }, []);
 
+  // ==================== Basic IAM User Management ====================
+
+  const registerNewUser = useCallback(async (userData) => {
+    setUsersError(null);
+    try {
+      const newUser = await IAMService.registerUser(userData);
+      setUsers(prev => [...prev, newUser]);
+      return newUser;
+    } catch (error) {
+      setUsersError(error.message);
+      throw error;
+    }
+  }, []);
+
+  const fetchHierarchyUsers = useCallback(async (organizationId) => {
+    setUsersLoading(true);
+    setUsersError(null);
+    try {
+      const data = await IAMService.getHierarchyUsers(organizationId);
+      setUsers(data);
+      return data;
+    } catch (error) {
+      setUsersError(error.message);
+      throw error;
+    } finally {
+      setUsersLoading(false);
+    }
+  }, []);
+
   const value = {
     // Modules
     modules,
@@ -299,6 +333,13 @@ export const IAMProvider = ({ children }) => {
     permissionsLoading,
     permissionsError,
     fetchCurrentUserPermissions,
+
+    // Basic IAM Users
+    users,
+    usersLoading,
+    usersError,
+    registerNewUser,
+    fetchHierarchyUsers,
   };
 
   return <IAMContext.Provider value={value}>{children}</IAMContext.Provider>;

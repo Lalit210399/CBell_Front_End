@@ -485,6 +485,67 @@ export const getUsersByOrganization = async (organizationId) => {
   }
 };
 
+// ==================== Basic IAM User Management ====================
+
+/**
+ * Register a new user
+ * @param {Object} userData - User registration data
+ * @param {string} userData.email - User email
+ * @param {string} userData.password - User password
+ * @param {string} userData.firstName - User first name
+ * @param {string} userData.lastName - User last name
+ * @param {string} userData.organizationCode - Organization code
+ * @returns {Promise<Object>}
+ */
+export const registerUser = async (userData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to register user');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Register user error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get hierarchy users by organization ID
+ * @param {string} organizationId - Organization ID
+ * @returns {Promise<Array>}
+ */
+export const getHierarchyUsers = async (organizationId) => {
+  try {
+    const response = await fetch(`${BASE_URL}/auth/hierarchy-users/${organizationId}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch hierarchy users');
+    }
+
+    const data = await response.json();
+    // API returns { users: [...], totalCount: ..., message: ... }
+    // Extract just the users array
+    return data.users || [];
+  } catch (error) {
+    console.error('Get hierarchy users error:', error);
+    throw error;
+  }
+};
+
 // ==================== Permission Helper Functions ====================
 
 /**

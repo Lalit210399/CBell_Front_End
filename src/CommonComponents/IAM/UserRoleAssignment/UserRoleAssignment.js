@@ -16,12 +16,12 @@ const UserRoleAssignment = ({
   onClose,
   loading = false,
 }) => {
-  const [selectedRoles, setSelectedRoles] = useState([]);
+  const [selectedRole, setSelectedRole] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Initialize with current roles
+  // Initialize with current role (single selection)
   useEffect(() => {
-    setSelectedRoles(currentRoleIds);
+    setSelectedRole(currentRoleIds && currentRoleIds.length > 0 ? currentRoleIds[0] : null);
   }, [currentRoleIds]);
 
   // Filter roles based on search query
@@ -30,31 +30,28 @@ const UserRoleAssignment = ({
     role.displayName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Toggle role selection
-  const toggleRole = (roleId) => {
-    setSelectedRoles(prev => {
-      if (prev.includes(roleId)) {
-        return prev.filter(id => id !== roleId);
-      } else {
-        return [...prev, roleId];
-      }
-    });
+  // Select role (radio button behavior)
+  const selectRole = (roleId) => {
+    setSelectedRole(roleId);
   };
 
   // Check if role is selected
   const isRoleSelected = (roleId) => {
-    return selectedRoles.includes(roleId);
+    return selectedRole === roleId;
   };
 
   // Handle save
   const handleSave = async () => {
-    await onAssignRoles(user.id, selectedRoles);
+    // Support both id and _id fields
+    const userId = user.id || user._id;
+    // Send as array for API compatibility
+    await onAssignRoles(userId, selectedRole ? [selectedRole] : []);
   };
 
   // Check if there are changes
   const hasChanges = () => {
-    if (selectedRoles.length !== currentRoleIds.length) return true;
-    return !selectedRoles.every(id => currentRoleIds.includes(id));
+    const currentRole = currentRoleIds && currentRoleIds.length > 0 ? currentRoleIds[0] : null;
+    return selectedRole !== currentRole;
   };
 
   return (
@@ -92,13 +89,14 @@ const UserRoleAssignment = ({
           </div>
         ) : (
           filteredRoles.map(role => {
-            const selected = isRoleSelected(role.id);
+            const roleId = role.id || role._id;
+            const selected = isRoleSelected(roleId);
 
             return (
               <div
-                key={role.id}
+                key={roleId}
                 className={`ura-role-item ${selected ? 'selected' : ''} ${loading ? 'disabled' : ''}`}
-                onClick={() => !loading && toggleRole(role.id)}
+                onClick={() => !loading && selectRole(roleId)}
               >
                 <div className="ura-role-info">
                   <div className="ura-role-name">{role.displayName}</div>
@@ -106,8 +104,8 @@ const UserRoleAssignment = ({
                     <div className="ura-role-desc">{role.description}</div>
                   )}
                 </div>
-                <div className={`ura-checkbox ${selected ? 'checked' : ''}`}>
-                  {selected && <Check size={16} />}
+                <div className={`ura-radio ${selected ? 'checked' : ''}`}>
+                  {selected && <div className="ura-radio-dot" />}
                 </div>
               </div>
             );
@@ -118,7 +116,7 @@ const UserRoleAssignment = ({
       <div className="ura-footer">
         <div className="ura-footer-info">
           <span className="ura-selected-count">
-            {selectedRoles.length} {selectedRoles.length === 1 ? 'role' : 'roles'} selected
+            {selectedRole ? '1 role' : '0 roles'} selected
           </span>
         </div>
         <div className="ura-footer-actions">
