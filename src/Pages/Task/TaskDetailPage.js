@@ -1451,9 +1451,8 @@ const TaskDetailPage = () => {
     const organizationId = user?.organizationId;
     const taskIdParam = taskId;
 
-    // For email platform, we don't need to make an API call here
-    // The email API call is already handled in EmailForm.js
     if (platform === "email") {
+      // Email publishing is handled elsewhere; just record and notify
       await handlePublishRecord(docId, platform);
       showPublishedBadgeOnly();
       
@@ -1465,128 +1464,107 @@ const TaskDetailPage = () => {
         type: "success",
         duration: 3000,
       });
+      // Refresh Files & Uploads tab files list
+      setFileData((prev) => ({
+        ...prev,
+        refreshTrigger: (prev.refreshTrigger || 0) + 1,
+      }));
       return;
     }
 
-    let payload;
-    let endpoint;
+    // Handle Facebook/Instagram/YouTube publishing by calling the respective endpoints
+    if (platform === "facebook" || platform === "instagram" || platform === "youtube") {
+      const orgId = user?.organizationId;
+      const taskIdForPayload = taskIdParam || taskData?.id;
 
-    if (platform === 'youtube') {
-      endpoint = '/apis/youtube/upload';
-      payload = {
-        organizationId,
-        documentId: docId,
-        taskId: taskIdParam,
-        title: publishData.title || `${fileDetail?.name || 'Video'}`,
-        description: publishData.description || '',
-        tags: publishData.tags || [],
-        privacyStatus: publishData.privacyStatus || 'public'
-      };
-    } else {
-      endpoint = platform === 'instagram' 
-        ? '/apis/socialmedia/post/instagram' 
-        : '/apis/socialmedia/post/facebook';
-      payload = {
-        organizationId,
-        documentId: docId,
-        taskId: taskIdParam,
-        caption: publishData.caption || `${fileDetail?.name || 'Creative'} shared via platform`
-      };
-    }
+      let endpoint = "";
+      let payload = {};
 
-    try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': '1',
-        },
-        body: JSON.stringify(payload),
-      });
+      if (platform === "youtube") {
+        endpoint = "/apis/youtube/upload";
+        payload = {
+          organizationId: orgId,
+          documentId: docId,
+          taskId: taskIdForPayload,
+          title: publishData.title || fileDetail?.name || "Video",
+          description: publishData.description || "",
+          tags: publishData.tags || [],
+          privacyStatus: publishData.privacyStatus || "public",
+        };
+      } else {
+        endpoint = platform === "instagram" ? "/apis/socialmedia/post/instagram" : "/apis/socialmedia/post/facebook";
+        payload = {
+          organizationId: orgId,
+          documentId: docId,
+          taskId: taskIdForPayload,
+          caption: publishData.caption || fileDetail?.description || fileDetail?.name || "",
+        };
+      }
 
-      if (!response.ok) {
-        let errorMessage = `Failed to post to ${platform}`;
-        
-        // Clone the response to avoid "body stream already read" error
-        const responseClone = response.clone();
-        
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-          
-          // Handle specific error for social media config not found
-          if (response.status === 400 && (
-            errorData.message?.includes('Social media config not found') ||
-            errorData.message?.includes('social media account not configured') ||
-            errorData.message?.includes('Social media account not configured') ||
-            errorData.message?.includes('config not found') ||
-            errorData.message?.includes('account not configured')
-          )) {
-            throw new Error('No social media account added. Please contact your administrator to add social media accounts for your organization.');
-          }
-        } catch (jsonError) {
-          // If response is not valid JSON, check for specific error patterns in text
+      try {
+        const response = await fetchWithRefresh(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "1",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          // Try to read response body for better error message
+          let errMsg = `Failed to post to ${platform}`;
           try {
-            const responseText = await responseClone.text();
-            if (response.status === 400 && (
-              responseText.includes('Social media config not found') ||
-              responseText.includes('social media account not configured') ||
-              responseText.includes('Social media account not configured') ||
-              responseText.includes('config not found') ||
-              responseText.includes('account not configured')
-            )) {
-              throw new Error('No social media account added. Please contact your administrator to add social media accounts for your organization.');
-            }
-            errorMessage = responseText || errorMessage;
-          } catch (textError) {
-            // If both JSON and text parsing fail, use default message
-            console.error('Failed to parse response:', textError);
+            const errJson = await response.json();
+            errMsg = errJson.message || errMsg;
+          } catch (e) {
+            try {
+              const txt = await response.text();
+              if (txt) errMsg = txt;
+            } catch (e2) {}
+          }
+          throw new Error(errMsg);
+        }
+
+        const result = await response.json();
+
+        // If the API returned a public post URL, persist it to our post-links endpoint
+        if (result && (result.postUrl || result.success)) {
+          const postId = result.postId || result.id || "";
+          const postUrl = result.postUrl || result.url || "";
+          if (postUrl) {
+            await saveSocialMediaPostLink(docId, platform, { postId, postUrl });
+            // Mirror Publish.js: show the post link modal to the user
+            setPostLinkData({
+              platform: platform.charAt(0).toUpperCase() + platform.slice(1),
+              postUrl,
+              postId,
+            });
+            setShowPostLinkModal(true);
           }
         }
 
-        throw new Error(errorMessage);
+        // Record publish and update UI
+        await handlePublishRecord(docId, platform);
+        showPublishedBadgeOnly();
+        addMessage({
+          text: `${platform.charAt(0).toUpperCase() + platform.slice(1)} published successfully!`,
+          type: "success",
+          duration: 3000,
+        });
+        // Refresh Files & Uploads tab files list so UI reflects published status
+        setFileData((prev) => ({
+          ...prev,
+          refreshTrigger: (prev.refreshTrigger || 0) + 1,
+        }));
+      } catch (err) {
+        addMessage({ text: err.message || `Failed to publish to ${platform}`, type: "error", duration: 5000 });
       }
 
-      // Get the response data
-      const responseData = await response.json();
-      
-      // Save the social media post link to database
-      if (responseData.success && responseData.postUrl) {
-        await saveSocialMediaPostLink(docId, platform, {
-          postId: responseData.postId,
-          postUrl: responseData.postUrl
-        });
-        
-        // Show the post link in a modal
-        setPostLinkData({
-          platform: platform.charAt(0).toUpperCase() + platform.slice(1),
-          postUrl: responseData.postUrl,
-          postId: responseData.postId
-        });
-        setShowPostLinkModal(true);
-      }
-
-      await handlePublishRecord(docId, platform);
-      showPublishedBadgeOnly();
-      
-      // Refresh the files list to show updated document status
-      await refreshFilesAfterPublish();
-      
-      // Show success notification for social media platforms
-      const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);
-      addMessage({
-        text: `${platformName} published successfully!`,
-        type: "success",
-        duration: 3000,
-      });
-    } catch (err) {
-      // Show error message using the message system for better UX
-      addMessage({
-        text: err.message,
-        type: "error",
-        duration: 5000,
-      });
+      return;
     }
+
+    // ---- existing logic unchanged below ----
   };
 
   const saveSocialMediaPostLink = async (docId, platform, postData) => {
