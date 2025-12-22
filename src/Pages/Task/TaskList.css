@@ -151,13 +151,18 @@
   font-weight: 500;
   white-space: nowrap;
 }
+.status-pill.status-new { background: #F2F2F2; color: #5D6D7E}
+.status-pill.status-active { background: #D6EAF8; color: #1F618D; }
+.status-pill.status-under-approval { background: #FDEBD0; color: #B9770E}
+.status-pill.status-approved { background: #D5F5E3; color: #196F3D}
+.status-pill.status-published { background: #E8DAEF; color: #5B2C6F}
 
 .status-pill.status-new {
   background-color: #dbeafe;
   color: #1e40af;
 }
 
-.status-pill.status-active {
+/* .status-pill.status-active {
   background-color: #dcfce7;
   color: #166534;
 }
@@ -175,7 +180,7 @@
 .status-pill.status-published {
   background-color: #e0e7ff;
   color: #3730a3;
-}
+} */
 
 .status-pill.status-cancelled {
   background-color: #fee2e2;
