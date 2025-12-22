@@ -319,21 +319,23 @@ export default function GuestTaskReviewPage() {
           ].filter(Boolean);
           return (
             <div
-              className={`guest-attachment-card selectable ${
-                selectedDocumentId === docId ? "selected" : ""
-              }`}
-              key={docId || `attachment-${idx}`}
-              onClick={() => setSelectedDocumentId(docId)}
-            >
-              <div className="attachment-selection">
-                <input
-                  type="radio"
-                  name="document-selection"
-                  checked={selectedDocumentId === docId}
-                  onChange={() => setSelectedDocumentId(docId)}
-                  disabled={!canActuallyApprove}
-                />
-                <div className="attachment-meta">
+                  className={`guest-attachment-card selectable ${
+                    selectedDocumentId === docId ? "selected" : ""
+                  }`}
+                  key={docId || `attachment-${idx}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={selectedDocumentId === docId}
+                  onClick={() => setSelectedDocumentId(docId)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedDocumentId(docId);
+                    }
+                  }}
+                >
+                  <div className="attachment-selection">
+                    <div className="attachment-meta">
                   <strong>{label}</strong>
                   {metaParts.length > 0 && (
                     <p className="muted">{metaParts.join(" • ")}</p>
@@ -415,6 +417,7 @@ export default function GuestTaskReviewPage() {
     noop,
     invite,
     taskId,
+    selectedDocumentId,
   ]);
 
   const handleApprove = async () => {

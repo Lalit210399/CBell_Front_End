@@ -142,4 +142,6 @@ export const UserProvider = ({ children }) => {
  * @returns {Object} UserContext
  */
 export const useUser = () => useContext(UserContext);
+// Also export the context object for components that import it directly
+export { UserContext };
  

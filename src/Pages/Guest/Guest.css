@@ -818,7 +818,7 @@
   cursor: pointer;
 }
 .guest-attachment-card.selectable:hover {
-  border-color: rgba(4, 62, 84, 0.25);
+  border-color: rgba(4, 62, 84);
   background: #f9fcfe;
   box-shadow: 0 2px 8px rgba(4, 62, 84, 0.08);
 }
@@ -870,7 +870,7 @@
   padding: 16px 18px;
   background: #fefefe;
 }
-.comment-meta {
+.comment-meta { 
   display: flex;
   justify-content: space-between;
   align-items: center;

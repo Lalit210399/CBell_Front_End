@@ -18,6 +18,7 @@ import ProtectedRoute, { RequirePermission } from "./Context/ProtectedRoute";
 import { useUser } from "./Context/UserContext";
 import { NotificationProvider } from "./Context/NotificationContext";
 import { EmailGroupsProvider } from "./Context/EmailGroupsContext";
+import { IAMProvider } from "./Context/IAMContext";
 import ErrorBoundary from "./CommonComponents/ErrorBoundary";
 import ChatLayout from "./Pages/Chat/NewChatLayout";
 import GuestInviteValidationPage from "./Pages/Guest/GuestInviteValidation";
@@ -65,8 +66,7 @@ function App() {
             element={
               <ProtectedRoute>
                 <NotificationProvider>
-                  <EmailGroupsProvider>
-                  <MainLayout>
+                  <EmailGroupsProvider>                  <IAMProvider>                  <MainLayout>
                     <Routes>
                       <Route path="/auth" element={<AuthN />} />
                       <Route
@@ -141,6 +141,7 @@ function App() {
                       <Route path="/instagram" element={<Instagram />} />
                     </Routes>
                   </MainLayout>
+                  </IAMProvider>
                 </EmailGroupsProvider>
             </NotificationProvider>
             </ProtectedRoute>

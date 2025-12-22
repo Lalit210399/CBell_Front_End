@@ -1,0 +1,334 @@
+/* Pages/Settings/IAM/UserManagement/UserManagement.css */
+
+.um-container {
+  /* width: 100%; */
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Header */
+.um-header {
+  margin-bottom: 32px;
+}
+
+.um-header-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.um-header-icon {
+  color: var(--theme-soft, #02968A);
+  flex-shrink: 0;
+}
+
+.um-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--theme-primary, #043E54);
+  margin: 0 0 4px 0;
+}
+
+.um-subtitle {
+  font-size: 15px;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Toolbar */
+.um-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.um-search {
+  position: relative;
+  flex: 1;
+  min-width: 280px;
+  max-width: 500px;
+}
+
+.um-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.um-search-input {
+  width: 100%;
+  padding: 10px 12px 10px 40px;
+  font-size: 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.um-search-input:focus {
+  outline: none;
+  border-color: var(--theme-soft, #02968A);
+  box-shadow: 0 0 0 3px rgba(2, 150, 138, 0.1);
+}
+
+.um-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.um-stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.um-stat-item {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.um-stat-item strong {
+  color: var(--theme-primary, #043E54);
+  font-weight: 600;
+}
+
+.um-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.um-btn-primary {
+  background-color: var(--theme-soft, #02968A);
+  color: white;
+}
+
+.um-btn-primary:hover {
+  background-color: var(--theme-primary, #043E54);
+}
+
+/* Table */
+.um-table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.um-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.um-table thead {
+  background-color: var(--theme-bg, #E7F7EA);
+}
+
+.um-table th {
+  padding: 16px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--theme-primary, #043E54);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.um-table tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s;
+}
+
+.um-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.um-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.um-table td {
+  padding: 16px;
+  font-size: 14px;
+  color: #374151;
+  vertical-align: middle;
+}
+
+/* User Name Cell */
+.um-user-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.um-user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--theme-soft, #02968A), var(--theme-primary, #043E54));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* Roles Text */
+.um-roles-text {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Action Buttons */
+.um-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.um-btn-manage {
+  background-color: var(--theme-soft, #02968A);
+  color: white;
+}
+
+.um-btn-manage:hover {
+  background-color: var(--theme-primary, #043E54);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(2, 150, 138, 0.2);
+}
+
+/* Empty State */
+.um-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.um-empty-icon {
+  color: #d1d5db;
+  margin-bottom: 16px;
+}
+
+.um-empty-text {
+  font-size: 15px;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .um-table-container {
+    overflow-x: auto;
+  }
+
+  .um-table {
+    min-width: 800px;
+  }
+}
+
+@media (max-width: 768px) {
+  .um-container {
+    padding: 16px;
+  }
+
+  .um-header-content {
+    gap: 12px;
+  }
+
+  .um-header-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .um-title {
+    font-size: 22px;
+  }
+
+  .um-subtitle {
+    font-size: 14px;
+  }
+
+  .um-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .um-search {
+    max-width: 100%;
+  }
+
+  .um-stats {
+    justify-content: space-between;
+  }
+
+  .um-table th,
+  .um-table td {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .um-user-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .um-action-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .um-header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .um-table {
+    min-width: 700px;
+  }
+}
+
+/* Modal Backdrop */
+.um-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}

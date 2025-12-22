@@ -1,0 +1,322 @@
+/* CommonComponents/IAM/UserRoleAssignment/UserRoleAssignment.css */
+
+.user-role-assignment {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 90vh;
+  min-width: 500px;
+}
+
+.ura-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px;
+  border-bottom: 1px solid #E5E5E5;
+  background: #F5F5F5;
+}
+
+.ura-header-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.ura-icon {
+  color: var(--theme-primary, #043E54);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ura-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ura-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.ura-subtitle {
+  font-size: 14px;
+  color: #777;
+  margin: 0;
+}
+
+.ura-close-btn {
+  padding: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  color: #555;
+  transition: all 0.2s;
+}
+
+.ura-close-btn:hover:not(:disabled) {
+  background: #E5E5E5;
+  color: #333;
+}
+
+.ura-close-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ura-search {
+  padding: 15px 20px;
+  border-bottom: 1px solid #E5E5E5;
+}
+
+.ura-search-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #E5E5E5;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.ura-search-input:focus {
+  outline: none;
+  border-color: var(--theme-primary, #043E54);
+}
+
+.ura-search-input:disabled {
+  background: #F5F5F5;
+  cursor: not-allowed;
+}
+
+.ura-roles-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px 20px;
+  min-height: 300px;
+  max-height: 400px;
+}
+
+.ura-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #777;
+  font-size: 14px;
+}
+
+.ura-role-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border: 1px solid #E5E5E5;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.ura-role-item:hover:not(.disabled) {
+  border-color: var(--theme-primary, #043E54);
+  background: #F9FAFB;
+}
+
+.ura-role-item.selected {
+  border-color: var(--theme-primary, #043E54);
+  background: var(--theme-bg, #E7F7EA);
+}
+
+.ura-role-item.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ura-role-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ura-role-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+}
+
+.ura-role-desc {
+  font-size: 13px;
+  color: #777;
+}
+
+/* Radio button styles */
+.ura-radio {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #E5E5E5;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.ura-radio.checked {
+  border-color: var(--theme-primary, #043E54);
+}
+
+.ura-radio-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--theme-primary, #043E54);
+}
+
+.ura-role-item:hover .ura-radio:not(.checked) {
+  border-color: var(--theme-primary, #043E54);
+}
+
+/* Legacy checkbox styles (kept for backward compatibility) */
+.ura-checkbox {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #E5E5E5;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.ura-checkbox.checked {
+  background: var(--theme-primary, #043E54);
+  border-color: var(--theme-primary, #043E54);
+  color: #fff;
+}
+
+.ura-role-item:hover .ura-checkbox:not(.checked) {
+  border-color: var(--theme-primary, #043E54);
+}
+
+.ura-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-top: 1px solid #E5E5E5;
+  background: #F9FAFB;
+}
+
+.ura-footer-info {
+  display: flex;
+  align-items: center;
+}
+
+.ura-selected-count {
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
+}
+
+.ura-footer-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.ura-footer-actions button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn_primary {
+  background: var(--theme-primary, #043E54);
+  color: #fff;
+}
+
+.btn_primary:hover:not(:disabled) {
+  background: var(--theme-primary-dark, rgb(4, 51, 69));
+}
+
+.btn_primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn_secondary {
+  background: #fff;
+  color: #555;
+  border: 1px solid #E5E5E5 !important;
+}
+
+.btn_secondary:hover:not(:disabled) {
+  background: #F5F5F5;
+  border-color: #ccc !important;
+}
+
+.btn_secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .user-role-assignment {
+    min-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .ura-header {
+    padding: 15px;
+  }
+
+  .ura-title {
+    font-size: 16px;
+  }
+
+  .ura-subtitle {
+    font-size: 13px;
+  }
+
+  .ura-roles-list {
+    padding: 12px 15px;
+  }
+
+  .ura-role-item {
+    padding: 12px;
+  }
+
+  .ura-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 15px;
+  }
+
+  .ura-footer-info {
+    justify-content: center;
+  }
+
+  .ura-footer-actions {
+    flex-direction: column-reverse;
+  }
+
+  .ura-footer-actions button {
+    width: 100%;
+  }
+}

@@ -1,0 +1,116 @@
+/* Pages/Settings/IAM/IAMSettings.css */
+
+.iam-settings {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.iam-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 10px;
+  background: #F5F5F5;
+  border-bottom: 2px solid #E5E5E5;
+  overflow-x: auto;
+}
+
+.iam-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: transparent;
+  border: none;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
+}
+
+.iam-tab:hover {
+  background: rgba(4, 62, 84, 0.05);
+  color: var(--theme-primary, #043E54);
+}
+
+.iam-tab.active {
+  background: #fff;
+  color: var(--theme-primary, #043E54);
+  box-shadow: 0 -2px 0 0 var(--theme-primary, #043E54) inset;
+}
+
+.iam-tab-icon {
+  flex-shrink: 0;
+}
+
+.iam-content {
+  flex: 1;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.iam-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: #777;
+  min-height: 400px;
+}
+
+.iam-placeholder svg {
+  color: #ccc;
+  margin-bottom: 20px;
+}
+
+.iam-placeholder h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 10px 0;
+}
+
+.iam-placeholder p {
+  font-size: 14px;
+  color: #777;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .iam-tabs {
+    padding: 8px;
+    gap: 5px;
+  }
+
+  .iam-tab {
+    padding: 10px 15px;
+    font-size: 13px;
+  }
+
+  .iam-tab-icon {
+    display: none;
+  }
+
+  .iam-placeholder {
+    padding: 40px 15px;
+    min-height: 300px;
+  }
+
+  .iam-placeholder svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .iam-placeholder h3 {
+    font-size: 18px;
+  }
+}
