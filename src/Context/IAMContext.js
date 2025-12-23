@@ -1,165 +1,348 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-
-// Mock data for testing
-const mockUsers = [
-  {
-    id: 1,
-    name: 'John Doe',
-    email: 'john@example.com',
-    roles: ['Admin'],
-    status: 'Active'
-  },
-  {
-    id: 2,
-    name: 'Jane Smith',
-    email: 'jane@example.com',
-    roles: ['User'],
-    status: 'Active'
-  },
-  {
-    id: 3,
-    name: 'Bob Johnson',
-    email: 'bob@example.com',
-    roles: ['Manager'],
-    status: 'Inactive'
-  }
-];
-
-const mockRoles = [
-  {
-    id: 1,
-    name: 'Admin',
-    description: 'Full system access',
-    permissions: ['read', 'write', 'delete', 'manage_users', 'manage_roles']
-  },
-  {
-    id: 2,
-    name: 'Manager',
-    description: 'Management access',
-    permissions: ['read', 'write', 'manage_users']
-  },
-  {
-    id: 3,
-    name: 'User',
-    description: 'Basic user access',
-    permissions: ['read']
-  }
-];
+// Context/IAMContext.js
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import * as IAMService from '../Services/IAMService';
 
 const IAMContext = createContext();
 
 export const IAMProvider = ({ children }) => {
-  const [users, setUsers] = useState(mockUsers);
-  const [roles, setRoles] = useState(mockRoles);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  // Modules State
+  const [modules, setModules] = useState([]);
+  const [modulesLoading, setModulesLoading] = useState(false);
+  const [modulesError, setModulesError] = useState(null);
 
-  const login = async (email, password) => {
-    setLoading(true);
-    setError(null);
+  // Features State
+  const [features, setFeatures] = useState([]);
+  const [featuresLoading, setFeaturesLoading] = useState(false);
+  const [featuresError, setFeaturesError] = useState(null);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  // Permission Types State
+  const [permissionTypes, setPermissionTypes] = useState([]);
+  const [permissionTypesLoading, setPermissionTypesLoading] = useState(false);
+  const [permissionTypesError, setPermissionTypesError] = useState(null);
 
-    // Demo credentials check
-    if (email === 'admin@example.com' && password === 'password') {
-      const user = {
-        id: 0,
-        name: 'Admin User',
-        email: 'admin@example.com',
-        roles: ['Admin']
-      };
-      setCurrentUser(user);
-      setLoading(false);
-      return true;
-    } else {
-      setError('Invalid credentials');
-      setLoading(false);
-      return false;
+  // Roles State
+  const [roles, setRoles] = useState([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
+  const [rolesError, setRolesError] = useState(null);
+
+  // Current User Permissions State
+  const [currentUserPermissions, setCurrentUserPermissions] = useState(null);
+  const [permissionsLoading, setPermissionsLoading] = useState(false);
+  const [permissionsError, setPermissionsError] = useState(null);
+
+  // Users State (Basic IAM)
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState(null);
+
+  // ==================== Modules ====================
+
+  const fetchModules = useCallback(async () => {
+    setModulesLoading(true);
+    setModulesError(null);
+    try {
+      const data = await IAMService.getAllModules();
+      setModules(data);
+      return data;
+    } catch (error) {
+      setModulesError(error.message);
+      throw error;
+    } finally {
+      setModulesLoading(false);
     }
-  };
+  }, []);
 
-  const logout = () => {
-    setCurrentUser(null);
-    setError(null);
-  };
+  const addModule = useCallback(async (moduleData) => {
+    try {
+      const newModule = await IAMService.createModule(moduleData);
+      setModules(prev => [...prev, newModule]);
+      return newModule;
+    } catch (error) {
+      setModulesError(error.message);
+      throw error;
+    }
+  }, []);
 
-  const createRole = async (roleData) => {
-    setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
+  const updateModule = useCallback(async (id, moduleData) => {
+    try {
+      const updatedModule = await IAMService.updateModule(id, moduleData);
+      setModules(prev => prev.map(m => m.id === id ? updatedModule : m));
+      return updatedModule;
+    } catch (error) {
+      setModulesError(error.message);
+      throw error;
+    }
+  }, []);
 
-    const newRole = {
-      id: roles.length + 1,
-      ...roleData
-    };
-    setRoles([...roles, newRole]);
-    setLoading(false);
-    return newRole;
-  };
+  const removeModule = useCallback(async (id) => {
+    try {
+      await IAMService.deleteModule(id);
+      setModules(prev => prev.filter(m => m.id !== id));
+    } catch (error) {
+      setModulesError(error.message);
+      throw error;
+    }
+  }, []);
 
-  const updateRole = async (roleId, roleData) => {
-    setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
+  // ==================== Features ====================
 
-    setRoles(roles.map(role =>
-      role.id === roleId ? { ...role, ...roleData } : role
-    ));
-    setLoading(false);
-  };
+  const fetchFeatures = useCallback(async (moduleId = null) => {
+    setFeaturesLoading(true);
+    setFeaturesError(null);
+    try {
+      const data = await IAMService.getAllFeatures(moduleId);
+      setFeatures(data);
+      return data;
+    } catch (error) {
+      setFeaturesError(error.message);
+      throw error;
+    } finally {
+      setFeaturesLoading(false);
+    }
+  }, []);
 
-  const deleteRole = async (roleId) => {
-    setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
+  const addFeature = useCallback(async (featureData) => {
+    try {
+      const newFeature = await IAMService.createFeature(featureData);
+      setFeatures(prev => [...prev, newFeature]);
+      return newFeature;
+    } catch (error) {
+      setFeaturesError(error.message);
+      throw error;
+    }
+  }, []);
 
-    setRoles(roles.filter(role => role.id !== roleId));
-    setLoading(false);
-  };
+  const updateFeature = useCallback(async (id, featureData) => {
+    try {
+      const updatedFeature = await IAMService.updateFeature(id, featureData);
+      setFeatures(prev => prev.map(f => f.id === id ? updatedFeature : f));
+      return updatedFeature;
+    } catch (error) {
+      setFeaturesError(error.message);
+      throw error;
+    }
+  }, []);
 
-  const assignRoleToUser = async (userId, roleName) => {
-    setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
+  const removeFeature = useCallback(async (id) => {
+    try {
+      await IAMService.deleteFeature(id);
+      setFeatures(prev => prev.filter(f => f.id !== id));
+    } catch (error) {
+      setFeaturesError(error.message);
+      throw error;
+    }
+  }, []);
 
-    setUsers(users.map(user =>
-      user.id === userId
-        ? { ...user, roles: [...user.roles, roleName] }
-        : user
-    ));
-    setLoading(false);
-  };
+  // ==================== Permission Types ====================
 
-  const removeRoleFromUser = async (userId, roleName) => {
-    setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
+  const fetchPermissionTypes = useCallback(async () => {
+    setPermissionTypesLoading(true);
+    setPermissionTypesError(null);
+    try {
+      const data = await IAMService.getAllPermissionTypes();
+      setPermissionTypes(data);
+      return data;
+    } catch (error) {
+      setPermissionTypesError(error.message);
+      throw error;
+    } finally {
+      setPermissionTypesLoading(false);
+    }
+  }, []);
 
-    setUsers(users.map(user =>
-      user.id === userId
-        ? { ...user, roles: user.roles.filter(role => role !== roleName) }
-        : user
-    ));
-    setLoading(false);
-  };
+  const addPermissionType = useCallback(async (permissionTypeData) => {
+    try {
+      const newPermissionType = await IAMService.createPermissionType(permissionTypeData);
+      setPermissionTypes(prev => [...prev, newPermissionType]);
+      return newPermissionType;
+    } catch (error) {
+      setPermissionTypesError(error.message);
+      throw error;
+    }
+  }, []);
+
+  const setupDefaults = useCallback(async () => {
+    try {
+      const defaults = await IAMService.setupDefaultPermissionTypes();
+      setPermissionTypes(defaults);
+      return defaults;
+    } catch (error) {
+      setPermissionTypesError(error.message);
+      throw error;
+    }
+  }, []);
+
+  // ==================== Roles ====================
+
+  const fetchRoles = useCallback(async () => {
+    setRolesLoading(true);
+    setRolesError(null);
+    try {
+      const data = await IAMService.getAllRoles();
+      setRoles(data);
+      return data;
+    } catch (error) {
+      setRolesError(error.message);
+      throw error;
+    } finally {
+      setRolesLoading(false);
+    }
+  }, []);
+
+  const addRole = useCallback(async (roleData) => {
+    try {
+      const newRole = await IAMService.createRole(roleData);
+      setRoles(prev => [...prev, newRole]);
+      return newRole;
+    } catch (error) {
+      setRolesError(error.message);
+      throw error;
+    }
+  }, []);
+
+  const updateRole = useCallback(async (id, roleData) => {
+    try {
+      const updatedRole = await IAMService.updateRole(id, roleData);
+      setRoles(prev => prev.map(r => r.id === id ? updatedRole : r));
+      return updatedRole;
+    } catch (error) {
+      setRolesError(error.message);
+      throw error;
+    }
+  }, []);
+
+  const removeRole = useCallback(async (id) => {
+    try {
+      await IAMService.deleteRole(id);
+      setRoles(prev => prev.filter(r => r.id !== id));
+    } catch (error) {
+      setRolesError(error.message);
+      throw error;
+    }
+  }, []);
+
+  const assignRoles = useCallback(async (userId, roleIds) => {
+    try {
+      const result = await IAMService.assignRolesToUser(userId, roleIds);
+      return result;
+    } catch (error) {
+      setRolesError(error.message);
+      throw error;
+    }
+  }, []);
+
+  // ==================== Current User Permissions ====================
+
+  const fetchCurrentUserPermissions = useCallback(async () => {
+    setPermissionsLoading(true);
+    setPermissionsError(null);
+    try {
+      const data = await IAMService.getCurrentUserPermissions();
+      setCurrentUserPermissions(data);
+      // Store in localStorage for persistence
+      localStorage.setItem('userPermissions', JSON.stringify(data));
+      return data;
+    } catch (error) {
+      setPermissionsError(error.message);
+      throw error;
+    } finally {
+      setPermissionsLoading(false);
+    }
+  }, []);
+
+  // Load cached permissions on mount
+  useEffect(() => {
+    const cachedPermissions = localStorage.getItem('userPermissions');
+    if (cachedPermissions) {
+      try {
+        setCurrentUserPermissions(JSON.parse(cachedPermissions));
+      } catch (error) {
+        console.error('Failed to parse cached permissions:', error);
+      }
+    }
+  }, []);
+
+  // ==================== Basic IAM User Management ====================
+
+  const registerNewUser = useCallback(async (userData) => {
+    setUsersError(null);
+    try {
+      const newUser = await IAMService.registerUser(userData);
+      setUsers(prev => [...prev, newUser]);
+      return newUser;
+    } catch (error) {
+      setUsersError(error.message);
+      throw error;
+    }
+  }, []);
+
+  const fetchHierarchyUsers = useCallback(async (organizationId) => {
+    setUsersLoading(true);
+    setUsersError(null);
+    try {
+      const data = await IAMService.getHierarchyUsers(organizationId);
+      setUsers(data);
+      return data;
+    } catch (error) {
+      setUsersError(error.message);
+      throw error;
+    } finally {
+      setUsersLoading(false);
+    }
+  }, []);
 
   const value = {
-    users,
+    // Modules
+    modules,
+    modulesLoading,
+    modulesError,
+    fetchModules,
+    addModule,
+    updateModule,
+    removeModule,
+
+    // Features
+    features,
+    featuresLoading,
+    featuresError,
+    fetchFeatures,
+    addFeature,
+    updateFeature,
+    removeFeature,
+
+    // Permission Types
+    permissionTypes,
+    permissionTypesLoading,
+    permissionTypesError,
+    fetchPermissionTypes,
+    addPermissionType,
+    setupDefaults,
+
+    // Roles
     roles,
-    currentUser,
-    loading,
-    error,
-    login,
-    logout,
-    createRole,
+    rolesLoading,
+    rolesError,
+    fetchRoles,
+    addRole,
     updateRole,
-    deleteRole,
-    assignRoleToUser,
-    removeRoleFromUser
+    removeRole,
+    assignRoles,
+
+    // Current User Permissions
+    currentUserPermissions,
+    permissionsLoading,
+    permissionsError,
+    fetchCurrentUserPermissions,
+
+    // Basic IAM Users
+    users,
+    usersLoading,
+    usersError,
+    registerNewUser,
+    fetchHierarchyUsers,
   };
 
-  return (
-    <IAMContext.Provider value={value}>
-      {children}
-    </IAMContext.Provider>
-  );
+  return <IAMContext.Provider value={value}>{children}</IAMContext.Provider>;
 };
 
 export const useIAM = () => {
@@ -169,5 +352,3 @@ export const useIAM = () => {
   }
   return context;
 };
-
-export default IAMContext;

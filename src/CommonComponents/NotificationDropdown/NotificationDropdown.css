@@ -104,6 +104,7 @@
 .notification-header h3 {
   margin: 0;
   font-size: 16px;
+  font-size: 16px;
   font-weight: 700;
   color: white;
   font-family: 'Lato', sans-serif;
@@ -278,11 +279,13 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  gap: 12px;
   flex: 1;
   min-width: 0;
 }
 
 .notification-icon {
+  font-size: 20px;
   font-size: 20px;
   flex-shrink: 0;
   margin-top: 2px;
@@ -427,6 +430,7 @@
   border-radius: 8px;
   cursor: pointer;
   color: white;
+  font-size: 13px;
   font-size: 13px;
   font-weight: 600;
   transition: all 0.3s ease;

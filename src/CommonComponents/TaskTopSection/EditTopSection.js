@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { ArrowLeft, Save, Users, AlertCircle, Send, ExternalLink } from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  Users,
+  AlertCircle,
+  Send,
+  ExternalLink,
+} from "lucide-react";
 import AvatarList from "../Avatar/index";
 import UserDropdown from "../UserDropdown";
 import { useUser } from "../../Context/UserContext";
@@ -9,11 +16,11 @@ import "./RevertModal.css";
 
 const getDefaultColor = (status) => {
   const colors = {
-    "New": "#6b7280",
-    "Active": "#10b981",
+    New: "#6b7280",
+    Active: "#10b981",
     "Under Approval": "#f59e0b",
-    "Approved": "#059669",
-    "Published": "#8b5cf6"
+    Approved: "#059669",
+    Published: "#8b5cf6",
   };
   return colors[status] || "#6b7280";
 };
@@ -23,9 +30,9 @@ const toTitleCase = (str) => {
   return str
     .trim()
     .toLowerCase()
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 };
 
 const getStatusClass = (status) => {
@@ -53,13 +60,15 @@ const TopSection = ({
   onTabChange, // Add callback to change tabs
   eventDate = null, // Add event date prop
   onPublish, // Callback for publish button
-  onViewLinks // Callback for view links button
+  onViewLinks, // Callback for view links button
 }) => {
   const { user } = useUser();
   const { taskStatuses } = useTaskStatus();
 
   // Check if user is a Designer based on the roles array
-  const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
+  const isDesigner = user?.roles?.some(
+    (role) => role.name === "Designer" || role.displayName === "Designer"
+  );
 
   const [editableTitle, setEditableTitle] = useState(title || "");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -70,11 +79,11 @@ const TopSection = ({
 
   // Get status options from context
   const statusOptions = useMemo(() => {
-    return taskStatuses.map(status => ({
+    return taskStatuses.map((status) => ({
       id: status.id,
       label: status.statusName || status.name,
       value: status.statusName || status.name,
-      color: status.color || getDefaultColor(status.statusName || status.name)
+      color: status.color || getDefaultColor(status.statusName || status.name),
     }));
   }, [taskStatuses]);
 
@@ -85,15 +94,15 @@ const TopSection = ({
       const nameParts = createdBy.trim().split(" ");
       return {
         firstName: nameParts[0] || "Unknown",
-        lastName: nameParts.slice(1).join(" ") || "User"
+        lastName: nameParts.slice(1).join(" ") || "User",
       };
     }
-    
+
     // Fallback to current user for new tasks
     if (!user) return { firstName: "Unknown", lastName: "User" };
     return {
       firstName: user.firstName || "Unknown",
-      lastName: user.lastName || "User"
+      lastName: user.lastName || "User",
     };
   }, [createdBy, user]);
 
@@ -132,7 +141,7 @@ const TopSection = ({
     isTitleManuallyEdited.current = true;
 
     if (errors && errors.title && onClearError) {
-      onClearError('title');
+      onClearError("title");
     }
   };
 
@@ -162,7 +171,9 @@ const TopSection = ({
       }
 
       // Find the status option from context
-      const newStatus = statusOptions.find(option => option.value === newStatusValue);
+      const newStatus = statusOptions.find(
+        (option) => option.value === newStatusValue
+      );
 
       if (newStatus) {
         // Use the status option from context
@@ -173,7 +184,7 @@ const TopSection = ({
           id: "",
           label: newStatusValue,
           value: newStatusValue,
-          color: getDefaultColor(newStatusValue)
+          color: getDefaultColor(newStatusValue),
         };
         onStatusChange(fallbackStatus);
       }
@@ -197,11 +208,13 @@ const TopSection = ({
 
   const confirmRevert = () => {
     // Find the status option object for Active
-    const newStatus = statusOptions.find(option => option.value === "Active") || {
+    const newStatus = statusOptions.find(
+      (option) => option.value === "Active"
+    ) || {
       id: "",
       label: "Active",
       value: "Active",
-      color: getDefaultColor("Active")
+      color: getDefaultColor("Active"),
     };
 
     if (onStatusChange) {
@@ -211,7 +224,8 @@ const TopSection = ({
   };
 
   const remainingChars = maxReasonLength - revertReason.length;
-  const charCountClass = remainingChars < 50 ? (remainingChars < 0 ? 'error' : 'warning') : '';
+  const charCountClass =
+    remainingChars < 50 ? (remainingChars < 0 ? "error" : "warning") : "";
 
   // Handle disabled button click to redirect to Files & Uploads tab
   const handleDisabledSubmitClick = () => {
@@ -221,13 +235,17 @@ const TopSection = ({
   };
 
   const selectedParticipants = assignedIds.map((assignedId) => {
-    const assignedUser = assignedTo.find((u) => (u.userId || u.id) === assignedId);
+    const assignedUser = assignedTo.find(
+      (u) => (u.userId || u.id) === assignedId
+    );
 
     if (assignedUser) {
       return {
         id: assignedUser.userId || assignedUser.id,
         name: assignedUser.userName || assignedUser.name,
-        fallback: (assignedUser.userName || assignedUser.name || "?").charAt(0).toUpperCase(),
+        fallback: (assignedUser.userName || assignedUser.name || "?")
+          .charAt(0)
+          .toUpperCase(),
         size: "20px",
         shape: "circle",
       };
@@ -247,13 +265,13 @@ const TopSection = ({
     };
   });
 
-  const hasAssignedUsers = selectedParticipants && selectedParticipants.length > 0;
-
+  const hasAssignedUsers =
+    selectedParticipants && selectedParticipants.length > 0;
 
   const getUserInitials = (firstName = "", lastName = "") => {
     const a = (firstName[0] || "").toUpperCase();
     const b = (lastName[0] || "").toUpperCase();
-    return (a + b) || "?";
+    return a + b || "?";
   };
 
   return (
@@ -265,7 +283,9 @@ const TopSection = ({
         <div className="edit-top-title-container">
           <input
             type="text"
-            className={`edit-top-title-input ${errors && errors.title ? "error" : ""}`}
+            className={`edit-top-title-input ${
+              errors && errors.title ? "error" : ""
+            }`}
             value={mode === "view" ? toTitleCase(editableTitle) : editableTitle}
             onChange={handleTitleChange}
             onKeyDown={handleKeyDown}
@@ -274,10 +294,14 @@ const TopSection = ({
             autoFocus={mode === "create"}
             readOnly={mode === "view"}
           />
-          {(mode === "create" || mode === "edit") && <span className="edit-top-required-asterisk">*</span>}
+          {(mode === "create" || mode === "edit") && (
+            <span className="edit-top-required-asterisk">*</span>
+          )}
         </div>
         <div className="edit-top-created-by">
-          <span className="edit-top-creator-name">{creatorUser.firstName} {creatorUser.lastName}</span>
+          <span className="edit-top-creator-name">
+            {creatorUser.firstName} {creatorUser.lastName}
+          </span>
           <div className="edit-top-creator-avatar">
             <div className="edit-top-avatar-initials">
               {getUserInitials(creatorUser.firstName, creatorUser.lastName)}
@@ -293,16 +317,18 @@ const TopSection = ({
             <span className="edit-top-label">Team:</span>
             <div className="edit-top-avatar-group">
               {hasAssignedUsers ? (
-                <AvatarList 
-                  avatars={selectedParticipants} 
-                  maxVisible={2} 
+                <AvatarList
+                  avatars={selectedParticipants}
+                  maxVisible={2}
                   showTooltip={true}
                   tooltipPosition="top"
                 />
               ) : (
                 <div className="edit-top-no-assigned-users">
                   <Users size={14} className="edit-top-placeholder-icon" />
-                  <span className="edit-top-placeholder-text">No assigned users</span>
+                  <span className="edit-top-placeholder-text">
+                    No assigned users
+                  </span>
                 </div>
               )}
               {(mode === "edit" || mode === "create") && (
@@ -335,10 +361,14 @@ const TopSection = ({
           <div className="edit-top-status-section">
             <span className="edit-top-label">Status:</span>
             <div
-              className={`edit-top-status-badge edit-top-status-${getStatusClass(status?.value)}`}
+              className={`edit-top-status-badge edit-top-status-${getStatusClass(
+                status?.value
+              )}`}
               data-status={status?.value || status?.label}
             >
-              <span className="edit-top-status-text">{status?.label || status?.value || "Unknown"}</span>
+              <span className="edit-top-status-text">
+                {status?.label || status?.value || "Unknown"}
+              </span>
             </div>
           </div>
         </div>
@@ -348,17 +378,17 @@ const TopSection = ({
             <div className="edit-top-event-date-section">
               <span className="edit-top-event-date-label">Event Date:</span>
               <span className="edit-top-event-date-text">
-                {new Date(eventDate).toLocaleDateString('en-US', { 
-                  month: 'short', 
-                  day: 'numeric',
-                  year: 'numeric'
+                {new Date(eventDate).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
                 })}
               </span>
               <span className="edit-top-event-date-time">
-                {new Date(eventDate).toLocaleTimeString('en-US', { 
-                  hour: '2-digit', 
-                  minute: '2-digit',
-                  hour12: true
+                {new Date(eventDate).toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
                 })}
               </span>
             </div>
@@ -366,29 +396,38 @@ const TopSection = ({
         )}
 
         <div className="edit-top-right-section">
-          <div className="edit-top-save-button-section" style={{ display: "flex", gap: "8px" }}>
+          <div
+            className="edit-top-save-button-section"
+            style={{ display: "flex", gap: "8px" }}
+          >
             {/* Publish and View Links buttons - visible only when status is Approved or Published and user is not a Designer */}
-            {!isDesigner && (status?.value === "Approved" || status?.value === "Published") && (
-              <>
-                <button 
-                  className="edit-top-btn-publish" 
-                  onClick={onPublish}
-                  title="Publish Document"
-                >
-                  <Send size={16} />
-                  Publish
-                </button>
-                
-                <button 
-                  className="edit-top-btn-view-links" 
-                  onClick={onViewLinks}
-                  title="View Links"
-                >
-                  <ExternalLink size={16} />
-                  View Links
-                </button>
-              </>
-            )}
+            {!isDesigner &&
+              (status?.value === "Approved" ||
+                status?.value === "Published") && (
+                <>
+                  <button
+                    className="edit-top-btn-publish"
+                    onClick={onPublish}
+                    disabled={
+                      status?.value !== "Approved" &&
+                      status?.value !== "Published"
+                    }
+                    title="Only Approved or Published documents can be published"
+                  >
+                    <Send size={16} />
+                    Publish
+                  </button>
+
+                  <button
+                    className="edit-top-btn-view-links"
+                    onClick={onViewLinks}
+                    title="View Links"
+                  >
+                    <ExternalLink size={16} />
+                    View Links
+                  </button>
+                </>
+              )}
 
             {/* Hide all buttons (Save, Under Review, Approved) when status is Approved or Published */}
             {status?.value !== "Approved" && status?.value !== "Published" && (
@@ -403,23 +442,31 @@ const TopSection = ({
                 {/* Status change buttons - only show in view mode */}
                 {mode === "view" && (
                   <div className="edit-top-status-change-buttons">
-                     {/* Submit for Approval button - show only for Designers and for all statuses except Under Approval, Approved, and Published */}
-                     {isDesigner && status?.value !== "Under Approval" && (
-                       <button
-                         className={`edit-top-status-btn edit-top-under-approval-btn ${!hasWorkSubmissionFiles ? 'disabled-clickable' : ''}`}
-                         onClick={() => {
-                           if (hasWorkSubmissionFiles) {
-                             handleStatusChange("Under Approval");
-                           } else {
-                             handleDisabledSubmitClick();
-                           }
-                         }}
-                         title={hasWorkSubmissionFiles ? "Submit for Approval" : "Click to go to Files & Uploads tab to upload work submission files"}
-                         disabled={isUpdatingStatus}
-                       >
-                         {isUpdatingStatus ? "Updating..." : "Submit for Approval"}
-                       </button>
-                     )}
+                    {/* Submit for Approval button - show only for Designers and for all statuses except Under Approval, Approved, and Published */}
+                    {isDesigner && status?.value !== "Under Approval" && (
+                      <button
+                        className={`edit-top-status-btn edit-top-under-approval-btn ${
+                          !hasWorkSubmissionFiles ? "disabled-clickable" : ""
+                        }`}
+                        onClick={() => {
+                          if (hasWorkSubmissionFiles) {
+                            handleStatusChange("Under Approval");
+                          } else {
+                            handleDisabledSubmitClick();
+                          }
+                        }}
+                        title={
+                          hasWorkSubmissionFiles
+                            ? "Submit for Approval"
+                            : "Click to go to Files & Uploads tab to upload work submission files"
+                        }
+                        disabled={isUpdatingStatus}
+                      >
+                        {isUpdatingStatus
+                          ? "Updating..."
+                          : "Submit for Approval"}
+                      </button>
+                    )}
 
                     {/* Approved button - show to everyone EXCEPT Designers when status is Under Approval */}
                     {!isDesigner && status?.value === "Under Approval" && (
@@ -451,18 +498,21 @@ const TopSection = ({
       </div>
       {isRevertModalOpen && (
         <div className="revert-modal-overlay" onClick={closeRevertModal}>
-          <div className="revert-modal-container" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="revert-modal-container"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="revert-modal-header">
               <div className="revert-modal-icon-wrapper">
                 <AlertCircle className="revert-modal-icon" />
               </div>
-              <h3 className="revert-modal-title">
-                Revert to Active
-              </h3>
+              <h3 className="revert-modal-title">Revert to Active</h3>
             </div>
             <div className="revert-modal-body">
               <p className="revert-modal-description">
-                Please provide a reason for reverting this task to Active status. This message is required and will be posted to the task chat.
+                Please provide a reason for reverting this task to Active
+                status. This message is required and will be posted to the task
+                chat.
               </p>
               <div className="revert-modal-textarea-wrapper">
                 <textarea
@@ -479,11 +529,14 @@ const TopSection = ({
               <div className={`revert-modal-char-count ${charCountClass}`}>
                 {remainingChars} characters remaining
               </div>
-              <button onClick={closeRevertModal} className="revert-modal-btn revert-modal-btn-cancel">
+              <button
+                onClick={closeRevertModal}
+                className="revert-modal-btn revert-modal-btn-cancel"
+              >
                 Cancel
               </button>
-              <button 
-                onClick={confirmRevert} 
+              <button
+                onClick={confirmRevert}
                 className="revert-modal-btn revert-modal-btn-confirm"
                 disabled={remainingChars < 0 || !revertReason.trim()}
               >

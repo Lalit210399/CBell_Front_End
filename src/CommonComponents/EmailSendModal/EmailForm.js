@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaTimes } from 'react-icons/fa';
+import { Users } from 'lucide-react';
+import GroupSelector from './GroupSelector';
 import './EmailForm.css';
 
 const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent, taskId }) => {
@@ -21,6 +23,7 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent, taskId }
   const [errorMessage, setErrorMessage] = useState('');
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
+  const [showGroupSelector, setShowGroupSelector] = useState(false);
   const [attachment, setAttachment] = useState(fileDetail);
 
   useEffect(() => {
@@ -79,6 +82,21 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent, taskId }
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleSelectGroups = (emails, field) => {
+    const currentValue = formData[field];
+    const emailsToAdd = currentValue ? [...currentValue.split(','), ...emails] : emails;
+    const uniqueEmails = [...new Set(emailsToAdd.map(e => e.trim()))].join(', ');
+    
+    setFormData((prev) => ({
+      ...prev,
+      [field]: uniqueEmails,
+    }));
+
+    // Auto-show Cc/Bcc fields when groups are added to them
+    if (field === 'cc') setShowCc(true);
+    if (field === 'bcc') setShowBcc(true);
   };
 
   const handleSubmit = async (e) => {
@@ -152,6 +170,14 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent, taskId }
             />
             <button type="button" className="email-form-icon" onClick={() => setShowCc((v) => !v)}>Cc</button>
             <button type="button" className="email-form-icon" onClick={() => setShowBcc((v) => !v)}>Bcc</button>
+            <button 
+              type="button" 
+              className="email-form-icon email-form-groups-btn" 
+              onClick={() => setShowGroupSelector(true)}
+              title="Add from Email Groups"
+            >
+              <Users size={16} />
+            </button>
           </div>
 
           {showCc && (
@@ -238,6 +264,13 @@ const EmailForm = ({ fileDetail = {}, documentId, onClose, onEmailSent, taskId }
           </button>
         </div>
       </form>
+
+      {showGroupSelector && (
+        <GroupSelector
+          onClose={() => setShowGroupSelector(false)}
+          onSelectGroups={handleSelectGroups}
+        />
+      )}
     </div>
   );
 };

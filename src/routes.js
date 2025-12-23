@@ -5,14 +5,9 @@ import Signup from "./Pages/AuthN";
 import Dashboard from "./Pages/Dashboard";
 import Events from "./Pages/Events";
 import Schedule from "./Pages/Schedule";
-import AdminLayout from "./layouts/AdminLayout";
-import AdminLogin from "./pages/admin/AdminLogin";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminRoles from "./pages/admin/AdminRoles";
-import AssignRoles from "./pages/admin/AssignRoles";
-import CreateRole from "./pages/admin/CreateRole";
-import EditRole from "./pages/admin/EditRole";
+import GuestInviteValidationPage from "./Pages/Guest/GuestInviteValidation";
+import GuestTaskReviewPage from "./Pages/Guest/GuestTaskReview";
+import Settings from "./Pages/Settings/Settings";
 
 function AppRoutes() {
   return (
@@ -23,14 +18,10 @@ function AppRoutes() {
         <Route path="/dashboard" element={<MainLayout><Dashboard /></MainLayout>} />
         <Route path="/events" element={<MainLayout><Events /></MainLayout>} />
         <Route path="/schedule" element={<MainLayout><Schedule /></MainLayout>} />
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
-        <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
-        <Route path="/admin/users" element={<AdminLayout><AdminUsers /></AdminLayout>} />
-        <Route path="/admin/users/:id/assign-roles" element={<AdminLayout><AssignRoles /></AdminLayout>} />
-        <Route path="/admin/roles" element={<AdminLayout><AdminRoles /></AdminLayout>} />
-        <Route path="/admin/roles/create" element={<AdminLayout><CreateRole /></AdminLayout>} />
-        <Route path="/admin/roles/:id/edit" element={<AdminLayout><EditRole /></AdminLayout>} />
+        <Route path="/guest/invite-validation/:inviteId" element={<GuestInviteValidationPage />} />
+        <Route path="/guest/approvals/:inviteId" element={<GuestInviteValidationPage />} />
+        <Route path="/guest/tasks/:inviteId" element={<GuestTaskReviewPage />} />
+        <Route path="/settings" element={<MainLayout><Settings /></MainLayout>} />
       </Routes>
     </Router>
   );

@@ -1,0 +1,272 @@
+/* Pages/Settings/IAM/RoleManagement/RoleManagement.css */
+
+.role-management {
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  min-height: calc(100vh - 100px);
+}
+
+.rm-header {
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #E5E5E5;
+}
+
+.rm-header-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+}
+
+.rm-header-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  background: var(--theme-bg, #E7F7EA);
+  color: var(--theme-primary, #043E54);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.rm-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 5px 0;
+}
+
+.rm-subtitle {
+  font-size: 14px;
+  color: #777;
+  margin: 0;
+}
+
+.rm-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 15px;
+  background: #FEE;
+  border: 1px solid #FCC;
+  border-radius: 6px;
+  color: #C33;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.rm-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 15px;
+}
+
+.rm-search {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+}
+
+.rm-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #777;
+  pointer-events: none;
+}
+
+.rm-search-input {
+  width: 100%;
+  padding: 10px 12px 10px 40px;
+  border: 1px solid #E5E5E5;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.rm-search-input:focus {
+  outline: none;
+  border-color: var(--theme-primary, #043E54);
+}
+
+.rm-create-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--theme-primary, #043E54);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.rm-create-btn:hover:not(:disabled) {
+  background: var(--theme-primary-dark, rgb(4, 51, 69));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.rm-create-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rm-no-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: #777;
+  min-height: 300px;
+}
+
+.rm-no-data svg {
+  color: #ccc;
+  margin-bottom: 20px;
+}
+
+.rm-no-data h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 10px 0;
+}
+
+.rm-no-data p {
+  font-size: 14px;
+  color: #777;
+  margin: 0;
+}
+
+.rm-table-container {
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.rm-permission-count {
+  display: inline-block;
+  padding: 4px 12px;
+  background: var(--theme-bg, #E7F7EA);
+  color: var(--theme-primary, #043E54);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.rm-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.rm-status.active {
+  background: var(--theme-bg, #E7F7EA);
+  color: var(--theme-primary, #043E54);
+}
+
+.rm-status.inactive {
+  background: #F5F5F5;
+  color: #777;
+}
+
+.rm-description {
+  color: #555;
+  font-size: 14px;
+}
+
+.rm-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.rm-action-btn {
+  padding: 6px;
+  background: transparent;
+  border: 1px solid #E5E5E5;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rm-action-btn.view {
+  color: #6C757D;
+}
+
+.rm-action-btn.view:hover {
+  background: #F5F5F5;
+  border-color: #6C757D;
+}
+
+.rm-action-btn.edit {
+  color: var(--theme-soft, #02968A);
+}
+
+.rm-action-btn.edit:hover {
+  background: var(--theme-bg, #E7F7EA);
+  border-color: var(--theme-soft, #02968A);
+}
+
+.rm-action-btn.delete {
+  color: #DC3545;
+}
+
+.rm-action-btn.delete:hover {
+  background: #FEE;
+  border-color: #DC3545;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .role-management {
+    padding: 15px;
+  }
+
+  .rm-header-content {
+    gap: 12px;
+  }
+
+  .rm-header-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .rm-title {
+    font-size: 20px;
+  }
+
+  .rm-subtitle {
+    font-size: 13px;
+  }
+
+  .rm-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rm-search {
+    max-width: 100%;
+  }
+
+  .rm-create-btn {
+    justify-content: center;
+  }
+}

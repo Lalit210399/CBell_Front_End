@@ -91,16 +91,10 @@ const TasksFiles = ({
         
         setHasWorkSubmissionFiles(workSubmissionFiles.length > 0);
 
-        console.log('TaskFiles - API Response:', normalizedData);
         
         const filesWithPreview = await Promise.all(
           (normalizedData || []).map(async (doc) => {
-            console.log('TaskFiles - Processing document:', {
-              documentId: doc.documentId,
-              filename: doc.filename,
-              contentType: doc.contentType,
-              status: doc.status
-            });
+
             const type = getFileTypeFromMime(doc.contentType, doc.filename);
             let src = '';
 
@@ -137,7 +131,7 @@ const TasksFiles = ({
                 description: doc.description
               }
             };
-            console.log('TaskFiles - Created file object:', fileObject);
+
             return fileObject;
           })
         );
@@ -171,6 +165,47 @@ const TasksFiles = ({
       fetchDocuments();
     }
   }, [taskId, onFileSelect, files, onFilesChange]); // Include files to listen for refresh triggers
+
+  // If parent passes a `files` array (e.g., updated `fileData.uploadedFiles`), apply updates immediately
+  useEffect(() => {
+    if (!Array.isArray(files)) return;
+    try {
+      // Apply files directly to fetchedFiles so UI updates immediately
+      setFetchedFiles(files);
+
+      // Update flags based on incoming files
+      const approvedOrPublishedExists = (files || []).some(doc =>
+        doc.status === 'Approved' || doc.status === 'Published' ||
+        (doc.publishedTo && doc.publishedTo.length > 0 && doc.publishedTo.some(p => p.isPublished === true))
+      );
+      setHasApprovedFile(approvedOrPublishedExists);
+      setHasAnyFiles((files || []).length > 0);
+
+      const workSubmissionFiles = (files || []).filter(doc => {
+        if (doc.userInfo && doc.userInfo.roles) {
+          return doc.userInfo.roles.some(role =>
+            role.name?.toLowerCase().includes('designer') ||
+            role.displayName?.toLowerCase().includes('designer') ||
+            role.name?.toLowerCase().includes('creative') ||
+            role.displayName?.toLowerCase().includes('creative')
+          );
+        }
+        return false;
+      });
+      setHasWorkSubmissionFiles(workSubmissionFiles.length > 0);
+
+      // Notify parent about the files (keep parity with fetchDocuments behavior)
+      onFilesChange?.({ uploadedFiles: files, links: [] });
+
+      // Auto-select approved files for the parent
+      const eligibleFiles = (files || []).filter(f => f.status === 'Approved' || f.isApproved);
+      if (eligibleFiles.length > 0 && onFileSelect) {
+        eligibleFiles.forEach(file => onFileSelect(file, true));
+      }
+    } catch (err) {
+      console.error('Error applying external files update to TaskFiles:', err);
+    }
+  }, [files, onFileSelect, onFilesChange]);
 
   // Notify parent component when work submission files change
   useEffect(() => {

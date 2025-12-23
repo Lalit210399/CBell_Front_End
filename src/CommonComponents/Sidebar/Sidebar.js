@@ -1,12 +1,15 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, Calendar, Clock } from "lucide-react";
+import { LayoutGrid, Calendar, Clock, Settings, MessageCircleMore } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
 import "./Sidebar.css";
 
 function Sidebar() {
   const location = useLocation();
-  const { permissions:userPermissions } = useUser();
+  const { permissions:userPermissions, user } = useUser();
+
+  // Check if user is a Designer
+  const isDesigner = user?.roles?.some(role => role.name === "Designer" || role.displayName === "Designer");
 
   const hasDashboardPermission = userPermissions?.permissions?.Dashboard?.["Dashboard Management"]?.includes("Read") ?? false;
   const hasEventsPermission = userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
@@ -16,17 +19,17 @@ function Sidebar() {
   return (
     <div className="sidebar">
       <div className="logo">CB</div>
-      <ul className="menu">
+      <ul className="menu menu-top">
         {hasDashboardPermission && (
           <li>
             <Link
               to="/dashboard"
-              className={`menu-item ${
-                location.pathname === "/dashboard" ? "active" : ""
-              }`}
+              className={`menu-item ${location.pathname === "/dashboard" ? "active" : ""}`}
+              aria-label="Dashboard"
+              title="Dashboard"
             >
               <div className="tooltip" data-tooltip="Dashboard">
-                <LayoutGrid size={20} />
+                <LayoutGrid size={24} />
               </div>
             </Link>
           </li>
@@ -35,12 +38,12 @@ function Sidebar() {
           <li>
             <Link
               to="/events"
-              className={`menu-item ${
-                location.pathname.startsWith("/events") ? "active" : ""
-              }`}
+              className={`menu-item ${location.pathname.startsWith("/events") ? "active" : ""}`}
+              aria-label="Events"
+              title="Events"
             >
               <div className="tooltip" data-tooltip="Events">
-                <Calendar size={20} />
+                <Calendar size={24} />
               </div>
             </Link>
           </li>
@@ -49,12 +52,12 @@ function Sidebar() {
           <li>
             <Link
               to="/schedule"
-              className={`menu-item ${
-                location.pathname === "/schedule" ? "active" : ""
-              }`}
+              className={`menu-item ${location.pathname === "/schedule" ? "active" : ""}`}
+              aria-label="Schedules"
+              title="Schedules"
             >
-              <div className="tooltip" data-tooltip="Schedules">
-                <Clock size={20} />
+              <div className="tooltip" data-tooltip="Schedule">
+                <Clock size={24} />
               </div>
             </Link>
           </li>
@@ -64,9 +67,27 @@ function Sidebar() {
             <Link
               to="/chat"
               className={`menu-item ${location.pathname === "/chat" ? "active" : ""}`}
+              aria-label="Chat"
+              title="Chat"
             >
               <div className="tooltip" data-tooltip="Chat">
-                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-square"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="m8 12 2-2 2 2m-2-2v3"/></svg>
+                <MessageCircleMore size={24} />
+              </div>
+            </Link>
+          </li>
+        )}
+      </ul>
+      <ul className="menu menu-bottom">
+        {!isDesigner && (
+          <li>
+            <Link
+              to="/settings"
+              className={`menu-item ${location.pathname === "/settings" ? "active" : ""}`}
+              aria-label="Settings"
+              title="Settings"
+            >
+              <div className="tooltip" data-tooltip="Settings">
+                <Settings size={20} />
               </div>
             </Link>
           </li>

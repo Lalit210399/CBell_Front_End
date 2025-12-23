@@ -16,17 +16,13 @@ import Instagram from "./InstagramPost";
 import ProtectedRoute, { RequirePermission } from "./Context/ProtectedRoute";
 import { useUser } from "./Context/UserContext";
 import { NotificationProvider } from "./Context/NotificationContext";
+import { EmailGroupsProvider } from "./Context/EmailGroupsContext";
+import { IAMProvider } from "./Context/IAMContext";
 import ErrorBoundary from "./CommonComponents/ErrorBoundary";
 import ChatLayout from "./Pages/Chat/NewChatLayout";
-import { AdminProvider } from "./Pages/Admin/AdminContext";
-import AdminDashboard from "./Pages/Admin/AdminDashboard";
-import AdminLogin from "./Pages/Admin/AdminLogin";
-import AdminUsers from "./Pages/Admin/AdminUsers";
-import AssignRoles from "./Pages/Admin/AssignRoles";
-import AdminRoles from "./Pages/Admin/AdminRoles";
-import CreateUser from "./Pages/Admin/CreateUser";
-import CreateRole from "./Pages/Admin/CreateRole";
-import EditRole from "./Pages/Admin/EditRole";
+import GuestInviteValidationPage from "./Pages/Guest/GuestInviteValidation";
+import GuestTaskReviewPage from "./Pages/Guest/GuestTaskReview";
+import Settings from "./Pages/Settings/Settings"; 
 
 // Component to render appropriate dashboard based on user role
 const DashboardRouter = () => {
@@ -45,260 +41,111 @@ function App() {
     <ErrorBoundary>
       <Router>
         <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Login />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
+          {/* Public Routes */}
+          <Route path="/" element={<Login />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route
+            path="/guest/invite-validation/:inviteId"
+            element={<GuestInviteValidationPage />}
+          />
+          <Route
+            path="/guest/approvals/:inviteId"
+            element={<GuestInviteValidationPage />}
+          />
+          <Route
+            path="/guest/tasks/:inviteId"
+            element={<GuestTaskReviewPage />}
+          />
 
-        {/* Protected Routes */}
-        <Route
-          path="/auth"
-          element={
-            <ProtectedRoute>
-              <AdminProvider>
+          {/* Protected Routes */}
+          <Route
+            path="/*"
+            element={
+              <ProtectedRoute>
                 <NotificationProvider>
-                  <MainLayout>
-                    <AuthN />
+                  <EmailGroupsProvider>                  <IAMProvider>                  <MainLayout>
+                    <Routes>
+                      <Route path="/auth" element={<AuthN />} />
+                      <Route
+                        path="/dashboard"
+                        element={
+                          <RequirePermission
+                            resource="Dashboard"
+                            managementKey="Dashboard Management"
+                            action="Read"
+                          >
+                            <DashboardRouter />
+                          </RequirePermission>
+                        }
+                      />
+                      <Route
+                        path="/events"
+                        element={
+                          <RequirePermission
+                            resource="Events"
+                            managementKey="Event Management"
+                            action="Read"
+                          >
+                            <Event />
+                          </RequirePermission>
+                        }
+                      />
+                      <Route
+                        path="/schedule"
+                        element={
+                          <RequirePermission
+                            resource="Events"
+                            managementKey="Event Management"
+                            action="Read"
+                          >
+                            <Schedule />
+                          </RequirePermission>
+                        }
+                      />
+                      <Route
+                        path="/chat"
+                        element={
+                          <RequirePermission
+                            resource="Events"
+                            managementKey="Event Management"
+                            action="Read"
+                          >
+                            <ChatLayout />
+                          </RequirePermission>
+                        }
+                      />
+                      <Route
+                      path="/settings"
+                      element={<Settings />}
+                    />
+                    {/* <Route path="/events/stepForm" element={<StepForm />} /> */}
+                      <Route
+                      path="/settings"
+                      element={<Settings />}
+                    />
+                    {/* <Route path="/events/stepForm" element={<StepForm />} /> */}
+                      {/* <Route path="/dashboard/stepForm" element={<StepForm />} /> */}
+                      {/* <Route path="/schedule/stepForm" element={<StepForm />} /> */}
+                      <Route
+                        path="/events/eventDetailPage"
+                        element={<EventDetailPage />}
+                      />
+                      <Route
+                        path="/events/eventDetailPage/tasks"
+                        element={<TasksDetail />}
+                      />
+                      <Route path="/tasks/list" element={<TaskList />} />
+                      <Route path="/instagram" element={<Instagram />} />
+                    </Routes>
                   </MainLayout>
-                </NotificationProvider>
-              </AdminProvider>
+                  </IAMProvider>
+                </EmailGroupsProvider>
+            </NotificationProvider>
             </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <AdminProvider>
-                <NotificationProvider>
-                  <MainLayout>
-                    <RequirePermission resource="Dashboard" managementKey="Dashboard Management" action="Read">
-                      <DashboardRouter />
-                    </RequirePermission>
-                  </MainLayout>
-                </NotificationProvider>
-              </AdminProvider>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/events"
-          element={
-            <ProtectedRoute>
-              <AdminProvider>
-                <NotificationProvider>
-                  <MainLayout>
-                    <RequirePermission resource="Events" managementKey="Event Management" action="Read">
-                      <Event />
-                    </RequirePermission>
-                  </MainLayout>
-                </NotificationProvider>
-              </AdminProvider>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/schedule"
-          element={
-            <ProtectedRoute>
-              <AdminProvider>
-                <NotificationProvider>
-                  <MainLayout>
-                    <RequirePermission resource="Events" managementKey="Event Management" action="Read">
-                      <Schedule />
-                    </RequirePermission>
-                  </MainLayout>
-                </NotificationProvider>
-              </AdminProvider>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/chat"
-          element={
-            <ProtectedRoute>
-              <AdminProvider>
-                <NotificationProvider>
-                  <MainLayout>
-                    <RequirePermission resource="Events" managementKey="Event Management" action="Read">
-                      <ChatLayout />
-                    </RequirePermission>
-                  </MainLayout>
-                </NotificationProvider>
-              </AdminProvider>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/events/eventDetailPage"
-          element={
-            <ProtectedRoute>
-              <AdminProvider>
-                <NotificationProvider>
-                  <MainLayout>
-                    <EventDetailPage />
-                  </MainLayout>
-                </NotificationProvider>
-              </AdminProvider>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/events/eventDetailPage/tasks"
-          element={
-            <ProtectedRoute>
-              <AdminProvider>
-                <NotificationProvider>
-                  <MainLayout>
-                    <TasksDetail />
-                  </MainLayout>
-                </NotificationProvider>
-              </AdminProvider>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tasks/list"
-          element={
-            <ProtectedRoute>
-              <AdminProvider>
-                <NotificationProvider>
-                  <MainLayout>
-                    <TaskList />
-                  </MainLayout>
-                </NotificationProvider>
-              </AdminProvider>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/instagram"
-          element={
-            <ProtectedRoute>
-              <AdminProvider>
-                <NotificationProvider>
-                  <MainLayout>
-                    <Instagram />
-                  </MainLayout>
-                </NotificationProvider>
-              </AdminProvider>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminProvider>
-                <NotificationProvider>
-                  <MainLayout>
-                    <AdminDashboard />
-                  </MainLayout>
-                </NotificationProvider>
-              </AdminProvider>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/login"
-          element={
-            <ProtectedRoute>
-              <AdminProvider>
-                <NotificationProvider>
-                  <MainLayout>
-                    <AdminLogin />
-                  </MainLayout>
-                </NotificationProvider>
-              </AdminProvider>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/users"
-          element={
-            <ProtectedRoute>
-              <AdminProvider>
-                <NotificationProvider>
-                  <MainLayout>
-                    <AdminUsers />
-                  </MainLayout>
-                </NotificationProvider>
-              </AdminProvider>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/users/create"
-          element={
-            <ProtectedRoute>
-              <AdminProvider>
-                <NotificationProvider>
-                  <MainLayout>
-                    <CreateUser />
-                  </MainLayout>
-                </NotificationProvider>
-              </AdminProvider>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/users/:id/roles"
-          element={
-            <ProtectedRoute>
-              <AdminProvider>
-                <NotificationProvider>
-                  <MainLayout>
-                    <AssignRoles />
-                  </MainLayout>
-                </NotificationProvider>
-              </AdminProvider>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/roles"
-          element={
-            <ProtectedRoute>
-              <AdminProvider>
-                <NotificationProvider>
-                  <MainLayout>
-                    <AdminRoles />
-                  </MainLayout>
-                </NotificationProvider>
-              </AdminProvider>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/roles/create"
-          element={
-            <ProtectedRoute>
-              <AdminProvider>
-                <NotificationProvider>
-                  <MainLayout>
-                    <CreateRole />
-                  </MainLayout>
-                </NotificationProvider>
-              </AdminProvider>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/roles/:id/edit"
-          element={
-            <ProtectedRoute>
-              <AdminProvider>
-                <NotificationProvider>
-                  <MainLayout>
-                    <EditRole />
-                  </MainLayout>
-                </NotificationProvider>
-              </AdminProvider>
-            </ProtectedRoute>
-          }
-        />
-
+            }
+          />
         </Routes>
       </Router>
     </ErrorBoundary>

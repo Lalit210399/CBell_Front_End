@@ -153,9 +153,9 @@
 }
 
 .status-published {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #a3e4a3;
+  background: #E8DAEF; 
+  color: #5B2C6F;
+  border: 1px solid #a855f7ff;
 }
 
 .status-not-published {

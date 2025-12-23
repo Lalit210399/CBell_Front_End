@@ -352,6 +352,7 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
           <label>Specification</label>
           <CheckList
             initialItems={checklistData}
+            showCheckbox={true}
             onChecklistChange={handleChecklistChange}
             mode={mode}
             canEdit={true}

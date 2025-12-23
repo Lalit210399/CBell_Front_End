@@ -1,0 +1,248 @@
+/* CommonComponents/IAM/RolePermissionMatrix/RolePermissionMatrix.css */
+
+.role-permission-matrix {
+  width: 100%;
+  background: #fff;
+  border-radius: 8px;
+  /* padding: 20px; */
+}
+
+.role-permission-matrix.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.rpm-header {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #E5E5E5;
+}
+
+.rpm-instruction {
+  color: #777;
+  font-size: 14px;
+  margin: 0;
+}
+
+.rpm-empty {
+  text-align: center;
+  padding: 40px;
+  color: #777;
+}
+
+.rpm-empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.rpm-modules {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.rpm-module {
+  border: 1px solid #E5E5E5;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.rpm-module-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px;
+  background: #F5F5F5;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  user-select: none;
+}
+
+.rpm-module-header:hover {
+  background: #EBEBEB;
+}
+
+.rpm-chevron {
+  flex-shrink: 0;
+  color: #555;
+  transition: transform 0.2s;
+}
+
+.rpm-module-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.rpm-module-desc {
+  font-size: 13px;
+  color: #777;
+  margin-left: auto;
+}
+
+.rpm-features {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.rpm-feature {
+  border: 1px solid #E5E5E5;
+  border-radius: 6px;
+  padding: 15px;
+  background: #FAFAFA;
+}
+
+.rpm-feature-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.rpm-feature-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rpm-feature-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.rpm-feature-desc {
+  font-size: 12px;
+  color: #777;
+}
+
+.rpm-select-all {
+  padding: 6px 12px;
+  font-size: 13px;
+  border: 1px solid var(--theme-primary, #043E54);
+  background: #fff;
+  color: var(--theme-primary, #043E54);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.rpm-select-all:hover:not(:disabled) {
+  background: var(--theme-primary, #043E54);
+  color: #fff;
+}
+
+.rpm-select-all.all-selected {
+  background: var(--theme-primary, #043E54);
+  color: #fff;
+}
+
+.rpm-select-all.some-selected {
+  background: var(--theme-soft, #02968A);
+  border-color: var(--theme-soft, #02968A);
+  color: #fff;
+}
+
+.rpm-select-all:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rpm-permissions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.rpm-permission {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #E5E5E5;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.rpm-permission:hover:not(.disabled) {
+  border-color: var(--theme-primary, #043E54);
+  background: #F9FAFB;
+}
+
+.rpm-permission.granted {
+  border-color: var(--theme-primary, #043E54);
+  background: var(--theme-bg, #E7F7EA);
+}
+
+.rpm-permission.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rpm-permission input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--theme-primary, #043E54);
+  flex-shrink: 0;
+}
+
+.rpm-permission.disabled input[type="checkbox"] {
+  cursor: not-allowed;
+}
+
+.rpm-permission-label {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .role-permission-matrix {
+    padding: 15px;
+  }
+
+  .rpm-module-header {
+    padding: 12px;
+  }
+
+  .rpm-module-title {
+    font-size: 15px;
+  }
+
+  .rpm-module-desc {
+    display: none;
+  }
+
+  .rpm-features {
+    padding: 12px;
+  }
+
+  .rpm-feature {
+    padding: 12px;
+  }
+
+  .rpm-feature-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .rpm-select-all {
+    align-self: flex-start;
+  }
+
+  .rpm-permissions {
+    grid-template-columns: 1fr;
+  }
+}

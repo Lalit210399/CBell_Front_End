@@ -7,54 +7,54 @@ import CustomDropdown from "../Dropdown/CustomDropdown";
 import NotificationDropdown from "../NotificationDropdown/NotificationDropdown";
 import NotificationSideBar from "../NotificationDropdown/NotificationSidebar";
 import "./Navbar.css";
-
+ 
 function Navbar() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { 
-    user, 
-    permissions: userPermissions, 
-    scope, 
-    selectedOrganizationId, 
+  const {
+    user,
+    permissions: userPermissions,
+    scope,
+    selectedOrganizationId,
     handleScopeChange,
     resetUserState
   } = useUser();
   const [dropdownVisible, setDropdownVisible] = useState(false);
-
+ 
   const dropdownRef = useRef(null);
-
+ 
   const handleLogout = async () => {
     try {
       await logout(); // call backend logout (clear cookies)
-
+ 
       // ✅ clear frontend state
       localStorage.removeItem("user");
       localStorage.removeItem("permissions");
       localStorage.removeItem("scope");
       localStorage.removeItem("dashboard-selected-organization");
       resetUserState();
-
+ 
       // ✅ redirect after state cleared
       navigate("/login", { replace: true });
     } catch (error) {
       console.error("Logout failed:", error);
-
+ 
       // still force clear on failure
       localStorage.removeItem("user");
       localStorage.removeItem("permissions");
       localStorage.removeItem("scope");
       localStorage.removeItem("dashboard-selected-organization");
       resetUserState();
-
+ 
       navigate("/login", { replace: true });
     }
   };
-
+ 
   const toggleDropdown = () => {
     setDropdownVisible((prev) => !prev);
   };
-
+ 
   // ✅ Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -65,13 +65,13 @@ function Navbar() {
         setDropdownVisible(false);
       }
     };
-
+ 
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
+ 
   // Check permissions for each tab
   const hasDashboardPermission =
     userPermissions?.permissions?.Dashboard?.["Dashboard Management"]?.includes("Read") ?? false;
@@ -81,36 +81,71 @@ function Navbar() {
     userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
   const hasChatPermission =
     userPermissions?.permissions?.Events?.["Event Management"]?.includes("Read") ?? false;
-
+ 
+  const isSchedulePage = location.pathname === "/schedule";
+ 
+  const normalizedSelectedOrg = String(selectedOrganizationId || "").trim().toLowerCase();
+  const isAllOrganizationsSelected = normalizedSelectedOrg === "all" || normalizedSelectedOrg === "*";
+ 
   // Prepare scope options
-  const scopeOptions = scope?.accessibleOrganizations?.map((org) => ({
+  // NOTE: "All" is currently supported for Schedule only (uses /apis/event/hierarchy without orgId).
+  const orgOptions = scope?.accessibleOrganizations?.map((org) => ({
     label: org.data.organizationCode,
     value: org.id,
   })) || [];
-
-  const currentScopeLabel = scope?.accessibleOrganizations?.find(
-    (org) => org.id === selectedOrganizationId
-  )?.data.organizationCode || "Select Organization";
-
+ 
+  const scopeOptions = isSchedulePage
+    ? [{ label: "All", value: "all" }, ...orgOptions]
+    : orgOptions;
+ 
+  const currentScopeLabel = isAllOrganizationsSelected
+    ? "All"
+    : (scope?.accessibleOrganizations?.find(
+        (org) => String(org.id) === String(selectedOrganizationId)
+      )?.data.organizationCode || "Select Organization");
+ 
+  // If the user selected "All" on Schedule, reset when navigating elsewhere
+  // so other pages don't accidentally send "all" as an orgId.
+  useEffect(() => {
+    if (!isSchedulePage && isAllOrganizationsSelected && user?.organizationId) {
+      handleScopeChange(String(user.organizationId), location);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSchedulePage, isAllOrganizationsSelected, user?.organizationId]);
+ 
   // Generate user initials
   const getUserInitials = (firstName = "", lastName = "") => {
     const firstInitial = (firstName[0] || "").toUpperCase();
     const lastInitial = (lastName[0] || "").toUpperCase();
     return (firstInitial + lastInitial) || "U";
   };
-
+ 
   const userInitials = getUserInitials(user?.firstName, user?.lastName);
-
+ 
+  const resetAllScopeIfNeeded = () => {
+    if (isAllOrganizationsSelected && user?.organizationId) {
+      handleScopeChange(String(user.organizationId), location);
+    }
+  };
+ 
   return (
     <nav className="navbar">
       <div className="nav-links">
         {hasDashboardPermission && (
-          <Link to="/dashboard" className={location.pathname === "/dashboard" ? "active" : ""}>
+          <Link
+            to="/dashboard"
+            className={location.pathname === "/dashboard" ? "active" : ""}
+            onClick={resetAllScopeIfNeeded}
+          >
             Dashboard
           </Link>
         )}
         {hasEventsPermission && (
-          <Link to="/events" className={location.pathname.startsWith("/events") ? "active" : ""}>
+          <Link
+            to="/events"
+            className={location.pathname.startsWith("/events") ? "active" : ""}
+            onClick={resetAllScopeIfNeeded}
+          >
             Events
           </Link>
         )}
@@ -120,7 +155,12 @@ function Navbar() {
           </Link>
         )}
         {hasChatPermission && (
-          <Link to="/chat" className={location.pathname === "/chat" ? "active" : ""} style={{width:87, textAlign:'center'}}>
+          <Link
+            to="/chat"
+            className={location.pathname === "/chat" ? "active" : ""}
+            style={{width:87, textAlign:'center'}}
+            onClick={resetAllScopeIfNeeded}
+          >
             Chat
           </Link>
         )}
@@ -140,16 +180,16 @@ function Navbar() {
             />
           </div>
         </div>
-        
+       
         {/* Notification Bell */}
         <NotificationDropdown onViewAllNotifications={() => setIsSidebarOpen(true)}/>
-        <NotificationSideBar 
-        isOpen={isSidebarOpen} 
-        onClose={() => setIsSidebarOpen(false)} 
+        <NotificationSideBar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
       />
-        
+       
         <div className="user-info" ref={dropdownRef}>
-          
+         
           <div className="avatar-dropdown-wrapper">
             <div className="profile-trigger" onClick={toggleDropdown}>
               <div className="user-avatars user-avatar-initials">
@@ -171,7 +211,7 @@ function Navbar() {
                     <p className="profile-email">{user?.email}</p>
                   </div>
                 </div>
-                
+               
                 <div className="profile-details">
                   <div className="profile-detail-item">
                     <Building2 size={16} className="detail-icon" />
@@ -180,7 +220,7 @@ function Navbar() {
                       <span className="detail-value">{user?.organization?.name || 'N/A'}</span>
                     </div>
                   </div>
-                  
+                 
                   <div className="profile-detail-item">
                     <Shield size={16} className="detail-icon" />
                     <div className="detail-content">
@@ -188,9 +228,9 @@ function Navbar() {
                       <span className="detail-value">{user?.roles?.[0]?.name || user?.roles?.[0]?.displayName || 'User'}</span>
                     </div>
                   </div>
-                  
+                 
                
-                  
+                 
                   {user?.organizationId && (
                     <div className="profile-detail-item">
                       <Building2 size={16} className="detail-icon" />
@@ -201,7 +241,7 @@ function Navbar() {
                     </div>
                   )}
                 </div>
-                
+               
                 <div className="profile-actions">
                   <button className="logout-button" onClick={handleLogout}>
                     <LogOut size={16} />
@@ -216,5 +256,7 @@ function Navbar() {
     </nav>
   );
 }
-
+ 
 export default Navbar;
+ 
+ 

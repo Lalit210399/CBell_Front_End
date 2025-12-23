@@ -85,7 +85,7 @@
 
 .sidebar-events-list {
   flex: 1;
-  overflow-y: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -186,10 +186,10 @@
 }
 
 .calendar-main {
-  flex: 1;
+  flex: 1 1;
   display: flex;
   flex-direction: column;
-  padding: 20px 30px;
+  padding: 10px 30px;
   overflow: hidden;
   height: calc(100vh - 80px);
 }

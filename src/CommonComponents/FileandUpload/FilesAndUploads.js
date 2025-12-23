@@ -226,6 +226,27 @@ const FilesUploads = ({
            file.publishedTo.some(p => p.isPublished === true);
   };
 
+  // Merge parent `files` and local `uploadedFiles` into a deduplicated array
+  const getMergedFiles = () => {
+    const map = new Map();
+    // prefer uploadedFiles entries for newest metadata
+    (files || []).forEach(f => {
+      if (f && f.documentId) map.set(f.documentId, f);
+    });
+    (uploadedFiles || []).forEach(f => {
+      if (f && f.documentId) map.set(f.documentId, f);
+    });
+    // If no documentId, include by name fallback ensuring uniqueness
+    (files || []).concat(uploadedFiles || []).forEach(f => {
+      if (!f) return;
+      if (!f.documentId) {
+        const key = f.name || f.src || JSON.stringify(f);
+        if (!map.has(key)) map.set(key, f);
+      }
+    });
+    return Array.from(map.values());
+  };
+
   useEffect(() => {
     // Update refs
     filesRef.current = files;
@@ -815,12 +836,12 @@ const FilesUploads = ({
       <div className="files-container">
         <div className="files-header">
           {/* <h3>Files</h3> */}
-          {showFileRequirementWarning && [...files, ...uploadedFiles].length === 0 && (
+          {showFileRequirementWarning && getMergedFiles().length === 0 && (
             <div className="file-requirement-warning">
               <span className="warning-text">⚠️ Files required for approval submission</span>
             </div>
           )}
-          {[...files, ...uploadedFiles].length > 0 && !hasApprovedOrPublishedFile && canUploadFiles() && (
+          {getMergedFiles().length > 0 && !hasApprovedOrPublishedFile && canUploadFiles() && (
             <label className="upload-button">
               {isUploading ? <Loader2 className="animate-spin" size={20} /> : 'Upload'}
               <input
@@ -837,7 +858,7 @@ const FilesUploads = ({
 
         {isUploading || externalLoading ? (
           <SkeletonPreviewGrid />
-        ) : [...files, ...uploadedFiles].length === 0 ? (
+        ) : getMergedFiles().length === 0 ? (
           <div className="empty-files-state">
             <div className="empty-files-illustration">
               <FileIcon size={64} className="empty-icon" />
@@ -880,7 +901,7 @@ const FilesUploads = ({
           <div className="files-sections">
             {/* Work Submissions Section - ALWAYS ON TOP */}
             {(() => {
-              const workFiles = [...files, ...uploadedFiles]
+              const workFiles = getMergedFiles()
                 .filter(file => isWorkSubmission(file))
                 .filter(file => !deletedFileIds.includes(file.documentId))
                 .sort((a, b) => new Date(b.uploadDate || b.createdAt || 0) - new Date(a.uploadDate || a.createdAt || 0));
@@ -905,7 +926,7 @@ const FilesUploads = ({
 
             {/* Reference Files Section - ALWAYS ON BOTTOM */}
             {(() => {
-              const referenceFiles = [...files, ...uploadedFiles]
+              const referenceFiles = getMergedFiles()
                 .filter(file => isReferenceFile(file))
                 .filter(file => !deletedFileIds.includes(file.documentId))
                 .sort((a, b) => new Date(b.uploadDate || b.createdAt || 0) - new Date(a.uploadDate || a.createdAt || 0));
@@ -930,7 +951,7 @@ const FilesUploads = ({
 
             {/* Other Files Section */}
             {(() => {
-              const otherFiles = [...files, ...uploadedFiles]
+              const otherFiles = getMergedFiles()
                 .filter(file => !isWorkSubmission(file) && !isReferenceFile(file))
                 .filter(file => !deletedFileIds.includes(file.documentId))
                 .sort((a, b) => new Date(b.uploadDate || b.createdAt || 0) - new Date(a.uploadDate || a.createdAt || 0));
