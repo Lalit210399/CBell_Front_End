@@ -4,6 +4,21 @@ import * as EmailGroupsAPI from '../Services/EmailGroups';
 
 const EmailGroupsContext = createContext();
 
+const normalizeGroupsList = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (!payload) return [];
+
+  // Common API wrapper shapes
+  if (Array.isArray(payload.emailGroups)) return payload.emailGroups;
+  if (Array.isArray(payload.groups)) return payload.groups;
+  if (Array.isArray(payload.data)) return payload.data;
+  if (Array.isArray(payload.items)) return payload.items;
+  if (Array.isArray(payload.results)) return payload.results;
+  if (Array.isArray(payload.value)) return payload.value;
+
+  return [];
+};
+
 export const EmailGroupsProvider = ({ children }) => {
   const { user } = useUser();
   const [emailGroups, setEmailGroups] = useState([]);
@@ -19,8 +34,9 @@ export const EmailGroupsProvider = ({ children }) => {
     
     try {
       const groups = await EmailGroupsAPI.getEmailGroups(organizationId);
-      setEmailGroups(groups || []);
-      return groups;
+      const normalized = normalizeGroupsList(groups);
+      setEmailGroups(normalized);
+      return normalized;
     } catch (err) {
       console.error('Error fetching email groups:', err);
       setError(err.message);
@@ -47,10 +63,58 @@ export const EmailGroupsProvider = ({ children }) => {
         ),
         userId: user?.userId
       };
+
+      // Ensure emails exist in common/master list so backend can convert → memberEmailIds.
+      if (groupDataWithUser.organizationId && groupDataWithUser.members.length > 0) {
+        await Promise.all(
+          groupDataWithUser.members
+            .filter((e) => typeof e === 'string' && e.length > 0)
+            .map((email) =>
+              EmailGroupsAPI.addCommonEmail({
+                email,
+                organizationId: groupDataWithUser.organizationId,
+              }).catch(() => null)
+            )
+        );
+      }
       
       const newGroup = await EmailGroupsAPI.createEmailGroup(groupDataWithUser);
-      setEmailGroups(prev => [...prev, newGroup]);
-      return newGroup;
+
+      // If backend still returns the group but doesn't populate memberEmailIds yet,
+      // do a best-effort update pass (some implementations populate IDs on update).
+      if (
+        newGroup?.id &&
+        Array.isArray(groupDataWithUser.members) &&
+        groupDataWithUser.members.length > 0 &&
+        (newGroup.memberEmailIds?.length ?? 0) === 0 &&
+        groupDataWithUser.organizationId
+      ) {
+        try {
+          await EmailGroupsAPI.updateEmailGroup(newGroup.id, {
+            name: groupDataWithUser.name,
+            memberEmails: groupDataWithUser.members,
+            organizationId: groupDataWithUser.organizationId,
+          });
+        } catch (e) {
+          // Best-effort only; ignore and continue.
+          console.warn('Post-create member resolution failed:', e?.message || e);
+        }
+      }
+
+      // Prefer a re-fetch after create so we always get latest memberEmailIds.
+      if (groupDataWithUser.organizationId) {
+        const groups = await EmailGroupsAPI.getEmailGroups(groupDataWithUser.organizationId);
+        const normalized = normalizeGroupsList(groups);
+        setEmailGroups(normalized);
+        return normalized.find(g => g.id === newGroup?.id) || newGroup;
+      }
+
+      if (newGroup) {
+        setEmailGroups(prev => [...prev, newGroup]);
+        return newGroup;
+      }
+
+      return null;
     } catch (err) {
       console.error('Error creating email group:', err);
       setError(err.message);
@@ -75,15 +139,52 @@ export const EmailGroupsProvider = ({ children }) => {
           typeof email === 'string' ? email.trim().toLowerCase() : email
         )
       };
+
+      // Ensure emails exist in common/master list before updating.
+      if (normalizedData.organizationId && (normalizedData.members || []).length > 0) {
+        await Promise.all(
+          (normalizedData.members || [])
+            .filter((e) => typeof e === 'string' && e.length > 0)
+            .map((email) =>
+              EmailGroupsAPI.addCommonEmail({
+                email,
+                organizationId: normalizedData.organizationId,
+              }).catch(() => null)
+            )
+        );
+      }
       
-      await EmailGroupsAPI.updateEmailGroup(groupId, normalizedData);
-      
-      // Update local state
+      const updatedGroup = await EmailGroupsAPI.updateEmailGroup(groupId, normalizedData);
+
+      // Best case: backend returns the updated group (with memberEmailIds).
+      if (updatedGroup) {
+        setEmailGroups(prev =>
+          prev.map((group) => (group.id === groupId ? updatedGroup : group))
+        );
+        return updatedGroup;
+      }
+
+      // If backend returns 204/no body, re-fetch to get the new memberEmailIds.
+      if (normalizedData.organizationId) {
+        const groups = await EmailGroupsAPI.getEmailGroups(normalizedData.organizationId);
+        const normalizedGroups = normalizeGroupsList(groups);
+        setEmailGroups(normalizedGroups);
+        return normalizedGroups.find(g => g.id === groupId) || null;
+      }
+
+      // As a last resort, only update safe fields locally (avoid storing email arrays globally).
       setEmailGroups(prev =>
         prev.map((group) =>
-          group.id === groupId ? { ...group, ...normalizedData } : group
+          group.id === groupId
+            ? {
+                ...group,
+                ...(typeof normalizedData.name === 'string' ? { name: normalizedData.name } : {}),
+              }
+            : group
         )
       );
+
+      return null;
     } catch (err) {
       console.error('Error updating email group:', err);
       setError(err.message);
@@ -105,6 +206,7 @@ export const EmailGroupsProvider = ({ children }) => {
       
       // Update local state
       setEmailGroups(prev => prev.filter((group) => group.id !== groupId));
+      return true;
     } catch (err) {
       console.error('Error deleting email group:', err);
       setError(err.message);

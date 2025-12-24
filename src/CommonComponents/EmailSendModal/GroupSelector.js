@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
 import { Users, X, ChevronRight } from 'lucide-react';
 import { useEmailGroups } from '../../Context/EmailGroupsContext';
+import { useUser } from '../../Context/UserContext';
 import './GroupSelector.css';
 
 const GroupSelector = ({ onClose, onSelectGroups }) => {
-  const { emailGroups } = useEmailGroups();
+  const { emailGroups, resolveRecipients } = useEmailGroups();
+  const { user, selectedOrganizationId } = useUser();
   const [selectedGroups, setSelectedGroups] = useState([]);
+  const [error, setError] = useState('');
+  const [isResolving, setIsResolving] = useState(false);
+
+  const getGroupMemberCount = (group) => {
+    return group?.memberEmailIds?.length ?? group?.members?.length ?? 0;
+  };
 
   const toggleGroup = (groupId) => {
     setSelectedGroups((prev) =>
@@ -16,23 +24,36 @@ const GroupSelector = ({ onClose, onSelectGroups }) => {
   };
 
   const handleAddToField = (field) => {
-    const selectedGroupObjects = emailGroups.filter((group) =>
-      selectedGroups.includes(group.id)
-    );
+    setError('');
 
-    const allEmails = selectedGroupObjects.flatMap((group) => group.members);
-    const uniqueEmails = [...new Set(allEmails)]; // Remove duplicates
+    const organizationId = selectedOrganizationId || user?.organizationId;
+    if (!organizationId) {
+      setError('No organization selected.');
+      return;
+    }
 
-    onSelectGroups(uniqueEmails, field);
-    onClose();
+    setIsResolving(true);
+    resolveRecipients(selectedGroups, [], organizationId)
+      .then((result) => {
+        const uniqueEmails = result?.uniqueEmails || [];
+        onSelectGroups(uniqueEmails, field);
+        onClose();
+      })
+      .catch((err) => {
+        setError(err?.message || 'Failed to resolve group emails');
+      })
+      .finally(() => {
+        setIsResolving(false);
+      });
   };
 
   const getTotalMembers = () => {
     const selectedGroupObjects = emailGroups.filter((group) =>
       selectedGroups.includes(group.id)
     );
-    const allEmails = selectedGroupObjects.flatMap((group) => group.members);
-    return new Set(allEmails).size;
+
+    // Without resolving, we can only estimate by summing counts.
+    return selectedGroupObjects.reduce((sum, group) => sum + getGroupMemberCount(group), 0);
   };
 
   return (
@@ -50,6 +71,11 @@ const GroupSelector = ({ onClose, onSelectGroups }) => {
         </div>
 
         <div className="gs-body">
+          {error && (
+            <div className="gs-empty-state">
+              <p>{error}</p>
+            </div>
+          )}
           {emailGroups.length === 0 ? (
             <div className="gs-empty-state">
               <Users size={48} className="gs-empty-icon" />
@@ -77,8 +103,8 @@ const GroupSelector = ({ onClose, onSelectGroups }) => {
                   <div className="gs-group-info">
                     <div className="gs-group-name">{group.name}</div>
                     <div className="gs-group-count">
-                      {group.members.length}{' '}
-                      {group.members.length === 1 ? 'member' : 'members'}
+                      {getGroupMemberCount(group)}{' '}
+                      {getGroupMemberCount(group) === 1 ? 'member' : 'members'}
                     </div>
                   </div>
                   <ChevronRight size={16} className="gs-arrow" />
@@ -106,18 +132,21 @@ const GroupSelector = ({ onClose, onSelectGroups }) => {
                 <button
                   className="gs-btn gs-btn-primary"
                   onClick={() => handleAddToField('to')}
+                  disabled={isResolving}
                 >
-                  Add to To
+                  {isResolving ? 'Resolving...' : 'Add to To'}
                 </button>
                 <button
                   className="gs-btn gs-btn-outline"
                   onClick={() => handleAddToField('cc')}
+                  disabled={isResolving}
                 >
                   Add to Cc
                 </button>
                 <button
                   className="gs-btn gs-btn-outline"
                   onClick={() => handleAddToField('bcc')}
+                  disabled={isResolving}
                 >
                   Add to Bcc
                 </button>

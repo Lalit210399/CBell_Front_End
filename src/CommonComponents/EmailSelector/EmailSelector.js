@@ -21,6 +21,10 @@ const EmailSelector = ({
 }) => {
   const { emailGroups, fetchEmailGroups, resolveRecipients } = useEmailGroups();
   const { user, selectedOrganizationId } = useUser();
+
+  const getGroupMemberCount = (group) => {
+    return group?.memberEmailIds?.length ?? group?.members?.length ?? 0;
+  };
   
   const [localGroupIds, setLocalGroupIds] = useState(selectedGroupIds);
   const [localEmails, setLocalEmails] = useState(individualEmails);
@@ -147,7 +151,7 @@ const EmailSelector = ({
     
     // Estimate count before resolution
     const groupMembersCount = getSelectedGroups().reduce(
-      (sum, group) => sum + (group.members?.length || 0), 
+      (sum, group) => sum + getGroupMemberCount(group),
       0
     );
     return groupMembersCount + localEmails.length;
@@ -162,7 +166,7 @@ const EmailSelector = ({
           <div key={group.id} className="es-chip es-group-chip">
             <Users size={14} />
             <span>{group.name}</span>
-            <span className="es-chip-count">({group.members?.length || 0})</span>
+            <span className="es-chip-count">({getGroupMemberCount(group)})</span>
             {!disabled && (
               <button
                 type="button"
@@ -244,7 +248,7 @@ const EmailSelector = ({
                       <div className="es-dropdown-item-content">
                         <span className="es-dropdown-item-name">{group.name}</span>
                         <span className="es-dropdown-item-count">
-                          {group.members?.length || 0} members
+                          {getGroupMemberCount(group)} members
                         </span>
                       </div>
                     </label>

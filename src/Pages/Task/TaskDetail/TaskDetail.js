@@ -43,6 +43,7 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
     { label: "Placards / Poster", value: "Placards / Poster" },
     { label: "Invitation/Envelope", value: "Invitation/Envelope" },
     { label: "certificates/trophies", value: "certificates/trophies" },
+    { label: "Reel", value: "Reel" },
   ], []);
 
   const isDisabled = mode === "view";

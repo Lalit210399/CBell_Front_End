@@ -38,8 +38,9 @@ const EmailGroupsManager = () => {
   }, [selectedOrganizationId, user?.organizationId, fetchEmailGroups]);
 
   // Filter groups based on search query
-  const filteredGroups = emailGroups.filter((group) =>
-    group.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const safeGroups = Array.isArray(emailGroups) ? emailGroups : [];
+  const filteredGroups = safeGroups.filter((group) =>
+    (group?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleCreateGroup = async (newGroupData) => {
@@ -64,14 +65,15 @@ const EmailGroupsManager = () => {
       setLocalError(null);
       const organizationId = selectedOrganizationId || user?.organizationId;
       
-      await updateGroup(updatedGroup.id, {
+      const savedGroup = await updateGroup(updatedGroup.id, {
         name: updatedGroup.name,
+        // Frontend still sends emails; backend converts them to IDs.
         members: updatedGroup.members,
         organizationId: organizationId
       });
       
-      // Update selected group to reflect changes
-      setSelectedGroup(updatedGroup);
+      // Keep selected group in sync (backend group likely contains memberEmailIds)
+      setSelectedGroup(savedGroup || updatedGroup);
     } catch (err) {
       console.error('Error updating group:', err);
       setLocalError(err.message || 'Failed to update group. Please try again.');
@@ -172,6 +174,7 @@ const EmailGroupsManager = () => {
           </div>
         ) : (
           filteredGroups.map((group) => (
+            // New backend returns memberEmailIds; older data may still have members.
             <div
               key={group.id}
               className="egm-group-card"
@@ -183,8 +186,8 @@ const EmailGroupsManager = () => {
               <div className="group-card-content">
                 <h3 className="group-card-title">{group.name}</h3>
                 <p className="group-card-count">
-                  {group.members?.length || 0}{' '}
-                  {(group.members?.length || 0) === 1 ? 'member' : 'members'}
+                  {(group.memberEmailIds?.length ?? group.members?.length ?? 0)}{' '}
+                  {(group.memberEmailIds?.length ?? group.members?.length ?? 0) === 1 ? 'member' : 'members'}
                 </p>
               </div>
               <div className="group-card-arrow">

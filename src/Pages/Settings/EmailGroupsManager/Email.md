@@ -1147,7 +1147,7 @@ const validateGroup = (groupName, members) => {
 
 | Issue | Solution |
 |-------|----------|
-| 404 on `/apis/api/email/groups` | Use `/apis/email/groups` (no `/api` after proxy) |
+| 404 on `/apis/apis/email/groups` | Use `/apis/email/groups` (no `/api` after proxy) |
 | 400 "Id field is required" | Don't send `id` on create; let backend generate it |
 | FormData not sending files | Don't set `Content-Type` header for FormData |
 | Token not sent | Ensure `localStorage.getItem('authToken')` works; check localStorage key name |
