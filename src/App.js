@@ -23,7 +23,8 @@ import ErrorBoundary from "./CommonComponents/ErrorBoundary";
 import ChatLayout from "./Pages/Chat/NewChatLayout";
 import GuestInviteValidationPage from "./Pages/Guest/GuestInviteValidation";
 import GuestTaskReviewPage from "./Pages/Guest/GuestTaskReview";
-import Settings from "./Pages/Settings/Settings"; 
+import Settings from "./Pages/Settings/Settings";
+import FileManagerPage from "./Pages/FileManagerPage";
 
 // Component to render appropriate dashboard based on user role
 const DashboardRouter = () => {
@@ -118,15 +119,22 @@ function App() {
                         }
                       />
                       <Route
-                      path="/settings"
-                      element={<Settings />}
-                    />
-                    {/* <Route path="/events/stepForm" element={<StepForm />} /> */}
+                        path="/file-manager"
+                        element={
+                          <RequirePermission
+                            resource="Events"
+                            managementKey="Event Management"
+                            action="Read"
+                          >
+                            <FileManagerPage />
+                          </RequirePermission>
+                        }
+                      />
                       <Route
-                      path="/settings"
-                      element={<Settings />}
-                    />
-                    {/* <Route path="/events/stepForm" element={<StepForm />} /> */}
+                        path="/settings"
+                        element={<Settings />}
+                      />
+                      {/* <Route path="/events/stepForm" element={<StepForm />} /> */}
                       {/* <Route path="/dashboard/stepForm" element={<StepForm />} /> */}
                       {/* <Route path="/schedule/stepForm" element={<StepForm />} /> */}
                       <Route

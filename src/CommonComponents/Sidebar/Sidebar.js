@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, Calendar, Clock, Settings, MessageCircleMore } from "lucide-react";
+import { LayoutGrid, Calendar, Clock, Settings, MessageCircleMore, FolderKanban } from "lucide-react";
 import { useUser } from "../../Context/UserContext";
 import "./Sidebar.css";
 
@@ -76,6 +76,18 @@ function Sidebar() {
             </Link>
           </li>
         )}
+        <li>
+          <Link
+            to="/file-manager"
+            className={`menu-item ${location.pathname === "/file-manager" ? "active" : ""}`}
+            aria-label="File Manager"
+            title="File Manager"
+          >
+            <div className="tooltip" data-tooltip="File Manager">
+              <FolderKanban size={24} />
+            </div>
+          </Link>
+        </li>
       </ul>
       <ul className="menu menu-bottom">
         {!isDesigner && (
