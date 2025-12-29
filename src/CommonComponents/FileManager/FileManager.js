@@ -36,55 +36,8 @@ const FileManager = () => {
   const [expandedTasks, setExpandedTasks] = useState({});
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
   const [previewModal, setPreviewModal] = useState({ open: false, file: null });
-
-  // API data states
-  const [events, setEvents] = useState([]);
-  const [tasks, setTasks] = useState([]);
-  const [files, setFiles] = useState([
-    {
-      id: 1,
-      name: 'sample-image.jpg',
-      type: 'image',
-      url: 'https://via.placeholder.com/300x200',
-      category: 'work',
-      uploadedBy: 'User1',
-      uploadDate: '2023-10-01',
-      eventId: 1,
-      taskId: 1
-    },
-    {
-      id: 2,
-      name: 'sample-video.mp4',
-      type: 'video',
-      url: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-      category: 'reference',
-      uploadedBy: 'User2',
-      uploadDate: '2023-10-02',
-      eventId: 1,
-      taskId: null
-    },
-    {
-      id: 3,
-      name: 'sample-audio.mp3',
-      type: 'audio',
-      url: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
-      category: 'work',
-      uploadedBy: 'User3',
-      uploadDate: '2023-10-03',
-      eventId: 2,
-      taskId: 2
-    },
-    {
-      id: 4,
-      name: 'document.pdf',
-      type: 'pdf',
-      category: 'reference',
-      uploadedBy: 'User4',
-      uploadDate: '2023-10-04',
-      eventId: 2,
-      taskId: 2
-    }
-  ]);
+  // API data states - only files (Document Details API)
+  const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
 
   // Fetch data from APIs
@@ -92,89 +45,19 @@ const FileManager = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch events
-        const eventsResponse = await fetch('/apis/events', {
+        // Only call Document Details API
+        const filesResponse = await fetch('apis/document-details/task/692e76a02b1c5dc277b62d88', {
           headers: { 'ngrok-skip-browser-warning': '1' }
         });
-        if (eventsResponse.ok) {
-          const eventsData = await eventsResponse.json();
-          setEvents(eventsData);
+        if (filesResponse.ok) {
+          const filesData = await filesResponse.json();
+          setFiles(filesData || []);
         } else {
-          console.error('Failed to fetch events');
-          setEvents([]);
+          console.error('Failed to fetch document details');
+          setFiles([]);
         }
-
-        // Fetch tasks
-        const tasksResponse = await fetch('/apis/tasks', {
-          headers: { 'ngrok-skip-browser-warning': '1' }
-        });
-        if (tasksResponse.ok) {
-          const tasksData = await tasksResponse.json();
-          setTasks(tasksData);
-        } else {
-          console.error('Failed to fetch tasks');
-          setTasks([]);
-        }
-
-        // Fetch files based on active tab
-        let fetchedFiles = [];
-        if (activeTab === 'all') {
-          // Fetch all files
-          const filesResponse = await fetch('/apis/document-details', {
-            headers: { 'ngrok-skip-browser-warning': '1' }
-          });
-          if (filesResponse.ok) {
-            fetchedFiles = await filesResponse.json();
-          } else {
-            console.error('Failed to fetch all files');
-            fetchedFiles = [];
-          }
-        } else if (activeTab === 'byEvent') {
-          // Fetch event files - get files from all events
-          const eventsData = events.length > 0 ? events : [];
-          const eventFilesPromises = eventsData.map(async (event) => {
-            try {
-              const response = await fetch(`/apis/document-details/event/${event.id}?filter=event`, {
-                headers: { 'ngrok-skip-browser-warning': '1' }
-              });
-              if (response.ok) {
-                const eventFiles = await response.json();
-                return eventFiles.map(file => ({ ...file, eventId: event.id, taskId: null }));
-              }
-              return [];
-            } catch (error) {
-              console.error(`Error fetching files for event ${event.id}:`, error);
-              return [];
-            }
-          });
-          const eventFilesArrays = await Promise.all(eventFilesPromises);
-          fetchedFiles = eventFilesArrays.flat();
-        } else if (activeTab === 'byTask') {
-          // Fetch task files - get files from all tasks
-          const tasksData = tasks.length > 0 ? tasks : [];
-          const taskFilesPromises = tasksData.map(async (task) => {
-            try {
-              const response = await fetch(`/apis/document-details/task/${task.id}?filter=task`, {
-                headers: { 'ngrok-skip-browser-warning': '1' }
-              });
-              if (response.ok) {
-                const taskFiles = await response.json();
-                return taskFiles.map(file => ({ ...file, eventId: task.eventId, taskId: task.id }));
-              }
-              return [];
-            } catch (error) {
-              console.error(`Error fetching files for task ${task.id}:`, error);
-              return [];
-            }
-          });
-          const taskFilesArrays = await Promise.all(taskFilesPromises);
-          fetchedFiles = taskFilesArrays.flat();
-        }
-        setFiles(fetchedFiles);
       } catch (error) {
-        console.error('Error fetching data:', error);
-        setEvents([]);
-        setTasks([]);
+        console.error('Error fetching document details:', error);
         setFiles([]);
       } finally {
         setLoading(false);
@@ -182,12 +65,26 @@ const FileManager = () => {
     };
 
     fetchData();
-  }, [activeTab, events, tasks]);
+  }, [activeTab]);
 
   // Button handlers
-  const handleViewFile = (file) => {
-    console.log('Viewing file:', file.name);
-    // In a real app, this would open the file in a viewer or download it
+  const handleViewFile = async (file) => {
+    try {
+      // Use only Document View API to fetch the file content
+      const response = await fetch(`/apis/document-view/${getFileId(file)}`, {
+        headers: { 'ngrok-skip-browser-warning': '1' }
+      });
+      if (!response.ok) {
+        console.error('Failed to fetch document view for', getFileId(file));
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setPreviewModal({ open: true, file: { ...file, url } });
+    } catch (error) {
+      console.error('Error fetching document view:', error);
+    }
   };
 
   const handleDownloadFile = (file) => {
@@ -200,11 +97,17 @@ const FileManager = () => {
     // In a real app, this would open a dropdown menu
   };
 
+  const getFileName = (file) => (file && (file.name || file.filename || ''));
+  const getFileId = (file) => (file && (file.documentId || file.id || ''));
+
   const handlePreviewFile = (file) => {
     setPreviewModal({ open: true, file });
   };
 
   const closePreviewModal = () => {
+    if (previewModal.file && previewModal.file.url) {
+      try { URL.revokeObjectURL(previewModal.file.url); } catch (e) {}
+    }
     setPreviewModal({ open: false, file: null });
   };
 
@@ -261,14 +164,36 @@ const FileManager = () => {
 
   const filteredFiles = useMemo(() => {
     return files.filter(file => {
-      const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesEvent = !selectedEvent || file.eventId.toString() === selectedEvent;
-      const matchesTask = !selectedTask || file.taskId.toString() === selectedTask;
+      const name = (file && (file.name || file.filename || ''));
+      const matchesSearch = name.toString().toLowerCase().includes((searchTerm || '').toLowerCase());
+      const matchesEvent = !selectedEvent || (file.eventId && file.eventId.toString() === selectedEvent);
+      const matchesTask = !selectedTask || (file.taskId && file.taskId.toString() === selectedTask);
       const matchesCategory = !selectedCategory || file.category === selectedCategory;
       const matchesType = !selectedType || file.type === selectedType;
       return matchesSearch && matchesEvent && matchesTask && matchesCategory && matchesType;
     });
   }, [files, searchTerm, selectedEvent, selectedTask, selectedCategory, selectedType]);
+
+  // Derive unique events and tasks from files metadata (no separate events/tasks APIs)
+  const uniqueEvents = useMemo(() => {
+    const map = new Map();
+    files.forEach(f => {
+      if (f.eventId) {
+        map.set(f.eventId, { id: f.eventId, name: f.eventName || `Event ${f.eventId}` });
+      }
+    });
+    return Array.from(map.values());
+  }, [files]);
+
+  const uniqueTasks = useMemo(() => {
+    const map = new Map();
+    files.forEach(f => {
+      if (f.taskId) {
+        map.set(f.taskId, { id: f.taskId, name: f.taskName || `Task ${f.taskId}` });
+      }
+    });
+    return Array.from(map.values());
+  }, [files]);
 
   const renderAllFiles = () => {
     if (viewMode === 'grid') {
@@ -278,15 +203,15 @@ const FileManager = () => {
             <div className="no-files">No files found</div>
           ) : (
             filteredFiles.map(file => (
-              <div key={file.id} className="file-card">
+              <div key={getFileId(file)} className="file-card">
                 <div className="file-card-header">
                   <div className="file-card-preview">
                     {getFilePreview(file)}
                   </div>
                   <div className="file-card-info">
-                    <div className="file-card-name">{file.name}</div>
+                    <div className="file-card-name">{getFileName(file)}</div>
                     <div className="file-card-meta">
-                      <div>{events.find(e => e.id === file.eventId)?.name} - {tasks.find(t => t.id === file.taskId)?.name}</div>
+                      <div>{(file.eventName || (file.eventId ? `Event ${file.eventId}` : ''))} - {(file.taskName || (file.taskId ? `Task ${file.taskId}` : ''))}</div>
                       <div>{file.category === 'work' ? 'Work' : 'Reference'}</div>
                     </div>
                   </div>
@@ -320,11 +245,11 @@ const FileManager = () => {
             <div className="no-files">No files found</div>
           ) : (
             filteredFiles.map(file => (
-              <div key={file.id} className="file-item">
+              <div key={getFileId(file)} className="file-item">
                 <div className="file-icon">{getFilePreview(file)}</div>
-                <div className="file-name">{file.name}</div>
+                <div className="file-name">{getFileName(file)}</div>
                 <div className="file-entity">
-                  {events.find(e => e.id === file.eventId)?.name} - {tasks.find(t => t.id === file.taskId)?.name}
+                  {(file.eventName || (file.eventId ? `Event ${file.eventId}` : ''))} - {(file.taskName || (file.taskId ? `Task ${file.taskId}` : ''))}
                 </div>
                 <div className="file-category">
                   {file.category === 'work' ? <Wrench size={16} /> : <BookOpen size={16} />}
@@ -347,34 +272,24 @@ const FileManager = () => {
 
   const renderByEvent = () => {
     const groupedByEvent = filteredFiles.reduce((acc, file) => {
-      const event = events.find(e => e.id === file.eventId);
-      if (event) {
-        if (!acc[event.id]) {
-          acc[event.id] = {
-            event,
-            eventFiles: [],
-            tasks: {}
-          };
-        }
-
-        if (file.taskId === null) {
-          // Event-level file
-          acc[event.id].eventFiles.push(file);
-        } else {
-          // Task-level file
-          const task = tasks.find(t => t.id === file.taskId);
-          if (task) {
-            if (!acc[event.id].tasks[task.id]) {
-              acc[event.id].tasks[task.id] = { task, workFiles: [], referenceFiles: [] };
-            }
-            if (file.category === 'work') {
-              acc[event.id].tasks[task.id].workFiles.push(file);
-            } else {
-              acc[event.id].tasks[task.id].referenceFiles.push(file);
-            }
-          }
-        }
+      const eventId = file.eventId || 'no-event';
+      if (!acc[eventId]) {
+        acc[eventId] = {
+          event: { id: eventId, name: file.eventName || (file.eventId ? `Event ${file.eventId}` : 'Unspecified') },
+          eventFiles: [],
+          tasks: {}
+        };
       }
+
+      if (!file.taskId) {
+        acc[eventId].eventFiles.push(file);
+      } else {
+        const taskId = file.taskId;
+        if (!acc[eventId].tasks[taskId]) acc[eventId].tasks[taskId] = { task: { id: taskId, name: file.taskName || `Task ${taskId}` }, workFiles: [], referenceFiles: [] };
+        if (file.category === 'work') acc[eventId].tasks[taskId].workFiles.push(file);
+        else acc[eventId].tasks[taskId].referenceFiles.push(file);
+      }
+
       return acc;
     }, {});
 
@@ -402,13 +317,13 @@ const FileManager = () => {
                     {viewMode === 'grid' ? (
                       <div className="files-grid">
                         {eventFiles.map(file => (
-                          <div key={file.id} className="file-card">
+                          <div key={getFileId(file)} className="file-card">
                             <div className="file-card-header">
                             <div className="file-card-preview">
                                 {getFilePreview(file)}
                               </div>
                               <div className="file-card-info">
-                                <div className="file-card-name">{file.name}</div>
+                                <div className="file-card-name">{getFileName(file)}</div>
                                 <div className="file-card-meta">
                                   <div>{file.category === 'work' ? 'Work' : 'Reference'}</div>
                                 </div>
@@ -437,9 +352,9 @@ const FileManager = () => {
                     ) : (
                       <div className="file-list">
                         {eventFiles.map(file => (
-                          <div key={file.id} className="file-item">
+                          <div key={getFileId(file)} className="file-item">
                             <div className="file-icon">{getFilePreview(file)}</div>
-                            <div className="file-name">{file.name}</div>
+                            <div className="file-name">{getFileName(file)}</div>
                             <div className="file-category">
                               {file.category === 'work' ? <Wrench size={16} /> : <BookOpen size={16} />}
                               {file.category}
@@ -479,13 +394,13 @@ const FileManager = () => {
                           {viewMode === 'grid' ? (
                             <div className="files-grid">
                               {workFiles.map(file => (
-                                <div key={file.id} className="file-card">
+                                <div key={getFileId(file)} className="file-card">
                                   <div className="file-card-header">
                                     <div className="file-card-preview">
                                       {getFilePreview(file)}
                                     </div>
                                     <div className="file-card-info">
-                                      <div className="file-card-name">{file.name}</div>
+                                      <div className="file-card-name">{getFileName(file)}</div>
                                     </div>
                                   </div>
                                   <div className="file-card-body">
@@ -511,9 +426,9 @@ const FileManager = () => {
                           ) : (
                             <div className="file-list">
                               {workFiles.map(file => (
-                                <div key={file.id} className="file-item">
+                                <div key={getFileId(file)} className="file-item">
                                   <div className="file-icon">{getFilePreview(file)}</div>
-                                  <div className="file-name">{file.name}</div>
+                                  <div className="file-name">{getFileName(file)}</div>
                                   <div className="file-uploaded-by">{file.uploadedBy}</div>
                                   <div className="file-upload-date">{file.uploadDate}</div>
                                   <div className="file_actions">
@@ -534,13 +449,13 @@ const FileManager = () => {
                           {viewMode === 'grid' ? (
                             <div className="files-grid">
                               {referenceFiles.map(file => (
-                                <div key={file.id} className="file-card">
+                                <div key={getFileId(file)} className="file-card">
                             <div className="file-card-header">
                               <div className="file-card-preview">
                                 {getFilePreview(file)}
                               </div>
                               <div className="file-card-info">
-                                <div className="file-card-name">{file.name}</div>
+                                <div className="file-card-name">{getFileName(file)}</div>
                               </div>
                             </div>
                                   <div className="file-card-body">
@@ -566,9 +481,9 @@ const FileManager = () => {
                           ) : (
                             <div className="file-list">
                               {referenceFiles.map(file => (
-                                <div key={file.id} className="file-item">
+                                <div key={getFileId(file)} className="file-item">
                                   <div className="file-icon">{getFilePreview(file)}</div>
-                                  <div className="file-name">{file.name}</div>
+                                  <div className="file-name">{getFileName(file)}</div>
                                   <div className="file-uploaded-by">{file.uploadedBy}</div>
                                   <div className="file-upload-date">{file.uploadDate}</div>
                                   <div className="file_actions">
@@ -595,15 +510,11 @@ const FileManager = () => {
 
   const renderByTask = () => {
     const groupedByTask = filteredFiles.reduce((acc, file) => {
-      const task = tasks.find(t => t.id === file.taskId);
-      if (task) {
-        if (!acc[task.id]) acc[task.id] = { task, workFiles: [], referenceFiles: [] };
-        if (file.category === 'work') {
-          acc[task.id].workFiles.push(file);
-        } else {
-          acc[task.id].referenceFiles.push(file);
-        }
-      }
+      if (!file.taskId) return acc;
+      const taskId = file.taskId;
+      if (!acc[taskId]) acc[taskId] = { task: { id: taskId, name: file.taskName || `Task ${taskId}` }, workFiles: [], referenceFiles: [] };
+      if (file.category === 'work') acc[taskId].workFiles.push(file);
+      else acc[taskId].referenceFiles.push(file);
       return acc;
     }, {});
 
@@ -627,9 +538,9 @@ const FileManager = () => {
                     Work Files
                   </div>
                   {workFiles.map(file => (
-                    <div key={file.id} className="file-item">
+                    <div key={getFileId(file)} className="file-item">
                       <div className="file-icon">{getFilePreview(file)}</div>
-                      <div className="file-name">{file.name}</div>
+                      <div className="file-name">{getFileName(file)}</div>
                       <div className="file-uploaded-by">{file.uploadedBy}</div>
                       <div className="file-upload-date">{file.uploadDate}</div>
                       <div className="file_actions">
@@ -646,9 +557,9 @@ const FileManager = () => {
                       Reference Files
                     </div>
                     {referenceFiles.map(file => (
-                      <div key={file.id} className="file-item">
+                      <div key={getFileId(file)} className="file-item">
                         <div className="file-icon">{getFilePreview(file)}</div>
-                        <div className="file-name">{file.name}</div>
+                        <div className="file-name">{getFileName(file)}</div>
                         <div className="file-uploaded-by">{file.uploadedBy}</div>
                         <div className="file-upload-date">{file.uploadDate}</div>
                         <div className="file_actions">
@@ -781,13 +692,13 @@ const FileManager = () => {
         <div className="filters">
           <select value={selectedEvent} onChange={(e) => setSelectedEvent(e.target.value)}>
             <option value="">All Events</option>
-            {events.map(event => (
+            {uniqueEvents.map(event => (
               <option key={event.id} value={event.id}>{event.name}</option>
             ))}
           </select>
           <select value={selectedTask} onChange={(e) => setSelectedTask(e.target.value)}>
             <option value="">All Tasks</option>
-            {tasks.map(task => (
+            {uniqueTasks.map(task => (
               <option key={task.id} value={task.id}>{task.name}</option>
             ))}
           </select>
@@ -824,7 +735,7 @@ const FileManager = () => {
             </button>
             <div className="preview-modal-content">
               {previewModal.file.type === 'image' && (
-                <img src={previewModal.file.url} alt={previewModal.file.name} className="preview-image" />
+                <img src={previewModal.file.url} alt={getFileName(previewModal.file)} className="preview-image" />
               )}
               {previewModal.file.type === 'video' && (
                 <video src={previewModal.file.url} controls className="preview-video" />
