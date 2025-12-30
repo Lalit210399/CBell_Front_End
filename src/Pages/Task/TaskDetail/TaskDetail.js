@@ -38,6 +38,7 @@ const TaskDetail = ({ taskData, formData = {}, onUpdate, mode = "view", eventDat
   const taskTypes = React.useMemo(() => [
     { label: "Standees", value: "Standees" },
     { label: "Banner", value: "Banner" },
+    { label: "Reels", value: "Reels" },
     { label: "Stage Flex", value: "Stage Flex" },
     { label: "Brochure / Leaflet", value: "Brochure / Leaflet" },
     { label: "Placards / Poster", value: "Placards / Poster" },

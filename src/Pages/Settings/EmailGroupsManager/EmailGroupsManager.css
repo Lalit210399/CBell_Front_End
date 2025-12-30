@@ -206,6 +206,21 @@
   transform: translateX(4px);
 }
 
+/* Common List Card Styling */
+.egm-common-list-card {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-color: #bae6fd;
+}
+
+.egm-common-list-card:hover {
+  border-color: #02968a;
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+}
+
+.egm-common-list-card .group-card-icon {
+  background: linear-gradient(135deg, #02968a 0%, #0891b2 100%);
+}
+
 /* Empty State */
 .egm-empty-state {
   grid-column: 1 / -1;

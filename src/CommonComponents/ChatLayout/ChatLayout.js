@@ -1,5 +1,5 @@
-//chatLayout
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+//ChatLayout.js
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import ConversationModule from "../ConversationModule/ConversationModule";
 import TaskFilesPanel from "./TaskFilesPanel";
 import { useUser } from "../../Context/UserContext";
@@ -21,7 +21,7 @@ const ChatLayout = ({ events, organizationId }) => {
   const [isFilePanelOpen, setIsFilePanelOpen] = useState(false);
   const [taskFiles, setTaskFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
-  const [loadedTaskFiles, setLoadedTaskFiles] = useState({}); // Track loaded task files
+  const latestFilesRequestIdRef = useRef(0);
 
   // --- Debounce search query ---
   useEffect(() => {
@@ -114,16 +114,16 @@ const ChatLayout = ({ events, organizationId }) => {
   const handleTaskClick = (task, event) => {
     setSelectedTask(formatTaskForConversation(task, event));
     setSelectedEvent(null); // Clear event selection when selecting task
+    setIsFilePanelOpen(false);
   };
 
   // --- Fetch task files ---
-  const fetchTaskFiles = useCallback(async (taskId, eventId) => {
-    // Don't fetch if already loaded or currently loading
-    if (loadedTaskFiles[taskId] || loadingFiles) {
-      return;
-    }
+  const fetchTaskFiles = useCallback(async (taskId) => {
+    if (!taskId) return;
 
+    const requestId = ++latestFilesRequestIdRef.current;
     setLoadingFiles(true);
+    setTaskFiles([]);
 
     try {
       const response = await fetchWithRefresh(
@@ -191,37 +191,39 @@ const ChatLayout = ({ events, organizationId }) => {
           };
         });
 
-        setTaskFiles(processedFiles);
-        setLoadedTaskFiles(prev => ({ ...prev, [taskId]: true }));
+        if (latestFilesRequestIdRef.current === requestId) {
+          setTaskFiles(processedFiles);
+        }
       } else {
         console.error('Failed to fetch task files');
-        setTaskFiles([]);
-        // Don't mark as loaded on failure, so it can retry
+        if (latestFilesRequestIdRef.current === requestId) {
+          setTaskFiles([]);
+        }
       }
     } catch (error) {
       console.error('Error fetching task files:', error);
-      setTaskFiles([]);
-      // Don't mark as loaded on failure, so it can retry
+      if (latestFilesRequestIdRef.current === requestId) {
+        setTaskFiles([]);
+      }
     } finally {
-      setLoadingFiles(false);
+      if (latestFilesRequestIdRef.current === requestId) {
+        setLoadingFiles(false);
+      }
     }
-  }, [loadedTaskFiles, loadingFiles]);
+  }, []);
 
-  // --- Fetch files when task is selected ---
+  // Clear files when changing tasks / deselecting task
   useEffect(() => {
-    if (selectedTask?.id && selectedTask?.eventId) {
-      // Clear previous task files when switching tasks
-      setTaskFiles([]);
-      fetchTaskFiles(selectedTask.id, selectedTask.eventId);
-    } else {
-      // Clear files when no task is selected
-      setTaskFiles([]);
-    }
-  }, [selectedTask?.id, selectedTask?.eventId, fetchTaskFiles]);
+    setTaskFiles([]);
+  }, [selectedTask?.id]);
 
   // --- Toggle file panel ---
   const toggleFilePanel = () => {
-    setIsFilePanelOpen(!isFilePanelOpen);
+    const willOpen = !isFilePanelOpen;
+    setIsFilePanelOpen(willOpen);
+    if (willOpen && selectedTask?.id) {
+      fetchTaskFiles(selectedTask.id);
+    }
   };
 
   // --- Current user helper ---

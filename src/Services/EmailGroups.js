@@ -1,3 +1,4 @@
+//EmailGroup.js
 // Services/EmailGroups.js
 
 /**
@@ -5,34 +6,7 @@
  * Integrates with backend email groups and common list endpoints
  */
 
-// Backend moved from `/apis/email/*` to `/api/email/*`.
-// Use a fallback strategy to support both during rollout.
-const BASE_URLS = ['/api/email', '/apis/email'];
-
-const fetchEmailApi = async (path, options) => {
-  let lastResponse = null;
-
-  const mergedOptions = {
-    redirect: 'follow',
-    // Avoid 304 Not Modified (often no body) causing JSON parse issues.
-    cache: 'no-store',
-    ...options,
-  };
-
-  for (const baseUrl of BASE_URLS) {
-    const response = await fetch(`${baseUrl}${path}`, mergedOptions);
-    lastResponse = response;
-
-    // If the route doesn't exist on this base, try the next one.
-    if (response.status === 404) {
-      continue;
-    }
-
-    return response;
-  }
-
-  return lastResponse;
-};
+const BASE_URL = '/apis/email';
 
 /**
  * Get authorization headers
@@ -65,8 +39,8 @@ const handleResponse = async (response) => {
     throw new Error(errorMessage);
   }
 
-  // Handle empty-body success statuses
-  if (response.status === 204 || response.status === 304) {
+  // Handle 204 No Content
+  if (response.status === 204) {
     return null;
   }
 
@@ -84,27 +58,17 @@ const handleResponse = async (response) => {
  */
 export const getEmailGroups = async (organizationId) => {
   try {
-    const path = organizationId
-      ? `/groups?organizationId=${encodeURIComponent(organizationId)}`
-      : `/groups`;
+    const url = organizationId 
+      ? `${BASE_URL}/groups?organizationId=${organizationId}`
+      : `${BASE_URL}/groups`;
 
-    const response = await fetchEmailApi(path, {
+    const response = await fetch(url, {
       method: 'GET',
       headers: getAuthHeaders(),
       credentials: 'include',
     });
 
-    const data = await handleResponse(response);
-
-    // Backend may wrap the array.
-    if (Array.isArray(data)) return data;
-    if (Array.isArray(data?.emailGroups)) return data.emailGroups;
-    if (Array.isArray(data?.groups)) return data.groups;
-    if (Array.isArray(data?.data)) return data.data;
-    if (Array.isArray(data?.items)) return data.items;
-    if (Array.isArray(data?.results)) return data.results;
-    if (Array.isArray(data?.value)) return data.value;
-    return [];
+    return await handleResponse(response);
   } catch (error) {
     console.error('Error fetching email groups:', error);
     throw error;
@@ -118,7 +82,7 @@ export const getEmailGroups = async (organizationId) => {
  */
 export const getEmailGroupById = async (groupId) => {
   try {
-    const response = await fetchEmailApi(`/groups/${encodeURIComponent(groupId)}`, {
+    const response = await fetch(`${BASE_URL}/groups/${groupId}`, {
       method: 'GET',
       headers: getAuthHeaders(),
       credentials: 'include',
@@ -133,25 +97,22 @@ export const getEmailGroupById = async (groupId) => {
 
 /**
  * Create a new email group
- * @param {Object} groupData - Group data { name, memberEmails|members, organizationId }
+ * @param {Object} groupData - Group data { name, members, organizationId, userId }
  * @returns {Promise<Object>} Created group object
  */
 export const createEmailGroup = async (groupData) => {
   try {
-    const memberEmails = Array.isArray(groupData?.memberEmails)
-      ? groupData.memberEmails
-      : Array.isArray(groupData?.members)
-        ? groupData.members
-        : [];
-
     // Prepare group data with required fields
     const groupPayload = {
       name: groupData.name,
-      memberEmails,
+      // Backend uses memberEmails; keep members too for compatibility
+      members: groupData.members || [],
+      memberEmails: groupData.members || [],
       organizationId: groupData.organizationId,
+      createdBy: groupData.userId || 'system' // Get from context
     };
 
-    const response = await fetchEmailApi(`/groups`, {
+    const response = await fetch(`${BASE_URL}/groups`, {
       method: 'POST',
       headers: getAuthHeaders(),
       credentials: 'include',
@@ -168,28 +129,21 @@ export const createEmailGroup = async (groupData) => {
 /**
  * Update an existing email group
  * @param {string} groupId - The group ID
- * @param {Object} groupData - Updated group data { name, memberEmails|members, organizationId }
+ * @param {Object} groupData - Updated group data { name, members, organizationId }
  * @returns {Promise<void>}
  */
 export const updateEmailGroup = async (groupId, groupData) => {
   try {
-    const memberEmails = Array.isArray(groupData?.memberEmails)
-      ? groupData.memberEmails
-      : Array.isArray(groupData?.members)
-        ? groupData.members
-        : [];
-
-    const payload = {
-      ...(typeof groupData?.name === 'string' ? { name: groupData.name } : {}),
-      ...(groupData?.organizationId ? { organizationId: groupData.organizationId } : {}),
-      memberEmails,
-    };
-
-    const response = await fetchEmailApi(`/groups/${encodeURIComponent(groupId)}`, {
+    const response = await fetch(`${BASE_URL}/groups/${groupId}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       credentials: 'include',
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...groupData,
+        // Backend uses memberEmails; keep members too for compatibility
+        memberEmails: groupData.memberEmails ?? groupData.members ?? [],
+        members: groupData.members ?? groupData.memberEmails ?? [],
+      }),
     });
 
     return await handleResponse(response);
@@ -206,7 +160,7 @@ export const updateEmailGroup = async (groupId, groupData) => {
  */
 export const deleteEmailGroup = async (groupId) => {
   try {
-    const response = await fetchEmailApi(`/groups/${encodeURIComponent(groupId)}`, {
+    const response = await fetch(`${BASE_URL}/groups/${groupId}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
       credentials: 'include',
@@ -226,7 +180,7 @@ export const deleteEmailGroup = async (groupId) => {
  */
 export const resolveEmailRecipients = async (resolveData) => {
   try {
-    const response = await fetchEmailApi(`/groups/resolve`, {
+    const response = await fetch(`${BASE_URL}/groups/resolve`, {
       method: 'POST',
       headers: getAuthHeaders(),
       credentials: 'include',
@@ -288,7 +242,7 @@ export const sendEmail = async (emailData) => {
       ...(token && { 'Authorization': `Bearer ${token}` })
     };
 
-    const response = await fetchEmailApi(`/send`, {
+    const response = await fetch(`${BASE_URL}/send`, {
       method: 'POST',
       headers: headers,
       credentials: 'include',
@@ -309,49 +263,23 @@ export const sendEmail = async (emailData) => {
  */
 export const getCommonEmailList = async (organizationId) => {
   try {
-    const path = organizationId
-      ? `/common?organizationId=${encodeURIComponent(organizationId)}`
-      : `/common`;
+    const url = organizationId 
+      ? `${BASE_URL}/common?organizationId=${organizationId}`
+      : `${BASE_URL}/common`;
 
-    const response = await fetchEmailApi(path, {
+    const response = await fetch(url, {
       method: 'GET',
       headers: getAuthHeaders(),
       credentials: 'include',
     });
 
-    if (response?.status === 404) {
-      return [];
-    }
-
     return await handleResponse(response);
   } catch (error) {
     console.error('Error fetching common email list:', error);
-    throw error;
-  }
-};
-
-/**
- * Add a single email to the organization's common email list
- * @param {Object} payload - { email: string, organizationId: string }
- * @returns {Promise<Object|null>} API response (if any)
- */
-export const addCommonEmail = async ({ email, organizationId }) => {
-  try {
-    const response = await fetchEmailApi(`/common`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-      body: JSON.stringify({ email, organizationId }),
-    });
-
-    // Treat duplicates as success (common backend behavior: 409 Conflict)
-    if (response?.status === 409) {
-      return null;
+    // Return empty array if endpoint doesn't exist yet
+    if (error.message.includes('404')) {
+      return [];
     }
-
-    return await handleResponse(response);
-  } catch (error) {
-    console.error('Error adding common email:', error);
     throw error;
   }
 };
@@ -374,3 +302,46 @@ export const validateEmail = (email) => {
 export const normalizeEmail = (email) => {
   return email.trim().toLowerCase();
 };
+
+/**
+ * Normalize/Coerce email group members into a clean string array.
+ * Backend payloads sometimes return null, a comma-separated string,
+ * or .NET-style collections (e.g. { $values: [...] }).
+ *
+ * @param {unknown} members
+ * @returns {string[]}
+ */
+export const normalizeEmailGroupMembers = (members) => {
+  if (!members) return [];
+
+  if (Array.isArray(members)) {
+    return members
+      .map((m) => (typeof m === 'string' ? normalizeEmail(m) : String(m ?? '').trim().toLowerCase()))
+      .filter(Boolean);
+  }
+
+  // Handle Sets/iterables that aren't arrays
+  if (typeof members === 'object' && typeof members[Symbol.iterator] === 'function') {
+    try {
+      return normalizeEmailGroupMembers(Array.from(members));
+    } catch {
+      // Fall through to object handling below
+    }
+  }
+
+  if (typeof members === 'string') {
+    return members
+      .split(/[\n,;]+/)
+      .map((m) => (typeof m === 'string' ? normalizeEmail(m) : ''))
+      .filter(Boolean);
+  }
+
+  // Handle common wrapped-list shapes (e.g. .NET $values)
+  if (typeof members === 'object') {
+    const candidate = members.$values ?? members.values ?? members.items ?? members.members;
+    if (candidate) return normalizeEmailGroupMembers(candidate);
+  }
+
+  return [];
+};
+
